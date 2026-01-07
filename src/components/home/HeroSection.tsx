@@ -65,7 +65,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-7xl mx-auto"
+          className="bg-white rounded-2xl shadow-2xl overflow-visible max-w-7xl mx-auto"
         >
           {/* Search Form */}
           <div className="p-8">

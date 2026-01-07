@@ -1,0 +1,630 @@
+/**
+ * SyncLogs Page
+ * View and filter sync activity logs - Glimmora Design System v5.0
+ * Redesigned to match CBS BookingList UI patterns
+ */
+
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import {
+  Download, RefreshCw, CheckCircle, XCircle, AlertTriangle,
+  Calendar, Activity, Eye, ChevronDown, Check,
+  ChevronLeft, ChevronRight
+} from 'lucide-react';
+import { useChannelManager } from '../../../context/ChannelManagerContext';
+import { actionTypes } from '../../../data/channel-manager/sampleSyncLogs';
+import { Button, IconButton } from '../../../components/ui2/Button';
+import { SearchBar } from '../../../components/ui2/SearchBar';
+import SyncLogDetailDrawer from '../../../components/channel-manager/SyncLogDetailDrawer';
+
+// Custom Select Dropdown Component - Glimmora Design System v5.0
+function SelectDropdown({ value, onChange, options, placeholder = 'Select...', className = '' }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [position, setPosition] = useState(null);
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const selectedOption = options.find(opt => opt.value === value);
+
+  const calculatePosition = () => {
+    if (!triggerRef.current) return null;
+    const rect = triggerRef.current.getBoundingClientRect();
+    return {
+      top: rect.bottom + 4,
+      left: rect.left,
+      width: rect.width
+    };
+  };
+
+  const handleToggle = () => {
+    if (isOpen) {
+      setIsOpen(false);
+      setPosition(null);
+    } else {
+      setPosition(calculatePosition());
+      setIsOpen(true);
+    }
+  };
+
+  const handleSelect = (optionValue) => {
+    onChange(optionValue);
+    setIsOpen(false);
+    setPosition(null);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (e) => {
+      if (!triggerRef.current?.contains(e.target) && !menuRef.current?.contains(e.target)) {
+        setIsOpen(false);
+        setPosition(null);
+      }
+    };
+
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        setPosition(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const updatePosition = () => {
+      setPosition(calculatePosition());
+    };
+
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [isOpen]);
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={handleToggle}
+        className={`h-9 px-3.5 rounded-lg text-[13px] bg-white border text-left flex items-center justify-between gap-2 transition-all ${
+          isOpen
+            ? 'border-terra-400 ring-2 ring-terra-500/10'
+            : 'border-neutral-200 hover:border-neutral-300'
+        } ${className}`}
+      >
+        <span className={selectedOption ? 'text-neutral-700' : 'text-neutral-400'}>
+          {selectedOption?.label || placeholder}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && position && createPortal(
+        <div
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: `${position.top}px`,
+            left: `${position.left}px`,
+            width: `${position.width}px`,
+            zIndex: 9999
+          }}
+          className="bg-white rounded-lg border border-neutral-200 shadow-lg shadow-neutral-900/10 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-100"
+        >
+          <div className="py-1 max-h-60 overflow-y-auto">
+            {options.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleSelect(option.value)}
+                className={`w-full px-3 py-2.5 text-left text-[13px] flex items-center justify-between transition-colors ${
+                  value === option.value
+                    ? 'bg-terra-50 text-terra-700 font-medium'
+                    : 'text-neutral-700 hover:bg-neutral-50'
+                }`}
+              >
+                <span>{option.label}</span>
+                {value === option.value && <Check className="w-4 h-4 text-terra-500" />}
+              </button>
+            ))}
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
+// Icons for action types
+const actionIcons = {
+  rate_update: () => <span className="text-xs">$</span>,
+  availability_update: () => <Calendar className="w-3.5 h-3.5" />,
+  restriction_update: () => <span className="text-xs">⊘</span>,
+  promotion_sync: () => <span className="text-xs">🎁</span>,
+  booking_import: () => <Download className="w-3.5 h-3.5" />,
+  connection: () => <span className="text-xs">📶</span>,
+  bulk_sync: () => <RefreshCw className="w-3.5 h-3.5" />
+};
+
+const ITEMS_PER_PAGE = 10;
+
+export default function SyncLogs() {
+  const { syncLogs, otas, triggerManualSync, syncingOTAs } = useChannelManager();
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
+  const [selectedLog, setSelectedLog] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Filter states - single select dropdowns
+  const [otaFilter, setOTAFilter] = useState('all');
+  const [actionFilter, setActionFilter] = useState('all');
+
+  const connectedOTAs = otas.filter(o => o.status === 'connected');
+
+  // Check if any filters are active
+  const hasActiveFilters = otaFilter !== 'all' || actionFilter !== 'all';
+
+  // Clear all filters
+  const clearFilters = () => {
+    setOTAFilter('all');
+    setActionFilter('all');
+    setCurrentPage(1);
+  };
+
+  // Filter logs
+  const filteredLogs = useMemo(() => {
+    return syncLogs.filter(log => {
+      const matchesSearch = log.message?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            log.otaName?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = activeTab === 'all' || log.status === activeTab;
+      const matchesOTA = otaFilter === 'all' || log.otaCode === otaFilter;
+      const matchesAction = actionFilter === 'all' || log.action === actionFilter;
+      return matchesSearch && matchesStatus && matchesOTA && matchesAction;
+    });
+  }, [syncLogs, searchQuery, activeTab, otaFilter, actionFilter]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredLogs.length / ITEMS_PER_PAGE);
+  const paginatedLogs = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredLogs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredLogs, currentPage]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    if (currentPage > Math.ceil(filteredLogs.length / ITEMS_PER_PAGE)) {
+      setCurrentPage(1);
+    }
+  }, [filteredLogs.length, currentPage]);
+
+  // Stats
+  const stats = {
+    total: syncLogs.length,
+    success: syncLogs.filter(l => l.status === 'success').length,
+    error: syncLogs.filter(l => l.status === 'error').length,
+    warning: syncLogs.filter(l => l.status === 'warning').length
+  };
+
+  const handleRefresh = () => {
+    triggerManualSync('ALL');
+  };
+
+  const handleExport = () => {
+    const csv = [
+      ['Timestamp', 'OTA', 'Action', 'Status', 'Message'].join(','),
+      ...filteredLogs.map(log => [
+        log.timestamp,
+        log.otaName,
+        log.action,
+        log.status,
+        `"${log.message}"`
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sync-logs-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  };
+
+  // Tab configuration matching BookingList style
+  const tabs = [
+    { id: 'all', label: 'All Logs', icon: Calendar, count: stats.total },
+    { id: 'success', label: 'Success', icon: CheckCircle, count: stats.success },
+    { id: 'error', label: 'Errors', icon: XCircle, count: stats.error },
+    { id: 'warning', label: 'Warnings', icon: AlertTriangle, count: stats.warning }
+  ];
+
+  // Helper functions
+  const formatTime = (isoString) => {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'success': return CheckCircle;
+      case 'error': return XCircle;
+      case 'warning': return AlertTriangle;
+      default: return Calendar;
+    }
+  };
+
+  const getStatusBadgeClasses = (status) => {
+    const colorMap = {
+      success: 'bg-sage-50 text-sage-600',
+      error: 'bg-rose-50 text-rose-600',
+      warning: 'bg-gold-50 text-gold-600',
+      pending: 'bg-neutral-100 text-neutral-600',
+    };
+    return colorMap[status] || 'bg-neutral-100 text-neutral-600';
+  };
+
+  const getOTAInfo = (otaCode) => {
+    if (otaCode === 'ALL') {
+      return { name: 'All OTAs', color: '#A57865' };
+    }
+    const ota = otas.find(o => o.code === otaCode);
+    return ota || { name: otaCode, color: '#6B7280' };
+  };
+
+  // Filter options for dropdowns
+  const channelOptions = [
+    { value: 'all', label: 'All Channels' },
+    ...connectedOTAs.map(ota => ({ value: ota.code, label: ota.name }))
+  ];
+
+  const actionOptions = [
+    { value: 'all', label: 'All Action Types' },
+    ...Object.entries(actionTypes).map(([key, config]) => ({ value: key, label: config.label }))
+  ];
+
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
+      <div className="px-10 py-6 space-y-6">
+
+        {/* Page Header */}
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+              Sync Logs
+            </h1>
+            <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
+              Monitor channel synchronization activity
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" icon={Download} onClick={handleExport}>
+              Export CSV
+            </Button>
+            <Button
+              variant="primary"
+              icon={RefreshCw}
+              onClick={handleRefresh}
+              disabled={syncingOTAs.length > 0}
+              loading={syncingOTAs.length > 0}
+            >
+              Sync Now
+            </Button>
+          </div>
+        </header>
+
+        {/* Main Content Container - Matching BookingList structure */}
+        <div className="bg-white rounded-[10px] overflow-hidden">
+          {/* Header Section */}
+          <div className="border-b border-neutral-100">
+            {/* Tab Navigation - Underline style matching BookingList */}
+            <div className="px-6 pt-4 flex items-center justify-between">
+              <div className="flex items-center gap-0.5">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => { setActiveTab(tab.id); setCurrentPage(1); }}
+                    className={`relative px-4 py-3 text-[13px] font-semibold transition-all duration-150 ${
+                      activeTab === tab.id
+                        ? 'text-neutral-900'
+                        : 'text-neutral-500 hover:text-neutral-700'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <tab.icon className="w-4 h-4" />
+                      {tab.label}
+                      <span className={`px-1.5 py-0.5 rounded text-[11px] font-semibold tabular-nums ${
+                        activeTab === tab.id
+                          ? 'bg-terra-500 text-white'
+                          : 'bg-neutral-100 text-neutral-500'
+                      }`}>
+                        {tab.count}
+                      </span>
+                    </span>
+                    {/* Active indicator */}
+                    {activeTab === tab.id && (
+                      <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-terra-500 rounded-t-full" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Search & Filters Bar */}
+          <div className="px-6 py-4 bg-neutral-50/30 border-b border-neutral-100">
+            <div className="flex items-center gap-3">
+              {/* Search */}
+              <div className="flex-1 max-w-md">
+                <SearchBar
+                  value={searchQuery}
+                  onChange={(val) => { setSearchQuery(val); setCurrentPage(1); }}
+                  onClear={() => setSearchQuery('')}
+                  placeholder="Search by message, OTA, or action..."
+                  size="md"
+                />
+              </div>
+
+              {/* Spacer to push filters to right */}
+              <div className="flex-1" />
+
+              {/* Channel Filter Dropdown */}
+              <SelectDropdown
+                value={otaFilter}
+                onChange={(val) => { setOTAFilter(val); setCurrentPage(1); }}
+                options={channelOptions}
+                placeholder="All Channels"
+                className="min-w-[160px]"
+              />
+
+              {/* Action Type Filter Dropdown */}
+              <SelectDropdown
+                value={actionFilter}
+                onChange={(val) => { setActionFilter(val); setCurrentPage(1); }}
+                options={actionOptions}
+                placeholder="All Action Types"
+                className="min-w-[180px]"
+              />
+            </div>
+          </div>
+
+          {/* Table */}
+          {filteredLogs.length === 0 ? (
+            <div className="px-6 py-16 text-center">
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 rounded-lg bg-terra-50 flex items-center justify-center mb-4">
+                  <Activity className="w-5 h-5 text-terra-500" />
+                </div>
+                <p className="text-[13px] font-semibold text-neutral-800 mb-1">
+                  No sync logs found
+                </p>
+                <p className="text-[11px] text-neutral-500 font-medium">
+                  Sync activity will appear here when OTAs are connected and syncing
+                </p>
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="mt-4 px-3 py-1.5 text-[12px] font-semibold text-terra-600 hover:text-terra-700 hover:bg-terra-50 rounded-lg transition-colors"
+                  >
+                    Clear all filters
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1000px] border-collapse">
+                  <colgroup>
+                    <col style={{ width: '140px' }} />
+                    <col style={{ width: '180px' }} />
+                    <col style={{ width: '180px' }} />
+                    <col style={{ width: 'auto' }} />
+                    <col style={{ width: '120px' }} />
+                    <col style={{ width: '80px' }} />
+                  </colgroup>
+                  <thead>
+                    <tr className="bg-neutral-50/30 border-b border-neutral-100">
+                      <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                        Time
+                      </th>
+                      <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                        Channel
+                      </th>
+                      <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                        Action
+                      </th>
+                      <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                        Message
+                      </th>
+                      <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                        Status
+                      </th>
+                      <th className="px-6 py-4"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedLogs.map((log, index) => {
+                      const StatusIcon = getStatusIcon(log.status);
+                      const ActionIcon = actionIcons[log.action] || (() => <RefreshCw className="w-3.5 h-3.5" />);
+                      const actionConfig = actionTypes[log.action] || { label: log.action };
+                      const otaInfo = getOTAInfo(log.otaCode);
+
+                      return (
+                        <tr
+                          key={log.id}
+                          style={{ animationDelay: `${index * 30}ms` }}
+                          className="bg-white hover:bg-neutral-50/50 transition-colors animate-in fade-in slide-in-from-left-2 border-b border-neutral-100 last:border-b-0"
+                        >
+                          {/* Time */}
+                          <td className="py-4 px-6">
+                            <span className="text-[13px] text-neutral-600 font-medium">
+                              {formatTime(log.timestamp)}
+                            </span>
+                          </td>
+
+                          {/* Channel/OTA */}
+                          <td className="py-4 px-6">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0"
+                                style={{ backgroundColor: otaInfo.color }}
+                              >
+                                {otaInfo.name.substring(0, 2).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="text-[13px] font-semibold text-neutral-800">
+                                  {otaInfo.name}
+                                </p>
+                                <p className="text-[10px] text-neutral-400 font-medium">
+                                  {log.otaCode}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Action */}
+                          <td className="py-4 px-6">
+                            <p className="text-[13px] font-medium text-neutral-800">
+                              {actionConfig.label}
+                            </p>
+                          </td>
+
+                          {/* Message */}
+                          <td className="py-4 px-6">
+                            <p className="text-[13px] text-neutral-500 max-w-[300px] truncate">
+                              {log.message}
+                            </p>
+                          </td>
+
+                          {/* Status */}
+                          <td className="py-4 px-6">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium ${getStatusBadgeClasses(log.status)}`}>
+                              <StatusIcon className="w-3 h-3" />
+                              {log.status.charAt(0).toUpperCase() + log.status.slice(1)}
+                            </span>
+                          </td>
+
+                          {/* Actions - Always visible */}
+                          <td className="py-4 px-6">
+                            <IconButton
+                              icon={Eye}
+                              variant="ghost"
+                              size="sm"
+                              label="View details"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedLog(log);
+                              }}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination - Matching BookingList exactly */}
+              {totalPages > 1 && (
+                <div className="px-6 py-4 border-t border-neutral-100 flex items-center justify-between bg-neutral-50/30">
+                  <p className="text-[13px] text-neutral-500">
+                    Showing <span className="font-semibold text-neutral-700">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span>
+                    {' '}to{' '}
+                    <span className="font-semibold text-neutral-700">{Math.min(currentPage * ITEMS_PER_PAGE, filteredLogs.length)}</span>
+                    {' '}of{' '}
+                    <span className="font-semibold text-neutral-700">{filteredLogs.length}</span> logs
+                  </p>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                        currentPage === 1
+                          ? 'text-neutral-300 cursor-not-allowed'
+                          : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700'
+                      }`}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+
+                    <div className="flex items-center gap-0.5 mx-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let page;
+                        if (totalPages <= 5) {
+                          page = i + 1;
+                        } else if (currentPage <= 3) {
+                          page = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          page = totalPages - 4 + i;
+                        } else {
+                          page = currentPage - 2 + i;
+                        }
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`w-8 h-8 rounded-lg text-[13px] font-semibold transition-colors ${
+                              currentPage === page
+                                ? 'bg-terra-500 text-white'
+                                : 'text-neutral-600 hover:bg-neutral-100'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                        currentPage === totalPages
+                          ? 'text-neutral-300 cursor-not-allowed'
+                          : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700'
+                      }`}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Log Details Drawer */}
+      <SyncLogDetailDrawer
+        log={selectedLog}
+        otas={otas}
+        onClose={() => setSelectedLog(null)}
+      />
+    </div>
+  );
+}

@@ -1,0 +1,599 @@
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Calendar, Filter, Download, RefreshCw, Sparkles, ChevronDown, Check, HelpCircle, Undo2, Redo2 } from 'lucide-react';
+import { useRMS } from '../../context/RMSContext';
+import { useToast } from '../../contexts/ToastContext';
+import RateCell from './RateCell';
+
+const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, selectedDates = [] }) => {
+  const {
+    rateCalendar,
+    roomTypes,
+    getRateForDate,
+    updateRate,
+    applyRestriction,
+    runAllRules,
+    recommendations,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useRMS();
+
+  const { success, error: showError } = useToast();
+
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedRoomType, setSelectedRoomType] = useState('STD');
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [viewMode, setViewMode] = useState('month'); // 'month' | 'week'
+  const [isRecalculating, setIsRecalculating] = useState(false);
+  const [isRoomDropdownOpen, setIsRoomDropdownOpen] = useState(false);
+  const [focusedDateIndex, setFocusedDateIndex] = useState(null);
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+  const dropdownRef = useRef(null);
+  const calendarRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsRoomDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Generate calendar days (must be before keyboard navigation useEffect)
+  const calendarDays = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startPadding = firstDay.getDay();
+
+    const days = [];
+
+    // Previous month padding
+    for (let i = 0; i < startPadding; i++) {
+      const date = new Date(year, month, -startPadding + i + 1);
+      days.push({ date, isCurrentMonth: false });
+    }
+
+    // Current month
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const date = new Date(year, month, d);
+      days.push({ date, isCurrentMonth: true });
+    }
+
+    // Next month padding
+    const remaining = 42 - days.length;
+    for (let i = 1; i <= remaining; i++) {
+      const date = new Date(year, month + 1, i);
+      days.push({ date, isCurrentMonth: false });
+    }
+
+    return days;
+  }, [currentMonth]);
+
+  const today = new Date().toISOString().split('T')[0];
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Show keyboard help with ? or Shift+?
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setShowKeyboardHelp(prev => !prev);
+        return;
+      }
+
+      // Don't handle keyboard nav if user is typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      // Arrow key navigation
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+
+        if (focusedDateIndex === null) {
+          // Start from today if available, otherwise first current month date
+          const todayIndex = calendarDays.findIndex(({ date }) => {
+            const dateStr = date.toISOString().split('T')[0];
+            return dateStr === today;
+          });
+
+          if (todayIndex !== -1) {
+            setFocusedDateIndex(todayIndex);
+          } else {
+            const firstCurrentMonthIndex = calendarDays.findIndex(({ isCurrentMonth }) => isCurrentMonth);
+            setFocusedDateIndex(firstCurrentMonthIndex);
+          }
+          return;
+        }
+
+        let newIndex = focusedDateIndex;
+
+        if (e.key === 'ArrowLeft') {
+          newIndex = Math.max(0, focusedDateIndex - 1);
+        } else if (e.key === 'ArrowRight') {
+          newIndex = Math.min(calendarDays.length - 1, focusedDateIndex + 1);
+        } else if (e.key === 'ArrowUp') {
+          newIndex = Math.max(0, focusedDateIndex - 7);
+        } else if (e.key === 'ArrowDown') {
+          newIndex = Math.min(calendarDays.length - 1, focusedDateIndex + 7);
+        }
+
+        setFocusedDateIndex(newIndex);
+
+        // Scroll focused date into view
+        const calendarGrid = calendarRef.current;
+        if (calendarGrid) {
+          const cells = calendarGrid.querySelectorAll('[data-calendar-cell]');
+          if (cells[newIndex]) {
+            cells[newIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }
+        }
+      }
+
+      // Enter to select focused date
+      if (e.key === 'Enter' && focusedDateIndex !== null) {
+        e.preventDefault();
+        const { date, isCurrentMonth } = calendarDays[focusedDateIndex];
+        const dateStr = date.toISOString().split('T')[0];
+        const isPast = dateStr < today;
+
+        if (isCurrentMonth && !isPast) {
+          handleDateSelect(date);
+        }
+      }
+
+      // Ctrl/Cmd + Left/Right for month navigation
+      if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrevMonth();
+        setFocusedDateIndex(null);
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleNextMonth();
+        setFocusedDateIndex(null);
+      }
+
+      // T key to jump to today
+      if (e.key === 't' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setCurrentMonth(new Date());
+        const todayIndex = calendarDays.findIndex(({ date }) => {
+          const dateStr = date.toISOString().split('T')[0];
+          return dateStr === today;
+        });
+        if (todayIndex !== -1) {
+          setFocusedDateIndex(todayIndex);
+        }
+      }
+
+      // R key to recalculate
+      if (e.key === 'r' && !e.ctrlKey && !e.metaKey && !e.altKey && !isRecalculating) {
+        e.preventDefault();
+        handleRecalculate();
+      }
+
+      // Ctrl/Cmd + Z for undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        if (canUndo) {
+          const success = undo();
+          if (success) {
+            showToastSuccess('Rate change undone');
+          }
+        }
+      }
+
+      // Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y for redo
+      if (((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) ||
+          ((e.ctrlKey || e.metaKey) && e.key === 'y')) {
+        e.preventDefault();
+        if (canRedo) {
+          const success = redo();
+          if (success) {
+            showToastSuccess('Rate change redone');
+          }
+        }
+      }
+
+      // Escape to clear focus
+      if (e.key === 'Escape') {
+        setFocusedDateIndex(null);
+        setShowKeyboardHelp(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [focusedDateIndex, calendarDays, today, isRecalculating, canUndo, canRedo, undo, redo]);
+
+  // Helper function for toast notifications
+  const showToastSuccess = (message) => {
+    success(message, { duration: 2000 });
+  };
+
+  const handlePrevMonth = () => {
+    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  const handleRecalculate = async () => {
+    setIsRecalculating(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      runAllRules();
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
+  const handleDateSelect = (date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    setSelectedDate(dateStr);
+    if (onDateSelect) onDateSelect(dateStr);
+  };
+
+  const handleUpdateRate = (date, newRate) => {
+    updateRate(selectedRoomType, date, newRate);
+  };
+
+  const formatMonthYear = (date) => {
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // Get AI suggestions count for visible dates
+  const visibleSuggestions = recommendations.filter(r => {
+    const recDate = new Date(r.date);
+    return recDate.getMonth() === currentMonth.getMonth() &&
+           recDate.getFullYear() === currentMonth.getFullYear();
+  });
+
+  return (
+    <div className="bg-white rounded-[10px] overflow-hidden">
+      {/* Header */}
+      <div className="p-6 border-b border-neutral-100 bg-white space-y-5">
+        {/* Top Row: Month Navigation + Primary Actions */}
+        <div className="flex items-center justify-between">
+          {/* Month Navigation */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handlePrevMonth}
+              className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-lg transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5 text-neutral-500" />
+            </button>
+            <h2 className="text-lg font-semibold text-neutral-900 min-w-[180px] text-center">
+              {formatMonthYear(currentMonth)}
+            </h2>
+            <button
+              onClick={handleNextMonth}
+              className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-lg transition-colors"
+            >
+              <ChevronRight className="w-5 h-5 text-neutral-500" />
+            </button>
+          </div>
+
+          {/* Primary Action Buttons */}
+          <div className="flex items-center gap-3">
+            {/* Undo/Redo Buttons */}
+            <div className="flex items-center gap-1 px-1 py-1 bg-neutral-50 rounded-lg border border-neutral-200">
+              <button
+                onClick={() => {
+                  if (canUndo) {
+                    undo();
+                    showToastSuccess('Rate change undone');
+                  }
+                }}
+                disabled={!canUndo}
+                className="p-1.5 text-neutral-600 hover:text-terra-600 hover:bg-white rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-neutral-600 disabled:hover:bg-transparent"
+                title={`Undo ${canUndo ? '(Ctrl+Z)' : ''}`}
+              >
+                <Undo2 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => {
+                  if (canRedo) {
+                    redo();
+                    showToastSuccess('Rate change redone');
+                  }
+                }}
+                disabled={!canRedo}
+                className="p-1.5 text-neutral-600 hover:text-terra-600 hover:bg-white rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-neutral-600 disabled:hover:bg-transparent"
+                title={`Redo ${canRedo ? '(Ctrl+Shift+Z)' : ''}`}
+              >
+                <Redo2 className="w-4 h-4" />
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowKeyboardHelp(!showKeyboardHelp)}
+              className="p-2 text-neutral-400 hover:text-terra-600 hover:bg-terra-50 rounded-lg transition-colors"
+              title="Keyboard shortcuts (?)"
+            >
+              <HelpCircle className="w-5 h-5" />
+            </button>
+
+            <button
+              onClick={() => setCurrentMonth(new Date())}
+              className="px-3 py-1.5 text-[13px] font-medium text-terra-600 hover:bg-terra-50 rounded-lg transition-colors"
+            >
+              Today
+            </button>
+
+            <button
+              onClick={handleRecalculate}
+              disabled={isRecalculating}
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-terra-500 rounded-lg hover:bg-terra-600 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRecalculating ? 'animate-spin' : ''}`} />
+              {isRecalculating ? 'Recalculating...' : 'Recalculate'}
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom Row: Legend + Filters */}
+        <div className="flex items-center justify-between">
+          {/* Legend */}
+          <div className="flex items-center gap-5 text-[11px]">
+            <div className="flex items-center gap-1.5 whitespace-nowrap">
+              <div className="w-3 h-3 rounded bg-white border border-neutral-200" />
+              <span className="text-neutral-600">Available</span>
+            </div>
+            <div className="flex items-center gap-1.5 whitespace-nowrap">
+              <div className="w-3 h-3 rounded bg-gold-50 border border-gold-200" />
+              <span className="text-neutral-600">Low Inventory</span>
+            </div>
+            <div className="flex items-center gap-1.5 whitespace-nowrap">
+              <div className="w-3 h-3 rounded bg-terra-50 border border-terra-200" />
+              <span className="text-neutral-600">Very Low</span>
+            </div>
+            <div className="flex items-center gap-1.5 whitespace-nowrap">
+              <div className="w-3 h-3 rounded bg-ocean-50 border border-ocean-200" />
+              <span className="text-neutral-600">CTA Active</span>
+            </div>
+            <div className="flex items-center gap-1.5 whitespace-nowrap">
+              <div className="w-3 h-3 rounded bg-rose-50 border border-rose-200" />
+              <span className="text-neutral-600">Stop Sell</span>
+            </div>
+          </div>
+
+          {/* Filters and Insights */}
+          <div className="flex items-center gap-3">
+            {/* Room Type Selector - Custom Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsRoomDropdownOpen(!isRoomDropdownOpen)}
+                className="flex items-center justify-between gap-3 px-4 py-2 text-[13px] font-medium border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/40 bg-white hover:bg-neutral-50 transition-colors min-w-[180px]"
+              >
+                <span>{roomTypes.find(r => r.id === selectedRoomType)?.name || 'Select Room'}</span>
+                <ChevronDown className={`w-4 h-4 text-neutral-500 transition-transform ${isRoomDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isRoomDropdownOpen && (
+                <div className="absolute top-full left-0 mt-2 w-full bg-white border border-neutral-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                  {roomTypes.map(room => (
+                    <button
+                      key={room.id}
+                      onClick={() => {
+                        setSelectedRoomType(room.id);
+                        setIsRoomDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-4 py-2.5 text-[13px] text-left hover:bg-neutral-50 transition-colors ${
+                        selectedRoomType === room.id ? 'bg-terra-50 text-terra-600 font-medium' : 'text-neutral-700'
+                      }`}
+                    >
+                      <span>{room.name}</span>
+                      {selectedRoomType === room.id && (
+                        <Check className="w-4 h-4 text-terra-600" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* AI Suggestions Badge */}
+            {visibleSuggestions.length > 0 && (
+              <button className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-gold-700 bg-gold-50 border border-gold-200 rounded-lg hover:bg-gold-100 transition-colors whitespace-nowrap">
+                <Sparkles className="w-4 h-4" />
+                {visibleSuggestions.length} AI Suggestions
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Calendar Grid */}
+      <div className="p-4">
+        {/* Day Headers */}
+        <div className="grid grid-cols-7 gap-2 mb-3">
+          {dayNames.map(day => (
+            <div key={day} className="text-center text-[11px] font-semibold text-neutral-400 uppercase tracking-wider py-2">
+              {day}
+            </div>
+          ))}
+        </div>
+
+        {/* Calendar Days */}
+        <div ref={calendarRef} className="grid grid-cols-7 gap-2">
+          {calendarDays.map(({ date, isCurrentMonth }, index) => {
+            const dateStr = date.toISOString().split('T')[0];
+            const calendarData = rateCalendar[dateStr];
+            const roomData = calendarData?.rooms?.[selectedRoomType];
+            const isToday = dateStr === today;
+            const isPast = dateStr < today;
+            const hasSuggestion = recommendations.some(r => r.date === dateStr);
+            const isSelected = selectedDates.includes(dateStr);
+            const isFocused = focusedDateIndex === index;
+
+            return (
+              <div
+                key={index}
+                data-calendar-cell
+                className={`min-h-[130px] rounded-lg border border-neutral-100 bg-neutral-50/50 transition-all ${!isCurrentMonth ? 'opacity-30' : ''} ${isPast ? 'opacity-50 bg-neutral-100' : ''} ${
+                  bulkEditMode && isSelected ? 'ring-2 ring-terra-500 bg-terra-50/30' : ''
+                } ${isFocused ? 'ring-2 ring-ocean-500 shadow-md scale-[1.02]' : ''}`}
+                onClick={bulkEditMode && !isPast ? () => onDateSelect(dateStr) : undefined}
+                style={{ cursor: bulkEditMode && !isPast ? 'pointer' : 'default' }}
+              >
+                {/* Date Header */}
+                <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-t-lg ${isToday ? 'bg-terra-500 text-white' : 'bg-white border-b border-neutral-100'}`}>
+                  <span className={`text-[12px] font-semibold ${isToday ? 'text-white' : 'text-neutral-600'}`}>
+                    {date.getDate()}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {hasSuggestion && (
+                      <Sparkles className="w-3 h-3 text-gold-500" />
+                    )}
+                    {calendarData?.event && (
+                      <span className="text-[9px] font-medium text-sage-700 bg-sage-50 px-1.5 py-0.5 rounded truncate max-w-[70px]">
+                        {calendarData.event}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Rate Cell */}
+                {roomData && !isPast ? (
+                  <RateCell
+                    date={dateStr}
+                    roomData={roomData}
+                    isSelected={selectedDate === dateStr}
+                    onSelect={() => handleDateSelect(date)}
+                    onUpdateRate={handleUpdateRate}
+                    onApplyRestriction={(restriction) => applyRestriction(selectedRoomType, dateStr, restriction)}
+                    compact={true}
+                  />
+                ) : (
+                  <div className="p-3 text-center text-[11px] text-neutral-400">
+                    {isPast ? 'Past' : 'No data'}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Keyboard Help Overlay */}
+      {showKeyboardHelp && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowKeyboardHelp(false)}>
+          <div className="bg-white rounded-[10px] shadow-xl max-w-2xl w-full p-8" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-neutral-900">Keyboard Shortcuts</h3>
+              <button
+                onClick={() => setShowKeyboardHelp(false)}
+                className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Navigation */}
+              <div>
+                <h4 className="text-sm font-bold text-neutral-500 uppercase tracking-wider mb-3">Navigation</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-neutral-700">Arrow keys</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">↑ ↓ ← →</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-neutral-700">Select date</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Enter</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-neutral-700">Clear focus</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Esc</kbd>
+                  </div>
+                </div>
+              </div>
+
+              {/* Month Controls */}
+              <div>
+                <h4 className="text-sm font-bold text-neutral-500 uppercase tracking-wider mb-3">Month Controls</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-neutral-700">Previous month</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + ←</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-neutral-700">Next month</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + →</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-neutral-700">Go to today</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">T</kbd>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div>
+                <h4 className="text-sm font-bold text-neutral-500 uppercase tracking-wider mb-3">Actions</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-neutral-700">Undo change</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + Z</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-neutral-700">Redo change</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + Shift + Z</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-neutral-700">Recalculate rates</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">R</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-neutral-700">Show this help</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">?</kbd>
+                  </div>
+                </div>
+              </div>
+
+              {/* Rate Editing */}
+              <div>
+                <h4 className="text-sm font-bold text-neutral-500 uppercase tracking-wider mb-3">Rate Editing</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-neutral-700">Save rate</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Enter</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-neutral-700">Cancel editing</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Esc</kbd>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-neutral-200">
+              <p className="text-sm text-neutral-500 text-center">
+                Press <kbd className="px-1.5 py-0.5 text-xs font-semibold text-neutral-600 bg-neutral-100 border border-neutral-300 rounded">Esc</kbd> or click outside to close
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+export default RateCalendarView;

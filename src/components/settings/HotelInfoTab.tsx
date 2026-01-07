@@ -1,0 +1,339 @@
+import { useState, useEffect } from 'react';
+import { Upload, Check, AlertCircle } from 'lucide-react';
+import { useSettingsContext } from '../../contexts/SettingsContext';
+import { TIMEZONES, CURRENCIES } from '../../utils/settings';
+import { Button } from '../ui2/Button';
+import { SelectDropdown } from '../ui2/Input';
+
+export default function HotelInfoTab() {
+  const { generalSettings, updateGeneralSettings, updateContactInfo, updateAddress, setCurrency, setTimezone, setHotelName } = useSettingsContext();
+
+  const [form, setForm] = useState({
+    hotelName: '',
+    address: { street: '', city: '', state: '', zip: '', country: '' },
+    timezone: '',
+    currency: '',
+    checkInTime: '14:00',
+    checkOutTime: '11:00',
+    contactEmail: '',
+    contactPhone: '',
+    website: '',
+    logo: null as string | null
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (generalSettings) {
+      setForm({
+        hotelName: generalSettings.hotelName || '',
+        address: generalSettings.address || { street: '', city: '', state: '', zip: '', country: '' },
+        timezone: generalSettings.timezone || 'Asia/Kolkata',
+        currency: generalSettings.currency || 'INR',
+        checkInTime: generalSettings.checkInTime || '14:00',
+        checkOutTime: generalSettings.checkOutTime || '11:00',
+        contactEmail: generalSettings.contactEmail || '',
+        contactPhone: generalSettings.contactPhone || '',
+        website: generalSettings.website || '',
+        logo: generalSettings.branding?.logo || null
+      });
+    }
+  }, [generalSettings]);
+
+  const handleChange = (field: string, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    setErrors(prev => ({ ...prev, [field]: '' }));
+    setSaved(false);
+  };
+
+  const handleAddressChange = (field: string, value: string) => {
+    setForm(prev => ({
+      ...prev,
+      address: { ...prev.address, [field]: value }
+    }));
+    setSaved(false);
+  };
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!form.hotelName.trim()) newErrors.hotelName = 'Hotel name is required';
+    if (!form.contactEmail.trim()) {
+      newErrors.contactEmail = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactEmail)) {
+      newErrors.contactEmail = 'Invalid email format';
+    }
+    if (!form.contactPhone.trim()) newErrors.contactPhone = 'Phone is required';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = () => {
+    if (!validate()) return;
+
+    setHotelName(form.hotelName);
+    updateContactInfo({
+      email: form.contactEmail,
+      phone: form.contactPhone,
+      website: form.website
+    });
+    updateAddress(form.address);
+    setCurrency(form.currency);
+    setTimezone(form.timezone);
+    updateGeneralSettings({
+      checkInTime: form.checkInTime,
+      checkOutTime: form.checkOutTime
+    });
+
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        handleChange('logo', reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
+        <div>
+          <h2 className="text-[15px] font-semibold text-neutral-900">Hotel Information</h2>
+          <p className="text-[13px] text-neutral-500 mt-0.5">Basic information about your property</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {saved && (
+            <span className="flex items-center gap-1.5 text-[13px] font-medium text-sage-600">
+              <Check className="w-4 h-4" />
+              Saved
+            </span>
+          )}
+          <Button variant="primary" onClick={handleSave}>
+            Save Changes
+          </Button>
+        </div>
+      </div>
+
+      {/* Basic Information */}
+      <section>
+        <h3 className="text-[13px] font-semibold text-neutral-800 mb-4">Basic Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="md:col-span-2">
+            <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">
+              Hotel Name <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={form.hotelName}
+              onChange={(e) => handleChange('hotelName', e.target.value)}
+              className={`w-full h-10 px-3 rounded-lg border text-[13px] text-neutral-900 placeholder:text-neutral-400 transition-colors focus:outline-none focus:ring-2 focus:ring-terra-500/20 ${
+                errors.hotelName ? 'border-rose-300 focus:border-rose-500' : 'border-neutral-200 hover:border-neutral-300 focus:border-terra-500'
+              }`}
+              placeholder="Enter hotel name"
+            />
+            {errors.hotelName && (
+              <p className="mt-1.5 text-[11px] text-rose-500 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5" />
+                {errors.hotelName}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">Timezone</label>
+            <SelectDropdown
+              value={form.timezone}
+              onChange={(value) => handleChange('timezone', value)}
+              options={TIMEZONES}
+              size="lg"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">Currency</label>
+            <SelectDropdown
+              value={form.currency}
+              onChange={(value) => handleChange('currency', value)}
+              options={CURRENCIES}
+              size="lg"
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">Hotel Logo</label>
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-lg border border-neutral-200 flex items-center justify-center bg-neutral-50 overflow-hidden">
+                {form.logo ? (
+                  <img src={form.logo} alt="Logo" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xl text-neutral-300 font-medium">H</span>
+                )}
+              </div>
+              <div>
+                <label className="inline-flex items-center gap-2 h-9 px-4 rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 cursor-pointer transition-colors text-[13px] font-medium">
+                  <Upload className="w-4 h-4" />
+                  Upload
+                  <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                </label>
+                <p className="text-[11px] text-neutral-400 mt-1.5">PNG, JPG up to 2MB</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Address */}
+      <section>
+        <h3 className="text-[13px] font-semibold text-neutral-800 mb-4">Address</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="md:col-span-2">
+            <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">Street Address</label>
+            <input
+              type="text"
+              value={form.address.street}
+              onChange={(e) => handleAddressChange('street', e.target.value)}
+              className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:outline-none focus:ring-2 focus:ring-terra-500/20 transition-colors"
+              placeholder="123 Luxury Lane"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">City</label>
+            <input
+              type="text"
+              value={form.address.city}
+              onChange={(e) => handleAddressChange('city', e.target.value)}
+              className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:outline-none focus:ring-2 focus:ring-terra-500/20 transition-colors"
+              placeholder="Mumbai"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">State / Province</label>
+            <input
+              type="text"
+              value={form.address.state}
+              onChange={(e) => handleAddressChange('state', e.target.value)}
+              className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:outline-none focus:ring-2 focus:ring-terra-500/20 transition-colors"
+              placeholder="Maharashtra"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">Postal Code</label>
+            <input
+              type="text"
+              value={form.address.zip}
+              onChange={(e) => handleAddressChange('zip', e.target.value)}
+              className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:outline-none focus:ring-2 focus:ring-terra-500/20 transition-colors"
+              placeholder="400001"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">Country</label>
+            <input
+              type="text"
+              value={form.address.country}
+              onChange={(e) => handleAddressChange('country', e.target.value)}
+              className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:outline-none focus:ring-2 focus:ring-terra-500/20 transition-colors"
+              placeholder="India"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Operating Hours */}
+      <section>
+        <h3 className="text-[13px] font-semibold text-neutral-800 mb-4">Operating Hours</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">Check-in Time</label>
+            <input
+              type="time"
+              value={form.checkInTime}
+              onChange={(e) => handleChange('checkInTime', e.target.value)}
+              className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-900 hover:border-neutral-300 focus:border-terra-500 focus:outline-none focus:ring-2 focus:ring-terra-500/20 transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">Check-out Time</label>
+            <input
+              type="time"
+              value={form.checkOutTime}
+              onChange={(e) => handleChange('checkOutTime', e.target.value)}
+              className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-900 hover:border-neutral-300 focus:border-terra-500 focus:outline-none focus:ring-2 focus:ring-terra-500/20 transition-colors"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Information */}
+      <section>
+        <h3 className="text-[13px] font-semibold text-neutral-800 mb-4">Contact Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">
+              Email Address <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="email"
+              value={form.contactEmail}
+              onChange={(e) => handleChange('contactEmail', e.target.value)}
+              className={`w-full h-10 px-3 rounded-lg border text-[13px] text-neutral-900 placeholder:text-neutral-400 transition-colors focus:outline-none focus:ring-2 focus:ring-terra-500/20 ${
+                errors.contactEmail ? 'border-rose-300 focus:border-rose-500' : 'border-neutral-200 hover:border-neutral-300 focus:border-terra-500'
+              }`}
+              placeholder="info@hotel.com"
+            />
+            {errors.contactEmail && (
+              <p className="mt-1.5 text-[11px] text-rose-500 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5" />
+                {errors.contactEmail}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">
+              Phone Number <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="tel"
+              value={form.contactPhone}
+              onChange={(e) => handleChange('contactPhone', e.target.value)}
+              className={`w-full h-10 px-3 rounded-lg border text-[13px] text-neutral-900 placeholder:text-neutral-400 transition-colors focus:outline-none focus:ring-2 focus:ring-terra-500/20 ${
+                errors.contactPhone ? 'border-rose-300 focus:border-rose-500' : 'border-neutral-200 hover:border-neutral-300 focus:border-terra-500'
+              }`}
+              placeholder="+91 22 1234 5678"
+            />
+            {errors.contactPhone && (
+              <p className="mt-1.5 text-[11px] text-rose-500 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5" />
+                {errors.contactPhone}
+              </p>
+            )}
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">Website</label>
+            <input
+              type="url"
+              value={form.website}
+              onChange={(e) => handleChange('website', e.target.value)}
+              className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:outline-none focus:ring-2 focus:ring-terra-500/20 transition-colors"
+              placeholder="https://www.hotel.com"
+            />
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}

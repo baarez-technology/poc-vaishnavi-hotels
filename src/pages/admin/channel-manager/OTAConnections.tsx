@@ -1,0 +1,326 @@
+/**
+ * OTAConnections Page
+ * Manage OTA platform connections - Glimmora Design System v5.0
+ * Enhanced with consistent styling matching CMS section
+ */
+
+import { useState, useEffect } from 'react';
+import {
+  Plus, RefreshCw, Search, Wifi, WifiOff, AlertTriangle, ChevronDown
+} from 'lucide-react';
+import { useChannelManager } from '../../../context/ChannelManagerContext';
+import OTAConnectionCard from '../../../components/channel-manager/OTAConnectionCard';
+import AddConnectionModal from '../../../components/channel-manager/AddConnectionModal';
+import EditCredentialsModal from '../../../components/channel-manager/EditCredentialsModal';
+import DisconnectOTAModal from '../../../components/channel-manager/DisconnectOTAModal';
+import { Button } from '../../../components/ui2/Button';
+import { DropdownMenu, DropdownMenuItem } from '../../../components/ui2/DropdownMenu';
+
+export default function OTAConnections() {
+  const {
+    otas,
+    syncingOTAs,
+    connectOTA,
+    disconnectOTA,
+    reconnectOTA,
+    updateOTACredentials,
+    triggerManualSync
+  } = useChannelManager();
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
+  const [selectedOTA, setSelectedOTA] = useState(null);
+  const [otaToDisconnect, setOtaToDisconnect] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Filter OTAs
+  const filteredOTAs = otas.filter(ota => {
+    const matchesSearch = ota.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || ota.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  // Status counts
+  const statusCounts = {
+    all: otas.length,
+    connected: otas.filter(o => o.status === 'connected').length,
+    disconnected: otas.filter(o => o.status === 'disconnected').length,
+    error: otas.filter(o => o.status === 'error').length
+  };
+
+  const handleConnect = (otaData) => {
+    connectOTA(otaData);
+  };
+
+  const handleDisconnect = (otaId) => {
+    const ota = otas.find(o => o.id === otaId);
+    setOtaToDisconnect(ota);
+    setShowDisconnectModal(true);
+  };
+
+  const handleConfirmDisconnect = (otaId) => {
+    disconnectOTA(otaId);
+  };
+
+  const handleReconnect = (otaId) => {
+    reconnectOTA(otaId);
+  };
+
+  const handleEditCredentials = (ota) => {
+    setSelectedOTA(ota);
+    setShowEditModal(true);
+  };
+
+  const handleSaveCredentials = (otaId, credentials) => {
+    updateOTACredentials(otaId, credentials);
+  };
+
+  const handleViewLogs = (otaCode) => {
+    window.location.href = `/admin/channel-manager/logs?ota=${otaCode}`;
+  };
+
+  const handleSync = (otaCode) => {
+    triggerManualSync(otaCode);
+  };
+
+  const handleSyncAll = () => {
+    triggerManualSync('ALL');
+  };
+
+  // KPI cards configuration
+  const kpiCards = [
+    {
+      icon: Wifi,
+      title: 'Total OTAs',
+      value: statusCounts.all,
+      accent: 'terra'
+    },
+    {
+      icon: Wifi,
+      title: 'Connected',
+      value: statusCounts.connected,
+      accent: 'sage'
+    },
+    {
+      icon: WifiOff,
+      title: 'Disconnected',
+      value: statusCounts.disconnected,
+      accent: 'neutral'
+    },
+    {
+      icon: AlertTriangle,
+      title: 'Errors',
+      value: statusCounts.error,
+      accent: 'rose'
+    }
+  ];
+
+  const accentColors = {
+    terra: { bg: 'bg-terra-50', border: 'border-terra-100', icon: 'bg-terra-100 text-terra-600' },
+    sage: { bg: 'bg-sage-50', border: 'border-sage-100', icon: 'bg-sage-100 text-sage-600' },
+    neutral: { bg: 'bg-neutral-50', border: 'border-neutral-200', icon: 'bg-neutral-100 text-neutral-500' },
+    rose: { bg: 'bg-rose-50', border: 'border-rose-100', icon: 'bg-rose-100 text-rose-600' }
+  };
+
+  const getStatusFilterLabel = () => {
+    switch (statusFilter) {
+      case 'connected': return `Active (${statusCounts.connected})`;
+      case 'disconnected': return `Offline (${statusCounts.disconnected})`;
+      case 'error': return `Issues (${statusCounts.error})`;
+      default: return `All (${statusCounts.all})`;
+    }
+  };
+
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
+      <div className="px-10 py-6 space-y-6">
+
+        {/* Page Header */}
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+              OTA Connections
+            </h1>
+            <p className="text-[13px] text-neutral-500 mt-1">
+              Manage your channel distribution partners
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              icon={RefreshCw}
+              onClick={handleSyncAll}
+              disabled={syncingOTAs.length > 0}
+              loading={syncingOTAs.length > 0}
+            >
+              Sync All
+            </Button>
+            <Button
+              variant="primary"
+              icon={Plus}
+              onClick={() => setShowAddModal(true)}
+            >
+              Add Connection
+            </Button>
+          </div>
+        </header>
+
+        {/* KPI Cards */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {kpiCards.map((kpi, index) => {
+            const colors = accentColors[kpi.accent];
+            return (
+              <div key={index} className="rounded-[10px] bg-white p-6">
+                {/* Header with Icon */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colors.icon}`}>
+                    <kpi.icon className="w-4 h-4" />
+                  </div>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+                    {kpi.title}
+                  </p>
+                </div>
+
+                {/* Value */}
+                <p className="text-[28px] font-semibold tracking-tight text-neutral-900">
+                  {isLoading ? '-' : kpi.value}
+                </p>
+              </div>
+            );
+          })}
+        </section>
+
+        {/* Search & Filters */}
+        <section className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          {/* Search */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+            <input
+              type="text"
+              placeholder="Search OTAs by name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-11 pl-11 pr-4 rounded-lg text-[13px] bg-white border border-neutral-200 text-neutral-700 placeholder:text-neutral-400 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all"
+            />
+          </div>
+
+          {/* Filter Dropdown */}
+          <DropdownMenu
+            align="end"
+            trigger={
+              <button className="h-11 w-[140px] px-4 pr-3 rounded-lg text-[13px] bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all flex items-center justify-between">
+                <span>{getStatusFilterLabel()}</span>
+                <ChevronDown className="w-4 h-4 text-neutral-400" />
+              </button>
+            }
+          >
+            <DropdownMenuItem onSelect={() => setStatusFilter('all')}>
+              All ({statusCounts.all})
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setStatusFilter('connected')}>
+              Active ({statusCounts.connected})
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setStatusFilter('disconnected')}>
+              Offline ({statusCounts.disconnected})
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setStatusFilter('error')}>
+              Issues ({statusCounts.error})
+            </DropdownMenuItem>
+          </DropdownMenu>
+        </section>
+
+        {/* OTA Cards */}
+        <section className="space-y-4">
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="rounded-[10px] bg-white p-6 animate-pulse">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-neutral-100" />
+                    <div className="flex-1">
+                      <div className="h-5 w-32 bg-neutral-100 rounded mb-2" />
+                      <div className="h-4 w-48 bg-neutral-100 rounded" />
+                    </div>
+                    <div className="h-10 w-24 bg-neutral-100 rounded-lg" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredOTAs.length === 0 ? (
+            <div className="rounded-[10px] bg-white p-16 text-center">
+              <div className="w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-5 bg-neutral-50">
+                <WifiOff className="w-8 h-8 text-neutral-300" />
+              </div>
+              <h3 className="text-lg font-semibold text-neutral-900 mb-2">No OTAs found</h3>
+              <p className="text-[13px] text-neutral-500 mb-6">
+                {searchQuery || statusFilter !== 'all'
+                  ? 'Try adjusting your search or filter'
+                  : 'Get started by adding your first OTA connection'}
+              </p>
+              {!searchQuery && statusFilter === 'all' && (
+                <Button
+                  variant="primary"
+                  icon={Plus}
+                  onClick={() => setShowAddModal(true)}
+                >
+                  Add Connection
+                </Button>
+              )}
+            </div>
+          ) : (
+            filteredOTAs.map(ota => (
+              <OTAConnectionCard
+                key={ota.id}
+                ota={ota}
+                onReconnect={handleReconnect}
+                onDisconnect={handleDisconnect}
+                onEditCredentials={handleEditCredentials}
+                onViewLogs={handleViewLogs}
+                onSync={handleSync}
+                isSyncing={syncingOTAs.includes(ota.code)}
+              />
+            ))
+          )}
+        </section>
+      </div>
+
+      {/* Add Connection Modal */}
+      <AddConnectionModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onConnect={handleConnect}
+        existingConnections={otas}
+      />
+
+      {/* Edit Credentials Modal */}
+      <EditCredentialsModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedOTA(null);
+        }}
+        ota={selectedOTA}
+        onSave={handleSaveCredentials}
+      />
+
+      {/* Disconnect OTA Modal */}
+      <DisconnectOTAModal
+        isOpen={showDisconnectModal}
+        onClose={() => {
+          setShowDisconnectModal(false);
+          setOtaToDisconnect(null);
+        }}
+        ota={otaToDisconnect}
+        onConfirm={handleConfirmDisconnect}
+      />
+    </div>
+  );
+}

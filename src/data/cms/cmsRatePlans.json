@@ -1,0 +1,218 @@
+[
+  {
+    "id": "RP-001",
+    "name": "BAR",
+    "fullName": "Best Available Rate",
+    "description": "Our standard flexible rate with full cancellation policy. Best for guests who want flexibility.",
+    "status": "Active",
+    "isActive": true,
+    "mealPlan": "Room Only",
+    "commission": 0,
+    "channels": ["Direct", "OTA", "GDS"],
+    "baseRates": {
+      "Standard Double": 190,
+      "Deluxe King": 280,
+      "Deluxe Twin": 260,
+      "Executive Suite": 450,
+      "Presidential Suite": 900
+    },
+    "derivedRules": [],
+    "restrictions": {
+      "minStay": 1,
+      "maxStay": 30,
+      "CTA": false,
+      "CTD": false,
+      "advanceBooking": null,
+      "closedDates": []
+    },
+    "calendarRates": {
+      "2025-12-20": {"Standard Double": 228, "Deluxe King": 336, "Deluxe Twin": 312, "Executive Suite": 540, "Presidential Suite": 1080},
+      "2025-12-21": {"Standard Double": 228, "Deluxe King": 336, "Deluxe Twin": 312, "Executive Suite": 540, "Presidential Suite": 1080},
+      "2025-12-22": {"Standard Double": 266, "Deluxe King": 392, "Deluxe Twin": 364, "Executive Suite": 630, "Presidential Suite": 1260},
+      "2025-12-23": {"Standard Double": 285, "Deluxe King": 420, "Deluxe Twin": 390, "Executive Suite": 675, "Presidential Suite": 1350},
+      "2025-12-24": {"Standard Double": 304, "Deluxe King": 448, "Deluxe Twin": 416, "Executive Suite": 720, "Presidential Suite": 1440},
+      "2025-12-25": {"Standard Double": 304, "Deluxe King": 448, "Deluxe Twin": 416, "Executive Suite": 720, "Presidential Suite": 1440},
+      "2025-12-31": {"Standard Double": 380, "Deluxe King": 560, "Deluxe Twin": 520, "Executive Suite": 900, "Presidential Suite": 1800}
+    },
+    "cancellationPolicy": "Free cancellation up to 24 hours before arrival. Late cancellation or no-show will be charged one night.",
+    "paymentTerms": "Full payment at check-out or prepayment available",
+    "updatedAt": "2025-12-01T10:00:00Z"
+  },
+  {
+    "id": "RP-002",
+    "name": "Advance Purchase",
+    "fullName": "Advance Purchase - Non Refundable",
+    "description": "Save up to 15% when you book and pay in advance. Non-refundable rate.",
+    "status": "Active",
+    "isActive": true,
+    "mealPlan": "Room Only",
+    "commission": 0,
+    "channels": ["Direct", "OTA"],
+    "baseRates": {
+      "Standard Double": 162,
+      "Deluxe King": 238,
+      "Deluxe Twin": 221,
+      "Executive Suite": 383,
+      "Presidential Suite": 765
+    },
+    "derivedRules": [
+      {"type": "discount", "value": 15, "description": "15% off BAR"}
+    ],
+    "restrictions": {
+      "minStay": 1,
+      "maxStay": 14,
+      "CTA": false,
+      "CTD": false,
+      "advanceBooking": 7,
+      "closedDates": ["2025-12-24", "2025-12-25", "2025-12-31"]
+    },
+    "calendarRates": {
+      "2025-12-20": {"Standard Double": 194, "Deluxe King": 286, "Deluxe Twin": 265, "Executive Suite": 459, "Presidential Suite": 918},
+      "2025-12-21": {"Standard Double": 194, "Deluxe King": 286, "Deluxe Twin": 265, "Executive Suite": 459, "Presidential Suite": 918},
+      "2025-12-22": {"Standard Double": 226, "Deluxe King": 333, "Deluxe Twin": 309, "Executive Suite": 536, "Presidential Suite": 1071},
+      "2025-12-23": {"Standard Double": 242, "Deluxe King": 357, "Deluxe Twin": 332, "Executive Suite": 574, "Presidential Suite": 1148}
+    },
+    "cancellationPolicy": "Non-refundable. Full payment required at time of booking.",
+    "paymentTerms": "Full prepayment required",
+    "updatedAt": "2025-12-01T10:00:00Z"
+  },
+  {
+    "id": "RP-003",
+    "name": "Corporate",
+    "fullName": "Corporate Negotiated Rate",
+    "description": "Special rates for corporate clients with valid company agreement.",
+    "status": "Active",
+    "isActive": true,
+    "mealPlan": "Breakfast Included",
+    "commission": 5,
+    "channels": ["Direct", "GDS"],
+    "baseRates": {
+      "Standard Double": 171,
+      "Deluxe King": 252,
+      "Deluxe Twin": 234,
+      "Executive Suite": 405,
+      "Presidential Suite": 810
+    },
+    "derivedRules": [
+      {"type": "discount", "value": 10, "description": "10% corporate discount"}
+    ],
+    "restrictions": {
+      "minStay": 1,
+      "maxStay": 30,
+      "CTA": false,
+      "CTD": false,
+      "advanceBooking": null,
+      "closedDates": []
+    },
+    "calendarRates": {
+      "2025-12-20": {"Standard Double": 205, "Deluxe King": 302, "Deluxe Twin": 281, "Executive Suite": 486, "Presidential Suite": 972},
+      "2025-12-21": {"Standard Double": 205, "Deluxe King": 302, "Deluxe Twin": 281, "Executive Suite": 486, "Presidential Suite": 972},
+      "2025-12-22": {"Standard Double": 239, "Deluxe King": 353, "Deluxe Twin": 328, "Executive Suite": 567, "Presidential Suite": 1134},
+      "2025-12-23": {"Standard Double": 257, "Deluxe King": 378, "Deluxe Twin": 351, "Executive Suite": 608, "Presidential Suite": 1215},
+      "2025-12-24": {"Standard Double": 274, "Deluxe King": 403, "Deluxe Twin": 374, "Executive Suite": 648, "Presidential Suite": 1296},
+      "2025-12-25": {"Standard Double": 274, "Deluxe King": 403, "Deluxe Twin": 374, "Executive Suite": 648, "Presidential Suite": 1296}
+    },
+    "cancellationPolicy": "Free cancellation up to 6PM on day of arrival. Late cancellation charged one night.",
+    "paymentTerms": "Direct billing to company or payment at check-out",
+    "updatedAt": "2025-12-01T10:00:00Z"
+  },
+  {
+    "id": "RP-004",
+    "name": "Mobile Rate",
+    "fullName": "Mobile Exclusive Rate",
+    "description": "Exclusive discount for bookings made via our mobile app.",
+    "status": "Active",
+    "isActive": true,
+    "mealPlan": "Room Only",
+    "commission": 0,
+    "channels": ["Mobile App"],
+    "baseRates": {
+      "Standard Double": 171,
+      "Deluxe King": 252,
+      "Deluxe Twin": 234,
+      "Executive Suite": 405,
+      "Presidential Suite": 810
+    },
+    "derivedRules": [
+      {"type": "discount", "value": 10, "description": "10% mobile discount"}
+    ],
+    "restrictions": {
+      "minStay": 1,
+      "maxStay": 14,
+      "CTA": false,
+      "CTD": false,
+      "advanceBooking": null,
+      "closedDates": []
+    },
+    "calendarRates": {},
+    "cancellationPolicy": "Free cancellation up to 24 hours before arrival.",
+    "paymentTerms": "Prepayment or payment at check-out",
+    "updatedAt": "2025-12-01T10:00:00Z"
+  },
+  {
+    "id": "RP-005",
+    "name": "Walk-in Rate",
+    "fullName": "Walk-in Guest Rate",
+    "description": "Rate for guests arriving without reservation. Higher than BAR due to no advance commitment.",
+    "status": "Active",
+    "isActive": true,
+    "mealPlan": "Room Only",
+    "commission": 0,
+    "channels": ["Front Desk"],
+    "baseRates": {
+      "Standard Double": 209,
+      "Deluxe King": 308,
+      "Deluxe Twin": 286,
+      "Executive Suite": 495,
+      "Presidential Suite": 990
+    },
+    "derivedRules": [
+      {"type": "flat", "value": 10, "description": "+10% walk-in premium"}
+    ],
+    "restrictions": {
+      "minStay": 1,
+      "maxStay": 7,
+      "CTA": false,
+      "CTD": false,
+      "advanceBooking": null,
+      "closedDates": []
+    },
+    "calendarRates": {},
+    "cancellationPolicy": "Payment in full at check-in. No refund for early departure.",
+    "paymentTerms": "Full payment at check-in",
+    "updatedAt": "2025-12-01T10:00:00Z"
+  },
+  {
+    "id": "RP-006",
+    "name": "Long Stay",
+    "fullName": "Extended Stay Rate",
+    "description": "Special rate for stays of 7 nights or more. Save up to 20%.",
+    "status": "Active",
+    "isActive": true,
+    "mealPlan": "Breakfast Included",
+    "commission": 0,
+    "channels": ["Direct"],
+    "baseRates": {
+      "Standard Double": 152,
+      "Deluxe King": 224,
+      "Deluxe Twin": 208,
+      "Executive Suite": 360,
+      "Presidential Suite": 720
+    },
+    "derivedRules": [
+      {"type": "discount", "value": 20, "description": "20% long stay discount"}
+    ],
+    "restrictions": {
+      "minStay": 7,
+      "maxStay": 90,
+      "CTA": false,
+      "CTD": false,
+      "advanceBooking": 3,
+      "closedDates": ["2025-12-20", "2025-12-21", "2025-12-22", "2025-12-23", "2025-12-24", "2025-12-25", "2025-12-31"]
+    },
+    "calendarRates": {},
+    "cancellationPolicy": "Free cancellation up to 7 days before arrival. Within 7 days, first 3 nights charged.",
+    "paymentTerms": "Weekly billing or full prepayment with additional 5% discount",
+    "updatedAt": "2025-12-01T10:00:00Z"
+  }
+]

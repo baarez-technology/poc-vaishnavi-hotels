@@ -1,0 +1,256 @@
+/**
+ * RoomMapping Page
+ * Map PMS room types to OTA room types - Glimmora Design System v5.0
+ * Enhanced for consistency with OTA Connections page
+ */
+
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Link2, Sparkles, Check, AlertTriangle, Layers, Search, ChevronDown } from 'lucide-react';
+import { useChannelManager } from '../../../context/ChannelManagerContext';
+import RoomMappingTable from '../../../components/channel-manager/RoomMappingTable';
+import { Button } from '../../../components/ui2/Button';
+import { DropdownMenu, DropdownMenuItem } from '../../../components/ui2/DropdownMenu';
+
+export default function RoomMapping() {
+  const { otas, roomMappings, mapRoom } = useChannelManager();
+  const [selectedOTA, setSelectedOTA] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isAutoMapping, setIsAutoMapping] = useState(false);
+
+  // Get connected OTAs
+  const connectedOTAs = otas.filter(ota => ota.status === 'connected');
+
+  // Calculate mapping stats
+  const getMappingStats = (otaCode) => {
+    const mappedCount = roomMappings.filter(rm =>
+      rm.otaMappings?.some(om => om.otaCode === otaCode && om.status === 'active')
+    ).length;
+    return {
+      mapped: mappedCount,
+      total: 4 // 4 room types
+    };
+  };
+
+  // Get total active mappings across all OTAs
+  const getTotalActiveMappings = () => {
+    let count = 0;
+    roomMappings.forEach(rm => {
+      count += rm.otaMappings?.filter(om => om.status === 'active').length || 0;
+    });
+    return count;
+  };
+
+  const handleAutoMap = async (otaCode) => {
+    setIsAutoMapping(true);
+
+    // PMS room types
+    const pmsRoomTypes = [
+      { id: 'standard', name: 'Standard Room' },
+      { id: 'premium', name: 'Premium Room' },
+      { id: 'deluxe', name: 'Deluxe Room' },
+      { id: 'suite', name: 'Suite' }
+    ];
+
+    // Simulate AI auto-mapping
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // Auto-map suggestions
+    const suggestions = {
+      standard: 'Standard Double Room',
+      premium: 'Superior Room',
+      deluxe: 'Deluxe King Room',
+      suite: 'Executive Suite'
+    };
+
+    pmsRoomTypes.forEach(room => {
+      mapRoom(room.id, otaCode, {
+        otaRoomType: suggestions[room.id],
+        otaRoomId: `${otaCode}-${room.id}`,
+        status: 'active'
+      });
+    });
+
+    setIsAutoMapping(false);
+  };
+
+  const getFilterLabel = () => {
+    if (selectedOTA) {
+      const ota = connectedOTAs.find(o => o.code === selectedOTA);
+      const stats = getMappingStats(selectedOTA);
+      return `${ota?.name} (${stats.mapped}/${stats.total})`;
+    }
+    return `All OTAs (${connectedOTAs.length})`;
+  };
+
+  // KPI cards configuration
+  const kpiCards = [
+    {
+      icon: Link2,
+      title: 'Connected OTAs',
+      value: connectedOTAs.length,
+      accent: 'terra'
+    },
+    {
+      icon: Check,
+      title: 'Active Mappings',
+      value: getTotalActiveMappings(),
+      accent: 'sage'
+    },
+    {
+      icon: AlertTriangle,
+      title: 'Unmapped',
+      value: connectedOTAs.length * 4 - getTotalActiveMappings(),
+      accent: 'gold'
+    },
+    {
+      icon: Layers,
+      title: 'Room Types',
+      value: 4,
+      accent: 'neutral'
+    }
+  ];
+
+  const accentColors = {
+    terra: { icon: 'bg-terra-100 text-terra-600' },
+    sage: { icon: 'bg-sage-100 text-sage-600' },
+    gold: { icon: 'bg-gold-100 text-gold-600' },
+    neutral: { icon: 'bg-neutral-100 text-neutral-500' }
+  };
+
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
+      <div className="px-10 py-6 space-y-6">
+
+        {/* Page Header */}
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+              Room Mapping
+            </h1>
+            <p className="text-[13px] text-neutral-500 mt-1">
+              Map your PMS room types to OTA room types for accurate inventory sync
+            </p>
+          </div>
+        </header>
+
+        {/* KPI Cards */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {kpiCards.map((kpi, index) => {
+            const colors = accentColors[kpi.accent];
+            return (
+              <div key={index} className="rounded-[10px] bg-white p-6">
+                {/* Header with Icon */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colors.icon}`}>
+                    <kpi.icon className="w-4 h-4" />
+                  </div>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+                    {kpi.title}
+                  </p>
+                </div>
+
+                {/* Value */}
+                <p className="text-[28px] font-semibold tracking-tight text-neutral-900">
+                  {kpi.value}
+                </p>
+              </div>
+            );
+          })}
+        </section>
+
+        {/* Search & Filters */}
+        {connectedOTAs.length > 0 && (
+          <section className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+            {/* Search */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <input
+                type="text"
+                placeholder="Search room types..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-11 pl-11 pr-4 rounded-lg text-[13px] bg-white border border-neutral-200 text-neutral-700 placeholder:text-neutral-400 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all"
+              />
+            </div>
+
+            {/* Filter Dropdown */}
+            <DropdownMenu
+              align="end"
+              trigger={
+                <button className="h-11 w-[180px] px-4 pr-3 rounded-lg text-[13px] bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all flex items-center justify-between">
+                  <span>{getFilterLabel()}</span>
+                  <ChevronDown className="w-4 h-4 text-neutral-400" />
+                </button>
+              }
+            >
+              <DropdownMenuItem onSelect={() => setSelectedOTA(null)}>
+                All OTAs ({connectedOTAs.length})
+              </DropdownMenuItem>
+              {connectedOTAs.map(ota => {
+                const stats = getMappingStats(ota.code);
+                return (
+                  <DropdownMenuItem key={ota.code} onSelect={() => setSelectedOTA(ota.code)}>
+                    {ota.name} ({stats.mapped}/{stats.total})
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenu>
+          </section>
+        )}
+
+        {/* No Connected OTAs */}
+        {connectedOTAs.length === 0 && (
+          <div className="rounded-[10px] bg-white p-16 text-center">
+            <div className="w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-5 bg-neutral-50">
+              <Link2 className="w-8 h-8 text-neutral-300" />
+            </div>
+            <h3 className="text-lg font-semibold text-neutral-900 mb-2">No Connected OTAs</h3>
+            <p className="text-[13px] text-neutral-500 mb-6">
+              Connect to an OTA first to start mapping room types
+            </p>
+            <Button
+              variant="primary"
+              icon={Link2}
+              onClick={() => window.location.href = '/admin/channel-manager/ota'}
+            >
+              Go to OTA Connections
+            </Button>
+          </div>
+        )}
+
+        {/* Mapping Tables */}
+        {connectedOTAs.length > 0 && (
+          <section className="space-y-4">
+            {(selectedOTA ? connectedOTAs.filter(o => o.code === selectedOTA) : connectedOTAs).map(ota => (
+              <RoomMappingTable
+                key={ota.code}
+                otaCode={ota.code}
+                onAutoMap={() => handleAutoMap(ota.code)}
+                searchQuery={searchQuery}
+              />
+            ))}
+          </section>
+        )}
+      </div>
+
+      {/* Auto-Map Overlay */}
+      {isAutoMapping && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="rounded-[10px] bg-white p-8 text-center max-w-sm mx-4">
+            <div className="w-16 h-16 rounded-lg bg-terra-50 flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="w-8 h-8 animate-pulse text-terra-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+              Auto-Mapping Rooms
+            </h3>
+            <p className="text-[13px] text-neutral-500">
+              AI is analyzing room types and suggesting optimal mappings...
+            </p>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}

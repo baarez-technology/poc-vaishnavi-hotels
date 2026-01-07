@@ -1,0 +1,636 @@
+/**
+ * Restrictions Page
+ * Manage booking restrictions (CTA, CTD, Stop Sell, Min/Max Stay) - Glimmora Design System v5.0
+ * Consistent with RateSync, OTAConnections, and RoomMapping pages
+ */
+
+import { useState, useEffect, useRef } from 'react';
+import {
+  Plus, Calendar, Edit2, Trash2, ToggleRight, Shield, Ban, Clock,
+  Search, ChevronDown, Check, AlertTriangle
+} from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { useChannelManager } from '../../../context/ChannelManagerContext';
+import { useToast } from '../../../contexts/ToastContext';
+import RestrictionDrawer from '../../../components/channel-manager/RestrictionDrawer';
+import { Button, IconButton } from '../../../components/ui2/Button';
+import { Modal } from '../../../components/ui2/Modal';
+
+// Custom Select Dropdown Component - Glimmora Design System v5.0
+function SelectDropdown({ value, onChange, options, placeholder = 'Select...', className = '' }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [position, setPosition] = useState(null);
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const selectedOption = options.find(opt => opt.value === value);
+
+  const calculatePosition = () => {
+    if (!triggerRef.current) return null;
+    const rect = triggerRef.current.getBoundingClientRect();
+    return {
+      top: rect.bottom + 4,
+      left: rect.left,
+      width: rect.width
+    };
+  };
+
+  const handleToggle = () => {
+    if (isOpen) {
+      setIsOpen(false);
+      setPosition(null);
+    } else {
+      setPosition(calculatePosition());
+      setIsOpen(true);
+    }
+  };
+
+  const handleSelect = (optionValue) => {
+    onChange(optionValue);
+    setIsOpen(false);
+    setPosition(null);
+  };
+
+  // Close on click outside
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (e) => {
+      if (!triggerRef.current?.contains(e.target) && !menuRef.current?.contains(e.target)) {
+        setIsOpen(false);
+        setPosition(null);
+      }
+    };
+
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        setPosition(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [isOpen]);
+
+  // Update position on scroll
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const updatePosition = () => {
+      setPosition(calculatePosition());
+    };
+
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [isOpen]);
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={handleToggle}
+        className={`h-11 px-4 rounded-lg text-[13px] bg-white border text-left flex items-center justify-between gap-2 transition-all ${
+          isOpen
+            ? 'border-terra-400 ring-2 ring-terra-500/10'
+            : 'border-neutral-200 hover:border-neutral-300'
+        } ${className}`}
+      >
+        <span className={selectedOption ? 'text-neutral-700' : 'text-neutral-400'}>
+          {selectedOption?.label || placeholder}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && position && createPortal(
+        <div
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: `${position.top}px`,
+            left: `${position.left}px`,
+            width: `${position.width}px`,
+            zIndex: 9999
+          }}
+          className="bg-white rounded-lg border border-neutral-200 shadow-lg shadow-neutral-900/10 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-100"
+        >
+          <div className="py-1 max-h-60 overflow-y-auto">
+            {options.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleSelect(option.value)}
+                className={`w-full px-3 py-2.5 text-left text-[13px] flex items-center justify-between transition-colors ${
+                  value === option.value
+                    ? 'bg-terra-50 text-terra-700 font-medium'
+                    : 'text-neutral-700 hover:bg-neutral-50'
+                }`}
+              >
+                <span>{option.label}</span>
+                {value === option.value && <Check className="w-4 h-4 text-terra-500" />}
+              </button>
+            ))}
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
+export default function Restrictions() {
+  const { restrictions, otas, setRestriction, removeRestriction, toggleRestrictionStatus } = useChannelManager();
+  const toast = useToast();
+  const [showDrawer, setShowDrawer] = useState(false);
+  const [editingRestriction, setEditingRestriction] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, restriction: null });
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter state - single select dropdowns
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'inactive'
+  const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'stopSell' | 'cta' | 'ctd' | 'minStay' | 'maxStay'
+
+  const connectedOTAs = otas.filter(o => o.status === 'connected');
+
+  // Filter restrictions based on search query and filters
+  const filteredRestrictions = restrictions.filter(restriction => {
+    // Status filter
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'active' && !restriction.isActive) return false;
+      if (statusFilter === 'inactive' && restriction.isActive) return false;
+    }
+
+    // Type filter
+    if (typeFilter !== 'all') {
+      const hasStopSell = restriction.restriction.stopSell;
+      const hasCta = restriction.restriction.cta;
+      const hasCtd = restriction.restriction.ctd;
+      const hasMinStay = restriction.restriction.minStay > 1;
+      const hasMaxStay = restriction.restriction.maxStay > 0;
+
+      if (typeFilter === 'stopSell' && !hasStopSell) return false;
+      if (typeFilter === 'cta' && !hasCta) return false;
+      if (typeFilter === 'ctd' && !hasCtd) return false;
+      if (typeFilter === 'minStay' && !hasMinStay) return false;
+      if (typeFilter === 'maxStay' && !hasMaxStay) return false;
+    }
+
+    // Search query
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    const roomType = restriction.roomType === 'ALL' ? 'all rooms' : restriction.roomType.toLowerCase();
+    const channel = restriction.otaCode === 'ALL' ? 'all channels' : (otas.find(o => o.code === restriction.otaCode)?.name || restriction.otaCode).toLowerCase();
+    const reason = (restriction.reason || '').toLowerCase();
+    return roomType.includes(query) || channel.includes(query) || reason.includes(query);
+  });
+
+  // Get restriction type label and styling
+  const getRestrictionInfo = (restriction) => {
+    const types = [];
+    if (restriction.restriction.stopSell) {
+      types.push({ label: 'Stop Sell', color: 'rose' });
+    }
+    if (restriction.restriction.cta) {
+      types.push({ label: 'CTA', color: 'gold' });
+    }
+    if (restriction.restriction.ctd) {
+      types.push({ label: 'CTD', color: 'sage' });
+    }
+    if (restriction.restriction.minStay > 1) {
+      types.push({ label: `Min ${restriction.restriction.minStay}N`, color: 'terra' });
+    }
+    if (restriction.restriction.maxStay) {
+      types.push({ label: `Max ${restriction.restriction.maxStay}N`, color: 'terra' });
+    }
+    return types;
+  };
+
+  // Stats
+  const stats = {
+    total: restrictions.length,
+    active: restrictions.filter(r => r.isActive).length,
+    stopSell: restrictions.filter(r => r.restriction.stopSell && r.isActive).length,
+    minStay: restrictions.filter(r => r.restriction.minStay > 1 && r.isActive).length
+  };
+
+  // KPI cards configuration
+  const kpiCards = [
+    {
+      icon: Calendar,
+      title: 'Total Rules',
+      value: stats.total,
+      accent: 'terra'
+    },
+    {
+      icon: ToggleRight,
+      title: 'Active',
+      value: stats.active,
+      accent: 'sage'
+    },
+    {
+      icon: Ban,
+      title: 'Stop Sell',
+      value: stats.stopSell,
+      accent: 'rose'
+    },
+    {
+      icon: Clock,
+      title: 'Min Stay',
+      value: stats.minStay,
+      accent: 'gold'
+    }
+  ];
+
+  const accentColors = {
+    terra: { icon: 'bg-terra-100 text-terra-600' },
+    sage: { icon: 'bg-sage-100 text-sage-600' },
+    gold: { icon: 'bg-gold-100 text-gold-600' },
+    rose: { icon: 'bg-rose-100 text-rose-600' },
+    neutral: { icon: 'bg-neutral-100 text-neutral-500' }
+  };
+
+  const handleEdit = (restriction) => {
+    setEditingRestriction(restriction);
+    setShowDrawer(true);
+  };
+
+  const handleCreate = () => {
+    setEditingRestriction(null);
+    setShowDrawer(true);
+  };
+
+  const handleSave = (data, isEditing) => {
+    setRestriction(data);
+    if (isEditing) {
+      toast.success('Restriction updated successfully');
+    } else {
+      toast.success('Restriction created successfully');
+    }
+  };
+
+  const handleDelete = (restriction) => {
+    setDeleteConfirm({ isOpen: true, restriction });
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirm.restriction) {
+      removeRestriction(deleteConfirm.restriction.id);
+      toast.success('Restriction deleted successfully');
+    }
+    setDeleteConfirm({ isOpen: false, restriction: null });
+  };
+
+  const handleToggleActive = (restriction) => {
+    toggleRestrictionStatus(restriction.id);
+    const newStatus = !restriction.isActive;
+    toast.success(`Restriction ${newStatus ? 'activated' : 'deactivated'} successfully`);
+  };
+
+  const formatDateRange = (dateRange) => {
+    const start = new Date(dateRange.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const end = new Date(dateRange.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return `${start} - ${end}`;
+  };
+
+  // Calculate duration in days
+  const getDuration = (dateRange) => {
+    const start = new Date(dateRange.start);
+    const end = new Date(dateRange.end);
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    if (diffDays === 1) return '1 day';
+    if (diffDays === 7) return '1 week';
+    if (diffDays === 14) return '2 weeks';
+    return `${diffDays} days`;
+  };
+
+  const getOTAName = (code) => {
+    if (code === 'ALL') return 'All OTAs';
+    return otas.find(o => o.code === code)?.name || code;
+  };
+
+  // Get restriction badge colors
+  const getRestrictionBadgeClasses = (color) => {
+    const colorMap = {
+      rose: 'bg-rose-100 text-rose-700',
+      gold: 'bg-gold-100 text-gold-700',
+      sage: 'bg-sage-100 text-sage-700',
+      terra: 'bg-terra-100 text-terra-700',
+    };
+    return colorMap[color] || 'bg-neutral-100 text-neutral-700';
+  };
+
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
+      <div className="px-10 py-6 space-y-6">
+
+        {/* Page Header */}
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+              Restrictions
+            </h1>
+            <p className="text-[13px] text-neutral-500 mt-1">
+              Manage booking restrictions across your distribution channels
+            </p>
+          </div>
+          <Button variant="primary" icon={Plus} onClick={handleCreate}>
+            Add Restriction
+          </Button>
+        </header>
+
+        {/* KPI Cards */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {kpiCards.map((kpi, index) => {
+            const colors = accentColors[kpi.accent];
+            return (
+              <div key={index} className="rounded-[10px] bg-white p-6">
+                {/* Header with Icon */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colors.icon}`}>
+                    <kpi.icon className="w-4 h-4" />
+                  </div>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+                    {kpi.title}
+                  </p>
+                </div>
+
+                {/* Value */}
+                <p className="text-[28px] font-semibold tracking-tight text-neutral-900">
+                  {kpi.value}
+                </p>
+              </div>
+            );
+          })}
+        </section>
+
+        {/* Search & Filters */}
+        <section className="flex items-center gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+            <input
+              type="text"
+              placeholder="Search by room, channel, or reason..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-11 pl-11 pr-4 rounded-lg text-[13px] bg-white border border-neutral-200 text-neutral-700 placeholder:text-neutral-400 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all"
+            />
+          </div>
+
+          {/* Status Filter Dropdown */}
+          <SelectDropdown
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              { value: 'all', label: 'All Status' },
+              { value: 'active', label: 'Active' },
+              { value: 'inactive', label: 'Inactive' }
+            ]}
+            placeholder="All Status"
+            className="min-w-[140px]"
+          />
+
+          {/* Restriction Type Filter Dropdown */}
+          <SelectDropdown
+            value={typeFilter}
+            onChange={setTypeFilter}
+            options={[
+              { value: 'all', label: 'All Restriction Types' },
+              { value: 'stopSell', label: 'Stop Sell' },
+              { value: 'cta', label: 'CTA (Close to Arrival)' },
+              { value: 'ctd', label: 'CTD (Close to Departure)' },
+              { value: 'minStay', label: 'Min Stay' },
+              { value: 'maxStay', label: 'Max Stay' }
+            ]}
+            placeholder="All Restriction Types"
+            className="min-w-[200px]"
+          />
+        </section>
+
+        {/* Restriction Rules Table */}
+        <section className="rounded-[10px] bg-white overflow-hidden">
+          {/* Empty State */}
+          {filteredRestrictions.length === 0 ? (
+            <div className="px-6 py-16 text-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-16 h-16 rounded-lg bg-neutral-50 flex items-center justify-center">
+                  <Shield className="w-8 h-8 text-neutral-300" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[13px] font-medium text-neutral-600">
+                    {searchQuery ? 'No restrictions match your search' : 'No restrictions configured'}
+                  </p>
+                  <p className="text-[11px] text-neutral-400">
+                    {searchQuery ? 'Try adjusting your search terms' : 'Create your first restriction to control booking availability'}
+                  </p>
+                </div>
+                {!searchQuery && (
+                  <Button variant="primary" icon={Plus} onClick={handleCreate} className="mt-2">
+                    Add Restriction
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-neutral-50/30 border-b border-neutral-100">
+                      <th className="py-4 px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                        Date Range
+                      </th>
+                      <th className="py-4 px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                        Room Type
+                      </th>
+                      <th className="py-4 px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                        Channel
+                      </th>
+                      <th className="py-4 px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                        Restriction
+                      </th>
+                      <th className="py-4 px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                        Reason
+                      </th>
+                      <th className="py-4 px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                        Status
+                      </th>
+                      <th className="py-4 px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {filteredRestrictions.map(restriction => {
+                      const types = getRestrictionInfo(restriction);
+                      const ota = otas.find(o => o.code === restriction.otaCode);
+
+                      return (
+                        <tr
+                          key={restriction.id}
+                          className={`hover:bg-neutral-50/30 transition-colors ${!restriction.isActive ? 'opacity-50' : ''}`}
+                        >
+                          {/* Date Range */}
+                          <td className="py-4 px-6">
+                            <div className="flex flex-col">
+                              <span className="text-[13px] font-semibold text-neutral-900">
+                                {formatDateRange(restriction.dateRange)}
+                              </span>
+                              <span className="text-[10px] text-neutral-400 mt-0.5">
+                                {getDuration(restriction.dateRange)}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Room Type */}
+                          <td className="py-4 px-6">
+                            <span className="text-[13px] font-medium text-neutral-700">
+                              {restriction.roomType === 'ALL' ? 'All Rooms' : restriction.roomType}
+                            </span>
+                          </td>
+
+                          {/* Channel */}
+                          <td className="py-4 px-6">
+                            <span className="text-[13px] font-medium text-neutral-700">
+                              {restriction.otaCode === 'ALL' ? 'All Channels' : (ota?.name || restriction.otaCode)}
+                            </span>
+                          </td>
+
+                          {/* Restriction Type */}
+                          <td className="py-4 px-6">
+                            <div className="flex flex-wrap gap-1.5">
+                              {types.map((type, idx) => (
+                                <span
+                                  key={idx}
+                                  className={`inline-flex px-2.5 py-1 rounded-lg text-[11px] font-medium ${getRestrictionBadgeClasses(type.color)}`}
+                                >
+                                  {type.label}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+
+                          {/* Reason */}
+                          <td className="py-4 px-6">
+                            <p className="text-[12px] text-neutral-500 max-w-[180px] line-clamp-2">
+                              {restriction.reason || <span className="italic text-neutral-400">No reason specified</span>}
+                            </p>
+                          </td>
+
+                          {/* Status */}
+                          <td className="py-4 px-6">
+                            <button
+                              onClick={() => handleToggleActive(restriction)}
+                              className={`inline-flex px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${
+                                restriction.isActive
+                                  ? 'bg-sage-50 text-sage-600 hover:bg-sage-100'
+                                  : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
+                              }`}
+                            >
+                              {restriction.isActive ? 'Active' : 'Inactive'}
+                            </button>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="py-4 px-6 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <IconButton
+                                icon={Edit2}
+                                variant="ghost"
+                                size="sm"
+                                label="Edit restriction"
+                                onClick={() => handleEdit(restriction)}
+                              />
+                              <IconButton
+                                icon={Trash2}
+                                variant="ghost"
+                                size="sm"
+                                label="Delete restriction"
+                                onClick={() => handleDelete(restriction)}
+                                className="hover:text-rose-600 hover:bg-rose-50"
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+            </>
+          )}
+        </section>
+      </div>
+
+      {/* Drawer */}
+      <RestrictionDrawer
+        isOpen={showDrawer}
+        onClose={() => {
+          setShowDrawer(false);
+          setEditingRestriction(null);
+        }}
+        restriction={editingRestriction}
+        onSave={handleSave}
+        onDelete={(id) => {
+          removeRestriction(id);
+          setShowDrawer(false);
+          setEditingRestriction(null);
+          toast.success('Restriction deleted successfully');
+        }}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        open={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, restriction: null })}
+        size="sm"
+        showClose={false}
+      >
+        <div className="p-6">
+          {/* Warning Icon */}
+          <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center mb-4">
+            <AlertTriangle className="w-6 h-6 text-rose-600" />
+          </div>
+
+          {/* Title */}
+          <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+            Delete Restriction
+          </h3>
+
+          {/* Description */}
+          <p className="text-[13px] text-neutral-500 leading-relaxed">
+            Are you sure you want to delete this restriction? This action cannot be undone.
+          </p>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-100 bg-neutral-50/50">
+          <Button
+            variant="ghost"
+            onClick={() => setDeleteConfirm({ isOpen: false, restriction: null })}
+            className="px-5 py-2 text-[13px] font-semibold"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={confirmDelete}
+            className="px-5 py-2 text-[13px] font-semibold"
+          >
+            Delete
+          </Button>
+        </div>
+      </Modal>
+    </div>
+  );
+}

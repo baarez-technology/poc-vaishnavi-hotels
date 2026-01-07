@@ -1,0 +1,540 @@
+import React, { forwardRef, useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { cn } from '../../lib/utils';
+import { Search, Eye, EyeOff, X, ChevronDown, Calendar, Check } from 'lucide-react';
+
+/**
+ * Glimmora Design System v4.0 - Input Components
+ * Form inputs with consistent styling and focus states
+ */
+
+const SIZE = {
+  sm: 'h-8 px-3 text-xs rounded-lg',
+  md: 'h-9 px-3.5 text-sm rounded-lg',
+  lg: 'h-10 px-4 text-sm rounded-xl',
+  xl: 'h-12 px-4 text-base rounded-xl',
+};
+
+const baseStyles = `
+  w-full bg-white border border-neutral-200
+  text-neutral-900 placeholder:text-neutral-400
+  transition-all duration-150
+  focus:outline-none focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10
+  disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed
+  hover:border-neutral-300
+`;
+
+// Basic Input
+export const Input = forwardRef(function Input({
+  className,
+  size = 'md',
+  error,
+  icon: Icon,
+  iconRight: IconRight,
+  onClear,
+  ...props
+}, ref) {
+  return (
+    <div className="relative">
+      {Icon && (
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none">
+          <Icon className="w-4 h-4" />
+        </div>
+      )}
+      <input
+        ref={ref}
+        className={cn(
+          baseStyles,
+          SIZE[size],
+          Icon && 'pl-9',
+          (IconRight || onClear) && 'pr-9',
+          error && 'border-rose-300 focus:border-rose-400 focus:ring-rose-500/10',
+          className
+        )}
+        {...props}
+      />
+      {IconRight && !onClear && (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none">
+          <IconRight className="w-4 h-4" />
+        </div>
+      )}
+      {onClear && props.value && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
+});
+
+// Password Input with toggle
+export const PasswordInput = forwardRef(function PasswordInput({
+  className,
+  size = 'md',
+  error,
+  ...props
+}, ref) {
+  const [show, setShow] = useState(false);
+
+  return (
+    <div className="relative">
+      <input
+        ref={ref}
+        type={show ? 'text' : 'password'}
+        className={cn(
+          baseStyles,
+          SIZE[size],
+          'pr-10',
+          error && 'border-rose-300 focus:border-rose-400 focus:ring-rose-500/10',
+          className
+        )}
+        {...props}
+      />
+      <button
+        type="button"
+        onClick={() => setShow(!show)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
+        tabIndex={-1}
+      >
+        {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+      </button>
+    </div>
+  );
+});
+
+// Search Input
+export const SearchInput = forwardRef(function SearchInput({
+  className,
+  size = 'md',
+  onClear,
+  placeholder = 'Search...',
+  ...props
+}, ref) {
+  return (
+    <div className="relative">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+      <input
+        ref={ref}
+        type="search"
+        placeholder={placeholder}
+        className={cn(
+          baseStyles,
+          SIZE[size],
+          'pl-9',
+          props.value && 'pr-9',
+          className
+        )}
+        {...props}
+      />
+      {props.value && onClear && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
+});
+
+// Select Input
+export const Select = forwardRef(function Select({
+  className,
+  size = 'md',
+  error,
+  placeholder,
+  children,
+  ...props
+}, ref) {
+  return (
+    <div className="relative">
+      <select
+        ref={ref}
+        className={cn(
+          baseStyles,
+          SIZE[size],
+          'pr-10 appearance-none cursor-pointer',
+          error && 'border-rose-300 focus:border-rose-400 focus:ring-rose-500/10',
+          !props.value && 'text-neutral-400',
+          className
+        )}
+        {...props}
+      >
+        {placeholder && (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        )}
+        {children}
+      </select>
+      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+    </div>
+  );
+});
+
+// Textarea
+export const Textarea = forwardRef(function Textarea({
+  className,
+  error,
+  rows = 4,
+  ...props
+}, ref) {
+  return (
+    <textarea
+      ref={ref}
+      rows={rows}
+      className={cn(
+        'w-full bg-white border border-neutral-200 rounded-xl px-3.5 py-2.5',
+        'text-sm text-neutral-900 placeholder:text-neutral-400',
+        'transition-all duration-150 resize-none',
+        'focus:outline-none focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10',
+        'disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed',
+        'hover:border-neutral-300',
+        error && 'border-rose-300 focus:border-rose-400 focus:ring-rose-500/10',
+        className
+      )}
+      {...props}
+    />
+  );
+});
+
+// Checkbox
+export const Checkbox = forwardRef(function Checkbox({
+  className,
+  label,
+  description,
+  error,
+  ...props
+}, ref) {
+  return (
+    <label className={cn('flex items-start gap-3 cursor-pointer group', className)}>
+      <div className="relative flex-shrink-0 mt-0.5">
+        <input
+          ref={ref}
+          type="checkbox"
+          className="peer sr-only"
+          {...props}
+        />
+        <div className={cn(
+          'w-4 h-4 rounded border-2 border-neutral-300 bg-white',
+          'transition-all duration-150',
+          'peer-hover:border-terra-400',
+          'peer-focus:ring-2 peer-focus:ring-terra-500/20',
+          'peer-checked:bg-terra-500 peer-checked:border-terra-500',
+          'peer-disabled:opacity-50 peer-disabled:cursor-not-allowed',
+          error && 'border-rose-300'
+        )} />
+        <Check className="absolute top-0.5 left-0.5 w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
+      </div>
+      {(label || description) && (
+        <div className="flex-1">
+          {label && <p className="text-[13px] font-medium text-neutral-900 group-hover:text-neutral-700">{label}</p>}
+          {description && <p className="text-[11px] text-neutral-500 mt-0.5">{description}</p>}
+        </div>
+      )}
+    </label>
+  );
+});
+
+// Radio Button
+export const Radio = forwardRef(function Radio({
+  className,
+  label,
+  description,
+  ...props
+}, ref) {
+  return (
+    <label className={cn('flex items-start gap-3 cursor-pointer group', className)}>
+      <div className="relative flex-shrink-0 mt-0.5">
+        <input
+          ref={ref}
+          type="radio"
+          className="peer sr-only"
+          {...props}
+        />
+        <div className={cn(
+          'w-4 h-4 rounded-full border-2 border-neutral-300 bg-white',
+          'transition-all duration-150',
+          'peer-hover:border-terra-400',
+          'peer-focus:ring-2 peer-focus:ring-terra-500/20',
+          'peer-checked:border-terra-500',
+          'peer-disabled:opacity-50 peer-disabled:cursor-not-allowed'
+        )} />
+        <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-terra-500 scale-0 peer-checked:scale-100 transition-transform" />
+      </div>
+      {(label || description) && (
+        <div className="flex-1">
+          {label && <p className="text-[13px] font-medium text-neutral-900 group-hover:text-neutral-700">{label}</p>}
+          {description && <p className="text-[11px] text-neutral-500 mt-0.5">{description}</p>}
+        </div>
+      )}
+    </label>
+  );
+});
+
+// Form Field Wrapper with label and error
+export function FormField({
+  className,
+  label,
+  description,
+  error,
+  required,
+  children,
+}) {
+  return (
+    <div className={cn('space-y-2', className)}>
+      {label && (
+        <label className="block text-[13px] font-medium text-neutral-700">
+          {label}
+          {required && <span className="text-rose-500 ml-0.5">*</span>}
+        </label>
+      )}
+      {description && (
+        <p className="text-[11px] text-neutral-400 font-medium -mt-1">{description}</p>
+      )}
+      {children}
+      {error && (
+        <p className="text-[11px] text-rose-600 mt-1.5 flex items-center gap-1">{error}</p>
+      )}
+    </div>
+  );
+}
+
+// Input Group
+export function InputGroup({ children, className }) {
+  return (
+    <div
+      className={cn(
+        'flex items-center',
+        '[&>*]:rounded-none',
+        '[&>*:first-child]:rounded-l-lg',
+        '[&>*:last-child]:rounded-r-lg',
+        '[&>*:not(:last-child)]:border-r-0',
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+// Input Addon (prefix/suffix for input group)
+export function InputAddon({ children, className, position = 'left' }) {
+  return (
+    <div
+      className={cn(
+        'flex items-center justify-center px-3 h-9',
+        'bg-neutral-100 border border-neutral-200',
+        'text-sm text-neutral-500',
+        position === 'left' ? 'border-r-0 rounded-l-lg' : 'border-l-0 rounded-r-lg',
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+// Custom Select Dropdown with styled options
+interface SelectOption {
+  value: string;
+  label: string;
+  [key: string]: unknown;
+}
+
+interface SelectDropdownProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: SelectOption[];
+  placeholder?: string;
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+  className?: string;
+}
+
+export function SelectDropdown({
+  value,
+  onChange,
+  options = [],
+  placeholder = 'Select...',
+  size = 'md',
+  disabled = false,
+  className,
+}: SelectDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState(null);
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const selectedOption = options.find(opt => opt.value === value);
+
+  const calculatePosition = (triggerRect, menuHeight = 240) => {
+    const padding = 4;
+    const spaceBelow = window.innerHeight - triggerRect.bottom - padding;
+    const spaceAbove = triggerRect.top - padding;
+
+    let top;
+    if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+      top = triggerRect.top - Math.min(menuHeight, spaceAbove) - padding;
+    } else {
+      top = triggerRect.bottom + padding;
+    }
+
+    return {
+      top,
+      left: triggerRect.left,
+      width: triggerRect.width,
+    };
+  };
+
+  const handleToggle = () => {
+    if (disabled) return;
+    if (open) {
+      setOpen(false);
+      setPosition(null);
+    } else {
+      if (triggerRef.current) {
+        const rect = triggerRef.current.getBoundingClientRect();
+        setPosition(calculatePosition(rect));
+        setOpen(true);
+      }
+    }
+  };
+
+  const handleSelect = (optionValue) => {
+    onChange(optionValue);
+    setOpen(false);
+    setPosition(null);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleClickOutside = (e) => {
+      if (
+        !triggerRef.current?.contains(e.target) &&
+        !menuRef.current?.contains(e.target)
+      ) {
+        setOpen(false);
+        setPosition(null);
+      }
+    };
+
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        setPosition(null);
+      }
+    };
+
+    const handleScroll = () => {
+      if (triggerRef.current) {
+        const rect = triggerRef.current.getBoundingClientRect();
+        setPosition(calculatePosition(rect));
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    window.addEventListener('scroll', handleScroll, true);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [open]);
+
+  const sizeClasses = {
+    sm: 'h-8 px-3 text-xs',
+    md: 'h-9 px-3.5 text-sm',
+    lg: 'h-10 px-4 text-sm',
+  };
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={handleToggle}
+        disabled={disabled}
+        className={cn(
+          'w-full bg-white border border-neutral-200 rounded-lg',
+          'flex items-center justify-between gap-2',
+          'transition-all duration-150',
+          'focus:outline-none focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10',
+          'hover:border-neutral-300',
+          'disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed',
+          open && 'border-terra-400 ring-2 ring-terra-500/10',
+          sizeClasses[size],
+          className
+        )}
+      >
+        <span className={cn(
+          'truncate',
+          selectedOption ? 'text-neutral-900' : 'text-neutral-400'
+        )}>
+          {selectedOption?.label || placeholder}
+        </span>
+        <ChevronDown className={cn(
+          'w-4 h-4 text-neutral-400 flex-shrink-0 transition-transform duration-200',
+          open && 'rotate-180'
+        )} />
+      </button>
+
+      {open && position && createPortal(
+        <div
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: `${position.top}px`,
+            left: `${position.left}px`,
+            width: `${position.width}px`,
+            zIndex: 9999,
+          }}
+          className={cn(
+            'bg-white rounded-lg',
+            'border border-neutral-200',
+            'shadow-lg shadow-neutral-900/10',
+            'overflow-hidden',
+            'animate-in fade-in-0 zoom-in-95 duration-100'
+          )}
+        >
+          <div className="max-h-[240px] overflow-y-auto py-1">
+            {options.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleSelect(option.value)}
+                className={cn(
+                  'w-full flex items-center gap-2.5 px-3 py-2',
+                  'text-[13px] font-medium text-left',
+                  'transition-colors duration-100',
+                  'hover:bg-neutral-100',
+                  value === option.value && 'bg-neutral-100 text-neutral-900'
+                )}
+              >
+                <span className="flex-1">{option.label}</span>
+                {value === option.value && (
+                  <Check className="w-4 h-4 text-neutral-600" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
+
+
+
+

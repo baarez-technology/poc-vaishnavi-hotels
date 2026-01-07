@@ -1,0 +1,1136 @@
+/**
+ * CBS Context - Central Booking System Inventory Engine
+ * Manages bookings, availability, rate plans, and promotions
+ * Now integrated with CMS Zustand stores for unified state management
+ * Connected to backend API for real data
+ */
+
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { statusConfig } from '../data/cbs/sampleBookings';
+import { sampleRatePlans } from '../data/cbs/sampleRatePlans';
+import { samplePromotions } from '../data/cbs/samplePromotions';
+import { sampleAvailability, checkAvailability, getCalendarDates } from '../data/cbs/sampleAvailability';
+import { roomsData } from '../data/roomsData';
+import { apiClient } from '../api/client';
+
+// Import CMS Zustand stores for enhanced functionality
+import useCMSBookings from '../state/cms/useCMSBookings';
+import useCMSAvailability from '../state/cms/useCMSAvailability';
+import useCMSRatePlans from '../state/cms/useCMSRatePlans';
+import useCMSPromotions from '../state/cms/useCMSPromotions';
+import useCMSEngine from '../state/cms/useCMSEngine';
+
+const CBSContext = createContext(null);
+
+const STORAGE_KEY = 'cbs_data';
+
+function loadFromStorage() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error('Failed to load CBS data from storage:', e);
+  }
+  return null;
+}
+
+function saveToStorage(data) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.error('Failed to save CBS data to storage:', e);
+  }
+}
+
+export function CBSProvider({ children }) {
+  const stored = loadFromStorage();
+
+  const [bookings, setBookings] = useState(stored?.bookings || []);
+  const [availability, setAvailability] = useState(stored?.availability || sampleAvailability);
+  const [ratePlans, setRatePlans] = useState(stored?.ratePlans || sampleRatePlans);
+  const [promotions, setPromotions] = useState(stored?.promotions || samplePromotions);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // CMS Zustand stores - these provide enhanced functionality and are persisted separately
+  const cmsBookings = useCMSBookings();
+  const cmsAvailability = useCMSAvailability();
+  const cmsRatePlans = useCMSRatePlans();
+  const cmsPromotions = useCMSPromotions();
+  const cmsEngine = useCMSEngine();
+
+  // Persist to localStorage whenever data changes
+  useEffect(() => {
+    saveToStorage({ bookings, availability, ratePlans, promotions });
+  }, [bookings, availability, ratePlans, promotions]);
+
+  // Fetch bookings, rate plans, and promotions from API on mount
+  useEffect(() => {
+    const fetchFromApi = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch bookings from API
+        const bookingsResponse = await apiClient.get('/api/v1/bookings', {
+          params: { pageSize: 1000 }
+        });
+        const apiBookings = bookingsResponse.data?.items || bookingsResponse.data?.data?.items || [];
+
+        if (apiBookings.length > 0) {
+          const transformedBookings = apiBookings.map((b: any) => {
+            const guest = b.guestInfo;
+            const guestName = `${guest?.firstName || ''} ${guest?.lastName || ''}`.trim() || 'Guest';
+
+            const statusMap: Record<string, string> = {
+              'confirmed': 'CONFIRMED',
+              'pending': 'PENDING',
+              'checked-in': 'CHECKED-IN',
+              'checked_in': 'CHECKED-IN',
+              'checked-out': 'CHECKED-OUT',
+              'checked_out': 'CHECKED-OUT',
+              'cancelled': 'CANCELLED',
+            };
+
+            // Calculate payment amounts
+            const totalPrice = b.totalPrice || b.total_price || 0;
+            const depositAmount = b.depositAmount || b.deposit_amount || 0;
+            const balanceDue = b.balanceDue || b.balance_due;
+
+            // If payment_status is 'paid', amount paid = total price
+            // If payment_status is 'partial', amount paid = deposit amount
+            // Otherwise, use balance_due to calculate amount paid
+            let amountPaid = 0;
+            let balance = totalPrice;
+
+            if (b.payment_status === 'paid') {
+              amountPaid = totalPrice;
+              balance = 0;
+            } else if (b.payment_status === 'partial' || depositAmount > 0) {
+              amountPaid = depositAmount;
+              balance = balanceDue !== null && balanceDue !== undefined ? balanceDue : (totalPrice - depositAmount);
+            } else if (balanceDue !== null && balanceDue !== undefined) {
+              amountPaid = totalPrice - balanceDue;
+              balance = balanceDue;
+            }
+
+            return {
+              id: b.bookingNumber || b.id,
+              guestName: guestName,
+              guestEmail: guest?.email || '',
+              guestPhone: guest?.phone || '',
+              isVip: b.vipStatus || b.vip_flag || false,
+              checkIn: b.checkIn || b.arrival_date,
+              checkOut: b.checkOut || b.departure_date,
+              nights: b.nights || 1,
+              roomType: b.room?.name || 'Standard',
+              roomNumber: b.room?.number || null,
+              ratePlan: 'BAR',
+              adults: (b.guests?.adults || b.adults || 1),
+              children: (b.guests?.children || b.children || 0),
+              status: statusMap[b.status?.toLowerCase()] || 'CONFIRMED',
+              source: b.bookingSource || b.booking_source || 'Direct',
+              amount: totalPrice,
+              amountPaid: amountPaid,
+              balance: balance,
+              paymentStatus: b.payment_status || 'pending',
+              specialRequests: guest?.specialRequests || b.special_requests || '',
+              createdAt: b.createdAt || b.created_at || new Date().toISOString(),
+              createdBy: 'System',
+              payments: depositAmount > 0 ? [{
+                id: `PAY-${b.id || Date.now()}`,
+                date: b.createdAt || b.created_at || new Date().toISOString(),
+                amount: depositAmount,
+                method: 'Card',
+                status: 'completed'
+              }] : [],
+              activityLog: [
+                {
+                  date: b.createdAt || b.created_at || new Date().toISOString(),
+                  action: 'Booking created',
+                  user: 'System'
+                }
+              ]
+            };
+          });
+          setBookings(transformedBookings);
+        } else {
+          setBookings([]);
+        }
+
+        // Fetch rate plans from API
+        const ratePlansResponse = await apiClient.get('/api/v1/rates/plans');
+        const apiRatePlans = ratePlansResponse.data || [];
+
+        if (Array.isArray(apiRatePlans) && apiRatePlans.length > 0) {
+          const transformedPlans = apiRatePlans.map((p: any) => ({
+            id: p.id?.toString() || `RP-${Date.now()}`,
+            name: p.code || p.name || 'Unknown',
+            fullName: p.name || p.code || 'Unknown',
+            description: p.description || '',
+            isActive: p.is_active ?? true,
+            mealPlan: 'Room Only',
+            commission: 0,
+            channels: ['Direct', 'OTA'],
+            basePrice: { default: p.base_price || 200 },
+            minStay: 1,
+            maxStay: 30,
+            ctaEnabled: false,
+            ctdEnabled: false,
+            cancellationPolicy: 'Standard cancellation policy applies.',
+            priceRules: [],
+            updatedAt: p.updated_at || new Date().toISOString(),
+          }));
+          setRatePlans(transformedPlans);
+        }
+
+        // Fetch promo codes from API
+        const promosResponse = await apiClient.get('/api/v1/rates/promo-codes');
+        const apiPromos = promosResponse.data || [];
+
+        if (Array.isArray(apiPromos) && apiPromos.length > 0) {
+          const transformedPromos = apiPromos.map((p: any) => ({
+            id: p.id?.toString() || `PROMO-${Date.now()}`,
+            title: p.name || p.code || 'Unknown',
+            code: p.code || '',
+            description: p.description || '',
+            discountType: p.discount_type || 'percentage',
+            discountValue: p.discount_value || 0,
+            isActive: p.is_active ?? true,
+            validFrom: p.valid_from || new Date().toISOString().split('T')[0],
+            validTo: p.valid_until || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            minNights: p.min_stay || 1,
+            maxNights: p.max_stay || null,
+            usageLimit: p.usage_limit || null,
+            usageCount: p.usage_count || 0,
+            applicableRoomTypes: [],
+            applicableRatePlans: ['BAR'],
+            applicableChannels: ['Website'],
+            channels: ['Website'],
+            stackable: false,
+            blackoutDates: [],
+            termsAndConditions: '',
+            type: 'Discount',
+            discount: { type: p.discount_type || 'percentage', value: p.discount_value || 0 },
+          }));
+          setPromotions(prev => {
+            // Merge API promos with existing ones (avoid duplicates)
+            const existingIds = new Set(prev.map(p => p.code));
+            const newPromos = transformedPromos.filter((p: any) => !existingIds.has(p.code));
+            return [...prev, ...newPromos];
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching CBS data from API:', err);
+        // Set empty arrays if API fails
+        setBookings([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFromApi();
+  }, []);
+
+  // ============ BOOKING FUNCTIONS ============
+
+  const createBooking = useCallback(async (bookingData) => {
+    try {
+      // Try to create booking via API
+      const apiPayload = {
+        roomId: bookingData.roomType?.toLowerCase().replace(/\s+/g, '-') || 'standard',
+        checkIn: bookingData.checkIn,
+        checkOut: bookingData.checkOut,
+        guests: {
+          adults: bookingData.adults || 1,
+          children: bookingData.children || 0,
+          infants: 0
+        },
+        guestInfo: {
+          firstName: bookingData.guestName?.split(' ')[0] || 'Guest',
+          lastName: bookingData.guestName?.split(' ').slice(1).join(' ') || '',
+          email: bookingData.guestEmail || '',
+          phone: bookingData.guestPhone || '',
+          country: 'US',
+          specialRequests: bookingData.specialRequests || ''
+        }
+      };
+
+      const response = await apiClient.post('/api/v1/bookings', apiPayload);
+
+      if (response.data) {
+        // Transform API response to local format
+        const apiBooking = response.data;
+        const guest = apiBooking.guestInfo;
+        const guestName = `${guest?.firstName || ''} ${guest?.lastName || ''}`.trim() || 'Guest';
+
+        const newBooking = {
+          id: apiBooking.bookingNumber || apiBooking.id,
+          guestName: guestName,
+          guestEmail: guest?.email || '',
+          guestPhone: guest?.phone || '',
+          isVip: bookingData.isVip || false,
+          checkIn: apiBooking.checkIn,
+          checkOut: apiBooking.checkOut,
+          nights: apiBooking.nights || 1,
+          roomType: apiBooking.room?.name || bookingData.roomType || 'Standard',
+          roomNumber: apiBooking.room?.number || bookingData.roomNumber || null,
+          ratePlan: bookingData.ratePlan || 'BAR',
+          adults: (apiBooking.guests?.adults || 1),
+          children: (apiBooking.guests?.children || 0),
+          status: 'CONFIRMED',
+          source: bookingData.source || 'Direct',
+          amount: apiBooking.totalPrice || bookingData.amount || 0,
+          amountPaid: 0,
+          balance: apiBooking.totalPrice || bookingData.amount || 0,
+          specialRequests: guest?.specialRequests || '',
+          createdAt: apiBooking.createdAt || new Date().toISOString(),
+          createdBy: bookingData.createdBy || 'System',
+          payments: [],
+          activityLog: [
+            {
+              date: new Date().toISOString().split('T')[0],
+              action: 'Booking created',
+              user: bookingData.createdBy || 'System'
+            }
+          ]
+        };
+
+        setBookings(prev => [...prev, newBooking]);
+
+        // Update availability if room is assigned
+        if (newBooking.roomNumber) {
+          updateAvailabilityForBooking(newBooking.checkIn, newBooking.checkOut, newBooking.roomType, -1);
+        }
+
+        return newBooking;
+      }
+    } catch (error) {
+      console.error('Failed to create booking via API, creating locally:', error);
+
+      // Fallback: Create booking locally
+      const newBooking = {
+        ...bookingData,
+        id: `CBS-${String(bookings.length + 1).padStart(3, '0')}`,
+        createdAt: new Date().toISOString().split('T')[0],
+        payments: [],
+        activityLog: [
+          {
+            date: new Date().toISOString().split('T')[0],
+            action: 'Booking created',
+            user: bookingData.createdBy || 'System'
+          }
+        ]
+      };
+
+      setBookings(prev => [...prev, newBooking]);
+
+      // Update availability if room is assigned
+      if (newBooking.roomNumber) {
+        updateAvailabilityForBooking(newBooking.checkIn, newBooking.checkOut, newBooking.roomType, -1);
+      }
+
+      return newBooking;
+    }
+  }, [bookings]);
+
+  const updateBooking = useCallback((bookingId, updates) => {
+    setBookings(prev => prev.map(booking => {
+      if (booking.id === bookingId) {
+        const updatedBooking = {
+          ...booking,
+          ...updates,
+          activityLog: [
+            ...booking.activityLog,
+            {
+              date: new Date().toISOString().split('T')[0],
+              action: `Booking updated: ${Object.keys(updates).join(', ')}`,
+              user: updates.updatedBy || 'System'
+            }
+          ]
+        };
+        return updatedBooking;
+      }
+      return booking;
+    }));
+  }, []);
+
+  const cancelBooking = useCallback((bookingId, reason = 'Cancelled by user') => {
+    setBookings(prev => prev.map(booking => {
+      if (booking.id === bookingId) {
+        // Release room if assigned
+        if (booking.roomNumber) {
+          updateAvailabilityForBooking(booking.checkIn, booking.checkOut, booking.roomType, 1);
+        }
+
+        return {
+          ...booking,
+          status: 'CANCELLED',
+          activityLog: [
+            ...booking.activityLog,
+            {
+              date: new Date().toISOString().split('T')[0],
+              action: `Booking cancelled: ${reason}`,
+              user: 'System'
+            }
+          ]
+        };
+      }
+      return booking;
+    }));
+  }, []);
+
+  const updateBookingStatus = useCallback((bookingId, newStatus) => {
+    setBookings(prev => prev.map(booking => {
+      if (booking.id === bookingId) {
+        return {
+          ...booking,
+          status: newStatus,
+          activityLog: [
+            ...booking.activityLog,
+            {
+              date: new Date().toISOString().split('T')[0],
+              action: `Status changed to ${statusConfig[newStatus]?.label || newStatus}`,
+              user: 'Front Desk'
+            }
+          ]
+        };
+      }
+      return booking;
+    }));
+  }, []);
+
+  const addPayment = useCallback((bookingId, paymentData) => {
+    setBookings(prev => prev.map(booking => {
+      if (booking.id === bookingId) {
+        const payment = {
+          ...paymentData,
+          id: `PAY-${String(Date.now()).slice(-6)}`,
+          date: new Date().toISOString().split('T')[0],
+          status: 'completed'
+        };
+
+        const newAmountPaid = booking.amountPaid + payment.amount;
+        const newBalance = booking.amount - newAmountPaid;
+
+        return {
+          ...booking,
+          amountPaid: newAmountPaid,
+          balance: newBalance,
+          payments: [...booking.payments, payment],
+          activityLog: [
+            ...booking.activityLog,
+            {
+              date: new Date().toISOString().split('T')[0],
+              action: `Payment of $${payment.amount} received via ${payment.method}`,
+              user: 'Accounts'
+            }
+          ]
+        };
+      }
+      return booking;
+    }));
+  }, []);
+
+  // ============ ROOM ASSIGNMENT FUNCTIONS ============
+
+  const assignRoom = useCallback((bookingId, roomNumber) => {
+    const booking = bookings.find(b => b.id === bookingId);
+    if (!booking) return { success: false, error: 'Booking not found' };
+
+    // Check if room is available
+    const room = roomsData.find(r => r.roomNumber === roomNumber);
+    if (!room) return { success: false, error: 'Room not found' };
+
+    // Check for conflicts
+    const conflictingBooking = bookings.find(b =>
+      b.id !== bookingId &&
+      b.roomNumber === roomNumber &&
+      b.status !== 'CANCELLED' &&
+      b.status !== 'CHECKED-OUT' &&
+      new Date(b.checkIn) < new Date(booking.checkOut) &&
+      new Date(b.checkOut) > new Date(booking.checkIn)
+    );
+
+    if (conflictingBooking) {
+      return { success: false, error: `Room ${roomNumber} is already assigned to booking ${conflictingBooking.id}` };
+    }
+
+    // If previous room was assigned, release it
+    if (booking.roomNumber) {
+      updateAvailabilityForBooking(booking.checkIn, booking.checkOut, booking.roomType, 1);
+    }
+
+    // Assign new room
+    setBookings(prev => prev.map(b => {
+      if (b.id === bookingId) {
+        return {
+          ...b,
+          roomNumber,
+          roomType: room.type,
+          activityLog: [
+            ...b.activityLog,
+            {
+              date: new Date().toISOString().split('T')[0],
+              action: `Room ${roomNumber} assigned`,
+              user: 'Front Desk'
+            }
+          ]
+        };
+      }
+      return b;
+    }));
+
+    // Update availability
+    updateAvailabilityForBooking(booking.checkIn, booking.checkOut, room.type, -1);
+
+    return { success: true };
+  }, [bookings]);
+
+  const unassignRoom = useCallback((bookingId) => {
+    const booking = bookings.find(b => b.id === bookingId);
+    if (!booking || !booking.roomNumber) return { success: false, error: 'No room assigned' };
+
+    // Release the room
+    updateAvailabilityForBooking(booking.checkIn, booking.checkOut, booking.roomType, 1);
+
+    setBookings(prev => prev.map(b => {
+      if (b.id === bookingId) {
+        return {
+          ...b,
+          roomNumber: null,
+          activityLog: [
+            ...b.activityLog,
+            {
+              date: new Date().toISOString().split('T')[0],
+              action: 'Room unassigned',
+              user: 'Front Desk'
+            }
+          ]
+        };
+      }
+      return b;
+    }));
+
+    return { success: true };
+  }, [bookings]);
+
+  // ============ AVAILABILITY FUNCTIONS ============
+
+  const updateAvailabilityForBooking = useCallback((checkIn, checkOut, roomType, delta) => {
+    setAvailability(prev => {
+      const updated = { ...prev };
+      const start = new Date(checkIn);
+      const end = new Date(checkOut);
+
+      for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        if (updated[dateStr] && updated[dateStr][roomType]) {
+          const current = updated[dateStr][roomType];
+          updated[dateStr] = {
+            ...updated[dateStr],
+            [roomType]: {
+              ...current,
+              available: Math.max(0, current.available + delta),
+              sold: Math.max(0, current.sold - delta)
+            }
+          };
+        }
+      }
+
+      return updated;
+    });
+  }, []);
+
+  const updateAvailability = useCallback((date, roomType, updates) => {
+    setAvailability(prev => {
+      if (!prev[date] || !prev[date][roomType]) return prev;
+
+      return {
+        ...prev,
+        [date]: {
+          ...prev[date],
+          [roomType]: {
+            ...prev[date][roomType],
+            ...updates
+          }
+        }
+      };
+    });
+  }, []);
+
+  const getAvailableRooms = useCallback((checkIn, checkOut, roomType = null) => {
+    const availableRooms = roomsData.filter(room => {
+      // Filter by room type if specified
+      if (roomType && room.type !== roomType) return false;
+
+      // Check if room is out of service
+      if (room.status === 'out_of_service') return false;
+
+      // Check for conflicting bookings
+      const hasConflict = bookings.some(booking =>
+        booking.roomNumber === room.roomNumber &&
+        booking.status !== 'CANCELLED' &&
+        booking.status !== 'CHECKED-OUT' &&
+        new Date(booking.checkIn) < new Date(checkOut) &&
+        new Date(booking.checkOut) > new Date(checkIn)
+      );
+
+      return !hasConflict;
+    });
+
+    return availableRooms.map(room => {
+      const availCheck = checkAvailability(checkIn, checkOut, room.type, 1);
+      return {
+        ...room,
+        pricePerNight: availCheck.averageRate || room.price,
+        totalPrice: availCheck.totalRate || room.price,
+        cleaningStatus: room.cleaning
+      };
+    });
+  }, [bookings]);
+
+  // ============ RATE PLAN FUNCTIONS ============
+
+  const createRatePlan = useCallback((newPlanData) => {
+    const newPlan = {
+      id: `RP-${String(ratePlans.length + 1).padStart(3, '0')}`,
+      name: newPlanData.name,
+      fullName: newPlanData.name,
+      description: newPlanData.description || '',
+      isActive: newPlanData.status === 'active',
+      mealPlan: newPlanData.mealPlan || 'Room Only',
+      commission: 0,
+      channels: ['Direct', 'OTA'],
+      // Convert linked rooms to base prices
+      basePrice: newPlanData.linkedRooms.reduce((acc, roomId) => {
+        const roomMap = {
+          'rt1': 'Standard Double',
+          'rt2': 'Deluxe King',
+          'rt3': 'Deluxe Twin',
+          'rt4': 'Executive Suite',
+          'rt5': 'Presidential Suite',
+        };
+        const roomName = roomMap[roomId] || roomId;
+        // Default base prices based on room type
+        const defaultPrices = {
+          'Standard Double': 190,
+          'Deluxe King': 280,
+          'Deluxe Twin': 260,
+          'Executive Suite': 450,
+          'Presidential Suite': 900,
+        };
+        acc[roomName] = newPlanData.pricing?.base || defaultPrices[roomName] || 200;
+        return acc;
+      }, {}),
+      minStay: newPlanData.restrictions?.minLos || 1,
+      maxStay: newPlanData.restrictions?.maxLos || 30,
+      ctaEnabled: newPlanData.restrictions?.cta || false,
+      ctdEnabled: newPlanData.restrictions?.ctd || false,
+      cancellationPolicy: newPlanData.restrictions?.cancellationPolicy || 'Standard cancellation policy applies.',
+      priceRules: newPlanData.pricing?.method === 'derived' || newPlanData.pricing?.method === 'percent'
+        ? [{
+            type: 'flat',
+            adjustment: parseFloat(newPlanData.pricing?.adjustmentValue) || 0,
+            description: `${newPlanData.pricing?.adjustmentValue || 0}% ${newPlanData.pricing?.method === 'derived' ? 'vs BAR' : 'adjustment'}`
+          }]
+        : [],
+      linkedRooms: newPlanData.linkedRooms || [],
+      pricing: newPlanData.pricing || { method: 'flat', base: 0, adjustmentValue: 0, adjustmentType: 'percentage' },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString().split('T')[0],
+    };
+
+    setRatePlans(prev => [...prev, newPlan]);
+
+    // Also add to CMS Zustand store for sync
+    if (cmsRatePlans?.addRatePlan) {
+      cmsRatePlans.addRatePlan({
+        name: newPlan.name,
+        fullName: newPlan.fullName,
+        description: newPlan.description,
+        status: newPlan.isActive ? 'Active' : 'Inactive',
+        isActive: newPlan.isActive,
+        mealPlan: newPlan.mealPlan,
+        commission: newPlan.commission,
+        channels: newPlan.channels,
+        baseRates: newPlan.basePrice,
+        derivedRules: newPlan.priceRules,
+        restrictions: {
+          minStay: newPlan.minStay,
+          maxStay: newPlan.maxStay,
+          CTA: newPlan.ctaEnabled,
+          CTD: newPlan.ctdEnabled,
+          advanceBooking: newPlanData.restrictions?.sameDay ? null : 1,
+          closedDates: [],
+        },
+        calendarRates: {},
+        cancellationPolicy: newPlan.cancellationPolicy,
+        paymentTerms: 'Standard payment terms apply',
+      });
+    }
+
+    return newPlan;
+  }, [ratePlans, cmsRatePlans]);
+
+  const updateRatePlan = useCallback((ratePlanId, updates) => {
+    setRatePlans(prev => prev.map(plan => {
+      if (plan.id === ratePlanId) {
+        return {
+          ...plan,
+          ...updates,
+          updatedAt: new Date().toISOString().split('T')[0]
+        };
+      }
+      return plan;
+    }));
+  }, []);
+
+  const toggleRatePlanStatus = useCallback((ratePlanId) => {
+    setRatePlans(prev => prev.map(plan => {
+      if (plan.id === ratePlanId) {
+        return {
+          ...plan,
+          isActive: !plan.isActive,
+          updatedAt: new Date().toISOString().split('T')[0]
+        };
+      }
+      return plan;
+    }));
+  }, []);
+
+  const getRateForBooking = useCallback((roomType, ratePlanName, checkIn, checkOut) => {
+    const ratePlan = ratePlans.find(rp => rp.name === ratePlanName);
+    if (!ratePlan) return null;
+
+    const basePrice = ratePlan.basePrice[roomType] || 0;
+    let totalRate = 0;
+    let nights = 0;
+
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+
+    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+      let dayRate = basePrice;
+      const dayOfWeek = d.getDay();
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6;
+
+      // Apply price rules
+      ratePlan.priceRules.forEach(rule => {
+        if (rule.type === 'weekend' && isWeekend) {
+          dayRate *= (1 + rule.adjustment / 100);
+        }
+        if (rule.type === 'flat') {
+          dayRate *= (1 + rule.adjustment / 100);
+        }
+      });
+
+      totalRate += dayRate;
+      nights++;
+    }
+
+    return {
+      totalRate: Math.round(totalRate),
+      averageRate: Math.round(totalRate / nights),
+      nights
+    };
+  }, [ratePlans]);
+
+  // ============ PROMOTION FUNCTIONS ============
+
+  /**
+   * Sync promotion to OTA and Direct channels (simulated)
+   * In production, this would call Channel Manager API endpoints
+   */
+  const syncPromotionToChannels = useCallback((promotion) => {
+    const channels = promotion.channels || [];
+    const otaChannels = channels.filter(c => ['Booking.com', 'Expedia', 'Agoda'].includes(c));
+    const directChannels = channels.filter(c => ['Website', 'Mobile App', 'Call Centre'].includes(c));
+
+    console.log('📡 CHANNEL MANAGER SYNC INITIATED');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`Promotion: ${promotion.name}`);
+    console.log(`ID: ${promotion.id}`);
+    console.log(`Discount: ${JSON.stringify(promotion.discount)}`);
+    console.log('');
+
+    if (otaChannels.length > 0) {
+      console.log('🌐 OTA Channels:');
+      otaChannels.forEach(channel => {
+        console.log(`  ✓ ${channel} - Sync queued`);
+      });
+    }
+
+    if (directChannels.length > 0) {
+      console.log('🏨 Direct Channels:');
+      directChannels.forEach(channel => {
+        console.log(`  ✓ ${channel} - Sync queued`);
+      });
+    }
+
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('✅ Promotion sync completed');
+
+    return {
+      success: true,
+      syncedChannels: channels,
+      timestamp: new Date().toISOString(),
+    };
+  }, []);
+
+  /**
+   * Create a new promotion with full CMS Engine integration
+   * Supports: percentage, flat, free_night, derived discount types
+   */
+  const createPromotion = useCallback((promoData) => {
+    // Map room IDs to room names for display
+    const roomMap = {
+      'rt1': 'Standard Double',
+      'rt2': 'Deluxe King',
+      'rt3': 'Deluxe Twin',
+      'rt4': 'Executive Suite',
+      'rt5': 'Presidential Suite',
+    };
+
+    const eligibleRoomNames = (promoData.eligibleRooms || []).map(id => roomMap[id] || id);
+
+    // Calculate discount value and type for legacy compatibility
+    let discountValue = 0;
+    let discountType = promoData.discount?.type || 'percentage';
+
+    switch (discountType) {
+      case 'percentage':
+        discountValue = promoData.discount?.value || 0;
+        break;
+      case 'flat':
+        discountValue = promoData.discount?.value || 0;
+        discountType = 'fixed';
+        break;
+      case 'free_night':
+        discountValue = 1; // Free nights count
+        break;
+      case 'derived':
+        discountValue = promoData.discount?.value || 0;
+        discountType = 'percentage';
+        break;
+    }
+
+    const newPromotion = {
+      id: `PROMO-${String(promotions.length + 1).padStart(3, '0')}-${Date.now().toString(36).toUpperCase()}`,
+      title: promoData.name,
+      code: promoData.name.toUpperCase().replace(/\s+/g, '').substring(0, 10),
+      description: promoData.descriptionShort || promoData.descriptionLong || '',
+      descriptionLong: promoData.descriptionLong || '',
+      discountType: discountType,
+      discountValue: discountValue,
+      isActive: promoData.status === 'active',
+      validFrom: promoData.stayPeriod?.start || new Date().toISOString().split('T')[0],
+      validTo: promoData.stayPeriod?.end || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      bookingWindow: promoData.bookingWindow || null,
+      minNights: promoData.restrictions?.minLos || 1,
+      maxNights: promoData.restrictions?.maxLos || null,
+      minBookingAmount: null,
+      applicableRoomTypes: eligibleRoomNames,
+      applicableRatePlans: ['BAR'],
+      applicableChannels: promoData.channels || ['Website'],
+      channels: promoData.channels || ['Website'],
+      usageLimit: null,
+      usageCount: 0,
+      stackable: promoData.restrictions?.stackable || false,
+      blackoutDates: promoData.restrictions?.blackoutDates || [],
+      termsAndConditions: promoData.descriptionLong || '',
+      type: promoData.type || 'Early Bird',
+      discount: promoData.discount || { type: 'percentage', value: 10 },
+      stayPeriod: promoData.stayPeriod || null,
+      restrictions: promoData.restrictions || {
+        minLos: 1,
+        maxLos: 30,
+        cta: false,
+        ctd: false,
+        blackoutDates: [],
+        stackable: false,
+      },
+      eligibleRooms: promoData.eligibleRooms || [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: 'Admin',
+    };
+
+    setPromotions(prev => {
+      const updated = [...prev, newPromotion];
+      return updated;
+    });
+
+    // Sync to Channel Manager
+    syncPromotionToChannels(newPromotion);
+
+    // Also add to CMS Zustand store if available
+    if (cmsPromotions?.addPromotion) {
+      cmsPromotions.addPromotion({
+        name: newPromotion.title,
+        code: newPromotion.code,
+        type: newPromotion.type,
+        value: newPromotion.discountValue,
+        description: newPromotion.description,
+        status: newPromotion.isActive ? 'Active' : 'Inactive',
+        isActive: newPromotion.isActive,
+        startDate: newPromotion.validFrom,
+        endDate: newPromotion.validTo,
+        minStay: newPromotion.minNights,
+        maxUsage: newPromotion.usageLimit,
+        currentUsage: 0,
+        applicableRoomTypes: newPromotion.applicableRoomTypes,
+        applicableRatePlans: newPromotion.applicableRatePlans,
+        stackable: newPromotion.stackable,
+        blackoutDates: newPromotion.blackoutDates,
+        terms: newPromotion.termsAndConditions,
+      });
+    }
+
+    return newPromotion;
+  }, [promotions, cmsPromotions, syncPromotionToChannels]);
+
+  const updatePromotion = useCallback((promotionId, updates) => {
+    setPromotions(prev => prev.map(promo => {
+      if (promo.id === promotionId) {
+        const updated = { ...promo, ...updates, updatedAt: new Date().toISOString() };
+        // Re-sync to channels if promotion is updated
+        if (updated.isActive) {
+          syncPromotionToChannels(updated);
+        }
+        return updated;
+      }
+      return promo;
+    }));
+  }, [syncPromotionToChannels]);
+
+  const togglePromotionStatus = useCallback((promotionId) => {
+    setPromotions(prev => prev.map(promo => {
+      if (promo.id === promotionId) {
+        return { ...promo, isActive: !promo.isActive };
+      }
+      return promo;
+    }));
+  }, []);
+
+  const applyPromotion = useCallback((promoCode, bookingDetails) => {
+    const promo = promotions.find(p =>
+      p.code === promoCode &&
+      p.isActive &&
+      new Date(p.validFrom) <= new Date() &&
+      new Date(p.validTo) >= new Date()
+    );
+
+    if (!promo) return { success: false, error: 'Invalid or expired promo code' };
+
+    // Check usage limit
+    if (promo.usageLimit && promo.usageCount >= promo.usageLimit) {
+      return { success: false, error: 'Promo code usage limit reached' };
+    }
+
+    // Check minimum nights
+    if (promo.minNights && bookingDetails.nights < promo.minNights) {
+      return { success: false, error: `Minimum stay of ${promo.minNights} nights required` };
+    }
+
+    // Check minimum amount
+    if (promo.minBookingAmount && bookingDetails.amount < promo.minBookingAmount) {
+      return { success: false, error: `Minimum booking amount of $${promo.minBookingAmount} required` };
+    }
+
+    // Check room type
+    if (promo.applicableRoomTypes && !promo.applicableRoomTypes.includes(bookingDetails.roomType)) {
+      return { success: false, error: 'Promo not applicable to selected room type' };
+    }
+
+    // Calculate discount
+    let discount = 0;
+    if (promo.discountType === 'percentage') {
+      discount = (bookingDetails.amount * promo.discountValue) / 100;
+    } else if (promo.discountType === 'fixed') {
+      discount = promo.discountValue;
+    } else if (promo.discountType === 'free_night' && bookingDetails.nights >= 4) {
+      discount = bookingDetails.amount / bookingDetails.nights;
+    }
+
+    // Increment usage count
+    setPromotions(prev => prev.map(p => {
+      if (p.id === promo.id) {
+        return { ...p, usageCount: p.usageCount + 1 };
+      }
+      return p;
+    }));
+
+    return {
+      success: true,
+      discount: Math.round(discount),
+      promoName: promo.title,
+      newAmount: Math.round(bookingDetails.amount - discount)
+    };
+  }, [promotions]);
+
+  // ============ AI INSIGHTS ============
+
+  const getAIInsights = useCallback((bookingId) => {
+    const booking = bookings.find(b => b.id === bookingId);
+    if (!booking) return [];
+
+    const insights = [];
+
+    // Check for overbooking risk
+    const sameTypeBookings = bookings.filter(b =>
+      b.roomType === booking.roomType &&
+      b.status !== 'CANCELLED' &&
+      new Date(b.checkIn) < new Date(booking.checkOut) &&
+      new Date(b.checkOut) > new Date(booking.checkIn)
+    );
+
+    if (sameTypeBookings.length > 3) {
+      insights.push({
+        type: 'warning',
+        message: `Risk of overbooking: ${sameTypeBookings.length} similar reservations for this period`
+      });
+    }
+
+    // Check for demand surge
+    const checkInDate = booking.checkIn;
+    if (availability[checkInDate]) {
+      const dayAvail = availability[checkInDate][booking.roomType];
+      if (dayAvail && dayAvail.available <= 2) {
+        insights.push({
+          type: 'info',
+          message: 'Demand surge on this date - suggested rate +12%'
+        });
+      }
+    }
+
+    // Check for VIP guest
+    if (booking.isVip) {
+      insights.push({
+        type: 'vip',
+        message: 'VIP guest - ensure premium amenities are ready'
+      });
+    }
+
+    // Check for pending payment
+    if (booking.balance > 0 && new Date(booking.checkIn) <= new Date()) {
+      insights.push({
+        type: 'alert',
+        message: `Outstanding balance of $${booking.balance} - collect on check-in`
+      });
+    }
+
+    // Check housekeeping status
+    if (booking.roomNumber) {
+      const room = roomsData.find(r => r.roomNumber === booking.roomNumber);
+      if (room && room.cleaning === 'dirty') {
+        insights.push({
+          type: 'warning',
+          message: 'Housekeeping delay may affect check-in time'
+        });
+      }
+    }
+
+    return insights;
+  }, [bookings, availability]);
+
+  // ============ UTILITY FUNCTIONS ============
+
+  const getBookingById = useCallback((bookingId) => {
+    return bookings.find(b => b.id === bookingId);
+  }, [bookings]);
+
+  const getBookingsForDate = useCallback((date) => {
+    return bookings.filter(b =>
+      new Date(b.checkIn) <= new Date(date) &&
+      new Date(b.checkOut) > new Date(date) &&
+      b.status !== 'CANCELLED'
+    );
+  }, [bookings]);
+
+  const getBookingsByStatus = useCallback((status) => {
+    return bookings.filter(b => b.status === status);
+  }, [bookings]);
+
+  const getCalendarData = useCallback((daysCount = 30) => {
+    return getCalendarDates(daysCount);
+  }, []);
+
+  const resetToSampleData = useCallback(() => {
+    setBookings([]);
+    setAvailability(sampleAvailability);
+    setRatePlans(sampleRatePlans);
+    setPromotions(samplePromotions);
+    localStorage.removeItem(STORAGE_KEY);
+  }, []);
+
+  const value = {
+    // State
+    bookings,
+    availability,
+    ratePlans,
+    promotions,
+    isLoading,
+
+    // Booking functions
+    createBooking,
+    updateBooking,
+    cancelBooking,
+    updateBookingStatus,
+    addPayment,
+    getBookingById,
+    getBookingsForDate,
+    getBookingsByStatus,
+
+    // Room assignment
+    assignRoom,
+    unassignRoom,
+    getAvailableRooms,
+
+    // Availability
+    updateAvailability,
+    checkAvailability,
+
+    // Rate plans
+    createRatePlan,
+    updateRatePlan,
+    toggleRatePlanStatus,
+    getRateForBooking,
+
+    // Promotions
+    createPromotion,
+    updatePromotion,
+    togglePromotionStatus,
+    applyPromotion,
+    syncPromotionToChannels,
+
+    // AI & Utilities
+    getAIInsights,
+    getCalendarData,
+    resetToSampleData,
+
+    // CMS Zustand Stores - Enhanced functionality with persistence
+    cms: {
+      bookings: cmsBookings,
+      availability: cmsAvailability,
+      ratePlans: cmsRatePlans,
+      promotions: cmsPromotions,
+      engine: cmsEngine,
+    }
+  };
+
+  return (
+    <CBSContext.Provider value={value}>
+      {children}
+    </CBSContext.Provider>
+  );
+}
+
+export function useCBS() {
+  const context = useContext(CBSContext);
+  if (!context) {
+    throw new Error('useCBS must be used within a CBSProvider');
+  }
+  return context;
+}
+
+export default CBSContext;

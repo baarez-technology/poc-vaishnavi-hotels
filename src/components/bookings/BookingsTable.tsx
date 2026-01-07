@@ -1,0 +1,324 @@
+import { useState, useRef, useEffect } from 'react';
+import type { MouseEvent } from 'react';
+import { Crown, Eye, Pencil, MoreHorizontal, Bed, XCircle, CalendarX, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { statusConfig, sourceConfig } from '../../data/bookingsData';
+import { IconButton } from '../ui2/Button';
+import { StatusBadge } from '../ui2/Badge';
+
+type BookingLike = any;
+type SortConfigLike = { field?: string; direction?: 'asc' | 'desc' } | any;
+
+export default function BookingsTable({
+  bookings,
+  sortConfig,
+  onSort,
+  onViewBooking,
+  onEditBooking,
+  onAssignRoom,
+  onCancelBooking
+}: {
+  bookings: BookingLike[];
+  sortConfig: SortConfigLike;
+  onSort: (field: string) => void;
+  onViewBooking?: (booking: BookingLike) => void;
+  onEditBooking?: (booking: BookingLike) => void;
+  onAssignRoom?: (booking: BookingLike) => void;
+  onCancelBooking?: (booking: BookingLike) => void;
+}) {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const formatCurrency = (amount: number) => {
+    return `$${amount.toLocaleString()}`;
+  };
+
+  const [openDropdownId, setOpenDropdownId] = useState(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | any) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpenDropdownId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleViewClick = (e: any, booking: BookingLike) => {
+    e.stopPropagation();
+    if (onViewBooking) {
+      onViewBooking(booking);
+    }
+  };
+
+  const handleEditClick = (e: any, booking: BookingLike) => {
+    e.stopPropagation();
+    if (onEditBooking) {
+      onEditBooking(booking);
+    }
+  };
+
+  const handleMoreClick = (e: any, bookingId: any) => {
+    e.stopPropagation();
+    setOpenDropdownId(openDropdownId === bookingId ? null : bookingId);
+  };
+
+  const handleAssignRoom = (e: any, booking: BookingLike) => {
+    e.stopPropagation();
+    setOpenDropdownId(null);
+    if (onAssignRoom) {
+      onAssignRoom(booking);
+    }
+  };
+
+  const handleCancel = (e: any, booking: BookingLike) => {
+    e.stopPropagation();
+    setOpenDropdownId(null);
+    if (onCancelBooking) {
+      onCancelBooking(booking);
+    }
+  };
+
+  const SortIndicator = ({ field }: { field: string }) => {
+    const sorted = sortConfig?.field === field ? sortConfig?.direction : null;
+    const Icon = sorted === 'asc' ? ChevronUp : sorted === 'desc' ? ChevronDown : ChevronsUpDown;
+    return <Icon className={`w-3.5 h-3.5 ${sorted ? 'text-terra-500' : 'text-neutral-300'}`} />;
+  };
+
+  return (
+    <div className="overflow-x-auto">
+      {/* Prevent header wrapping; allow horizontal scroll like CMS */}
+      <table className="w-full min-w-[1450px] border-collapse">
+        <colgroup>
+          <col style={{ width: '220px' }} />
+          <col style={{ width: '170px' }} />
+          <col style={{ width: '160px' }} />
+          <col style={{ width: '110px' }} />
+          <col style={{ width: '210px' }} />
+          <col style={{ width: '150px' }} />
+          <col style={{ width: '150px' }} />
+          <col style={{ width: '140px' }} />
+          <col style={{ width: '140px' }} />
+        </colgroup>
+        <thead>
+          <tr className="bg-neutral-50/30 border-b border-neutral-100">
+            <th
+              onClick={() => onSort('guest')}
+              className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest cursor-pointer hover:text-neutral-600 whitespace-nowrap"
+            >
+              <span className="flex items-center gap-1.5">
+                Guest Name <SortIndicator field="guest" />
+              </span>
+            </th>
+            <th
+              onClick={() => onSort('id')}
+              className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest cursor-pointer hover:text-neutral-600 whitespace-nowrap"
+            >
+              <span className="flex items-center gap-1.5">
+                Booking ID <SortIndicator field="id" />
+              </span>
+            </th>
+            <th
+              onClick={() => onSort('checkIn')}
+              className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest cursor-pointer hover:text-neutral-600 whitespace-nowrap"
+            >
+              <span className="flex items-center gap-1.5">
+                Check-in <SortIndicator field="checkIn" />
+              </span>
+            </th>
+            <th
+              onClick={() => onSort('nights')}
+              className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest cursor-pointer hover:text-neutral-600 whitespace-nowrap"
+            >
+              <span className="flex items-center gap-1.5">
+                Nights <SortIndicator field="nights" />
+              </span>
+            </th>
+            <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
+              Room
+            </th>
+            <th
+              onClick={() => onSort('status')}
+              className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest cursor-pointer hover:text-neutral-600 whitespace-nowrap"
+            >
+              <span className="flex items-center gap-1.5">
+                Status <SortIndicator field="status" />
+              </span>
+            </th>
+            <th
+              onClick={() => onSort('source')}
+              className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest cursor-pointer hover:text-neutral-600 whitespace-nowrap"
+            >
+              <span className="flex items-center gap-1.5">
+                Source <SortIndicator field="source" />
+              </span>
+            </th>
+            <th
+              onClick={() => onSort('amount')}
+              className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest cursor-pointer hover:text-neutral-600 whitespace-nowrap"
+            >
+              <span className="flex items-center gap-1.5">
+                Amount <SortIndicator field="amount" />
+              </span>
+            </th>
+            <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
+              Actions
+            </th>
+          </tr>
+        </thead>
+
+        <tbody className="divide-y divide-neutral-100">
+          {bookings.length === 0 ? (
+            <tr>
+              <td colSpan={9} className="px-6 py-16 text-center">
+                <div className="flex flex-col items-center">
+                  <div className="w-12 h-12 rounded-lg bg-terra-50 flex items-center justify-center mb-4">
+                    <CalendarX className="w-5 h-5 text-terra-500" />
+                  </div>
+                  <p className="text-[13px] font-semibold text-neutral-800 mb-1">
+                    No bookings found
+                  </p>
+                  <p className="text-[11px] text-neutral-500 font-medium">
+                    Try adjusting your filters or search query
+                  </p>
+                </div>
+              </td>
+            </tr>
+          ) : (
+            bookings.map((booking: BookingLike) => {
+            // Normalize status to match config keys (e.g., 'Checked In' -> 'CHECKED-IN')
+            const normalizedStatus = booking.status?.toUpperCase?.()?.replace(/[\s_]/g, '-') || 'CONFIRMED';
+            const status = (statusConfig as any)[normalizedStatus] || (statusConfig as any)[booking.status] || {
+              color: 'bg-neutral-100 text-neutral-700 border-neutral-200',
+              label: booking.status || 'Unknown'
+            };
+            // Normalize source with fallback
+            const source = (sourceConfig as any)[booking.source] || {
+              color: 'bg-neutral-100 text-neutral-700',
+              icon: '📋'
+            };
+
+            return (
+                <tr key={booking.id} className="group bg-white hover:bg-neutral-50/30 transition-colors duration-100">
+                  {/* Guest Name */}
+                  <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-neutral-900 group-hover:text-terra-600 transition-colors">
+                      {booking.guest}
+                    </span>
+                    {booking.vip && (
+                      <Crown className="w-4 h-4 text-gold-500 flex-shrink-0" />
+                    )}
+                  </div>
+                  </td>
+
+                  {/* Booking ID */}
+                  <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
+                  <span className="text-xs text-neutral-500 font-mono">
+                    {booking.id}
+                  </span>
+                  </td>
+
+                  {/* Check-in Date */}
+                  <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
+                  <span className="text-sm text-neutral-700 font-medium">
+                    {formatDate(booking.checkIn)}
+                  </span>
+                  </td>
+
+                  {/* Nights */}
+                  <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
+                  <span className="text-sm text-neutral-600">
+                    {booking.nights}n
+                  </span>
+                  </td>
+
+                  {/* Room */}
+                  <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
+                  <span className="font-semibold text-neutral-900 text-sm">Room {booking.room}</span>
+                  <span className="text-neutral-400 text-xs ml-1.5">• {booking.roomType}</span>
+                  </td>
+
+                  {/* Status */}
+                  <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
+                  <StatusBadge status={status.label} className="" />
+                  </td>
+
+                  {/* Source */}
+                  <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${source.color}`}>
+                    <span className="mr-1">{source.icon}</span>
+                    {booking.source}
+                  </span>
+                  </td>
+
+                  {/* Amount */}
+                  <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
+                  <span className="text-sm font-bold text-neutral-900">
+                    {formatCurrency(booking.amount)}
+                  </span>
+                  </td>
+
+                  {/* Actions */}
+                  <td className="px-6 py-4 text-right whitespace-nowrap">
+                    <div className="flex items-center justify-end gap-1">
+                      <IconButton
+                        icon={Eye}
+                        size="sm"
+                        variant="ghost"
+                        label="View Details"
+                        onClick={(e) => handleViewClick(e, booking)}
+                      />
+                      <IconButton
+                        icon={Pencil}
+                        size="sm"
+                        variant="ghost"
+                        label="Edit Booking"
+                        onClick={(e) => handleEditClick(e, booking)}
+                      />
+                      <div className="relative" ref={openDropdownId === booking.id ? dropdownRef : null}>
+                        <IconButton
+                          icon={MoreHorizontal}
+                          size="sm"
+                          variant="ghost"
+                          label="More Options"
+                          onClick={(e) => handleMoreClick(e, booking.id)}
+                          className={openDropdownId === booking.id ? 'bg-neutral-100' : ''}
+                        />
+
+                        {/* Dropdown Menu */}
+                        {openDropdownId === booking.id && (
+                          <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-[10px] shadow-lg border border-neutral-200 py-1 z-50">
+                            <button
+                              onClick={(e) => handleAssignRoom(e, booking)}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
+                            >
+                              <Bed className="w-4 h-4 text-teal-600" />
+                              Assign Room
+                            </button>
+                            <button
+                              onClick={(e) => handleCancel(e, booking)}
+                              disabled={booking.status === 'CANCELLED'}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              {booking.status === 'CANCELLED' ? 'Already Cancelled' : 'Cancel Booking'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+            );
+            })
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}

@@ -1,0 +1,245 @@
+import { apiClient } from '../client';
+
+// ============== TYPES ==============
+
+export interface WorkOrder {
+  id: number;
+  work_order_number?: string;
+  title: string;
+  description: string;
+  location: string;
+  room_id?: number;
+  room_number?: string;
+  issue_type: string;
+  priority: string;
+  status: string;
+  reported_by?: number;
+  reported_by_name?: string;
+  reported_at: string;
+  assigned_to?: number;
+  assigned_to_name?: string;
+  accepted_at?: string;
+  started_at?: string;
+  completed_at?: string;
+  scheduled_date?: string;
+  estimated_hours?: number;
+  actual_hours?: number;
+  resolution_notes?: string;
+  notes?: string;
+  parts_used?: Array<{ name: string; quantity: number; cost?: number }>;
+}
+
+export interface WorkOrderCreate {
+  title: string;
+  description: string;
+  location: string;
+  room_id?: number;
+  room_number?: string;
+  issue_type: string;
+  priority?: string;
+  scheduled_date?: string;
+  estimated_hours?: number;
+  notes?: string;
+}
+
+export interface WorkOrderUpdate {
+  title?: string;
+  description?: string;
+  status?: string;
+  priority?: string;
+  assigned_to?: number;
+  scheduled_date?: string;
+  estimated_hours?: number;
+  actual_hours?: number;
+  resolution_notes?: string;
+  notes?: string;
+}
+
+export interface EquipmentIssue {
+  id: number;
+  issue_number: string;
+  equipment_name: string;
+  equipment_id?: string;
+  equipment_category?: string;
+  location: string;
+  room_id?: number;
+  issue_type: string;
+  issue_description: string;
+  severity: string;
+  status: string;
+  reported_by: number;
+  reported_by_name?: string;
+  reported_at: string;
+  assigned_to?: number;
+  assigned_to_name?: string;
+  accepted_at?: string;
+  resolved_at?: string;
+  resolution_notes?: string;
+  manufacturer?: string;
+  model_number?: string;
+  warranty_status?: string;
+  warranty_expiry_date?: string;
+  estimated_repair_cost?: number;
+  actual_repair_cost?: number;
+  affects_operations: boolean;
+}
+
+export interface EquipmentIssueCreate {
+  equipment_name: string;
+  equipment_id?: string;
+  equipment_category?: string;
+  location: string;
+  room_id?: number;
+  issue_type: string;
+  issue_description: string;
+  severity: string;
+  affects_operations?: boolean;
+  manufacturer?: string;
+  model_number?: string;
+  serial_number?: string;
+}
+
+export interface EquipmentIssueUpdate {
+  status?: string;
+  assigned_to?: number;
+  severity?: string;
+  resolution_notes?: string;
+  estimated_repair_cost?: number;
+  actual_repair_cost?: number;
+  downtime_hours?: number;
+}
+
+export interface MaintenanceDashboard {
+  open_work_orders: number;
+  critical_issues: number;
+  completed_today: number;
+  pending_parts: number;
+  avg_completion_time?: number;
+  overdue_count: number;
+}
+
+// ============== HELPER ==============
+
+// Helper to extract data from wrapped API responses
+// API may return { success: true, data: [...] } or just [...]
+const extractData = <T>(responseData: any): T => {
+  if (responseData && typeof responseData === 'object' && 'data' in responseData) {
+    return responseData.data;
+  }
+  return responseData;
+};
+
+// ============== SERVICE ==============
+
+export const maintenanceService = {
+  // ===== WORK ORDERS =====
+
+  getWorkOrders: async (filters?: {
+    status?: string;
+    priority?: string;
+    issue_type?: string;
+    assigned_to?: number;
+    room_number?: string;
+    date_from?: string;
+    date_to?: string;
+  }): Promise<WorkOrder[]> => {
+    const response = await apiClient.get('/api/v1/maintenance/work-orders', { params: filters });
+    return extractData<WorkOrder[]>(response.data);
+  },
+
+  getMyWorkOrders: async (status?: string): Promise<WorkOrder[]> => {
+    const params = status ? { status } : undefined;
+    const response = await apiClient.get('/api/v1/maintenance/work-orders/my-tasks', { params });
+    return extractData<WorkOrder[]>(response.data);
+  },
+
+  getWorkOrder: async (workOrderId: number): Promise<WorkOrder> => {
+    const response = await apiClient.get(`/api/v1/maintenance/work-orders/${workOrderId}`);
+    return extractData<WorkOrder>(response.data);
+  },
+
+  createWorkOrder: async (data: WorkOrderCreate): Promise<WorkOrder> => {
+    const response = await apiClient.post('/api/v1/maintenance/work-orders', data);
+    return extractData<WorkOrder>(response.data);
+  },
+
+  updateWorkOrder: async (workOrderId: number, data: WorkOrderUpdate): Promise<WorkOrder> => {
+    const response = await apiClient.patch(`/api/v1/maintenance/work-orders/${workOrderId}`, data);
+    return extractData<WorkOrder>(response.data);
+  },
+
+  acceptWorkOrder: async (workOrderId: number): Promise<WorkOrder> => {
+    const response = await apiClient.post(`/api/v1/maintenance/work-orders/${workOrderId}/accept`);
+    return extractData<WorkOrder>(response.data);
+  },
+
+  completeWorkOrder: async (
+    workOrderId: number,
+    resolutionNotes?: string,
+    actualHours?: number
+  ): Promise<WorkOrder> => {
+    const response = await apiClient.post(
+      `/api/v1/maintenance/work-orders/${workOrderId}/complete`,
+      null,
+      { params: { resolution_notes: resolutionNotes, actual_hours: actualHours } }
+    );
+    return extractData<WorkOrder>(response.data);
+  },
+
+  // ===== EQUIPMENT ISSUES =====
+
+  getEquipmentIssues: async (filters?: {
+    status?: string;
+    severity?: string;
+    category?: string;
+    assigned_to?: number;
+  }): Promise<EquipmentIssue[]> => {
+    const response = await apiClient.get('/api/v1/maintenance/equipment-issues', { params: filters });
+    return extractData<EquipmentIssue[]>(response.data);
+  },
+
+  getEquipmentIssue: async (issueId: number): Promise<EquipmentIssue> => {
+    const response = await apiClient.get(`/api/v1/maintenance/equipment-issues/${issueId}`);
+    return extractData<EquipmentIssue>(response.data);
+  },
+
+  createEquipmentIssue: async (data: EquipmentIssueCreate): Promise<EquipmentIssue> => {
+    const response = await apiClient.post('/api/v1/maintenance/equipment-issues', data);
+    return extractData<EquipmentIssue>(response.data);
+  },
+
+  updateEquipmentIssue: async (issueId: number, data: EquipmentIssueUpdate): Promise<EquipmentIssue> => {
+    const response = await apiClient.patch(`/api/v1/maintenance/equipment-issues/${issueId}`, data);
+    return extractData<EquipmentIssue>(response.data);
+  },
+
+  acceptEquipmentIssue: async (issueId: number): Promise<EquipmentIssue> => {
+    const response = await apiClient.post(`/api/v1/maintenance/equipment-issues/${issueId}/accept`);
+    return extractData<EquipmentIssue>(response.data);
+  },
+
+  resolveEquipmentIssue: async (
+    issueId: number,
+    resolutionNotes?: string,
+    actualRepairCost?: number
+  ): Promise<EquipmentIssue> => {
+    const response = await apiClient.post(
+      `/api/v1/maintenance/equipment-issues/${issueId}/resolve`,
+      null,
+      { params: { resolution_notes: resolutionNotes, actual_repair_cost: actualRepairCost } }
+    );
+    return extractData<EquipmentIssue>(response.data);
+  },
+
+  // ===== DASHBOARD =====
+
+  getDashboard: async (): Promise<MaintenanceDashboard> => {
+    const response = await apiClient.get('/api/v1/maintenance/dashboard');
+    return extractData<MaintenanceDashboard>(response.data);
+  },
+
+  getMyDashboard: async (): Promise<MaintenanceDashboard> => {
+    const response = await apiClient.get('/api/v1/maintenance/my-dashboard');
+    return extractData<MaintenanceDashboard>(response.data);
+  },
+};

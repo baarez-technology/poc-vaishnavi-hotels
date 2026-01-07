@@ -1,0 +1,203 @@
+{
+  "roomTypes": [
+    {
+      "id": "RT-001",
+      "name": "Standard Double",
+      "code": "STD",
+      "totalRooms": 20,
+      "maxOccupancy": 3,
+      "baseRate": 190
+    },
+    {
+      "id": "RT-002",
+      "name": "Deluxe King",
+      "code": "DLX-K",
+      "totalRooms": 15,
+      "maxOccupancy": 2,
+      "baseRate": 280
+    },
+    {
+      "id": "RT-003",
+      "name": "Deluxe Twin",
+      "code": "DLX-T",
+      "totalRooms": 12,
+      "maxOccupancy": 4,
+      "baseRate": 260
+    },
+    {
+      "id": "RT-004",
+      "name": "Executive Suite",
+      "code": "EXE",
+      "totalRooms": 8,
+      "maxOccupancy": 3,
+      "baseRate": 450
+    },
+    {
+      "id": "RT-005",
+      "name": "Presidential Suite",
+      "code": "PRES",
+      "totalRooms": 2,
+      "maxOccupancy": 6,
+      "baseRate": 900
+    }
+  ],
+  "availability": [
+    {"date": "2025-12-06", "roomType": "Standard Double", "totalRooms": 20, "sold": 5, "remaining": 15, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-06", "roomType": "Deluxe King", "totalRooms": 15, "sold": 4, "remaining": 11, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-06", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 3, "remaining": 9, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-06", "roomType": "Executive Suite", "totalRooms": 8, "sold": 2, "remaining": 6, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-06", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 0, "remaining": 2, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+
+    {"date": "2025-12-07", "roomType": "Standard Double", "totalRooms": 20, "sold": 8, "remaining": 12, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-07", "roomType": "Deluxe King", "totalRooms": 15, "sold": 6, "remaining": 9, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-07", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 5, "remaining": 7, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-07", "roomType": "Executive Suite", "totalRooms": 8, "sold": 3, "remaining": 5, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-07", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 1, "remaining": 1, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+
+    {"date": "2025-12-08", "roomType": "Standard Double", "totalRooms": 20, "sold": 10, "remaining": 10, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-08", "roomType": "Deluxe King", "totalRooms": 15, "sold": 8, "remaining": 7, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-08", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 6, "remaining": 6, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-08", "roomType": "Executive Suite", "totalRooms": 8, "sold": 4, "remaining": 4, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-08", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 1, "remaining": 1, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+
+    {"date": "2025-12-09", "roomType": "Standard Double", "totalRooms": 20, "sold": 12, "remaining": 8, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-09", "roomType": "Deluxe King", "totalRooms": 15, "sold": 10, "remaining": 5, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-09", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 8, "remaining": 4, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-09", "roomType": "Executive Suite", "totalRooms": 8, "sold": 5, "remaining": 3, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-09", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 1, "remaining": 1, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+
+    {"date": "2025-12-10", "roomType": "Standard Double", "totalRooms": 20, "sold": 14, "remaining": 6, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-10", "roomType": "Deluxe King", "totalRooms": 15, "sold": 12, "remaining": 3, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-10", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 9, "remaining": 3, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-10", "roomType": "Executive Suite", "totalRooms": 8, "sold": 6, "remaining": 2, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-10", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 2, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 2, "maxStay": null, "CTA": true, "CTD": false}},
+
+    {"date": "2025-12-11", "roomType": "Standard Double", "totalRooms": 20, "sold": 15, "remaining": 5, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-11", "roomType": "Deluxe King", "totalRooms": 15, "sold": 13, "remaining": 2, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-11", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 10, "remaining": 2, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-11", "roomType": "Executive Suite", "totalRooms": 8, "sold": 7, "remaining": 1, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-11", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 2, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 2, "maxStay": null, "CTA": true, "CTD": false}},
+
+    {"date": "2025-12-12", "roomType": "Standard Double", "totalRooms": 20, "sold": 16, "remaining": 4, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-12", "roomType": "Deluxe King", "totalRooms": 15, "sold": 14, "remaining": 1, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-12", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 11, "remaining": 1, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-12", "roomType": "Executive Suite", "totalRooms": 8, "sold": 8, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 2, "maxStay": null, "CTA": true, "CTD": false}},
+    {"date": "2025-12-12", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 2, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 2, "maxStay": null, "CTA": true, "CTD": false}},
+
+    {"date": "2025-12-13", "roomType": "Standard Double", "totalRooms": 20, "sold": 18, "remaining": 2, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-13", "roomType": "Deluxe King", "totalRooms": 15, "sold": 15, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 2, "maxStay": null, "CTA": true, "CTD": false}},
+    {"date": "2025-12-13", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 12, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 2, "maxStay": null, "CTA": true, "CTD": false}},
+    {"date": "2025-12-13", "roomType": "Executive Suite", "totalRooms": 8, "sold": 8, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 2, "maxStay": null, "CTA": true, "CTD": false}},
+    {"date": "2025-12-13", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 2, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 2, "maxStay": null, "CTA": true, "CTD": false}},
+
+    {"date": "2025-12-14", "roomType": "Standard Double", "totalRooms": 20, "sold": 15, "remaining": 5, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-14", "roomType": "Deluxe King", "totalRooms": 15, "sold": 12, "remaining": 3, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-14", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 9, "remaining": 3, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-14", "roomType": "Executive Suite", "totalRooms": 8, "sold": 6, "remaining": 2, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-14", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 1, "remaining": 1, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+
+    {"date": "2025-12-15", "roomType": "Standard Double", "totalRooms": 20, "sold": 12, "remaining": 8, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-15", "roomType": "Deluxe King", "totalRooms": 15, "sold": 10, "remaining": 5, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-15", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 7, "remaining": 5, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-15", "roomType": "Executive Suite", "totalRooms": 8, "sold": 5, "remaining": 3, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-15", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 1, "remaining": 1, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+
+    {"date": "2025-12-16", "roomType": "Standard Double", "totalRooms": 20, "sold": 10, "remaining": 10, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-16", "roomType": "Deluxe King", "totalRooms": 15, "sold": 8, "remaining": 7, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-16", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 6, "remaining": 6, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-16", "roomType": "Executive Suite", "totalRooms": 8, "sold": 4, "remaining": 4, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-16", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 0, "remaining": 2, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+
+    {"date": "2025-12-17", "roomType": "Standard Double", "totalRooms": 20, "sold": 8, "remaining": 12, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-17", "roomType": "Deluxe King", "totalRooms": 15, "sold": 6, "remaining": 9, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-17", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 5, "remaining": 7, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-17", "roomType": "Executive Suite", "totalRooms": 8, "sold": 3, "remaining": 5, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-17", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 0, "remaining": 2, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+
+    {"date": "2025-12-18", "roomType": "Standard Double", "totalRooms": 20, "sold": 7, "remaining": 13, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-18", "roomType": "Deluxe King", "totalRooms": 15, "sold": 5, "remaining": 10, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-18", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 4, "remaining": 8, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-18", "roomType": "Executive Suite", "totalRooms": 8, "sold": 2, "remaining": 6, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-18", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 0, "remaining": 2, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+
+    {"date": "2025-12-19", "roomType": "Standard Double", "totalRooms": 20, "sold": 9, "remaining": 11, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-19", "roomType": "Deluxe King", "totalRooms": 15, "sold": 7, "remaining": 8, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-19", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 6, "remaining": 6, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-19", "roomType": "Executive Suite", "totalRooms": 8, "sold": 4, "remaining": 4, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-19", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 1, "remaining": 1, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+
+    {"date": "2025-12-20", "roomType": "Standard Double", "totalRooms": 20, "sold": 14, "remaining": 6, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-20", "roomType": "Deluxe King", "totalRooms": 15, "sold": 11, "remaining": 4, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-20", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 9, "remaining": 3, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-20", "roomType": "Executive Suite", "totalRooms": 8, "sold": 6, "remaining": 2, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-20", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 1, "remaining": 1, "isClosed": false, "restrictions": {"minStay": 3, "maxStay": null, "CTA": false, "CTD": false}},
+
+    {"date": "2025-12-21", "roomType": "Standard Double", "totalRooms": 20, "sold": 16, "remaining": 4, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-21", "roomType": "Deluxe King", "totalRooms": 15, "sold": 13, "remaining": 2, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-21", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 10, "remaining": 2, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-21", "roomType": "Executive Suite", "totalRooms": 8, "sold": 7, "remaining": 1, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-21", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 2, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 3, "maxStay": null, "CTA": true, "CTD": false}},
+
+    {"date": "2025-12-22", "roomType": "Standard Double", "totalRooms": 20, "sold": 18, "remaining": 2, "isClosed": false, "restrictions": {"minStay": 3, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-22", "roomType": "Deluxe King", "totalRooms": 15, "sold": 14, "remaining": 1, "isClosed": false, "restrictions": {"minStay": 3, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-22", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 11, "remaining": 1, "isClosed": false, "restrictions": {"minStay": 3, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-22", "roomType": "Executive Suite", "totalRooms": 8, "sold": 8, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 3, "maxStay": null, "CTA": true, "CTD": false}},
+    {"date": "2025-12-22", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 2, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 3, "maxStay": null, "CTA": true, "CTD": false}},
+
+    {"date": "2025-12-23", "roomType": "Standard Double", "totalRooms": 20, "sold": 19, "remaining": 1, "isClosed": false, "restrictions": {"minStay": 3, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-23", "roomType": "Deluxe King", "totalRooms": 15, "sold": 15, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 3, "maxStay": null, "CTA": true, "CTD": false}},
+    {"date": "2025-12-23", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 12, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 3, "maxStay": null, "CTA": true, "CTD": false}},
+    {"date": "2025-12-23", "roomType": "Executive Suite", "totalRooms": 8, "sold": 8, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 3, "maxStay": null, "CTA": true, "CTD": false}},
+    {"date": "2025-12-23", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 2, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 3, "maxStay": null, "CTA": true, "CTD": false}},
+
+    {"date": "2025-12-24", "roomType": "Standard Double", "totalRooms": 20, "sold": 20, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 3, "maxStay": null, "CTA": true, "CTD": false}},
+    {"date": "2025-12-24", "roomType": "Deluxe King", "totalRooms": 15, "sold": 15, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 3, "maxStay": null, "CTA": true, "CTD": false}},
+    {"date": "2025-12-24", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 12, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 3, "maxStay": null, "CTA": true, "CTD": false}},
+    {"date": "2025-12-24", "roomType": "Executive Suite", "totalRooms": 8, "sold": 8, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 3, "maxStay": null, "CTA": true, "CTD": false}},
+    {"date": "2025-12-24", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 2, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 3, "maxStay": null, "CTA": true, "CTD": false}},
+
+    {"date": "2025-12-25", "roomType": "Standard Double", "totalRooms": 20, "sold": 20, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 3, "maxStay": null, "CTA": true, "CTD": false}},
+    {"date": "2025-12-25", "roomType": "Deluxe King", "totalRooms": 15, "sold": 15, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 3, "maxStay": null, "CTA": true, "CTD": false}},
+    {"date": "2025-12-25", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 12, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 3, "maxStay": null, "CTA": true, "CTD": false}},
+    {"date": "2025-12-25", "roomType": "Executive Suite", "totalRooms": 8, "sold": 8, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 3, "maxStay": null, "CTA": true, "CTD": false}},
+    {"date": "2025-12-25", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 2, "remaining": 0, "isClosed": true, "restrictions": {"minStay": 3, "maxStay": null, "CTA": true, "CTD": false}},
+
+    {"date": "2025-12-26", "roomType": "Standard Double", "totalRooms": 20, "sold": 15, "remaining": 5, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-26", "roomType": "Deluxe King", "totalRooms": 15, "sold": 10, "remaining": 5, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-26", "roomType": "Deluxe Twin", "totalRooms": 12, "sold": 8, "remaining": 4, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-26", "roomType": "Executive Suite", "totalRooms": 8, "sold": 5, "remaining": 3, "isClosed": false, "restrictions": {"minStay": 1, "maxStay": null, "CTA": false, "CTD": false}},
+    {"date": "2025-12-26", "roomType": "Presidential Suite", "totalRooms": 2, "sold": 1, "remaining": 1, "isClosed": false, "restrictions": {"minStay": 2, "maxStay": null, "CTA": false, "CTD": false}}
+  ],
+  "rooms": [
+    {"number": "201", "type": "Standard Double", "floor": 2, "status": "Available", "features": ["City View"]},
+    {"number": "202", "type": "Standard Double", "floor": 2, "status": "Occupied", "features": ["City View"]},
+    {"number": "203", "type": "Standard Double", "floor": 2, "status": "Available", "features": ["Garden View"]},
+    {"number": "204", "type": "Standard Double", "floor": 2, "status": "Maintenance", "features": ["Garden View"]},
+    {"number": "205", "type": "Standard Double", "floor": 2, "status": "Occupied", "features": ["City View"]},
+    {"number": "206", "type": "Standard Double", "floor": 2, "status": "Available", "features": ["City View"]},
+    {"number": "207", "type": "Standard Double", "floor": 2, "status": "Available", "features": ["Garden View"]},
+    {"number": "208", "type": "Standard Double", "floor": 2, "status": "Available", "features": ["City View"]},
+    {"number": "209", "type": "Standard Double", "floor": 2, "status": "Occupied", "features": ["Garden View"]},
+    {"number": "210", "type": "Standard Double", "floor": 2, "status": "Occupied", "features": ["City View"]},
+    {"number": "301", "type": "Deluxe King", "floor": 3, "status": "Available", "features": ["Ocean View", "Balcony"]},
+    {"number": "302", "type": "Deluxe King", "floor": 3, "status": "Occupied", "features": ["Ocean View", "Balcony"]},
+    {"number": "303", "type": "Deluxe King", "floor": 3, "status": "Available", "features": ["Ocean View"]},
+    {"number": "304", "type": "Deluxe King", "floor": 3, "status": "Occupied", "features": ["Ocean View", "Balcony"]},
+    {"number": "305", "type": "Deluxe King", "floor": 3, "status": "Available", "features": ["Ocean View"]},
+    {"number": "306", "type": "Deluxe Twin", "floor": 3, "status": "Available", "features": ["City View", "Connecting"]},
+    {"number": "307", "type": "Deluxe Twin", "floor": 3, "status": "Occupied", "features": ["City View"]},
+    {"number": "308", "type": "Deluxe Twin", "floor": 3, "status": "Available", "features": ["City View", "Connecting"]},
+    {"number": "309", "type": "Deluxe Twin", "floor": 3, "status": "Available", "features": ["Garden View"]},
+    {"number": "310", "type": "Deluxe Twin", "floor": 3, "status": "Occupied", "features": ["Garden View"]},
+    {"number": "401", "type": "Deluxe King", "floor": 4, "status": "Available", "features": ["Ocean View", "Balcony", "Corner"]},
+    {"number": "402", "type": "Deluxe King", "floor": 4, "status": "Occupied", "features": ["Ocean View", "Balcony"]},
+    {"number": "403", "type": "Deluxe Twin", "floor": 4, "status": "Available", "features": ["Ocean View"]},
+    {"number": "404", "type": "Deluxe Twin", "floor": 4, "status": "Occupied", "features": ["Ocean View", "Balcony"]},
+    {"number": "501", "type": "Executive Suite", "floor": 5, "status": "Occupied", "features": ["Ocean View", "Balcony", "Living Room"]},
+    {"number": "502", "type": "Executive Suite", "floor": 5, "status": "Occupied", "features": ["Ocean View", "Balcony", "Living Room"]},
+    {"number": "503", "type": "Executive Suite", "floor": 5, "status": "Available", "features": ["Ocean View", "Balcony", "Living Room", "Kitchenette"]},
+    {"number": "504", "type": "Executive Suite", "floor": 5, "status": "Available", "features": ["Panoramic View", "Balcony", "Living Room"]},
+    {"number": "PH1", "type": "Presidential Suite", "floor": 6, "status": "Occupied", "features": ["Panoramic View", "Private Terrace", "Full Kitchen", "Butler Service"]},
+    {"number": "PH2", "type": "Presidential Suite", "floor": 6, "status": "Available", "features": ["Panoramic View", "Private Terrace", "Full Kitchen", "Butler Service", "Private Pool"]}
+  ]
+}

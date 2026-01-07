@@ -1,0 +1,449 @@
+/**
+ * CBS Bookings Page
+ * Central Booking System main bookings interface - Glimmora Design System v5.0
+ * Enhanced with refined editorial luxury aesthetic
+ */
+
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useCBS } from '../../../context/CBSContext';
+import { useToast } from '../../../contexts/ToastContext';
+import { useTheme } from '../../../contexts/ThemeContext';
+import BookingList from '../../../components/cbs/BookingList';
+import BookingDrawer from '../../../components/cbs/BookingDrawer';
+import NewBookingDrawer from '../../../components/cbs/NewBookingDrawer';
+import AssignRoomModal from '../../../components/cbs/AssignRoomModal';
+import { ConfirmModal } from '../../../components/ui2/Modal';
+import { Button } from '../../../components/ui2/Button';
+import {
+  Plus,
+  Search,
+  Calendar,
+  Users,
+  DollarSign,
+  ArrowUpRight,
+  ArrowDownRight,
+  BookOpen
+} from 'lucide-react';
+
+export default function CBSBookings() {
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'all';
+  const navigate = useNavigate();
+
+  const { isDark } = useTheme();
+  const {
+    bookings,
+    createBooking,
+    updateBooking,
+    cancelBooking,
+    updateBookingStatus,
+    addPayment,
+    assignRoom,
+    getAvailableRooms,
+    getAIInsights,
+    getRateForBooking
+  } = useCBS();
+
+  const { success, error } = useToast();
+
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isNewBookingModalOpen, setIsNewBookingModalOpen] = useState(false);
+  const [isAssignRoomModalOpen, setIsAssignRoomModalOpen] = useState(false);
+  const [availableRoomsForAssignment, setAvailableRoomsForAssignment] = useState([]);
+  const [aiInsights, setAIInsights] = useState([]);
+
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null,
+    variant: 'primary'
+  });
+
+  const [loadingStates, setLoadingStates] = useState({});
+  const lastActionRef = useRef(null);
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const bookingStats = useMemo(() => {
+    const arrivals = bookings.filter(b => b.checkIn === today && b.status !== 'CANCELLED').length;
+    const departures = bookings.filter(b => b.checkOut === today && b.status !== 'CANCELLED').length;
+    const inHouse = bookings.filter(b => b.status === 'CHECKED-IN').length;
+    const pending = bookings.filter(b => b.status === 'PENDING' || b.status === 'CONFIRMED').length;
+
+    // Revenue = actual payments received (amountPaid), not total booking amount
+    const totalRevenue = bookings.reduce((sum, b) => sum + (b.amountPaid || 0), 0);
+    const totalBookingValue = bookings.reduce((sum, b) => sum + (b.amount || 0), 0);
+    const pendingPayments = bookings.reduce((sum, b) => sum + (b.balance || 0), 0);
+    const avgBookingValue = bookings.length > 0 ? totalBookingValue / bookings.length : 0;
+
+    return { arrivals, departures, inHouse, pending, totalRevenue, totalBookingValue, pendingPayments, avgBookingValue };
+  }, [bookings, today]);
+
+  const handleBookingClick = useCallback((booking) => {
+    setSelectedBooking(booking);
+    const insights = getAIInsights(booking.id);
+    setAIInsights(insights);
+    setIsDrawerOpen(true);
+  }, [getAIInsights]);
+
+  const handleDrawerClose = useCallback(() => {
+    setIsDrawerOpen(false);
+    setSelectedBooking(null);
+    setAIInsights([]);
+  }, []);
+
+  const handleStatusChange = useCallback((bookingId, newStatus) => {
+    updateBookingStatus(bookingId, newStatus);
+    success(`Booking status updated to ${newStatus}`);
+
+    if (selectedBooking && selectedBooking.id === bookingId) {
+      const updated = bookings.find(b => b.id === bookingId);
+      if (updated) {
+        setSelectedBooking({ ...updated, status: newStatus });
+      }
+    }
+  }, [updateBookingStatus, success, selectedBooking, bookings]);
+
+  const handleNewBooking = useCallback(() => {
+    setIsNewBookingModalOpen(true);
+  }, []);
+
+  const handleNewBookingSubmit = useCallback((bookingData) => {
+    const newBooking = createBooking(bookingData);
+    success(`Booking ${newBooking.id} created successfully`);
+    setIsNewBookingModalOpen(false);
+  }, [createBooking, success]);
+
+  const handleAssignRoom = useCallback(() => {
+    if (!selectedBooking) return;
+
+    const rooms = getAvailableRooms(
+      selectedBooking.checkIn,
+      selectedBooking.checkOut,
+      null
+    );
+    setAvailableRoomsForAssignment(rooms);
+    setIsAssignRoomModalOpen(true);
+  }, [selectedBooking, getAvailableRooms]);
+
+  // Quick action: Assign room from table (opens modal with booking pre-selected)
+  const handleQuickAssignRoom = useCallback((booking) => {
+    setSelectedBooking(booking);
+    const rooms = getAvailableRooms(
+      booking.checkIn,
+      booking.checkOut,
+      null
+    );
+    setAvailableRoomsForAssignment(rooms);
+    setIsAssignRoomModalOpen(true);
+  }, [getAvailableRooms]);
+
+  // Quick action: Check-in from table
+  const handleQuickCheckIn = useCallback((booking) => {
+    const bookingData = typeof booking === 'object' ? booking : bookings.find(b => b.id === booking);
+
+    if (!bookingData) return;
+
+    // Check for outstanding balance
+    if (bookingData.balance > 0) {
+      setConfirmDialog({
+        isOpen: true,
+        title: 'Outstanding Balance',
+        message: `Guest ${bookingData.guestName} has an outstanding balance of $${bookingData.balance}. Check in anyway?`,
+        variant: 'warning',
+        onConfirm: () => performCheckIn(bookingData.id)
+      });
+      return;
+    }
+
+    // Check if room is assigned
+    if (!bookingData.roomNumber) {
+      setConfirmDialog({
+        isOpen: true,
+        title: 'No Room Assigned',
+        message: 'This booking does not have a room assigned. Would you like to assign a room first?',
+        variant: 'warning',
+        onConfirm: () => handleQuickAssignRoom(bookingData)
+      });
+      return;
+    }
+
+    performCheckIn(bookingData.id);
+  }, [bookings]);
+
+  const performCheckIn = useCallback((bookingId) => {
+    const previousStatus = bookings.find(b => b.id === bookingId)?.status;
+    lastActionRef.current = { type: 'checkIn', bookingId, previousStatus };
+
+    updateBookingStatus(bookingId, 'CHECKED-IN');
+    success('Guest checked in successfully', {
+      onUndo: () => {
+        updateBookingStatus(bookingId, previousStatus);
+        lastActionRef.current = null;
+      }
+    });
+  }, [bookings, updateBookingStatus, success]);
+
+  // Quick action: Check-out from table
+  const handleQuickCheckOut = useCallback((booking) => {
+    const bookingData = typeof booking === 'object' ? booking : bookings.find(b => b.id === booking);
+
+    if (!bookingData) return;
+
+    // Warn if there's an outstanding balance
+    if (bookingData.balance > 0) {
+      setConfirmDialog({
+        isOpen: true,
+        title: 'Outstanding Balance',
+        message: `Guest ${bookingData.guestName} has an outstanding balance of $${bookingData.balance}. Complete checkout anyway?`,
+        variant: 'danger',
+        onConfirm: () => performCheckOut(bookingData.id)
+      });
+      return;
+    }
+
+    performCheckOut(bookingData.id);
+  }, [bookings]);
+
+  const performCheckOut = useCallback((bookingId) => {
+    const previousStatus = bookings.find(b => b.id === bookingId)?.status;
+    lastActionRef.current = { type: 'checkOut', bookingId, previousStatus };
+
+    updateBookingStatus(bookingId, 'CHECKED-OUT');
+    success('Guest checked out successfully', {
+      onUndo: () => {
+        updateBookingStatus(bookingId, previousStatus);
+        lastActionRef.current = null;
+      }
+    });
+  }, [bookings, updateBookingStatus, success]);
+
+  // Quick action: Cancel from table
+  const handleQuickCancel = useCallback((booking) => {
+    const bookingData = typeof booking === 'object' ? booking : bookings.find(b => b.id === booking);
+
+    if (!bookingData) return;
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Cancel Booking',
+      message: `Are you sure you want to cancel booking ${bookingData.id} for ${bookingData.guestName}? This action can be undone.`,
+      variant: 'danger',
+      onConfirm: () => performCancel(bookingData.id)
+    });
+  }, [bookings]);
+
+  const performCancel = useCallback((bookingId) => {
+    const previousStatus = bookings.find(b => b.id === bookingId)?.status;
+    lastActionRef.current = { type: 'cancel', bookingId, previousStatus };
+
+    cancelBooking(bookingId, 'Cancelled by user');
+    success('Booking cancelled successfully', {
+      onUndo: () => {
+        updateBookingStatus(bookingId, previousStatus);
+        lastActionRef.current = null;
+      }
+    });
+  }, [bookings, cancelBooking, updateBookingStatus, success]);
+
+  const handleRoomAssignment = useCallback((bookingId, roomNumber, upgradeFee = 0) => {
+    const result = assignRoom(bookingId, roomNumber);
+    if (result.success) {
+      success(`Room ${roomNumber} assigned successfully`);
+
+      if (selectedBooking && selectedBooking.id === bookingId) {
+        const updated = bookings.find(b => b.id === bookingId);
+        if (updated) {
+          setSelectedBooking({ ...updated });
+        }
+      }
+
+      if (upgradeFee > 0) {
+        updateBooking(bookingId, {
+          amount: selectedBooking.amount + upgradeFee,
+          balance: selectedBooking.balance + upgradeFee
+        });
+      }
+
+      // Close both modals on successful assignment
+      setIsAssignRoomModalOpen(false);
+      setIsDrawerOpen(false);
+      setSelectedBooking(null);
+      setAIInsights([]);
+    } else {
+      error(result.error || 'Failed to assign room');
+      setIsAssignRoomModalOpen(false);
+    }
+  }, [assignRoom, success, error, selectedBooking, bookings, updateBooking]);
+
+  const handleUpdateBooking = useCallback((bookingId, updates) => {
+    updateBooking(bookingId, updates);
+    success('Booking updated successfully');
+
+    if (selectedBooking && selectedBooking.id === bookingId) {
+      setSelectedBooking(prev => ({ ...prev, ...updates }));
+    }
+  }, [updateBooking, success, selectedBooking]);
+
+  const handleCancelBooking = useCallback(() => {
+    if (!selectedBooking) return;
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Cancel Booking',
+      message: `Are you sure you want to cancel booking ${selectedBooking.id} for ${selectedBooking.guestName}?`,
+      variant: 'danger',
+      onConfirm: () => {
+        const previousStatus = selectedBooking.status;
+        cancelBooking(selectedBooking.id, 'Cancelled by user');
+        success('Booking cancelled successfully', {
+          onUndo: () => {
+            updateBookingStatus(selectedBooking.id, previousStatus);
+          }
+        });
+        handleDrawerClose();
+      }
+    });
+  }, [selectedBooking, cancelBooking, updateBookingStatus, success, handleDrawerClose]);
+
+  const handleAddPayment = useCallback((bookingId, paymentData) => {
+    addPayment(bookingId, paymentData);
+    success(`Payment of $${paymentData.amount} added successfully`);
+
+    const updated = bookings.find(b => b.id === bookingId);
+    if (updated && selectedBooking && selectedBooking.id === bookingId) {
+      setSelectedBooking({ ...updated });
+    }
+  }, [addPayment, success, bookings, selectedBooking]);
+
+  const handleNotifyHousekeeping = useCallback((roomNumber) => {
+    success(`Housekeeping notified for Room ${roomNumber}`);
+  }, [success]);
+
+  const getConflictingRooms = useCallback(() => {
+    if (!selectedBooking) return [];
+    return bookings
+      .filter(b =>
+        b.id !== selectedBooking.id &&
+        b.roomNumber &&
+        b.status !== 'CANCELLED' &&
+        b.status !== 'CHECKED-OUT' &&
+        new Date(b.checkIn) < new Date(selectedBooking.checkOut) &&
+        new Date(b.checkOut) > new Date(selectedBooking.checkIn)
+      )
+      .map(b => b.roomNumber);
+  }, [selectedBooking, bookings]);
+
+  const getAvailableRoomsForNewBooking = useCallback((checkIn, checkOut) => {
+    if (!checkIn || !checkOut) return [];
+    return getAvailableRooms(checkIn, checkOut);
+  }, [getAvailableRooms]);
+
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
+      <main className="px-10 py-6">
+
+        {/* Page Header */}
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+              Bookings
+            </h1>
+            <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
+              Manage reservations and room assignments
+            </p>
+          </div>
+          <Button
+            variant="primary"
+            size="md"
+            icon={Plus}
+            onClick={handleNewBooking}
+          >
+            New Booking
+          </Button>
+        </header>
+
+        {/* Bookings List */}
+        <section>
+          <BookingList
+            bookings={bookings}
+            onBookingClick={handleBookingClick}
+            onStatusChange={handleStatusChange}
+            onAssignRoom={handleQuickAssignRoom}
+            onCheckIn={handleQuickCheckIn}
+            onCheckOut={handleQuickCheckOut}
+            onCancel={handleQuickCancel}
+            isDark={isDark}
+            initialTab={initialTab}
+            showCreateButton={false}
+          />
+        </section>
+      </main>
+
+      {/* Booking Drawer */}
+      <BookingDrawer
+        booking={selectedBooking}
+        isOpen={isDrawerOpen}
+        onClose={handleDrawerClose}
+        onStatusChange={handleStatusChange}
+        onUpdateBooking={handleUpdateBooking}
+        onAssignRoom={handleAssignRoom}
+        onCancelBooking={handleCancelBooking}
+        onAddPayment={handleAddPayment}
+        aiInsights={aiInsights}
+      />
+
+      {/* New Booking Drawer */}
+      <NewBookingDrawer
+        isOpen={isNewBookingModalOpen}
+        onClose={() => setIsNewBookingModalOpen(false)}
+        onSubmit={handleNewBookingSubmit}
+        availableRooms={getAvailableRoomsForNewBooking(
+          new Date().toISOString().split('T')[0],
+          new Date(Date.now() + 86400000).toISOString().split('T')[0]
+        )}
+        getRateForBooking={getRateForBooking}
+      />
+
+      {/* Assign Room Modal */}
+      <AssignRoomModal
+        isOpen={isAssignRoomModalOpen}
+        onClose={() => setIsAssignRoomModalOpen(false)}
+        booking={selectedBooking}
+        availableRooms={availableRoomsForAssignment}
+        conflictingRooms={getConflictingRooms()}
+        onAssign={handleRoomAssignment}
+        onNotifyHousekeeping={handleNotifyHousekeeping}
+        hideBackdrop={isDrawerOpen}
+      />
+
+      {/* Confirm Dialog */}
+      <ConfirmModal
+        open={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={() => {
+          if (confirmDialog.onConfirm) confirmDialog.onConfirm();
+          setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        }}
+        title={confirmDialog.title}
+        description={confirmDialog.message}
+        variant={confirmDialog.variant}
+        confirmText="Confirm"
+        cancelText="Cancel"
+      />
+    </div>
+  );
+}

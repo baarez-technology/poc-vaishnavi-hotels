@@ -18,6 +18,7 @@
 
     /* Linting */
     "strict": true,
+    "noImplicitAny": false, // Temporarily disabled for migration to TypeScript
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,

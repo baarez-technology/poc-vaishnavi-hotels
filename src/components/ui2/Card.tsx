@@ -1,14 +1,94 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, LucideIcon } from 'lucide-react';
 
 /**
  * Glimmora Design System v4.0 - Card Components
  * Information-dense cards with border-defined hierarchy
  */
 
+// Type Definitions
+type AccentColor = 'terra' | 'ocean' | 'gold' | 'sage' | 'rose' | 'neutral';
+type ChangeType = 'positive' | 'negative' | 'neutral';
+type SizeType = 'sm' | 'md' | 'lg';
+type VariantType = 'terra' | 'ocean' | 'sage' | 'gold' | 'dark';
+
+interface BaseCardProps extends React.HTMLAttributes<HTMLDivElement> {
+  className?: string;
+  hover?: boolean;
+  padding?: boolean;
+}
+
+interface AccentCardProps extends React.HTMLAttributes<HTMLDivElement> {
+  className?: string;
+  accent?: AccentColor;
+  children?: React.ReactNode;
+}
+
+interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+  className?: string;
+}
+
+interface CardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {
+  className?: string;
+}
+
+interface CardDescriptionProps extends React.HTMLAttributes<HTMLParagraphElement> {
+  className?: string;
+}
+
+interface CardContentProps extends React.HTMLAttributes<HTMLDivElement> {
+  className?: string;
+}
+
+interface CardFooterProps extends React.HTMLAttributes<HTMLDivElement> {
+  className?: string;
+}
+
+interface MetricCardProps extends React.HTMLAttributes<HTMLDivElement> {
+  className?: string;
+  title: string;
+  value: string | number;
+  change?: string;
+  changeType?: ChangeType;
+  subtitle?: string;
+  icon?: LucideIcon;
+  iconBg?: AccentColor;
+  size?: SizeType;
+  loading?: boolean;
+}
+
+interface StatWidgetProps extends React.HTMLAttributes<HTMLDivElement> {
+  className?: string;
+  label: string;
+  value: string | number;
+  icon?: LucideIcon;
+  trend?: number;
+  color?: Exclude<AccentColor, 'neutral'>;
+}
+
+interface ActionCardProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  className?: string;
+  title: string;
+  description?: string;
+  icon?: LucideIcon;
+  variant?: VariantType;
+}
+
+interface DataCardProps extends React.HTMLAttributes<HTMLDivElement> {
+  className?: string;
+  children?: React.ReactNode;
+}
+
+interface DataCardRowProps extends React.HTMLAttributes<HTMLDivElement> {
+  className?: string;
+  label: string;
+  value: string | number;
+  icon?: LucideIcon;
+}
+
 // Base Card
-export function Card({ className, hover = false, padding = true, ...props }) {
+export function Card({ className, hover = false, padding = true, ...props }: BaseCardProps) {
   return (
     <div
       className={cn(
@@ -24,8 +104,8 @@ export function Card({ className, hover = false, padding = true, ...props }) {
 }
 
 // Card with colored left accent border
-export function AccentCard({ className, accent = 'terra', children, ...props }) {
-  const accents = {
+export function AccentCard({ className, accent = 'terra', children, ...props }: AccentCardProps) {
+  const accents: Record<AccentColor, string> = {
     terra: 'border-l-terra-500',
     ocean: 'border-l-ocean-500',
     gold: 'border-l-gold-500',
@@ -51,7 +131,7 @@ export function AccentCard({ className, accent = 'terra', children, ...props }) 
 }
 
 // Card Header
-export function CardHeader({ className, ...props }) {
+export function CardHeader({ className, ...props }: CardHeaderProps) {
   return (
     <div
       className={cn(
@@ -65,7 +145,7 @@ export function CardHeader({ className, ...props }) {
 }
 
 // Card Title
-export function CardTitle({ className, ...props }) {
+export function CardTitle({ className, ...props }: CardTitleProps) {
   return (
     <h3
       className={cn(
@@ -78,19 +158,19 @@ export function CardTitle({ className, ...props }) {
 }
 
 // Card Description
-export function CardDescription({ className, ...props }) {
+export function CardDescription({ className, ...props }: CardDescriptionProps) {
   return (
     <p className={cn('text-xs text-neutral-500 mt-0.5', className)} {...props} />
   );
 }
 
 // Card Content
-export function CardContent({ className, ...props }) {
+export function CardContent({ className, ...props }: CardContentProps) {
   return <div className={cn('', className)} {...props} />;
 }
 
 // Card Footer
-export function CardFooter({ className, ...props }) {
+export function CardFooter({ className, ...props }: CardFooterProps) {
   return (
     <div
       className={cn(
@@ -109,15 +189,15 @@ export function MetricCard({
   title,
   value,
   change,
-  changeType = 'neutral', // positive, negative, neutral
+  changeType = 'neutral',
   subtitle,
   icon: Icon,
   iconBg = 'terra',
   size = 'md',
   loading = false,
   ...props
-}) {
-  const iconBgColors = {
+}: MetricCardProps) {
+  const iconBgColors: Record<AccentColor, string> = {
     terra: 'bg-terra-100 text-terra-600',
     ocean: 'bg-ocean-100 text-ocean-600',
     gold: 'bg-gold-100 text-gold-600',
@@ -126,7 +206,7 @@ export function MetricCard({
     neutral: 'bg-neutral-100 text-neutral-600',
   };
 
-  const changeColors = {
+  const changeColors: Record<ChangeType, string> = {
     positive: 'text-sage-600 bg-sage-50',
     negative: 'text-rose-600 bg-rose-50',
     neutral: 'text-neutral-500 bg-neutral-100',
@@ -134,7 +214,7 @@ export function MetricCard({
 
   const TrendIcon = changeType === 'positive' ? TrendingUp : changeType === 'negative' ? TrendingDown : Minus;
 
-  const sizes = {
+  const sizes: Record<SizeType, { wrapper: string; title: string; value: string; icon: string; iconInner: string }> = {
     sm: {
       wrapper: 'p-4',
       title: 'text-xs',
@@ -220,8 +300,8 @@ export function StatWidget({
   trend,
   color = 'terra',
   ...props
-}) {
-  const colors = {
+}: StatWidgetProps) {
+  const colors: Record<Exclude<AccentColor, 'neutral'>, string> = {
     terra: 'border-l-terra-500 bg-terra-50/50',
     ocean: 'border-l-ocean-500 bg-ocean-50/50',
     gold: 'border-l-gold-500 bg-gold-50/50',
@@ -262,11 +342,11 @@ export function ActionCard({
   title,
   description,
   icon: Icon,
-  variant = 'terra', // terra, ocean, sage, gold
+  variant = 'terra',
   onClick,
   ...props
-}) {
-  const variants = {
+}: ActionCardProps) {
+  const variants: Record<VariantType, string> = {
     terra: 'bg-gradient-to-br from-terra-500 to-terra-600 hover:from-terra-600 hover:to-terra-700',
     ocean: 'bg-gradient-to-br from-ocean-500 to-ocean-600 hover:from-ocean-600 hover:to-ocean-700',
     sage: 'bg-gradient-to-br from-sage-500 to-sage-600 hover:from-sage-600 hover:to-sage-700',
@@ -300,7 +380,7 @@ export function ActionCard({
 }
 
 // Data Card - For displaying data rows
-export function DataCard({ className, children, ...props }) {
+export function DataCard({ className, children, ...props }: DataCardProps) {
   return (
     <div
       className={cn(
@@ -315,7 +395,7 @@ export function DataCard({ className, children, ...props }) {
 }
 
 // Data Card Row
-export function DataCardRow({ className, label, value, icon: Icon, ...props }) {
+export function DataCardRow({ className, label, value, icon: Icon, ...props }: DataCardRowProps) {
   return (
     <div
       className={cn(

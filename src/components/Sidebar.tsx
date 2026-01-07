@@ -40,7 +40,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
-import GlimmoraLogo from '../Assets/G white logo.svg';
+import GlimmoraLogo from '../assets/G white logo.svg';
 
 /**
  * Glimmora Design System v5.0 - Modern Sidebar

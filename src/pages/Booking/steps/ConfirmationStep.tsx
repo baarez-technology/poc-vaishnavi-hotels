@@ -13,10 +13,13 @@ export function ConfirmationStep() {
   const { subtotal, tax, serviceFee, total, nights } = calculateTotal();
   const [downloading, setDownloading] = useState(false);
 
+  // Check if this was a modification
+  const isModification = bookingData.isModifyMode;
+
   useEffect(() => {
     // Confetti animation or celebration effect could go here
-    console.log('Booking confirmed!', bookingData);
-  }, [bookingData]);
+    console.log(isModification ? 'Booking modified!' : 'Booking confirmed!', bookingData);
+  }, [bookingData, isModification]);
 
   if (!bookingData.room || !bookingData.bookingNumber) {
     return null;
@@ -74,7 +77,7 @@ export function ConfirmationStep() {
           transition={{ delay: 0.3 }}
           className="text-4xl sm:text-5xl font-bold text-neutral-900 mb-3"
         >
-          Booking Confirmed!
+          {isModification ? 'Booking Updated!' : 'Booking Confirmed!'}
         </motion.h1>
 
         <motion.p
@@ -83,7 +86,9 @@ export function ConfirmationStep() {
           transition={{ delay: 0.4 }}
           className="text-lg text-neutral-600 mb-6"
         >
-          Your reservation has been successfully processed
+          {isModification
+            ? 'Your reservation has been successfully modified'
+            : 'Your reservation has been successfully processed'}
         </motion.p>
 
         <motion.div

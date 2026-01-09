@@ -1,7 +1,13 @@
-// Reputation AI Components
+// Reputation AI Components - Core Panels
 export { default as TrendsPanel } from './TrendsPanel';
 export { default as GoalsPanel } from './GoalsPanel';
 export { default as PendingReviewsPanel } from './PendingReviewsPanel';
+export { default as AlertsPanel } from './AlertsPanel';
+export { default as CategoryManager } from './CategoryManager';
+export { default as ApprovalQueue } from './ApprovalQueue';
+export { default as TemplatesManager } from './TemplatesManager';
+export { default as EngineStats } from './EngineStats';
+export { default as QuickActions } from './QuickActions';
 
 // Existing Components
 export { default as AIInsightCards } from './AIInsightCards';

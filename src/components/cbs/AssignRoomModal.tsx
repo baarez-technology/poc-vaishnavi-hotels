@@ -17,10 +17,14 @@ import { StatusBadge } from '../ui2/Badge';
 import { Drawer } from '../ui2/Drawer';
 
 const roomTypeColors = {
-  'Standard': { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-200', icon: 'bg-slate-200', darkBg: 'bg-slate-500/20', darkText: 'text-slate-300' },
-  'Premium': { bg: 'bg-[#C8B29D]/20', text: 'text-[#A57865]', border: 'border-[#C8B29D]', icon: 'bg-[#A57865]/20', darkBg: 'bg-[#C8B29D]/20', darkText: 'text-[#C8B29D]' },
-  'Deluxe': { bg: 'bg-[#5C9BA4]/10', text: 'text-[#5C9BA4]', border: 'border-[#5C9BA4]/30', icon: 'bg-[#5C9BA4]/20', darkBg: 'bg-[#5C9BA4]/20', darkText: 'text-[#5C9BA4]' },
-  'Suite': { bg: 'bg-[#CDB261]/10', text: 'text-[#CDB261]', border: 'border-[#CDB261]/30', icon: 'bg-[#CDB261]/20', darkBg: 'bg-[#CDB261]/20', darkText: 'text-[#CDB261]' }
+  'Minimalist Studio': { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-200', icon: 'bg-slate-200', darkBg: 'bg-slate-500/20', darkText: 'text-slate-300' },
+  'Coastal Retreat': { bg: 'bg-[#5C9BA4]/10', text: 'text-[#5C9BA4]', border: 'border-[#5C9BA4]/30', icon: 'bg-[#5C9BA4]/20', darkBg: 'bg-[#5C9BA4]/20', darkText: 'text-[#5C9BA4]' },
+  'Urban Oasis': { bg: 'bg-[#4E5840]/10', text: 'text-[#4E5840]', border: 'border-[#4E5840]/30', icon: 'bg-[#4E5840]/20', darkBg: 'bg-[#4E5840]/20', darkText: 'text-[#4E5840]' },
+  'Sunset Vista': { bg: 'bg-[#CDB261]/10', text: 'text-[#CDB261]', border: 'border-[#CDB261]/30', icon: 'bg-[#CDB261]/20', darkBg: 'bg-[#CDB261]/20', darkText: 'text-[#CDB261]' },
+  'Pacific Suite': { bg: 'bg-[#A57865]/10', text: 'text-[#A57865]', border: 'border-[#A57865]/30', icon: 'bg-[#A57865]/20', darkBg: 'bg-[#A57865]/20', darkText: 'text-[#A57865]' },
+  'Wellness Suite': { bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200', icon: 'bg-emerald-200', darkBg: 'bg-emerald-500/20', darkText: 'text-emerald-300' },
+  'Family Sanctuary': { bg: 'bg-[#C8B29D]/20', text: 'text-[#A57865]', border: 'border-[#C8B29D]', icon: 'bg-[#A57865]/20', darkBg: 'bg-[#C8B29D]/20', darkText: 'text-[#C8B29D]' },
+  'Oceanfront Penthouse': { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', icon: 'bg-amber-200', darkBg: 'bg-amber-500/20', darkText: 'text-amber-300' }
 };
 
 const cleaningStatusConfig = {
@@ -75,7 +79,7 @@ export default function AssignRoomModal({
 
   useEffect(() => {
     if (selectedRoom && booking) {
-      const roomTypeOrder = ['Standard', 'Premium', 'Deluxe', 'Suite'];
+      const roomTypeOrder = ['Minimalist Studio', 'Coastal Retreat', 'Urban Oasis', 'Sunset Vista', 'Pacific Suite', 'Wellness Suite', 'Family Sanctuary', 'Oceanfront Penthouse'];
       const bookingTypeIndex = roomTypeOrder.indexOf(booking.roomType);
       const selectedTypeIndex = roomTypeOrder.indexOf(selectedRoom.type);
 
@@ -139,7 +143,7 @@ export default function AssignRoomModal({
 
   const formatCurrency = (amount) => `$${amount.toLocaleString()}`;
 
-  const roomTypes = ['all', 'Standard', 'Premium', 'Deluxe', 'Suite'];
+  const roomTypes = ['all', 'Minimalist Studio', 'Coastal Retreat', 'Urban Oasis', 'Sunset Vista', 'Pacific Suite', 'Wellness Suite', 'Family Sanctuary', 'Oceanfront Penthouse'];
 
   if (!isOpen || !booking) return null;
 

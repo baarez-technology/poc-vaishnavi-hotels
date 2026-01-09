@@ -261,7 +261,7 @@ export default function ReviewDetailDrawer({
               </div>
               <div>
                 <p className="text-[11px] text-neutral-500">LTV</p>
-                <p className="text-[18px] font-bold text-sage-700">₹{(guestCRMData.ltv || 0).toLocaleString()}</p>
+                <p className="text-[18px] font-bold text-sage-700">${(guestCRMData.ltv || 0).toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-[11px] text-neutral-500">Segment</p>

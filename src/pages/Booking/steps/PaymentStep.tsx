@@ -9,6 +9,7 @@ import { paymentMethodsService } from '@/api/services/payment-methods.service';
 import { bookingService } from '@/api/services/booking.service';
 import { otpService } from '@/api/services/otp.service';
 import { useAuth } from '@/hooks/useAuth';
+import { COUNTRIES } from '@/utils/countries';
 import toast from 'react-hot-toast';
 
 const paymentSchema = z.object({
@@ -185,39 +186,87 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
         }
       }
 
-      // Create booking via API
-      const bookingResponse = await bookingService.createBooking({
-        roomId: String(bookingData.room.id),
-        checkIn: bookingData.checkIn,
-        checkOut: bookingData.checkOut,
-        guests: {
-          adults: bookingData.guests.adults,
-          children: bookingData.guests.children,
-          infants: 0,
-        },
-        guestInfo: {
-          firstName: bookingData.guestInfo.firstName,
-          lastName: bookingData.guestInfo.lastName,
-          email: bookingData.guestInfo.email,
-          phone: bookingData.guestInfo.phone,
-          country: paymentData.country || 'US',
-          specialRequests: bookingData.guestInfo.specialRequests || '',
-        },
-        paymentMethodId: selectedCardId ? String(selectedCardId) : 'new',
-        saveCard: false, // Can be set based on user preference
+      let bookingResponse;
+
+      // Debug: Log modification mode status
+      console.log('[PaymentStep] Modification mode check:', {
+        isModifyMode: bookingData.isModifyMode,
+        originalBookingId: bookingData.originalBooking?.id,
+        originalBookingNumber: bookingData.originalBooking?.bookingNumber,
       });
 
-      // Update booking data with response
-      updateBookingData({
-        payment: paymentData,
-        bookingNumber: bookingResponse.bookingNumber || bookingResponse.id || `RES-${bookingResponse.id}`,
-      });
+      // Check if we're in modification mode
+      if (bookingData.isModifyMode && bookingData.originalBooking?.id) {
+        console.log('[PaymentStep] UPDATING existing booking:', bookingData.originalBooking.id);
+        // Update existing booking instead of creating new one
+        bookingResponse = await bookingService.updateBooking(
+          bookingData.originalBooking.id,
+          {
+            roomId: String(bookingData.room.id),
+            checkIn: bookingData.checkIn,
+            checkOut: bookingData.checkOut,
+            guests: {
+              adults: bookingData.guests.adults,
+              children: bookingData.guests.children,
+              infants: 0,
+            },
+            guestInfo: {
+              firstName: bookingData.guestInfo.firstName,
+              lastName: bookingData.guestInfo.lastName,
+              email: bookingData.guestInfo.email,
+              phone: bookingData.guestInfo.phone,
+              country: paymentData.country || 'US',
+              specialRequests: bookingData.guestInfo.specialRequests || '',
+            },
+          }
+        );
 
-      toast.success('Booking created successfully!');
+        // Update booking data with response
+        updateBookingData({
+          payment: paymentData,
+          bookingNumber: bookingResponse.bookingNumber || bookingData.originalBooking.bookingNumber,
+        });
+
+        toast.success('Booking modified successfully!');
+      } else {
+        console.log('[PaymentStep] CREATING new booking (not in modify mode)');
+        // Create new booking via API
+        bookingResponse = await bookingService.createBooking({
+          roomId: String(bookingData.room.id),
+          checkIn: bookingData.checkIn,
+          checkOut: bookingData.checkOut,
+          guests: {
+            adults: bookingData.guests.adults,
+            children: bookingData.guests.children,
+            infants: 0,
+          },
+          guestInfo: {
+            firstName: bookingData.guestInfo.firstName,
+            lastName: bookingData.guestInfo.lastName,
+            email: bookingData.guestInfo.email,
+            phone: bookingData.guestInfo.phone,
+            country: paymentData.country || 'US',
+            specialRequests: bookingData.guestInfo.specialRequests || '',
+          },
+          paymentMethodId: selectedCardId ? String(selectedCardId) : 'new',
+          saveCard: false, // Can be set based on user preference
+        });
+
+        // Update booking data with response
+        updateBookingData({
+          payment: paymentData,
+          bookingNumber: bookingResponse.bookingNumber || bookingResponse.id || `RES-${bookingResponse.id}`,
+        });
+
+        toast.success('Booking created successfully!');
+      }
       onNext();
     } catch (error: any) {
-      console.error('Booking creation error:', error);
-      toast.error(error.response?.data?.detail || error.message || 'Failed to create booking. Please try again.');
+      console.error('Booking error:', error);
+      const defaultErrorMsg = bookingData.isModifyMode
+        ? 'Failed to modify booking. Please try again.'
+        : 'Failed to create booking. Please try again.';
+      toast.error(error.response?.data?.detail || error.message || defaultErrorMsg);
       setIsProcessing(false);
     }
   };
@@ -893,13 +942,15 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
                   }`}
                 >
                   <option value="">Select Country</option>
-                  <option value="US">United States</option>
-                  <option value="CA">Canada</option>
-                  <option value="UK">United Kingdom</option>
-                  <option value="AU">Australia</option>
+                  {COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.name}
+                    </option>
+                  ))}
                 </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
                 {isFieldValid('country', country) && (
-                  <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" strokeWidth={2} />
+                  <CheckCircle className="absolute right-10 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" strokeWidth={2} />
                 )}
               </div>
               <AnimatePresence>
@@ -934,12 +985,12 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
           {isProcessing ? (
             <>
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              <span>Processing Payment...</span>
+              <span>{bookingData.isModifyMode ? 'Updating Booking...' : 'Processing Payment...'}</span>
             </>
           ) : (
             <>
               <Lock className="w-5 h-5 group-hover:scale-110 transition-transform" strokeWidth={2.5} />
-              <span>Complete Booking</span>
+              <span>{bookingData.isModifyMode ? 'Confirm Modification' : 'Complete Booking'}</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
             </>
           )}

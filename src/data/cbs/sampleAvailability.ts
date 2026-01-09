@@ -14,19 +14,37 @@ const formatDate = (daysOffset) => {
   return `${year}-${month}-${day}`;
 };
 
-const roomTypes = ['Standard', 'Premium', 'Deluxe', 'Suite'];
+const roomTypes = [
+  'Minimalist Studio',
+  'Coastal Retreat',
+  'Urban Oasis',
+  'Sunset Vista',
+  'Pacific Suite',
+  'Wellness Suite',
+  'Family Sanctuary',
+  'Oceanfront Penthouse'
+];
+
 const totalInventory = {
-  'Standard': 12,
-  'Premium': 10,
-  'Deluxe': 8,
-  'Suite': 5
+  'Minimalist Studio': 10,
+  'Coastal Retreat': 8,
+  'Urban Oasis': 8,
+  'Sunset Vista': 6,
+  'Pacific Suite': 6,
+  'Wellness Suite': 4,
+  'Family Sanctuary': 4,
+  'Oceanfront Penthouse': 2
 };
 
 const baseRates = {
-  'Standard': 120,
-  'Premium': 180,
-  'Deluxe': 250,
-  'Suite': 400
+  'Minimalist Studio': 150,
+  'Coastal Retreat': 199,
+  'Urban Oasis': 245,
+  'Sunset Vista': 315,
+  'Pacific Suite': 385,
+  'Wellness Suite': 425,
+  'Family Sanctuary': 485,
+  'Oceanfront Penthouse': 750
 };
 
 // Generate 30 days of availability data
@@ -190,10 +208,14 @@ export function getCalendarDates(daysCount = 30) {
 }
 
 export const roomTypeColors = {
-  'Standard': 'bg-slate-100 text-slate-700',
-  'Premium': 'bg-[#C8B29D]/20 text-[#A57865]',
-  'Deluxe': 'bg-[#5C9BA4]/10 text-[#5C9BA4]',
-  'Suite': 'bg-[#CDB261]/10 text-[#CDB261]'
+  'Minimalist Studio': 'bg-neutral-100 text-neutral-700',
+  'Coastal Retreat': 'bg-[#5C9BA4]/10 text-[#5C9BA4]',
+  'Urban Oasis': 'bg-[#4E5840]/10 text-[#4E5840]',
+  'Sunset Vista': 'bg-[#CDB261]/10 text-[#CDB261]',
+  'Pacific Suite': 'bg-[#A57865]/10 text-[#A57865]',
+  'Wellness Suite': 'bg-emerald-100 text-emerald-700',
+  'Family Sanctuary': 'bg-[#C8B29D]/20 text-[#A57865]',
+  'Oceanfront Penthouse': 'bg-amber-100 text-amber-700'
 };
 
 export default sampleAvailability;

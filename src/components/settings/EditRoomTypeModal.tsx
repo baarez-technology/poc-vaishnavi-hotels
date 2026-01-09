@@ -135,7 +135,7 @@ export default function EditRoomTypeModal({ room, onClose, onSave }) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>
-              Price per Night (₹) <span className="text-rose-500">*</span>
+              Price per Night ($) <span className="text-rose-500">*</span>
             </label>
             <input
               type="number"

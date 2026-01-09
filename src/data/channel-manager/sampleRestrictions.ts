@@ -33,7 +33,7 @@ export const sampleRestrictions = [
   },
   {
     id: 'rest-002',
-    roomType: 'Suite',
+    roomType: 'Oceanfront Penthouse',
     otaCode: 'ALL',
     dateRange: {
       start: formatDate(20),
@@ -53,7 +53,7 @@ export const sampleRestrictions = [
   },
   {
     id: 'rest-003',
-    roomType: 'Standard',
+    roomType: 'Minimalist Studio',
     otaCode: 'BOOKING',
     dateRange: {
       start: formatDate(5),
@@ -73,7 +73,7 @@ export const sampleRestrictions = [
   },
   {
     id: 'rest-004',
-    roomType: 'Deluxe',
+    roomType: 'Sunset Vista',
     otaCode: 'EXPEDIA',
     dateRange: {
       start: formatDate(8),
@@ -93,7 +93,7 @@ export const sampleRestrictions = [
   },
   {
     id: 'rest-005',
-    roomType: 'Premium',
+    roomType: 'Pacific Suite',
     otaCode: 'AGODA',
     dateRange: {
       start: formatDate(12),

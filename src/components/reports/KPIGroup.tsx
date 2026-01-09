@@ -2,10 +2,13 @@ import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 const formatValue = (value, format) => {
   if (format === 'currency') {
-    if (value >= 100000) {
-      return `₹${(value / 100000).toFixed(1)}L`;
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`;
     }
-    return `₹${value.toLocaleString()}`;
+    if (value >= 1000) {
+      return `$${(value / 1000).toFixed(1)}K`;
+    }
+    return `$${value.toLocaleString()}`;
   }
   if (format === 'percent') {
     return `${value}%`;

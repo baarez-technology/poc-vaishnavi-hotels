@@ -17,10 +17,20 @@ import { Drawer } from '../ui2/Drawer';
 import { Input, FormField } from '../ui2/Input';
 import { Badge } from '../ui2/Badge';
 
-const roomTypes = ['Standard', 'Premium', 'Deluxe', 'Suite'];
+// Room types matching database
+const roomTypes = [
+  'Minimalist Studio',
+  'Coastal Retreat',
+  'Urban Oasis',
+  'Sunset Vista',
+  'Pacific Suite',
+  'Wellness Suite',
+  'Family Sanctuary',
+  'Oceanfront Penthouse'
+];
 
 const roomTypeColors = {
-  'Standard': {
+  'Minimalist Studio': {
     bg: 'bg-neutral-50',
     border: 'border-neutral-300',
     text: 'text-neutral-700',
@@ -30,17 +40,7 @@ const roomTypeColors = {
     rowBg: 'bg-neutral-50/40',
     hoverBg: 'hover:bg-neutral-200'
   },
-  'Premium': {
-    bg: 'bg-terra-50',
-    border: 'border-terra-300',
-    text: 'text-terra-700',
-    icon: 'bg-terra-100 text-terra-600',
-    gradient: 'from-terra-500 to-terra-600',
-    accent: 'terra',
-    rowBg: 'bg-terra-50/40',
-    hoverBg: 'hover:bg-neutral-200'
-  },
-  'Deluxe': {
+  'Coastal Retreat': {
     bg: 'bg-ocean-50',
     border: 'border-ocean-300',
     text: 'text-ocean-700',
@@ -50,7 +50,57 @@ const roomTypeColors = {
     rowBg: 'bg-ocean-50/40',
     hoverBg: 'hover:bg-neutral-200'
   },
-  'Suite': {
+  'Urban Oasis': {
+    bg: 'bg-sage-50',
+    border: 'border-sage-300',
+    text: 'text-sage-700',
+    icon: 'bg-sage-100 text-sage-600',
+    gradient: 'from-sage-500 to-sage-600',
+    accent: 'sage',
+    rowBg: 'bg-sage-50/40',
+    hoverBg: 'hover:bg-neutral-200'
+  },
+  'Sunset Vista': {
+    bg: 'bg-gold-50',
+    border: 'border-gold-300',
+    text: 'text-gold-700',
+    icon: 'bg-gold-100 text-gold-600',
+    gradient: 'from-gold-500 to-gold-600',
+    accent: 'gold',
+    rowBg: 'bg-gold-50/40',
+    hoverBg: 'hover:bg-neutral-200'
+  },
+  'Pacific Suite': {
+    bg: 'bg-terra-50',
+    border: 'border-terra-300',
+    text: 'text-terra-700',
+    icon: 'bg-terra-100 text-terra-600',
+    gradient: 'from-terra-500 to-terra-600',
+    accent: 'terra',
+    rowBg: 'bg-terra-50/40',
+    hoverBg: 'hover:bg-neutral-200'
+  },
+  'Wellness Suite': {
+    bg: 'bg-sage-50',
+    border: 'border-sage-300',
+    text: 'text-sage-700',
+    icon: 'bg-sage-100 text-sage-600',
+    gradient: 'from-sage-500 to-sage-600',
+    accent: 'sage',
+    rowBg: 'bg-sage-50/40',
+    hoverBg: 'hover:bg-neutral-200'
+  },
+  'Family Sanctuary': {
+    bg: 'bg-ocean-50',
+    border: 'border-ocean-300',
+    text: 'text-ocean-700',
+    icon: 'bg-ocean-100 text-ocean-600',
+    gradient: 'from-ocean-500 to-ocean-600',
+    accent: 'ocean',
+    rowBg: 'bg-ocean-50/40',
+    hoverBg: 'hover:bg-neutral-200'
+  },
+  'Oceanfront Penthouse': {
     bg: 'bg-gold-50',
     border: 'border-gold-300',
     text: 'text-gold-700',
@@ -63,10 +113,14 @@ const roomTypeColors = {
 };
 
 const baseRates = {
-  'Standard': 120,
-  'Premium': 180,
-  'Deluxe': 250,
-  'Suite': 400
+  'Minimalist Studio': 150,
+  'Coastal Retreat': 199,
+  'Urban Oasis': 245,
+  'Sunset Vista': 315,
+  'Pacific Suite': 385,
+  'Wellness Suite': 425,
+  'Family Sanctuary': 485,
+  'Oceanfront Penthouse': 750
 };
 
 const AvailabilityCalendar = forwardRef(({

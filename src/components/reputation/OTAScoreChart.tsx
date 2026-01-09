@@ -23,7 +23,8 @@ export default function OTAScoreChart({ data }) {
   }, [data]);
 
   const avgRating = useMemo(() => {
-    const total = chartData.reduce((sum, item) => sum + item.rating, 0);
+    if (chartData.length === 0) return '0.0';
+    const total = chartData.reduce((sum, item) => sum + (item.rating || 0), 0);
     return (total / chartData.length).toFixed(1);
   }, [chartData]);
 
@@ -34,16 +35,17 @@ export default function OTAScoreChart({ data }) {
   const bestPlatform = chartData[0];
 
   const TrendIndicator = ({ trend }) => {
-    if (trend > 0) return (
+    const trendValue = typeof trend === 'number' ? trend : 0;
+    if (trendValue > 0) return (
       <span className="inline-flex items-center gap-0.5 text-sage-600">
         <TrendingUp className="w-3 h-3" />
-        <span className="text-[11px] font-semibold">+{trend.toFixed(1)}</span>
+        <span className="text-[11px] font-semibold">+{trendValue.toFixed(1)}</span>
       </span>
     );
-    if (trend < 0) return (
+    if (trendValue < 0) return (
       <span className="inline-flex items-center gap-0.5 text-rose-500">
         <TrendingDown className="w-3 h-3" />
-        <span className="text-[11px] font-semibold">{trend.toFixed(1)}</span>
+        <span className="text-[11px] font-semibold">{trendValue.toFixed(1)}</span>
       </span>
     );
     return (
@@ -79,8 +81,8 @@ export default function OTAScoreChart({ data }) {
         </div>
         <div className="px-5 py-4 text-center">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Best Platform</p>
-          <p className="text-[14px] font-semibold text-neutral-900">{bestPlatform?.name}</p>
-          <p className="text-[11px] text-neutral-500">{bestPlatform?.rating.toFixed(1)} rating</p>
+          <p className="text-[14px] font-semibold text-neutral-900">{bestPlatform?.name || '-'}</p>
+          <p className="text-[11px] text-neutral-500">{bestPlatform?.rating?.toFixed(1) || '0.0'} rating</p>
         </div>
         <div className="px-5 py-4 text-center">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Platforms</p>
@@ -103,7 +105,7 @@ export default function OTAScoreChart({ data }) {
                   <TrendIndicator trend={platform.trend} />
                   <div className="flex items-center gap-1">
                     <Star className="w-3.5 h-3.5 text-gold-500 fill-gold-500" />
-                    <span className="text-[14px] font-bold text-neutral-900">{platform.rating.toFixed(1)}</span>
+                    <span className="text-[14px] font-bold text-neutral-900">{(platform.rating || 0).toFixed(1)}</span>
                   </div>
                 </div>
               </div>

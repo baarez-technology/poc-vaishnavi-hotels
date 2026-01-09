@@ -74,7 +74,7 @@ function CustomSelect({ value, onChange, options, placeholder = 'Select...' }) {
   );
 }
 
-export default function AddBookingModal({ isOpen, onClose, onSubmit }) {
+export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating = false }) {
   const [formData, setFormData] = useState({
     guestName: '',
     email: '',
@@ -177,6 +177,7 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit }) {
 
   const handleSubmit = (e) => {
     e?.preventDefault();
+    if (isCreating) return; // Prevent double submission
     if (validate()) {
       const bookingData = {
         id: generateBookingId(),
@@ -200,18 +201,18 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit }) {
         vip: false,
         upsells: [],
       };
+      // Don't close here - let parent handle closing after API response
       onSubmit(bookingData);
-      onClose();
     }
   };
 
   const drawerFooter = (
     <div className="flex items-center justify-end gap-3 w-full">
-      <Button variant="outline" onClick={onClose}>
+      <Button variant="outline" onClick={onClose} disabled={isCreating}>
         Cancel
       </Button>
-      <Button variant="primary" onClick={handleSubmit}>
-        Create Booking
+      <Button variant="primary" onClick={handleSubmit} loading={isCreating} disabled={isCreating}>
+        {isCreating ? 'Creating...' : 'Create Booking'}
       </Button>
     </div>
   );

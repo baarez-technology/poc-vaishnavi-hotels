@@ -94,6 +94,7 @@ export default function Bookings() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   // Toast state
   const [toast, setToast] = useState(null);
@@ -156,12 +157,15 @@ export default function Bookings() {
 
   // Handle booking submission
   const handleBookingSubmit = async (bookingData) => {
+    setIsCreating(true);
     try {
       await createBooking(bookingData);
       setIsAddBookingModalOpen(false);
       triggerToast('Booking created successfully');
     } catch (error) {
       triggerToast('Failed to create booking');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -422,6 +426,7 @@ export default function Bookings() {
         isOpen={isAddBookingModalOpen}
         onClose={() => setIsAddBookingModalOpen(false)}
         onSubmit={handleBookingSubmit}
+        isCreating={isCreating}
       />
 
       {/* Edit Booking Modal */}

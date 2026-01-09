@@ -5,10 +5,22 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Trash2, AlertCircle, Zap, ChevronDown, Check } from 'lucide-react';
-import { useRMS } from '../../context/RMSContext';
+import { Plus, Trash2, AlertCircle, Zap, ChevronDown, Check, Loader2 } from 'lucide-react';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
+import { useToast } from '../../contexts/ToastContext';
+import revenueIntelligenceService, {
+  PricingRule,
+  CreatePricingRuleRequest,
+  UpdatePricingRuleRequest,
+} from '../../api/services/revenue-intelligence.service';
+
+interface RuleEditorDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  rule?: PricingRule | null;
+  onSave?: () => void;
+}
 
 // Custom Select Dropdown Component
 function SelectDropdown({ value, onChange, options, placeholder = 'Select...', variant = 'default' }) {
@@ -174,11 +186,14 @@ const actionTypes = [
 
 const roomTypeOptions = [
   { id: 'ALL', label: 'All Room Types' },
-  { id: 'STD', label: 'Standard Room' },
-  { id: 'DLX', label: 'Deluxe Room' },
-  { id: 'SUP', label: 'Superior Suite' },
-  { id: 'EXE', label: 'Executive Suite' },
-  { id: 'PRS', label: 'Presidential Suite' },
+  { id: 'minimalist-studio', label: 'Minimalist Studio' },
+  { id: 'coastal-retreat', label: 'Coastal Retreat' },
+  { id: 'urban-oasis', label: 'Urban Oasis' },
+  { id: 'sunset-vista', label: 'Sunset Vista' },
+  { id: 'pacific-suite', label: 'Pacific Suite' },
+  { id: 'wellness-suite', label: 'Wellness Suite' },
+  { id: 'family-sanctuary', label: 'Family Sanctuary' },
+  { id: 'oceanfront-penthouse', label: 'Oceanfront Penthouse' },
 ];
 
 const priorityOptions = [
@@ -193,8 +208,8 @@ const priorityOptions = [
 const conditionSelectOptions = conditionTypes.map(ct => ({ value: ct.id, label: ct.label }));
 const actionSelectOptions = actionTypes.map(at => ({ value: at.id, label: at.label }));
 
-const RuleEditorDrawer = ({ isOpen, onClose, rule, onSave }) => {
-  const { addRule, updateRule } = useRMS();
+const RuleEditorDrawer = ({ isOpen, onClose, rule, onSave }: RuleEditorDrawerProps) => {
+  const { success, error: showError } = useToast();
   const isEditing = !!rule;
 
   const [formData, setFormData] = useState({
@@ -208,17 +223,20 @@ const RuleEditorDrawer = ({ isOpen, onClose, rule, onSave }) => {
   });
 
   const [errors, setErrors] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (rule) {
       setFormData({
         name: rule.name,
-        description: rule.description,
+        description: rule.description || '',
         priority: rule.priority,
         isActive: rule.isActive,
         roomTypes: rule.roomTypes,
-        conditions: rule.conditions,
-        actions: rule.actions,
+        conditions: rule.conditions.map(c => ({ type: c.type, value: c.value })),
+        actions: rule.actions.map(a => ({ type: a.type, value: a.value })),
       });
     } else {
       setFormData({
@@ -232,6 +250,7 @@ const RuleEditorDrawer = ({ isOpen, onClose, rule, onSave }) => {
       });
     }
     setErrors({});
+    setShowDeleteConfirm(false);
   }, [rule, isOpen]);
 
   const handleAddCondition = () => {
@@ -303,7 +322,7 @@ const RuleEditorDrawer = ({ isOpen, onClose, rule, onSave }) => {
   };
 
   const validate = () => {
-    const newErrors = {};
+    const newErrors: Record<string, string> = {};
     if (!formData.name.trim()) newErrors.name = 'Rule name is required';
     if (formData.conditions.length === 0) newErrors.conditions = 'At least one condition is required';
     if (formData.actions.length === 0) newErrors.actions = 'At least one action is required';
@@ -311,18 +330,66 @@ const RuleEditorDrawer = ({ isOpen, onClose, rule, onSave }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
-    if (isEditing) {
-      updateRule(rule.id, formData);
-    } else {
-      addRule(formData);
-    }
+    setIsSaving(true);
 
-    onSave?.();
-    onClose();
+    try {
+      if (isEditing && rule) {
+        const updatePayload: UpdatePricingRuleRequest = {
+          name: formData.name,
+          description: formData.description,
+          priority: formData.priority,
+          isActive: formData.isActive,
+          roomTypes: formData.roomTypes,
+          conditions: formData.conditions,
+          actions: formData.actions,
+        };
+        await revenueIntelligenceService.updatePricingRule(rule.id, updatePayload);
+        success('Pricing rule updated successfully');
+      } else {
+        const createPayload: CreatePricingRuleRequest = {
+          name: formData.name,
+          description: formData.description,
+          priority: formData.priority,
+          isActive: formData.isActive,
+          roomTypes: formData.roomTypes,
+          conditions: formData.conditions,
+          actions: formData.actions,
+        };
+        await revenueIntelligenceService.createPricingRule(createPayload);
+        success('Pricing rule created successfully');
+      }
+
+      onSave?.();
+      onClose();
+    } catch (err) {
+      showError(isEditing ? 'Failed to update pricing rule' : 'Failed to create pricing rule');
+      console.error('Error saving rule:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!rule) return;
+
+    setIsDeleting(true);
+
+    try {
+      await revenueIntelligenceService.deletePricingRule(rule.id);
+      success('Pricing rule deleted successfully');
+      onSave?.();
+      onClose();
+    } catch (err) {
+      showError('Failed to delete pricing rule');
+      console.error('Error deleting rule:', err);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
   };
 
   const renderConditionInput = (condition, index) => {
@@ -458,14 +525,67 @@ const RuleEditorDrawer = ({ isOpen, onClose, rule, onSave }) => {
   };
 
   const renderFooter = () => (
-    <>
-      <Button type="button" variant="ghost" onClick={onClose}>
-        Cancel
-      </Button>
-      <Button type="submit" variant="primary" form="rule-form">
-        {isEditing ? 'Save Changes' : 'Create Rule'}
-      </Button>
-    </>
+    <div className="flex items-center justify-between w-full">
+      <div>
+        {isEditing && !showDeleteConfirm && (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+          >
+            <Trash2 className="w-4 h-4 mr-1.5" />
+            Delete Rule
+          </Button>
+        )}
+        {showDeleteConfirm && (
+          <div className="flex items-center gap-2">
+            <span className="text-[13px] text-neutral-600">Delete this rule?</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowDeleteConfirm(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-rose-500 hover:bg-rose-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Confirm Delete'
+              )}
+            </Button>
+          </div>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        <Button type="button" variant="ghost" onClick={onClose} disabled={isSaving || isDeleting}>
+          Cancel
+        </Button>
+        <Button type="submit" variant="primary" form="rule-form" disabled={isSaving || isDeleting}>
+          {isSaving ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              {isEditing ? 'Saving...' : 'Creating...'}
+            </>
+          ) : (
+            isEditing ? 'Save Changes' : 'Create Rule'
+          )}
+        </Button>
+      </div>
+    </div>
   );
 
   return (

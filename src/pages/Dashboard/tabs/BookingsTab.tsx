@@ -68,9 +68,30 @@ export function BookingsTab() {
     setIsPanelOpen(true);
   };
 
-  const handleModifyBooking = (bookingId: string) => {
-    // Navigate to booking page with modify flag
-    window.location.href = `/booking?bookingId=${bookingId}&modify=true`;
+  const handleModifyBooking = async (bookingId: string) => {
+    // Fetch booking details to get the room information
+    try {
+      const bookingDetails = await bookingService.getBookingById(bookingId);
+      if (bookingDetails && bookingDetails.room) {
+        // Navigate to booking page with room slug and booking details
+        const roomSlug = bookingDetails.room.slug || bookingDetails.room.name?.toLowerCase().replace(/\s+/g, '-');
+        const params = new URLSearchParams({
+          room: roomSlug,
+          checkIn: bookingDetails.checkIn,
+          checkOut: bookingDetails.checkOut,
+          adults: String(bookingDetails.guests?.adults || 1),
+          children: String(bookingDetails.guests?.children || 0),
+          modify: 'true',
+          bookingId: bookingId,
+        });
+        window.location.href = `/booking?${params.toString()}`;
+      } else {
+        toast.error('Unable to modify booking: Room information not found');
+      }
+    } catch (error) {
+      console.error('Failed to fetch booking details for modification:', error);
+      toast.error('Failed to load booking details for modification');
+    }
   };
 
   const handleCancelBooking = async (bookingId: string) => {

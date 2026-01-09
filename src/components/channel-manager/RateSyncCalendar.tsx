@@ -17,7 +17,7 @@ import { Tooltip } from '../ui2/Tooltip';
 export default function RateSyncCalendar({ selectedRoomType = null }) {
   const { rateCalendar, otas, updateRateForOTA, updateAvailabilityForOTA, toggleStopSell } = useChannelManager();
   const [viewStartDate, setViewStartDate] = useState(new Date());
-  const [internalRoomType, setInternalRoomType] = useState('Standard');
+  const [internalRoomType, setInternalRoomType] = useState('Minimalist Studio');
   const [selectedOTA, setSelectedOTA] = useState('ALL');
   const [editingCell, setEditingCell] = useState(null);
   const [editValue, setEditValue] = useState('');
@@ -26,7 +26,7 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
   // Use prop if provided, otherwise use internal state
   const activeRoomType = selectedRoomType || internalRoomType;
 
-  const roomTypes = ['Standard', 'Premium', 'Deluxe', 'Suite'];
+  const roomTypes = ['Minimalist Studio', 'Coastal Retreat', 'Urban Oasis', 'Sunset Vista', 'Pacific Suite', 'Wellness Suite', 'Family Sanctuary', 'Oceanfront Penthouse'];
   const connectedOTAs = otas.filter(o => o.status === 'connected');
 
   // Generate 14 visible days

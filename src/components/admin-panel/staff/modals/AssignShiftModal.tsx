@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Calendar, Clock, CheckCircle2 } from 'lucide-react';
+import { X, Calendar, Clock, CheckCircle2, Loader2 } from 'lucide-react';
+import { staffService } from '../../../../api/services/staff.service';
 
 export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
   const [formData, setFormData] = useState({
@@ -11,6 +12,8 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
     endTime: '16:00',
     multipleDays: false
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -46,6 +49,7 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
       endTime: '16:00',
       multipleDays: false
     });
+    setError(null);
 
     document.addEventListener('keydown', handleEsc);
 
@@ -103,31 +107,54 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
 
-    // If multiple days is enabled, create an entry for each day
-    if (formData.multipleDays) {
-      const startDate = new Date(formData.date);
-      const endDate = new Date(formData.endDate);
-      const scheduleEntries = [];
+    try {
+      // If multiple days is enabled, create an entry for each day
+      if (formData.multipleDays) {
+        const startDate = new Date(formData.date);
+        const endDate = new Date(formData.endDate);
+        const scheduleEntries = [];
 
-      // Generate schedule entries for each day in the range
-      for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-        scheduleEntries.push({
-          ...formData,
-          date: date.toISOString().split('T')[0]
+        // Generate schedule entries for each day in the range
+        for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+          const dateStr = date.toISOString().split('T')[0];
+          // Call API for each day
+          await staffService.assignShift(staff.id, {
+            schedule_date: dateStr,
+            shift_type: formData.shift,
+            start_time: formData.startTime,
+            end_time: formData.endTime
+          });
+          scheduleEntries.push({
+            ...formData,
+            date: dateStr
+          });
+        }
+
+        // Pass all entries to the onAssign function
+        onAssign(staff.id, scheduleEntries);
+      } else {
+        // Single day assignment
+        await staffService.assignShift(staff.id, {
+          schedule_date: formData.date,
+          shift_type: formData.shift,
+          start_time: formData.startTime,
+          end_time: formData.endTime
         });
+        onAssign(staff.id, formData);
       }
 
-      // Pass all entries to the onAssign function
-      onAssign(staff.id, scheduleEntries);
-    } else {
-      // Single day assignment
-      onAssign(staff.id, formData);
+      onClose();
+    } catch (err: any) {
+      console.error('Failed to assign shift:', err);
+      setError(err.response?.data?.detail || err.message || 'Failed to assign shift. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    onClose();
   };
 
   // Get min date (today)
@@ -164,6 +191,12 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
           {/* Form - Scrollable Content */}
           <div className="overflow-y-auto max-h-[calc(90vh-200px)] custom-scrollbar">
             <form onSubmit={handleSubmit} className="p-6 pb-4 space-y-6">
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+
           {/* Date Selection */}
           <div>
             <div className="flex items-center gap-2 mb-4">
@@ -180,6 +213,7 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
                 name="multipleDays"
                 checked={formData.multipleDays}
                 onChange={handleChange}
+                disabled={isSubmitting}
                 className="w-4 h-4 text-[#A57865] bg-white border-neutral-300 rounded focus:ring-2 focus:ring-[#A57865] transition-all duration-200 cursor-pointer"
               />
               <label htmlFor="multipleDays" className="text-sm font-semibold text-neutral-700 cursor-pointer">
@@ -201,7 +235,8 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
                   onChange={handleChange}
                   min={today}
                   required
-                  className="w-full px-4 py-2.5 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 cursor-pointer"
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-2.5 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 cursor-pointer disabled:opacity-50"
                 />
               </div>
               {formData.multipleDays && (
@@ -217,7 +252,8 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
                     onChange={handleChange}
                     min={formData.date || today}
                     required
-                    className="w-full px-4 py-2.5 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 cursor-pointer"
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-2.5 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 cursor-pointer disabled:opacity-50"
                   />
                 </div>
               )}
@@ -243,7 +279,8 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
                 value={formData.shift}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2.5 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#4E5840] focus:border-[#4E5840] transition-all duration-200 cursor-pointer"
+                disabled={isSubmitting}
+                className="w-full px-4 py-2.5 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#4E5840] focus:border-[#4E5840] transition-all duration-200 cursor-pointer disabled:opacity-50"
               >
                 <option value="morning">Morning Shift</option>
                 <option value="evening">Evening Shift</option>
@@ -264,7 +301,8 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
                   value={formData.startTime}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2.5 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#4E5840] focus:border-[#4E5840] transition-all duration-200 cursor-pointer"
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-2.5 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#4E5840] focus:border-[#4E5840] transition-all duration-200 cursor-pointer disabled:opacity-50"
                 />
               </div>
               <div>
@@ -278,7 +316,8 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
                   value={formData.endTime}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2.5 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#4E5840] focus:border-[#4E5840] transition-all duration-200 cursor-pointer"
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-2.5 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#4E5840] focus:border-[#4E5840] transition-all duration-200 cursor-pointer disabled:opacity-50"
                 />
               </div>
             </div>
@@ -319,16 +358,22 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="px-8 py-3 bg-white text-neutral-700 border-2 border-neutral-200 rounded-xl font-semibold text-sm hover:bg-neutral-50 hover:border-[#A57865]/30 transition-all duration-200 active:scale-95"
+                disabled={isSubmitting}
+                className="px-8 py-3 bg-white text-neutral-700 border-2 border-neutral-200 rounded-xl font-semibold text-sm hover:bg-neutral-50 hover:border-[#A57865]/30 transition-all duration-200 active:scale-95 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
-                className="px-8 py-3 bg-[#A57865] text-white rounded-xl font-semibold text-sm hover:bg-[#8E6554] shadow-sm hover:shadow-md transition-all duration-200 active:scale-95 flex items-center justify-center gap-2"
+                disabled={isSubmitting}
+                className="px-8 py-3 bg-[#A57865] text-white rounded-xl font-semibold text-sm hover:bg-[#8E6554] shadow-sm hover:shadow-md transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <Calendar className="w-4 h-4" />
-                Assign Shift
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Calendar className="w-4 h-4" />
+                )}
+                {isSubmitting ? 'Assigning...' : 'Assign Shift'}
               </button>
             </div>
           </div>

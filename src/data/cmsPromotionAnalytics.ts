@@ -9,7 +9,7 @@ export const promotionAnalytics = {
   status: "Active",
   dateRange: { start: "2024-01-05", end: "2024-01-20" },
   channels: ["Website", "Booking.com", "Expedia"],
-  roomTypes: ["Deluxe", "Suite"],
+  roomTypes: ["Pacific Suite", "Oceanfront Penthouse"],
   discountType: "Percentage",
   discountValue: 15,
   minLOS: 2,
@@ -68,8 +68,8 @@ export const promotionAnalytics = {
     { channel: "Expedia", redemptions: 27, revenue: 47780, adr: 315, conversion: 3.8, trend: -2 }
   ],
   roomTypePerformance: [
-    { type: "Deluxe", revenue: 98400, redemptions: 72, uplift: 12, trend: +7 },
-    { type: "Suite", revenue: 160000, redemptions: 61, uplift: 18, trend: +11 }
+    { type: "Pacific Suite", revenue: 98400, redemptions: 72, uplift: 12, trend: +7 },
+    { type: "Oceanfront Penthouse", revenue: 160000, redemptions: 61, uplift: 18, trend: +11 }
   ],
   forecast: {
     next7daysRevenue: 48200,
@@ -87,8 +87,8 @@ export const promotionAnalytics = {
       detail: "Direct bookings through your website show significantly better revenue metrics compared to third-party channels."
     },
     {
-      headline: "Suite category has the strongest conversion rate",
-      detail: "Suite rooms convert at 8.2% compared to 5.4% for Deluxe rooms when this promotion is applied."
+      headline: "Oceanfront Penthouse category has the strongest conversion rate",
+      detail: "Oceanfront Penthouse rooms convert at 8.2% compared to 5.4% for Pacific Suite rooms when this promotion is applied."
     },
     {
       headline: "Weekend dates show 2.3x higher redemption rate",
@@ -106,8 +106,8 @@ export const promotionAnalytics = {
     },
     {
       id: "rec2",
-      title: "Increase Discount for Suites by 5%",
-      reason: "Suites show highest redemptions but lower conversion rate compared to segment benchmark.",
+      title: "Increase Discount for Premium Rooms by 5%",
+      reason: "Premium rooms show highest redemptions but lower conversion rate compared to segment benchmark.",
       impact: "+12% expected uplift",
       impactValue: 19200,
       priority: "medium"

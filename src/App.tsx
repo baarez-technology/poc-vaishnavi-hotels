@@ -73,6 +73,11 @@ const ReputationAI = lazy(() => import('./pages/admin/ReputationAI'));
 const CRM = lazy(() => import('./pages/admin/CRM'));
 const CRMAI = lazy(() => import('./pages/admin/ai/CRMAI'));
 const CRMAIDashboard = lazy(() => import('./pages/admin/ai/CRMAIDashboard'));
+const ABTestingDashboard = lazy(() => import('./pages/admin/ai/ABTestingDashboard'));
+const OTAConversionCenter = lazy(() => import('./pages/admin/ai/OTAConversionCenter'));
+const MemberTierManagement = lazy(() => import('./pages/admin/ai/MemberTierManagement'));
+const AISegmentationStudio = lazy(() => import('./pages/admin/ai/AISegmentationStudio'));
+const RecoveryActionCenter = lazy(() => import('./pages/admin/ai/RecoveryActionCenter'));
 const SegmentDetailsWrapper = lazy(() => import('./pages/admin/crm/SegmentDetailsWrapper'));
 const SettingsLayout = lazy(() => import('./pages/admin/settings/SettingsLayout'));
 const ReportsHome = lazy(() => import('./pages/admin/ReportsHome'));
@@ -91,7 +96,7 @@ const Profile = lazy(() => import('./pages/admin/Profile'));
 // const CMSPromotions = lazy(() => import('./pages/admin/cbs/Promotions'));
 
 
-//Modified CMS pages as its in UI codebase 
+//Modified CMS pages as its in UI codebase
 const CMSBookings= lazy(() => import('./pages/admin/cbs/Bookings'));
 const CMSAvailability= lazy(() => import('./pages/admin/cbs/Calendar'));
 const CMSRatePlans= lazy(() => import('./pages/admin/cbs/RatePlans'));
@@ -148,6 +153,7 @@ function App() {
                   <GuestAIProvider>
                     <Toaster position="top-right" />
                     <AriaChatWidgetWrapper />
+                    <CBSProvider>
                     <Routes>
                       {/* Public routes with navbar/footer */}
                       <Route element={<PublicLayout />}>
@@ -237,7 +243,6 @@ function App() {
                           <ToastProvider>
                             <SettingsProvider>
                               <AdminProvider>
-                                <CBSProvider>
                                   <ChannelManagerProvider>
                                     <AIInsightsProvider>
                                       <RMSProvider>
@@ -304,6 +309,12 @@ function App() {
                                           <Route path="ai/reputation" element={<ReputationAI />} />
                                           <Route path="ai/crm" element={<CRM />} />
                                           <Route path="ai/crm-dashboard" element={<CRMAIDashboard />} />
+                                          <Route path="ai/crm-chat" element={<CRMAI />} />
+                                          <Route path="ai/ab-testing" element={<ABTestingDashboard />} />
+                                          <Route path="ai/ota-conversion" element={<OTAConversionCenter />} />
+                                          <Route path="ai/member-tiers" element={<MemberTierManagement />} />
+                                          <Route path="ai/ai-segments" element={<AISegmentationStudio />} />
+                                          <Route path="ai/recovery" element={<RecoveryActionCenter />} />
                                           {/* Maintenance Specializations */}
                                           <Route path="maintenance/specializations" element={<TechnicianSpecializations />} />
                                         </Route>
@@ -312,7 +323,6 @@ function App() {
                                       </RMSProvider>
                                     </AIInsightsProvider>
                                   </ChannelManagerProvider>
-                                </CBSProvider>
                               </AdminProvider>
                             </SettingsProvider>
                           </ToastProvider>
@@ -397,6 +407,7 @@ function App() {
                       {/* 404 */}
                       <Route path="*" element={<NotFound />} />
                     </Routes>
+                    </CBSProvider>
                   </GuestAIProvider>
                 </BookingProvider>
               </PreCheckInProvider>

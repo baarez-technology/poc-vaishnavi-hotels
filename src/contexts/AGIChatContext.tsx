@@ -1,6 +1,13 @@
 /**
  * AGI Chat Context
- * Advanced context for the AGI Guest Assistant with voice support
+ * Advanced context for the AGI Guest Assistant with robust session management
+ *
+ * Features:
+ * - Authentication required
+ * - Server-side session persistence
+ * - Conversation history sync
+ * - Hotel configuration integration
+ * - Voice support
  */
 
 import {
@@ -14,10 +21,15 @@ import {
 } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import {
-  agiAssistantService,
-  AGIChatResponse,
-  QuickAction,
-} from '@/api/services/agi-assistant.service';
+  guestChatService,
+  HotelInfoResponse,
+  ChatAction,
+  RoomTypeOption,
+  BookingSummary,
+  GuestInfo,
+  PrecheckinRoom,
+} from '@/api/services/guest-chat.service';
+import { agiAssistantService, QuickAction } from '@/api/services/agi-assistant.service';
 
 // ============== Types ==============
 
@@ -37,11 +49,13 @@ export interface AGIMessage {
   actionResult?: Record<string, unknown>;
   isVoice?: boolean;
   isError?: boolean;
-  // V2 AGI fields
   requiresOtp?: boolean;
   otpEmail?: string;
   showLoginPrompt?: boolean;
   bookingCreated?: number;
+  conversationId?: string;
+  // Action-based UI rendering
+  action?: ChatAction;
 }
 
 export interface GuestContext {
@@ -67,6 +81,8 @@ interface AGIChatContextType {
   sessionId: string | null;
   guestContext: GuestContext | null;
   voiceEnabled: boolean;
+  hotelInfo: HotelInfoResponse | null;
+  isAuthenticated: boolean;
   sendMessage: (content: string) => Promise<void>;
   sendVoiceMessage: (audioBlob: Blob) => Promise<void>;
   toggleChat: () => void;
@@ -78,6 +94,8 @@ interface AGIChatContextType {
   setVoiceEnabled: (enabled: boolean) => void;
   playResponse: (text: string) => Promise<void>;
   stopAudio: () => void;
+  // Action handlers for interactive UI components
+  handleActionSelection: (actionType: string, selection: Record<string, unknown>) => Promise<void>;
 }
 
 const AGIChatContext = createContext<AGIChatContextType | undefined>(undefined);
@@ -92,21 +110,8 @@ export const useAGIChat = () => {
 
 // ============== Constants ==============
 
-const AGI_CHAT_STORAGE_KEY = 'glimmora_agi_chat_history';
-const AGI_SESSION_ID_KEY = 'glimmora_agi_session_id';
-const AGI_CONTEXT_KEY = 'glimmora_agi_context';
 const VOICE_ENABLED_KEY = 'glimmora_agi_voice_enabled';
-const CACHE_VERSION_KEY = 'glimmora_agi_cache_version';
-const CURRENT_CACHE_VERSION = '2.1'; // Increment to clear corrupted cache
-
-// Validate message content to detect corruption
-const isValidMessage = (msg: AGIMessage): boolean => {
-  if (!msg || typeof msg.content !== 'string') return false;
-  // Check for known corruption patterns (e.g., speech recognition artifacts)
-  if (msg.content.includes('it is improper')) return false;
-  if (msg.content.length === 0 && msg.type === 'assistant') return false;
-  return true;
-};
+const LOCAL_MESSAGES_KEY = 'glimmora_chat_messages';
 
 // ============== Provider ==============
 
@@ -124,94 +129,91 @@ export const AGIChatProvider = ({ children }: AGIChatProviderProps) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [guestContext, setGuestContextState] = useState<GuestContext | null>(null);
   const [voiceEnabled, setVoiceEnabledState] = useState(false);
+  const [hotelInfo, setHotelInfo] = useState<HotelInfoResponse | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const initializedRef = useRef(false);
 
-  // Initialize session ID
+  // Load hotel info on mount
   useEffect(() => {
-    const savedSessionId = localStorage.getItem(AGI_SESSION_ID_KEY);
-    if (savedSessionId) {
-      sessionIdRef.current = savedSessionId;
-    } else {
-      const newSessionId = `agi_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      sessionIdRef.current = newSessionId;
-      localStorage.setItem(AGI_SESSION_ID_KEY, newSessionId);
-    }
+    const loadHotelInfo = async () => {
+      try {
+        const info = await guestChatService.getHotelInfo();
+        setHotelInfo(info);
+      } catch (e) {
+        console.error('Failed to load hotel info:', e);
+      }
+    };
+    loadHotelInfo();
+  }, []);
 
-    // Load voice preference
+  // Load voice preference
+  useEffect(() => {
     const voicePref = localStorage.getItem(VOICE_ENABLED_KEY);
     if (voicePref) {
       setVoiceEnabledState(voicePref === 'true');
     }
   }, []);
 
-  // Load saved state
+  // Track previous auth state to detect login/logout
+  const wasAuthenticatedRef = useRef<boolean | null>(null);
+
+  // Initialize when authentication state changes
   useEffect(() => {
-    // Check cache version - clear if outdated to fix any corrupted messages
-    const cachedVersion = localStorage.getItem(CACHE_VERSION_KEY);
-    if (cachedVersion !== CURRENT_CACHE_VERSION) {
-      console.log('Cache version mismatch, clearing old messages');
-      localStorage.removeItem(AGI_CHAT_STORAGE_KEY);
-      localStorage.removeItem(AGI_CONTEXT_KEY);
-      localStorage.setItem(CACHE_VERSION_KEY, CURRENT_CACHE_VERSION);
-      showWelcomeMessage();
-      return;
-    }
+    const initialize = async () => {
+      // Detect auth state change (login/logout)
+      const authStateChanged = wasAuthenticatedRef.current !== null &&
+                               wasAuthenticatedRef.current !== isAuthenticated;
 
-    // Load guest context
-    const savedContext = localStorage.getItem(AGI_CONTEXT_KEY);
-    if (savedContext) {
-      try {
-        setGuestContextState(JSON.parse(savedContext));
-      } catch (e) {
-        console.error('Error parsing saved context:', e);
+      // If auth state changed, reset initialization
+      if (authStateChanged) {
+        initializedRef.current = false;
+        sessionIdRef.current = null;
       }
-    }
 
-    // Load messages from localStorage
-    const savedMessages = localStorage.getItem(AGI_CHAT_STORAGE_KEY);
-    if (savedMessages) {
-      try {
-        const parsed = JSON.parse(savedMessages);
-        // Filter out any corrupted messages
-        const validMessages = parsed
-          .map((msg: AGIMessage) => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp),
-          }))
-          .filter((msg: AGIMessage) => isValidMessage(msg));
-        
-        if (validMessages.length !== parsed.length) {
-          console.warn('Filtered out corrupted messages:', parsed.length - validMessages.length);
-        }
-        
-        if (validMessages.length > 0) {
-          setMessages(validMessages);
-        } else {
+      wasAuthenticatedRef.current = isAuthenticated;
+
+      // Skip if already initialized with messages
+      if (initializedRef.current && messages.length > 0 && !authStateChanged) return;
+
+      if (isAuthenticated) {
+        // Load session from server
+        try {
+          const sessionInfo = await guestChatService.getSession();
+          sessionIdRef.current = sessionInfo.session_id;
+
+          // Load conversation history
+          const history = await guestChatService.getHistory(sessionInfo.session_id, 20);
+
+          if (history.messages && history.messages.length > 0) {
+            const loadedMessages: AGIMessage[] = history.messages.map((msg, idx) => ({
+              id: `${msg.type}_${idx}_${Date.now()}`,
+              type: msg.type === 'user' ? 'user' : 'assistant',
+              content: msg.content,
+              timestamp: new Date(msg.timestamp),
+              conversationId: msg.conversation_id,
+              intent: msg.classification,
+            }));
+            setMessages(loadedMessages);
+          } else {
+            showWelcomeMessage();
+          }
+
+          initializedRef.current = true;
+        } catch (e) {
+          console.error('Failed to load session:', e);
           showWelcomeMessage();
+          initializedRef.current = true;
         }
-      } catch (e) {
-        console.error('Error parsing saved messages:', e);
-        showWelcomeMessage();
+      } else {
+        // Not authenticated - show login prompt
+        showLoginRequiredMessage();
+        initializedRef.current = true;
       }
-    } else {
-      showWelcomeMessage();
-    }
+    };
+
+    initialize();
   }, [isAuthenticated]);
-
-  // Save messages to localStorage
-  useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem(AGI_CHAT_STORAGE_KEY, JSON.stringify(messages));
-    }
-  }, [messages]);
-
-  // Save guest context
-  useEffect(() => {
-    if (guestContext) {
-      localStorage.setItem(AGI_CONTEXT_KEY, JSON.stringify(guestContext));
-    }
-  }, [guestContext]);
 
   // Unread count management
   useEffect(() => {
@@ -229,39 +231,43 @@ export const AGIChatProvider = ({ children }: AGIChatProviderProps) => {
     }
   }, [isOpen]);
 
+  const showLoginRequiredMessage = () => {
+    const aiName = hotelInfo?.ai_assistant_name || 'Aria';
+    const hotelName = hotelInfo?.hotel_name || 'Glimmora';
+
+    const welcomeMessage: AGIMessage = {
+      id: `welcome_${Date.now()}`,
+      type: 'assistant',
+      content: `Hello! I'm ${aiName}, your AI concierge at ${hotelName}.\n\nTo provide you with personalized assistance, please sign in to your account.\n\nOnce logged in, I can help you with:\n• 📅 View and manage your bookings\n• ✈️ Pre-check-in & room selection\n• 🛎️ Service requests (housekeeping, maintenance)\n• ❓ Hotel information & FAQs\n\nPlease log in to continue.`,
+      timestamp: new Date(),
+      showLoginPrompt: true,
+      quickActions: [
+        { label: 'Sign In', action: 'login' },
+        { label: 'Hotel Info', action: 'What amenities do you offer?' },
+      ],
+    };
+    setMessages([welcomeMessage]);
+  };
+
   const showWelcomeMessage = () => {
     const guestName = user?.first_name || guestContext?.guestName || 'there';
-    const isLoggedIn = isAuthenticated;
-    const hasBooking = guestContext?.guestStatus === 'booked' || guestContext?.guestStatus === 'checked_in';
+    const aiName = hotelInfo?.ai_assistant_name || 'Aria';
+    const hotelName = hotelInfo?.hotel_name || 'Glimmora';
 
-    let content = `Hello ${guestName}! I'm Aria, your AI concierge at Glimmora Hotel & Suites.\n\n`;
+    let content = `Hello ${guestName}! I'm ${aiName}, your AI concierge at ${hotelName}.\n\n`;
     content += `I can help you with:\n`;
-    content += `• 📅 Make a reservation (with email verification)\n`;
-    content += `• 🏨 View & manage your bookings\n`;
+    content += `• 📅 View & manage your bookings\n`;
     content += `• ✈️ Pre-check-in & room selection\n`;
-    content += `• 👤 Profile & loyalty rewards\n`;
-
-    if (hasBooking) {
-      content += `• 🛎️ Housekeeping & room service\n`;
-      content += `• 🔧 Maintenance requests\n`;
-      content += `• 📶 WiFi & amenity info\n`;
-    }
-
+    content += `• 🛎️ Housekeeping & room service\n`;
+    content += `• 🔧 Maintenance requests\n`;
     content += `• ❓ Hotel information & FAQs\n\n`;
-    content += `You can type or use voice commands. How may I assist you today?`;
+    content += `How may I assist you today?`;
 
-    // Build quick actions based on user status
-    const quickActions: QuickAction[] = [];
-    if (!isLoggedIn) {
-      quickActions.push({ label: 'Book a Room', action: 'I want to book a room' });
-    } else {
-      quickActions.push({ label: 'My Bookings', action: 'Show my bookings' });
-      quickActions.push({ label: 'Book a Room', action: 'I want to book a room' });
-    }
-    if (hasBooking) {
-      quickActions.push({ label: 'Pre-Check-in', action: 'I want to do pre-check-in' });
-    }
-    quickActions.push({ label: 'Hotel Info', action: 'What amenities do you offer?' });
+    const quickActions: QuickAction[] = [
+      { label: 'My Bookings', action: 'Show my bookings' },
+      { label: 'Pre-Check-in', action: 'I want to do pre-check-in' },
+      { label: 'Hotel Info', action: 'What amenities do you offer?' },
+    ];
 
     const welcomeMessage: AGIMessage = {
       id: `welcome_${Date.now()}`,
@@ -286,86 +292,118 @@ export const AGIChatProvider = ({ children }: AGIChatProviderProps) => {
   const sendMessage = async (content: string) => {
     if (!content.trim()) return;
 
-    // Add user message
-    addMessage({
-      type: 'user',
-      content: content.trim(),
-    });
+    // Check if user needs to login
+    if (!isAuthenticated) {
+      if (content.toLowerCase() === 'login') {
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        return;
+      }
 
+      // Allow some basic queries without login
+      const publicQueries = ['amenities', 'hours', 'location', 'contact', 'check-in time', 'checkout time'];
+      const isPublicQuery = publicQueries.some((q) => content.toLowerCase().includes(q));
+
+      if (!isPublicQuery) {
+        addMessage({ type: 'user', content: content.trim() });
+        addMessage({
+          type: 'assistant',
+          content: 'To help you with that request, please sign in to your account first.',
+          showLoginPrompt: true,
+          quickActions: [{ label: 'Sign In', action: 'login' }],
+        });
+        return;
+      }
+    }
+
+    // Add user message
+    addMessage({ type: 'user', content: content.trim() });
     setIsTyping(true);
 
     try {
-      const response = await agiAssistantService.chat({
+      const response = await guestChatService.chat({
         message: content.trim(),
         session_id: sessionIdRef.current || undefined,
-        room_number: guestContext?.roomNumber,
-        booking_number: guestContext?.confirmationCode,
       });
 
-      // Update session ID if returned
+      // Update session ID
       if (response.session_id && response.session_id !== sessionIdRef.current) {
         sessionIdRef.current = response.session_id;
-        localStorage.setItem(AGI_SESSION_ID_KEY, response.session_id);
-      }
-
-      // Update guest context if returned
-      if (response.guest_context) {
-        updateGuestContextFromResponse(response.guest_context);
       }
 
       // Build assistant message
       const assistantMessage: Omit<AGIMessage, 'id' | 'timestamp'> = {
         type: 'assistant',
-        content: response.message,
+        content: response.response,
         intent: response.intent,
-        confidence: response.confidence,
-        quickActions: response.quick_actions,
-        taskInfo: response.task_id
-          ? {
-              taskId: response.task_id,
-              taskType: response.task_type || 'service',
-              status: 'created',
-            }
-          : undefined,
-        actionResult: response.action_result,
-        // V2 AGI fields
-        requiresOtp: response.requires_otp,
-        otpEmail: response.otp_email,
-        showLoginPrompt: response.show_login_prompt,
-        bookingCreated: response.booking_created,
+        conversationId: response.conversation_id,
+        action: response.action, // Include action for UI rendering
       };
 
-      // Update guest context with loyalty info
-      if (response.loyalty_points !== undefined || response.loyalty_tier || response.guest_status) {
-        setGuestContextState((prev) => ({
-          sessionId: sessionIdRef.current || '',
-          ...prev,
-          loyaltyPoints: response.loyalty_points ?? prev?.loyaltyPoints,
-          loyaltyTier: response.loyalty_tier ?? prev?.loyaltyTier,
-          guestStatus: response.guest_status ?? prev?.guestStatus,
-        }));
+      // Add quick actions based on intent (if no action UI is shown)
+      if (!response.action) {
+        const quickActions = buildQuickActions(response.intent);
+        if (quickActions.length > 0) {
+          assistantMessage.quickActions = quickActions;
+        }
       }
 
       addMessage(assistantMessage);
 
       // Auto-play voice response if enabled
-      if (voiceEnabled && response.voice_response_available) {
-        playResponse(response.message);
+      if (voiceEnabled && response.response.length < 500) {
+        playResponse(response.response);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending message:', error);
-      addMessage({
-        type: 'assistant',
-        content:
-          "I apologize, but I'm experiencing technical difficulties. Please try again or contact our front desk at extension 0.",
-        isError: true,
-        quickActions: [
-          { label: 'Try Again', action: 'retry' },
-          { label: 'Contact Front Desk', action: 'front_desk' },
-        ],
-      });
+
+      // Check for auth error
+      if (error.response?.status === 401) {
+        addMessage({
+          type: 'assistant',
+          content: 'Your session has expired. Please sign in again to continue.',
+          showLoginPrompt: true,
+          isError: true,
+        });
+      } else {
+        const supportPhone = hotelInfo?.support_phone || '+1 (310) 555-2847';
+        addMessage({
+          type: 'assistant',
+          content: `I apologize, but I'm experiencing technical difficulties. Please try again or contact our front desk at ${supportPhone}.`,
+          isError: true,
+          quickActions: [
+            { label: 'Try Again', action: 'retry' },
+            { label: 'Contact Front Desk', action: 'front_desk' },
+          ],
+        });
+      }
     } finally {
       setIsTyping(false);
+    }
+  };
+
+  const buildQuickActions = (intent?: string): QuickAction[] => {
+    if (!intent) return [];
+
+    switch (intent) {
+      case 'check_bookings':
+        return [
+          { label: 'Pre-Check-in', action: 'I want to do pre-check-in' },
+          { label: 'Modify Booking', action: 'I want to modify my booking' },
+        ];
+      case 'booking_lookup':
+        return [
+          { label: 'Pre-Check-in', action: 'I want to do pre-check-in for this booking' },
+          { label: 'Cancel Booking', action: 'I want to cancel this booking' },
+        ];
+      case 'pre_checkin':
+        return [{ label: 'My Bookings', action: 'Show my bookings' }];
+      case 'make_request':
+        return [
+          { label: 'More Requests', action: 'I have another request' },
+          { label: 'My Bookings', action: 'Show my bookings' },
+        ];
+      default:
+        return [];
     }
   };
 
@@ -385,55 +423,62 @@ export const AGIChatProvider = ({ children }: AGIChatProviderProps) => {
         : 'webm';
 
       // Add placeholder for voice message
-      const voiceMessageId = addMessage({
+      addMessage({
         type: 'user',
         content: '🎤 Voice message...',
         isVoice: true,
       });
 
-      // Send voice request
-      const response = await agiAssistantService.voiceChat({
+      // First transcribe
+      const transcription = await agiAssistantService.transcribeAudio({
         audio_base64: base64Audio,
         audio_format: format,
         session_id: sessionIdRef.current || undefined,
-        room_number: guestContext?.roomNumber,
-        booking_number: guestContext?.confirmationCode,
       });
 
-      // Update user message with transcription (from context)
-      // The AGI processes the transcription internally
+      if (transcription.success && transcription.text) {
+        // Update user message with transcription
+        setMessages((prev) => {
+          const updated = [...prev];
+          const lastUserMsg = updated.findIndex(
+            (m) => m.type === 'user' && m.content === '🎤 Voice message...'
+          );
+          if (lastUserMsg >= 0) {
+            updated[lastUserMsg] = {
+              ...updated[lastUserMsg],
+              content: transcription.text!,
+            };
+          }
+          return updated;
+        });
 
-      // Update session ID
-      if (response.session_id) {
-        sessionIdRef.current = response.session_id;
-        localStorage.setItem(AGI_SESSION_ID_KEY, response.session_id);
-      }
+        // Send transcribed text through chat
+        const response = await guestChatService.chat({
+          message: transcription.text,
+          session_id: sessionIdRef.current || undefined,
+        });
 
-      // Update guest context
-      if (response.guest_context) {
-        updateGuestContextFromResponse(response.guest_context);
-      }
+        if (response.session_id) {
+          sessionIdRef.current = response.session_id;
+        }
 
-      // Add assistant response
-      addMessage({
-        type: 'assistant',
-        content: response.message,
-        intent: response.intent,
-        confidence: response.confidence,
-        quickActions: response.quick_actions,
-        taskInfo: response.task_id
-          ? {
-              taskId: response.task_id,
-              taskType: response.task_type || 'service',
-              status: 'created',
-            }
-          : undefined,
-        actionResult: response.action_result,
-      });
+        addMessage({
+          type: 'assistant',
+          content: response.response,
+          intent: response.intent,
+          conversationId: response.conversation_id,
+        });
 
-      // Auto-play response
-      if (voiceEnabled) {
-        playResponse(response.message);
+        // Auto-play response
+        if (voiceEnabled) {
+          playResponse(response.response);
+        }
+      } else {
+        addMessage({
+          type: 'assistant',
+          content: "I couldn't understand your voice message. Please try again or type your request.",
+          isError: true,
+        });
       }
     } catch (error) {
       console.error('Error processing voice message:', error);
@@ -447,20 +492,6 @@ export const AGIChatProvider = ({ children }: AGIChatProviderProps) => {
     }
   };
 
-  const updateGuestContextFromResponse = (context: Record<string, unknown>) => {
-    setGuestContextState((prev) => ({
-      sessionId: sessionIdRef.current || '',
-      ...prev,
-      guestName: (context.guest_name as string) || prev?.guestName,
-      roomNumber: (context.room_number as string) || prev?.roomNumber,
-      confirmationCode: (context.confirmation_code as string) || prev?.confirmationCode,
-      isCheckedIn: (context.is_checked_in as boolean) || prev?.isCheckedIn,
-      checkOutDate: (context.check_out_date as string) || prev?.checkOutDate,
-      loyaltyTier: (context.loyalty_tier as string) || prev?.loyaltyTier,
-      emotion: (context.emotion as string) || prev?.emotion,
-    }));
-  };
-
   const playResponse = async (text: string) => {
     if (!voiceEnabled) return;
 
@@ -469,7 +500,7 @@ export const AGIChatProvider = ({ children }: AGIChatProviderProps) => {
 
       const response = await agiAssistantService.textToSpeech({
         text,
-        voice: 'nova', // Friendly female voice
+        voice: 'nova',
         speed: 1.0,
       });
 
@@ -494,6 +525,9 @@ export const AGIChatProvider = ({ children }: AGIChatProviderProps) => {
   const handleQuickAction = useCallback(
     (action: string) => {
       switch (action) {
+        case 'login':
+          window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+          break;
         case 'retry':
           const lastUserMessage = [...messages].reverse().find((m) => m.type === 'user');
           if (lastUserMessage) {
@@ -501,17 +535,18 @@ export const AGIChatProvider = ({ children }: AGIChatProviderProps) => {
           }
           break;
         case 'front_desk':
+          const phone = hotelInfo?.support_phone || '+1 (310) 555-2847';
+          const email = hotelInfo?.support_email || 'support@glimmora.com';
           addMessage({
             type: 'assistant',
-            content:
-              "You can reach our front desk at:\n\n• Phone: Extension 0 from your room\n• Direct Line: +1 (555) 123-4567\n• Available 24/7\n\nWould you like me to help with anything else?",
+            content: `You can reach our front desk at:\n\n• **Phone**: ${phone}\n• **Email**: ${email}\n• Available 24/7\n\nWould you like me to help with anything else?`,
           });
           break;
         default:
           sendMessage(action);
       }
     },
-    [messages, sendMessage, addMessage]
+    [messages, sendMessage, addMessage, hotelInfo]
   );
 
   const toggleChat = () => setIsOpen((prev) => !prev);
@@ -521,31 +556,27 @@ export const AGIChatProvider = ({ children }: AGIChatProviderProps) => {
   const clearHistory = async () => {
     stopAudio();
 
-    // Clear on server
-    if (sessionIdRef.current) {
+    // Close session on server
+    if (isAuthenticated && sessionIdRef.current) {
       try {
-        await agiAssistantService.clearContext(sessionIdRef.current);
+        await guestChatService.closeSession();
       } catch (e) {
-        console.error('Error clearing server context:', e);
+        console.error('Error closing session:', e);
       }
     }
 
     // Clear local state
     setMessages([]);
     setGuestContextState(null);
+    sessionIdRef.current = null;
+    initializedRef.current = false;
 
-    // Clear localStorage
-    localStorage.removeItem(AGI_CHAT_STORAGE_KEY);
-    localStorage.removeItem(AGI_CONTEXT_KEY);
-    localStorage.setItem(CACHE_VERSION_KEY, CURRENT_CACHE_VERSION);
-
-    // Generate new session
-    const newSessionId = `agi_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    sessionIdRef.current = newSessionId;
-    localStorage.setItem(AGI_SESSION_ID_KEY, newSessionId);
-
-    // Show welcome message
-    showWelcomeMessage();
+    // Show appropriate message
+    if (isAuthenticated) {
+      showWelcomeMessage();
+    } else {
+      showLoginRequiredMessage();
+    }
   };
 
   const setGuestContext = (context: Partial<GuestContext>) => {
@@ -561,6 +592,81 @@ export const AGIChatProvider = ({ children }: AGIChatProviderProps) => {
     localStorage.setItem(VOICE_ENABLED_KEY, String(enabled));
   };
 
+  /**
+   * Handle user interaction with action UI components
+   * This sends the selection back to the AI as a structured message
+   */
+  const handleActionSelection = useCallback(
+    async (actionType: string, selection: Record<string, unknown>) => {
+      // Build a message that tells the AI what the user selected
+      let message = '';
+
+      switch (actionType) {
+        case 'select_room_type':
+          // User selected a room type from booking flow
+          message = `I'd like to book the ${selection.room_type_name || 'selected room'}. Room type ID: ${selection.room_type_id}`;
+          break;
+
+        case 'select_precheckin_room':
+          // User selected a room during pre-check-in
+          message = `I'll take room ${selection.room_number}. Room ID: ${selection.room_id}`;
+          break;
+
+        case 'submit_preferences':
+          // User submitted pre-check-in preferences
+          const prefs = selection as Record<string, string | boolean>;
+          message = `My preferences are: floor ${prefs.floor_preference || 'any'}, view ${prefs.view_preference || 'any'}, bed ${prefs.bed_type_preference || 'any'}`;
+          if (prefs.arrival_time) message += `, arriving around ${prefs.arrival_time}`;
+          break;
+
+        case 'complete_precheckin':
+          message = `Please complete my pre-check-in for precheckin ID ${selection.precheckin_id}`;
+          break;
+
+        case 'payment_complete':
+          // Payment was completed - this triggers when "Reserve Now, Pay at Hotel" is clicked
+          // Include all booking details so the AI can create the booking
+          message = `Please create my booking with pay-at-hotel option. Room type ID: ${selection.room_type_id}, check-in: ${selection.check_in}, check-out: ${selection.check_out}, adults: ${selection.adults || 1}, children: ${selection.children || 0}`;
+          if (selection.special_requests) {
+            message += `, special requests: ${selection.special_requests}`;
+          }
+          break;
+
+        case 'confirm_modification':
+          message = `Yes, please proceed with the modification.`;
+          break;
+
+        case 'confirm_cancellation':
+          message = `Yes, please cancel the booking. Reason: ${selection.reason || 'Change of plans'}`;
+          break;
+
+        case 'start_booking_with_room':
+          message = `I'd like to book the ${selection.room_type_name}. Room type ID: ${selection.room_type_id}`;
+          break;
+
+        case 'view_booking':
+          message = `Show me details for booking ${selection.confirmation_code}`;
+          break;
+
+        case 'start_precheckin':
+          message = `I want to start pre-check-in for booking ${selection.confirmation_code}`;
+          break;
+
+        case 'modify_booking':
+          message = `I want to modify booking ${selection.confirmation_code}`;
+          break;
+
+        default:
+          // Generic selection
+          message = JSON.stringify(selection);
+      }
+
+      // Send the message through normal flow
+      await sendMessage(message);
+    },
+    [sendMessage]
+  );
+
   return (
     <AGIChatContext.Provider
       value={{
@@ -573,6 +679,8 @@ export const AGIChatProvider = ({ children }: AGIChatProviderProps) => {
         sessionId: sessionIdRef.current,
         guestContext,
         voiceEnabled,
+        hotelInfo,
+        isAuthenticated,
         sendMessage,
         sendVoiceMessage,
         toggleChat,
@@ -584,6 +692,7 @@ export const AGIChatProvider = ({ children }: AGIChatProviderProps) => {
         setVoiceEnabled,
         playResponse,
         stopAudio,
+        handleActionSelection,
       }}
     >
       {children}

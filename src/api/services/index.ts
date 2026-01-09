@@ -31,6 +31,7 @@ export * from './dashboards.service';
 
 // Guest Services
 export * from './guest-ai.service';
+export * from './guest-chat.service';
 export * from './guests.service';
 
 // Staff Management
@@ -44,6 +45,19 @@ export * from './frontdesk.service';
 
 // Revenue Intelligence
 export * from './revenue-intelligence.service';
+
+// Overbooking Management
+export * from './overbooking.service';
+
+// Maintenance
+export * from './maintenance.service';
+
+// CRM AI Services
+export * from './crm-ai.service';
+export * from './ab-testing.service';
+export * from './ota-conversion.service';
+export * from './member-tiers.service';
+export * from './ai-segmentation.service';
 
 // Export client for direct use if needed
 export { apiClient, setAccessToken } from '../client';

@@ -1,73 +1,220 @@
-import { useMemo } from 'react';
-import { Sparkles, TrendingUp, ArrowRight, Check, X } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Sparkles, TrendingUp, ArrowRight, Check, X, Loader2 } from 'lucide-react';
 import { Button } from '../ui2/Button';
+import { useToast } from '../../contexts/ToastContext';
+import revenueIntelligenceService, {
+  PricingRecommendation,
+} from '../../api/services/revenue-intelligence.service';
+import { useRecommendations } from '../../contexts/RevenueDataContext';
 
-const ROOM_TYPES = [
-  { id: 'standard', name: 'Standard Room', baseRate: 6500 },
-  { id: 'deluxe', name: 'Deluxe Room', baseRate: 8500 },
-  { id: 'suite', name: 'Executive Suite', baseRate: 14500 },
-  { id: 'presidential', name: 'Presidential Suite', baseRate: 28500 },
-  { id: 'villa', name: 'Garden Villa', baseRate: 22000 }
-];
+interface RateRecommendationsProps {
+  settings?: {
+    autoRate?: boolean;
+  };
+  onRefreshCalendar?: () => void;
+}
 
-export default function RateRecommendations({ forecastData, competitorData, settings }) {
-  const recommendations = useMemo(() => {
-    const avgDemand = forecastData.slice(0, 7).reduce((sum, d) => sum + d.demand, 0) / 7;
-    const avgCompetitorRate = competitorData.reduce((sum, c) => sum + c.next7, 0) / competitorData.length;
-    const yourAvgRate = 7800;
+export default function RateRecommendations({ settings, onRefreshCalendar }: RateRecommendationsProps) {
+  const { success, error: showError } = useToast();
+  const { data: recommendationsResponse, loading: isLoading, refresh: refreshRecommendations } = useRecommendations();
 
-    return ROOM_TYPES.map(room => {
-      let adjustment = 0;
-      let demandLevel = 'moderate';
+  // Local state for recommendations (to handle accept/dismiss operations)
+  const [localRecommendations, setLocalRecommendations] = useState<PricingRecommendation[]>([]);
+  const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
+  const [isApplyingAll, setIsApplyingAll] = useState(false);
+  const [isDismissingAll, setIsDismissingAll] = useState(false);
 
-      // Demand-based adjustment
-      if (avgDemand > 0.8) {
-        adjustment += Math.round(Math.random() * 8 + 10);
-        demandLevel = 'high';
-      } else if (avgDemand >= 0.5) {
-        adjustment += Math.round(Math.random() * 4 + 4);
-        demandLevel = 'moderate';
-      } else {
-        adjustment -= Math.round(Math.random() * 7 + 5);
-        demandLevel = 'low';
-      }
+  // Sync local state with context data
+  useEffect(() => {
+    if (recommendationsResponse?.recommendations) {
+      setLocalRecommendations(recommendationsResponse.recommendations);
+    }
+  }, [recommendationsResponse]);
 
-      // Competitor-based adjustment
-      const marketPosition = yourAvgRate > avgCompetitorRate * 1.1 ? 'above' :
-                            yourAvgRate < avgCompetitorRate * 0.9 ? 'below' : 'at';
+  // Use local state for rendering
+  const recommendations = localRecommendations;
 
-      if (marketPosition === 'above') {
-        adjustment -= 5;
-      } else if (marketPosition === 'below') {
-        adjustment += 5;
-      }
+  // Create a unique ID for each recommendation
+  const getRecommendationId = (rec: PricingRecommendation): string => {
+    return `${rec.room_type_id}_${rec.date}`;
+  };
 
-      const recommendedRate = Math.round(room.baseRate * (1 + adjustment / 100));
-      const changePercent = Math.round(((recommendedRate - room.baseRate) / room.baseRate) * 100);
+  // Accept single recommendation
+  const handleAccept = async (rec: PricingRecommendation) => {
+    const id = getRecommendationId(rec);
+    setLoadingIds(prev => new Set(prev).add(id));
 
-      return {
-        ...room,
-        recommendedRate,
-        adjustment: changePercent,
-        demandLevel,
-        marketPosition,
-        confidence: avgDemand > 0.7 ? 'high' : avgDemand > 0.4 ? 'medium' : 'low'
-      };
-    });
-  }, [forecastData, competitorData]);
-
-  const highConfidenceCount = useMemo(() => {
-    return recommendations.filter(r => r.confidence === 'high').length;
-  }, [recommendations]);
-
-  const getDemandColor = (level) => {
-    switch (level) {
-      case 'high': return 'bg-sage-500 text-white';
-      case 'moderate': return 'bg-gold-100 text-gold-700';
-      case 'low': return 'bg-neutral-100 text-neutral-600';
-      default: return 'bg-neutral-100 text-neutral-600';
+    try {
+      await revenueIntelligenceService.acceptRecommendation(id);
+      setLocalRecommendations(prev => prev.filter(r => getRecommendationId(r) !== id));
+      success(`Rate updated for ${rec.room_type_name} on ${new Date(rec.date).toLocaleDateString()}`);
+      onRefreshCalendar?.();
+    } catch (err) {
+      showError('Failed to apply recommendation');
+      console.error('Error accepting recommendation:', err);
+    } finally {
+      setLoadingIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   };
+
+  // Dismiss single recommendation
+  const handleDismiss = async (rec: PricingRecommendation) => {
+    const id = getRecommendationId(rec);
+    setLoadingIds(prev => new Set(prev).add(id));
+
+    try {
+      await revenueIntelligenceService.dismissRecommendation(id);
+      setLocalRecommendations(prev => prev.filter(r => getRecommendationId(r) !== id));
+      success('Recommendation dismissed');
+    } catch (err) {
+      showError('Failed to dismiss recommendation');
+      console.error('Error dismissing recommendation:', err);
+    } finally {
+      setLoadingIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
+  // Apply all recommendations
+  const handleApplyAll = async () => {
+    if (recommendations.length === 0) return;
+
+    setIsApplyingAll(true);
+    try {
+      await revenueIntelligenceService.applyAllRecommendations();
+      setLocalRecommendations([]);
+      success(`Applied ${recommendations.length} rate recommendations`);
+      onRefreshCalendar?.();
+    } catch (err) {
+      showError('Failed to apply all recommendations');
+      console.error('Error applying all recommendations:', err);
+    } finally {
+      setIsApplyingAll(false);
+    }
+  };
+
+  // Dismiss all recommendations
+  const handleDismissAll = async () => {
+    if (recommendations.length === 0) return;
+
+    setIsDismissingAll(true);
+    try {
+      await revenueIntelligenceService.dismissAllRecommendations();
+      setLocalRecommendations([]);
+      success('All recommendations dismissed');
+    } catch (err) {
+      showError('Failed to dismiss all recommendations');
+      console.error('Error dismissing all recommendations:', err);
+    } finally {
+      setIsDismissingAll(false);
+    }
+  };
+
+  const highConfidenceCount = recommendations.filter(r => r.confidence >= 0.8).length;
+
+  const getDemandColor = (level: string) => {
+    switch (level) {
+      case 'high':
+      case 'critical':
+        return 'bg-sage-500 text-white';
+      case 'moderate':
+        return 'bg-gold-100 text-gold-700';
+      case 'low':
+      case 'very_low':
+        return 'bg-neutral-100 text-neutral-600';
+      default:
+        return 'bg-neutral-100 text-neutral-600';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'critical':
+        return 'bg-rose-50 border-rose-200';
+      case 'high':
+        return 'bg-gold-50 border-gold-200';
+      case 'medium':
+        return 'bg-ocean-50 border-ocean-200';
+      default:
+        return '';
+    }
+  };
+
+  // Loading skeleton
+  if (isLoading) {
+    return (
+      <div>
+        <div className="px-6 py-5 border-b border-neutral-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="h-4 w-40 bg-neutral-200 rounded animate-pulse" />
+              <div className="h-3 w-32 bg-neutral-100 rounded animate-pulse mt-2" />
+            </div>
+            <div className="h-6 w-32 bg-neutral-100 rounded-lg animate-pulse" />
+          </div>
+        </div>
+        <div className="divide-y divide-neutral-100">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="px-6 py-4">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <div className="h-4 w-32 bg-neutral-200 rounded animate-pulse" />
+                  <div className="h-3 w-20 bg-neutral-100 rounded animate-pulse mt-2" />
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-20 bg-neutral-100 rounded animate-pulse" />
+                  <div className="h-8 w-20 bg-neutral-100 rounded animate-pulse" />
+                </div>
+                <div className="h-8 w-16 bg-neutral-100 rounded animate-pulse" />
+                <div className="flex gap-2">
+                  <div className="h-8 w-8 bg-neutral-100 rounded-lg animate-pulse" />
+                  <div className="h-8 w-8 bg-neutral-100 rounded-lg animate-pulse" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (recommendations.length === 0) {
+    return (
+      <div>
+        <div className="px-6 py-5 border-b border-neutral-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-neutral-800">AI Rate Recommendations</h3>
+              <p className="text-[11px] text-neutral-400 font-medium mt-0.5">Optimized for next 7 days</p>
+            </div>
+          </div>
+        </div>
+        <div className="px-6 py-12 text-center">
+          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-sage-50 flex items-center justify-center">
+            <Sparkles className="w-6 h-6 text-sage-500" />
+          </div>
+          <p className="text-sm font-medium text-neutral-700 mb-1">All caught up!</p>
+          <p className="text-[13px] text-neutral-500">No pricing recommendations at this time.</p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-4"
+            onClick={refreshRecommendations}
+          >
+            Refresh
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -90,36 +237,48 @@ export default function RateRecommendations({ forecastData, competitorData, sett
       {/* Recommendations List */}
       <div className="divide-y divide-neutral-100">
         {recommendations.map((rec) => {
-          const isPositive = rec.adjustment > 0;
+          const id = getRecommendationId(rec);
+          const isPositive = rec.change_percent > 0;
+          const isItemLoading = loadingIds.has(id);
 
           return (
             <div
-              key={rec.id}
-              className="px-6 py-4 hover:bg-neutral-50 transition-colors"
+              key={id}
+              className={`px-6 py-4 hover:bg-neutral-50 transition-colors ${getPriorityColor(rec.priority)}`}
             >
               <div className="flex items-center gap-4">
                 {/* Room Info */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold text-neutral-900">{rec.name}</p>
+                  <p className="text-[13px] font-semibold text-neutral-900">{rec.room_type_name}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${getDemandColor(rec.demandLevel)}`}>
-                      {rec.demandLevel.charAt(0).toUpperCase() + rec.demandLevel.slice(1)} demand
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${getDemandColor(rec.demand_level)}`}>
+                      {rec.demand_level.charAt(0).toUpperCase() + rec.demand_level.slice(1)} demand
+                    </span>
+                    <span className="text-[10px] text-neutral-400">
+                      {new Date(rec.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                     </span>
                   </div>
+                  {rec.reasoning && (
+                    <p className="text-[11px] text-neutral-500 mt-1 line-clamp-1">{rec.reasoning}</p>
+                  )}
                 </div>
 
                 {/* Price Comparison */}
                 <div className="flex items-center gap-3">
                   <div className="text-right">
                     <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-wider">Current</p>
-                    <p className="text-[13px] font-medium text-neutral-500 mt-0.5">₹{rec.baseRate.toLocaleString()}</p>
+                    <p className="text-[13px] font-medium text-neutral-500 mt-0.5">
+                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(rec.current_rate)}
+                    </p>
                   </div>
 
                   <ArrowRight className="w-4 h-4 text-neutral-300" />
 
                   <div className="text-right">
                     <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-wider">Recommended</p>
-                    <p className="text-[15px] font-bold text-neutral-900 mt-0.5">₹{rec.recommendedRate.toLocaleString()}</p>
+                    <p className="text-[15px] font-bold text-neutral-900 mt-0.5">
+                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(rec.recommended_rate)}
+                    </p>
                   </div>
                 </div>
 
@@ -129,23 +288,35 @@ export default function RateRecommendations({ forecastData, competitorData, sett
                 }`}>
                   <TrendingUp className={`w-3.5 h-3.5 ${!isPositive && 'rotate-180'}`} />
                   <span>
-                    {isPositive ? '+' : ''}{rec.adjustment}%
+                    {isPositive ? '+' : ''}{rec.change_percent}%
                   </span>
                 </div>
 
                 {/* Actions */}
                 <div className="flex items-center gap-2">
                   <button
-                    className="w-8 h-8 flex items-center justify-center bg-sage-500 text-white rounded-lg hover:bg-sage-600 transition-colors"
+                    onClick={() => handleAccept(rec)}
+                    disabled={isItemLoading}
+                    className="w-8 h-8 flex items-center justify-center bg-sage-500 text-white rounded-lg hover:bg-sage-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Apply"
                   >
-                    <Check className="w-4 h-4" />
+                    {isItemLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Check className="w-4 h-4" />
+                    )}
                   </button>
                   <button
-                    className="w-8 h-8 flex items-center justify-center bg-neutral-100 text-neutral-500 rounded-lg hover:bg-neutral-200 hover:text-neutral-700 transition-colors"
+                    onClick={() => handleDismiss(rec)}
+                    disabled={isItemLoading}
+                    className="w-8 h-8 flex items-center justify-center bg-neutral-100 text-neutral-500 rounded-lg hover:bg-neutral-200 hover:text-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Dismiss"
                   >
-                    <X className="w-4 h-4" />
+                    {isItemLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <X className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -168,11 +339,35 @@ export default function RateRecommendations({ forecastData, competitorData, sett
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm">
-              Dismiss All
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDismissAll}
+              disabled={isDismissingAll || isApplyingAll || recommendations.length === 0}
+            >
+              {isDismissingAll ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  Dismissing...
+                </>
+              ) : (
+                'Dismiss All'
+              )}
             </Button>
-            <Button variant="primary" size="sm">
-              Apply All
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleApplyAll}
+              disabled={isApplyingAll || isDismissingAll || recommendations.length === 0}
+            >
+              {isApplyingAll ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  Applying...
+                </>
+              ) : (
+                'Apply All'
+              )}
             </Button>
           </div>
         </div>

@@ -98,6 +98,19 @@ export interface ResponseDraft {
   tone: string;
   generated_at: string;
   status: string;
+  approval_stage?: number;
+  current_stage?: string;
+  approvers?: ApprovalHistory[];
+}
+
+export interface ApprovalHistory {
+  stage: number;
+  stage_name: string;
+  approver_id: number;
+  approver_name: string;
+  action: string;
+  comment?: string;
+  timestamp: string;
 }
 
 export interface CompetitorBenchmark {
@@ -106,6 +119,124 @@ export interface CompetitorBenchmark {
   review_count: number;
   response_rate: number;
   sentiment_score: number;
+}
+
+// New interfaces for enhanced functionality
+export interface Alert {
+  id: number;
+  alert_type: string;
+  category_id: number;
+  category_name?: string;
+  start_date: string;
+  end_date: string;
+  issue_count: number;
+  severity_score: number;
+  status: string;
+  rca_analysis?: {
+    root_cause?: string;
+    affected_reviews?: number[];
+    recommendations?: string[];
+    severity_breakdown?: Record<string, number>;
+  };
+  created_at: string;
+  acknowledged_at?: string;
+  resolved_at?: string;
+  resolution_notes?: string;
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  description?: string;
+  parent_id?: number;
+  icon?: string;
+  color?: string;
+  is_active: boolean;
+  routing_rules?: RoutingRule;
+  review_count?: number;
+  avg_sentiment?: number;
+}
+
+export interface RoutingRule {
+  target_department: string;
+  default_priority: string;
+  auto_create_ticket: boolean;
+  notify_manager: boolean;
+  escalation_hours?: number;
+  escalation_contacts?: string[];
+}
+
+export interface AutomationConfig {
+  global_enabled: boolean;
+  auto_respond_positive: boolean;
+  auto_respond_threshold: number;
+  require_approval: boolean;
+  response_delay_hours: number;
+  templates: {
+    positive: string;
+    neutral: string;
+    negative: string;
+  };
+  excluded_sources?: string[];
+  language_detection?: boolean;
+  sentiment_threshold_positive?: number;
+  sentiment_threshold_negative?: number;
+}
+
+export interface Goal {
+  id: number;
+  metric_type: string;
+  baseline_value: number;
+  target_value: number;
+  current_value: number;
+  progress_percentage: number;
+  start_date: string;
+  end_date: string;
+  status: string;
+  milestones?: GoalMilestone[];
+}
+
+export interface GoalMilestone {
+  id: number;
+  target_date: string;
+  target_value: number;
+  achieved: boolean;
+  achieved_date?: string;
+}
+
+export interface EngineStats {
+  status: string;
+  nlp_model_version: string;
+  sentiment_accuracy: number;
+  auto_replies_sent_today: number;
+  auto_replies_sent_week: number;
+  reviews_processed_today: number;
+  avg_response_time_hours: number;
+  last_sync: string;
+  queue_size: number;
+  error_rate: number;
+}
+
+export interface ReputationSettings {
+  notifications: {
+    email_alerts: boolean;
+    slack_integration: boolean;
+    alert_threshold: number;
+    daily_digest: boolean;
+    weekly_report: boolean;
+  };
+  display: {
+    default_date_range: string;
+    default_source_filter: string;
+    chart_theme: string;
+    items_per_page: number;
+  };
+  automation: AutomationConfig;
+  integrations: {
+    connected_otas: string[];
+    sync_frequency_hours: number;
+    last_sync: string;
+  };
 }
 
 // API Service
@@ -152,6 +283,22 @@ class ReputationService {
     return response.data.data || response.data;
   }
 
+  // Get all reviews with filters
+  async getReviews(params: {
+    page?: number;
+    page_size?: number;
+    source?: string;
+    rating?: number;
+    sentiment?: string;
+    start_date?: string;
+    end_date?: string;
+    keyword?: string;
+    responded?: boolean;
+  }): Promise<{ reviews: Review[]; total: number; page: number }> {
+    const response = await api.get(`${this.baseUrl}/reviews`, { params });
+    return response.data.data || response.data;
+  }
+
   // Generate AI response draft
   async generateResponseDraft(
     reviewId: number,
@@ -182,29 +329,254 @@ class ReputationService {
     return response.data.data || response.data;
   }
 
-  // Create performance goal
-  async createGoal(
-    metricType: string,
-    targetValue: number,
-    startDate: string,
-    endDate: string
-  ): Promise<any> {
-    const response = await api.post(`${this.baseUrl}/goals`, {
-      metric_type: metricType,
-      target_value: targetValue,
-      start_date: startDate,
-      end_date: endDate
-    });
+  // ========================
+  // GOALS
+  // ========================
+
+  async getGoals(): Promise<Goal[]> {
+    const response = await api.get(`${this.baseUrl}/goals`);
     return response.data.data || response.data;
   }
 
-  // Update goal progress
-  async updateGoalProgress(goalId: number): Promise<any> {
+  async createGoal(data: {
+    metric_type: string;
+    target_value: number;
+    start_date: string;
+    end_date: string;
+    baseline_value?: number;
+  }): Promise<Goal> {
+    const response = await api.post(`${this.baseUrl}/goals`, data);
+    return response.data.data || response.data;
+  }
+
+  async updateGoal(id: number, data: Partial<Goal>): Promise<Goal> {
+    const response = await api.patch(`${this.baseUrl}/goals/${id}`, data);
+    return response.data.data || response.data;
+  }
+
+  async deleteGoal(id: number): Promise<void> {
+    await api.delete(`${this.baseUrl}/goals/${id}`);
+  }
+
+  async updateGoalProgress(goalId: number): Promise<Goal> {
     const response = await api.patch(`${this.baseUrl}/goals/${goalId}/progress`);
     return response.data.data || response.data;
   }
 
-  // Summary stats
+  // ========================
+  // ALERTS
+  // ========================
+
+  async getAlerts(status?: string, type?: string): Promise<Alert[]> {
+    const params: Record<string, string> = {};
+    if (status) params.status = status;
+    if (type) params.type = type;
+
+    const response = await api.get(`${this.baseUrl}/alerts`, { params });
+    return response.data.data || response.data;
+  }
+
+  async getAlert(alertId: number): Promise<Alert> {
+    const response = await api.get(`${this.baseUrl}/alerts/${alertId}`);
+    return response.data.data || response.data;
+  }
+
+  async acknowledgeAlert(alertId: number): Promise<Alert> {
+    const response = await api.post(`${this.baseUrl}/alerts/${alertId}/acknowledge`);
+    return response.data.data || response.data;
+  }
+
+  async resolveAlert(alertId: number, notes: string): Promise<Alert> {
+    const response = await api.post(`${this.baseUrl}/alerts/${alertId}/resolve`, {
+      resolution_notes: notes
+    });
+    return response.data.data || response.data;
+  }
+
+  async dismissAlert(alertId: number): Promise<void> {
+    await api.post(`${this.baseUrl}/alerts/${alertId}/dismiss`);
+  }
+
+  async createWorkOrderFromAlert(alertId: number, data: {
+    title: string;
+    description: string;
+    priority: string;
+    assigned_to?: number;
+    department?: string;
+  }): Promise<{ work_order_id: number }> {
+    const response = await api.post(`${this.baseUrl}/alerts/${alertId}/work-order`, data);
+    return response.data.data || response.data;
+  }
+
+  async runAlertDetection(): Promise<{
+    alerts_created: number;
+    categories_scanned: number;
+    issues_detected: number;
+  }> {
+    const response = await api.post(`${this.baseUrl}/alerts/detect`);
+    return response.data.data || response.data;
+  }
+
+  // ========================
+  // CATEGORIES
+  // ========================
+
+  async getCategories(): Promise<Category[]> {
+    const response = await api.get(`${this.baseUrl}/categories`);
+    return response.data.data || response.data;
+  }
+
+  async getCategory(id: number): Promise<Category> {
+    const response = await api.get(`${this.baseUrl}/categories/${id}`);
+    return response.data.data || response.data;
+  }
+
+  async createCategory(data: {
+    name: string;
+    description?: string;
+    parent_id?: number;
+    icon?: string;
+    color?: string;
+    is_active?: boolean;
+  }): Promise<Category> {
+    const response = await api.post(`${this.baseUrl}/categories`, data);
+    return response.data.data || response.data;
+  }
+
+  async updateCategory(id: number, data: Partial<Category>): Promise<Category> {
+    const response = await api.patch(`${this.baseUrl}/categories/${id}`, data);
+    return response.data.data || response.data;
+  }
+
+  async deleteCategory(id: number): Promise<void> {
+    await api.delete(`${this.baseUrl}/categories/${id}`);
+  }
+
+  async updateRoutingRules(categoryId: number, rules: RoutingRule): Promise<Category> {
+    const response = await api.put(`${this.baseUrl}/categories/${categoryId}/routing`, rules);
+    return response.data.data || response.data;
+  }
+
+  async getCategoryStats(categoryId: number): Promise<{
+    review_count: number;
+    avg_sentiment: number;
+    avg_rating: number;
+    trend: number;
+  }> {
+    const response = await api.get(`${this.baseUrl}/categories/${categoryId}/stats`);
+    return response.data.data || response.data;
+  }
+
+  // ========================
+  // AUTOMATION
+  // ========================
+
+  async getAutomationConfig(): Promise<AutomationConfig> {
+    const response = await api.get(`${this.baseUrl}/automation/config`);
+    return response.data.data || response.data;
+  }
+
+  async updateAutomationConfig(config: Partial<AutomationConfig>): Promise<AutomationConfig> {
+    const response = await api.patch(`${this.baseUrl}/automation/config`, config);
+    return response.data.data || response.data;
+  }
+
+  async testAutoResponse(reviewText: string, sentiment?: string): Promise<{
+    generated_response: string;
+    tone_detected: string;
+    would_auto_respond: boolean;
+    confidence_score: number;
+  }> {
+    const response = await api.post(`${this.baseUrl}/automation/test`, {
+      review_text: reviewText,
+      sentiment
+    });
+    return response.data.data || response.data;
+  }
+
+  async getAutomationLogs(page: number = 1, pageSize: number = 20): Promise<{
+    logs: Array<{
+      id: number;
+      review_id: number;
+      action: string;
+      status: string;
+      timestamp: string;
+      details: object;
+    }>;
+    total: number;
+    page: number;
+  }> {
+    const response = await api.get(`${this.baseUrl}/automation/logs`, {
+      params: { page, page_size: pageSize }
+    });
+    return response.data.data || response.data;
+  }
+
+  // ========================
+  // SETTINGS
+  // ========================
+
+  async getSettings(): Promise<ReputationSettings> {
+    const response = await api.get(`${this.baseUrl}/settings`);
+    return response.data.data || response.data;
+  }
+
+  async saveSettings(settings: Partial<ReputationSettings>): Promise<ReputationSettings> {
+    const response = await api.put(`${this.baseUrl}/settings`, settings);
+    return response.data.data || response.data;
+  }
+
+  // ========================
+  // ENGINE STATS
+  // ========================
+
+  async getEngineStats(): Promise<EngineStats> {
+    const response = await api.get(`${this.baseUrl}/engine/stats`);
+    return response.data.data || response.data;
+  }
+
+  // ========================
+  // APPROVAL WORKFLOW
+  // ========================
+
+  async submitForReview(draftId: number): Promise<ResponseDraft> {
+    const response = await api.post(`${this.baseUrl}/drafts/${draftId}/submit`);
+    return response.data.data || response.data;
+  }
+
+  async approveDraftStage(draftId: number, comment?: string): Promise<ResponseDraft> {
+    const response = await api.post(`${this.baseUrl}/drafts/${draftId}/approve-stage`, {
+      comment
+    });
+    return response.data.data || response.data;
+  }
+
+  async rejectDraft(draftId: number, reason: string): Promise<ResponseDraft> {
+    const response = await api.post(`${this.baseUrl}/drafts/${draftId}/reject`, {
+      reason
+    });
+    return response.data.data || response.data;
+  }
+
+  async getPendingApprovals(): Promise<ResponseDraft[]> {
+    const response = await api.get(`${this.baseUrl}/drafts/pending-approval`);
+    return response.data.data || response.data;
+  }
+
+  async getDraftHistory(draftId: number): Promise<ApprovalHistory[]> {
+    const response = await api.get(`${this.baseUrl}/drafts/${draftId}/history`);
+    return response.data.data || response.data;
+  }
+
+  async getDraft(draftId: number): Promise<ResponseDraft> {
+    const response = await api.get(`${this.baseUrl}/drafts/${draftId}`);
+    return response.data.data || response.data;
+  }
+
+  // ========================
+  // SUMMARY STATS
+  // ========================
+
   async getSummaryStats(): Promise<{
     total_reviews: number;
     average_rating: number;
@@ -214,6 +586,96 @@ class ReputationService {
     sentiment: { positive: number; neutral: number; negative: number };
   }> {
     const response = await api.get(`${this.baseUrl}/stats/summary`);
+    return response.data.data || response.data;
+  }
+
+  // ========================
+  // TEMPLATES
+  // ========================
+
+  async getResponseTemplates(): Promise<Array<{
+    id: number;
+    name: string;
+    template_text: string;
+    sentiment_type: string;
+    language: string;
+    is_default: boolean;
+    created_at: string;
+  }>> {
+    const response = await api.get(`${this.baseUrl}/templates`);
+    return response.data.data || response.data;
+  }
+
+  async createResponseTemplate(data: {
+    name: string;
+    template_text: string;
+    sentiment_type: string;
+    language?: string;
+    is_default?: boolean;
+  }): Promise<{
+    id: number;
+    name: string;
+    template_text: string;
+    sentiment_type: string;
+    language: string;
+    is_default: boolean;
+    created_at: string;
+  }> {
+    const response = await api.post(`${this.baseUrl}/templates`, data);
+    return response.data.data || response.data;
+  }
+
+  async updateResponseTemplate(id: number, data: {
+    name?: string;
+    template_text?: string;
+    sentiment_type?: string;
+    language?: string;
+    is_default?: boolean;
+  }): Promise<{
+    id: number;
+    name: string;
+    template_text: string;
+    sentiment_type: string;
+    language: string;
+    is_default: boolean;
+    created_at: string;
+  }> {
+    const response = await api.patch(`${this.baseUrl}/templates/${id}`, data);
+    return response.data.data || response.data;
+  }
+
+  async deleteResponseTemplate(id: number): Promise<void> {
+    await api.delete(`${this.baseUrl}/templates/${id}`);
+  }
+
+  // ========================
+  // SYNC OPERATIONS
+  // ========================
+
+  async syncOTAReviews(source?: string): Promise<{
+    synced_count: number;
+    new_reviews: number;
+    updated_reviews: number;
+    errors: string[];
+  }> {
+    const params: Record<string, string> = {};
+    if (source) params.source = source;
+
+    const response = await api.post(`${this.baseUrl}/sync`, null, { params });
+    return response.data.data || response.data;
+  }
+
+  async getSyncStatus(): Promise<{
+    last_sync: string;
+    next_scheduled_sync: string;
+    sources: Array<{
+      source: string;
+      last_sync: string;
+      status: string;
+      review_count: number;
+    }>;
+  }> {
+    const response = await api.get(`${this.baseUrl}/sync/status`);
     return response.data.data || response.data;
   }
 }

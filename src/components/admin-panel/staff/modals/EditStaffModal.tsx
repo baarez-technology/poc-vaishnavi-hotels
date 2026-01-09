@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { X, Save } from 'lucide-react';
+﻿import { useState, useEffect } from 'react';
+import { X, Save, Loader2 } from 'lucide-react';
+import { staffService } from '../../../../api/services/staff.service';
 
 export default function EditStaffModal({ staff, isOpen, onClose, onSave }) {
   const [formData, setFormData] = useState({
@@ -10,6 +11,8 @@ export default function EditStaffModal({ staff, isOpen, onClose, onSave }) {
     phone: '',
     email: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && staff) {
@@ -22,6 +25,7 @@ export default function EditStaffModal({ staff, isOpen, onClose, onSave }) {
         phone: staff.phone || '',
         email: staff.email || ''
       });
+      setError(null);
     } else {
       document.body.style.overflow = 'unset';
     }
@@ -37,135 +41,72 @@ export default function EditStaffModal({ staff, isOpen, onClose, onSave }) {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave(staff.id, formData);
-    onClose();
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      await staffService.update(staff.id, {
+        full_name: formData.name,
+        role: formData.role,
+        department: formData.department,
+        status: formData.status,
+        phone: formData.phone
+      });
+      onSave(staff.id, formData);
+      onClose();
+    } catch (err: any) {
+      console.error('Failed to update staff:', err);
+      setError(err.response?.data?.detail || err.message || 'Failed to update staff. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-scaleIn">
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-neutral-200">
           <div>
             <h2 className="text-2xl font-serif font-semibold text-neutral-900">Edit Staff Details</h2>
-            <p className="text-sm text-neutral-600 mt-1">
-              Update information for {staff.name}
-            </p>
+            <p className="text-sm text-neutral-600 mt-1">Update information for {staff.name}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-neutral-100 rounded-lg transition-colors duration-150"
-          >
+          <button onClick={onClose} className="p-2 hover:bg-neutral-100 rounded-lg transition-colors duration-150">
             <X className="w-5 h-5 text-neutral-600" />
           </button>
         </div>
-
-        {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-          {/* Name */}
+          {error && (<div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>)}
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
-              Full Name *
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              placeholder="Enter full name"
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200"
-            />
+            <label className="block text-sm font-medium text-neutral-700 mb-2">Full Name *</label>
+            <input type="text" name="name" value={formData.name} onChange={handleChange} required disabled={isSubmitting} placeholder="Enter full name" className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 disabled:opacity-50" />
           </div>
-
-          {/* Role */}
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
-              Role *
-            </label>
-            <input
-              type="text"
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              required
-              placeholder="e.g., Receptionist"
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200"
-            />
+            <label className="block text-sm font-medium text-neutral-700 mb-2">Role *</label>
+            <input type="text" name="role" value={formData.role} onChange={handleChange} required disabled={isSubmitting} placeholder="e.g., Receptionist" className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 disabled:opacity-50" />
           </div>
-
-          {/* Phone */}
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
-              Phone Number *
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              required
-              placeholder="+1 (555) 123-4567"
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200"
-            />
+            <label className="block text-sm font-medium text-neutral-700 mb-2">Phone Number *</label>
+            <input type="tel" name="phone" value={formData.phone} onChange={handleChange} required disabled={isSubmitting} placeholder="+1 (555) 123-4567" className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 disabled:opacity-50" />
           </div>
-
-          {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
-              Email Address *
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              placeholder="name@glimmora.com"
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200"
-            />
+            <label className="block text-sm font-medium text-neutral-700 mb-2">Email Address *</label>
+            <input type="email" name="email" value={formData.email} onChange={handleChange} required disabled={isSubmitting} placeholder="name@glimmora.com" className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 disabled:opacity-50" />
           </div>
-
-          {/* Department */}
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
-              Department *
-            </label>
-            <select
-              name="department"
-              value={formData.department}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200"
-            >
+            <label className="block text-sm font-medium text-neutral-700 mb-2">Department *</label>
+            <select name="department" value={formData.department} onChange={handleChange} required disabled={isSubmitting} className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 disabled:opacity-50">
               <option value="frontdesk">Front Desk</option>
               <option value="housekeeping">Housekeeping</option>
               <option value="management">Management</option>
               <option value="maintenance">Maintenance</option>
             </select>
           </div>
-
-          {/* Status */}
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
-              Status *
-            </label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200"
-            >
+            <label className="block text-sm font-medium text-neutral-700 mb-2">Status *</label>
+            <select name="status" value={formData.status} onChange={handleChange} required disabled={isSubmitting} className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 disabled:opacity-50">
               <option value="active">Active</option>
               <option value="off-duty">Off Duty</option>
               <option value="sick">Sick</option>
@@ -173,22 +114,11 @@ export default function EditStaffModal({ staff, isOpen, onClose, onSave }) {
             </select>
           </div>
         </form>
-
-        {/* Footer */}
         <div className="flex items-center justify-end gap-3 p-6 border-t border-neutral-200">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-6 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-all duration-200"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="px-6 py-2 text-sm font-semibold text-white bg-[#8E6554] rounded-lg hover:bg-[#A57865] hover:shadow transition-all duration-200 flex items-center gap-2"
-          >
-            <Save className="w-4 h-4" />
-            Save Changes
+          <button type="button" onClick={onClose} disabled={isSubmitting} className="px-6 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-all duration-200 disabled:opacity-50">Cancel</button>
+          <button onClick={handleSubmit} disabled={isSubmitting} className="px-6 py-2 text-sm font-semibold text-white bg-[#8E6554] rounded-lg hover:bg-[#A57865] hover:shadow transition-all duration-200 flex items-center gap-2 disabled:opacity-50">
+            {isSubmitting ? (<Loader2 className="w-4 h-4 animate-spin" />) : (<Save className="w-4 h-4" />)}
+            {isSubmitting ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </div>

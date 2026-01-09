@@ -28,7 +28,7 @@ export default function RoomMapping() {
     ).length;
     return {
       mapped: mappedCount,
-      total: 4 // 4 room types
+      total: 8 // 8 room types
     };
   };
 
@@ -46,10 +46,14 @@ export default function RoomMapping() {
 
     // PMS room types
     const pmsRoomTypes = [
-      { id: 'standard', name: 'Standard Room' },
-      { id: 'premium', name: 'Premium Room' },
-      { id: 'deluxe', name: 'Deluxe Room' },
-      { id: 'suite', name: 'Suite' }
+      { id: 'minimalist-studio', name: 'Minimalist Studio' },
+      { id: 'coastal-retreat', name: 'Coastal Retreat' },
+      { id: 'urban-oasis', name: 'Urban Oasis' },
+      { id: 'sunset-vista', name: 'Sunset Vista' },
+      { id: 'pacific-suite', name: 'Pacific Suite' },
+      { id: 'wellness-suite', name: 'Wellness Suite' },
+      { id: 'family-sanctuary', name: 'Family Sanctuary' },
+      { id: 'oceanfront-penthouse', name: 'Oceanfront Penthouse' }
     ];
 
     // Simulate AI auto-mapping
@@ -57,10 +61,14 @@ export default function RoomMapping() {
 
     // Auto-map suggestions
     const suggestions = {
-      standard: 'Standard Double Room',
-      premium: 'Superior Room',
-      deluxe: 'Deluxe King Room',
-      suite: 'Executive Suite'
+      'minimalist-studio': 'Studio Room',
+      'coastal-retreat': 'Coastal View Room',
+      'urban-oasis': 'City View Room',
+      'sunset-vista': 'Sunset View Room',
+      'pacific-suite': 'Pacific Suite',
+      'wellness-suite': 'Wellness Suite',
+      'family-sanctuary': 'Family Suite',
+      'oceanfront-penthouse': 'Penthouse Suite'
     };
 
     pmsRoomTypes.forEach(room => {

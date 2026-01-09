@@ -54,7 +54,7 @@ export default function CBSCalendar() {
   };
 
   const stats = useMemo(() => {
-    const roomTypes = ['Standard', 'Premium', 'Deluxe', 'Suite'];
+    const roomTypes = ['Minimalist Studio', 'Coastal Retreat', 'Urban Oasis', 'Sunset Vista', 'Pacific Suite', 'Wellness Suite', 'Family Sanctuary', 'Oceanfront Penthouse'];
     let totalAvailable = 0;
     let totalInventory = 0;
     let soldOutDays = 0;

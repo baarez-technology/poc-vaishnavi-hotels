@@ -32,14 +32,29 @@ export function BookingDetailsPanel({
 
   const fetchBookingDetails = async () => {
     if (!bookingId) return;
-    
+
     setLoading(true);
+    setBooking(null); // Reset booking state before fetching
     try {
       const data = await bookingService.getBookingById(bookingId);
-      setBooking(data);
+      if (data) {
+        setBooking(data);
+      } else {
+        console.error('Empty booking data received');
+        toast.error('Booking details not available');
+      }
     } catch (error: any) {
       console.error('Failed to fetch booking details:', error);
-      toast.error('Failed to load booking details');
+      const status = error.response?.status;
+      const detail = error.response?.data?.detail;
+
+      if (status === 403) {
+        toast.error('You are not authorized to view this booking');
+      } else if (status === 404) {
+        toast.error(detail || 'Booking not found');
+      } else {
+        toast.error('Failed to load booking details');
+      }
     } finally {
       setLoading(false);
     }

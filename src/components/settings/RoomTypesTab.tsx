@@ -1,107 +1,157 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Users } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, RefreshCw, AlertCircle } from 'lucide-react';
 import { AMENITIES } from '../../utils/settings';
 import AddRoomTypeModal from './AddRoomTypeModal';
 import EditRoomTypeModal from './EditRoomTypeModal';
 import { Button } from '../ui2/Button';
+import { roomTypesService, RoomTypeUpdate } from '../../api/services/roomTypes.service';
+import { useToast } from '../../contexts/ToastContext';
 
-// Use localStorage for room types
-const STORAGE_KEY = 'glimmora_room_types';
-
-const defaultRoomTypes = [
-  {
-    id: 'rt-001',
-    name: 'Standard Room',
-    description: 'Comfortable room with essential amenities',
-    price: 5500,
-    maxOccupancy: 2,
-    amenities: ['wifi', 'tv', 'ac', 'minibar'],
-    inclusions: ['Breakfast', 'Wi-Fi', 'Newspaper']
-  },
-  {
-    id: 'rt-002',
-    name: 'Deluxe Room',
-    description: 'Spacious room with city views',
-    price: 8500,
-    maxOccupancy: 3,
-    amenities: ['wifi', 'tv', 'ac', 'minibar', 'safe', 'bathtub'],
-    inclusions: ['Breakfast', 'Wi-Fi', 'Newspaper', 'Welcome Drink']
-  },
-  {
-    id: 'rt-003',
-    name: 'Premium Suite',
-    description: 'Luxury suite with separate living area',
-    price: 15000,
-    maxOccupancy: 4,
-    amenities: ['wifi', 'tv', 'ac', 'minibar', 'safe', 'bathtub', 'jacuzzi', 'balcony'],
-    inclusions: ['Breakfast', 'Wi-Fi', 'Newspaper', 'Welcome Drink', 'Airport Transfer', 'Butler Service']
-  },
-  {
-    id: 'rt-004',
-    name: 'Presidential Suite',
-    description: 'Ultimate luxury with panoramic views',
-    price: 35000,
-    maxOccupancy: 6,
-    amenities: ['wifi', 'tv', 'ac', 'minibar', 'safe', 'bathtub', 'jacuzzi', 'balcony', 'kitchen', 'dining'],
-    inclusions: ['All meals', 'Wi-Fi', 'Newspaper', 'Welcome Drink', 'Airport Transfer', 'Butler Service', 'Spa Access']
-  }
-];
+interface RoomType {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  price: number;
+  maxGuests: number;
+  maxOccupancy: number;
+  amenities: string[];
+  features?: string[];
+  inclusions?: string[];
+  category?: string;
+}
 
 export default function RoomTypesTab() {
-  const [roomTypes, setRoomTypes] = useState([]);
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingRoom, setEditingRoom] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [editingRoom, setEditingRoom] = useState<RoomType | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Load room types from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setRoomTypes(JSON.parse(stored));
-    } else {
-      setRoomTypes(defaultRoomTypes);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultRoomTypes));
+  const toast = useToast();
+
+  // Fetch room types from API
+  const fetchRoomTypes = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await roomTypesService.getRoomTypes();
+      // Transform API data to local format
+      const transformed = data.map((rt: any) => ({
+        id: rt.slug || rt.id,
+        slug: rt.slug,
+        name: rt.name,
+        description: rt.description || rt.shortDescription || '',
+        price: rt.price,
+        maxGuests: rt.maxGuests,
+        maxOccupancy: rt.maxGuests, // EditRoomTypeModal expects maxOccupancy
+        amenities: rt.amenities || [],
+        features: rt.features || [],
+        inclusions: rt.features || [], // Use features as inclusions for display
+        category: rt.category
+      }));
+      setRoomTypes(transformed);
+    } catch (err: any) {
+      console.error('Failed to fetch room types:', err);
+      setError(err.message || 'Failed to load room types');
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchRoomTypes();
   }, []);
 
-  // Save room types to localStorage
-  const saveRoomTypes = (newRoomTypes) => {
-    setRoomTypes(newRoomTypes);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newRoomTypes));
-  };
-
-  const handleAddRoom = (newRoom) => {
+  const handleAddRoom = (newRoom: any) => {
+    // For now, just add to local state - full create API can be added later
     const roomWithId = {
       ...newRoom,
-      id: `rt-${Date.now()}`
+      id: `rt-${Date.now()}`,
+      slug: newRoom.name.toLowerCase().replace(/\s+/g, '-')
     };
-    saveRoomTypes([...roomTypes, roomWithId]);
+    setRoomTypes(prev => [...prev, roomWithId]);
     setShowAddModal(false);
+    toast.showToast('Room type added locally. Note: Full create API coming soon.', 'info');
   };
 
-  const handleEditRoom = (updatedRoom) => {
-    saveRoomTypes(
-      roomTypes.map((rt) => (rt.id === updatedRoom.id ? updatedRoom : rt))
-    );
-    setEditingRoom(null);
+  const handleEditRoom = async (updatedRoom: any) => {
+    setIsSaving(true);
+    try {
+      // Map frontend fields to backend fields
+      const updates: RoomTypeUpdate = {
+        name: updatedRoom.name,
+        description: updatedRoom.description,
+        base_price: updatedRoom.price,
+        max_guests: updatedRoom.maxOccupancy || updatedRoom.maxGuests,
+        amenities: updatedRoom.amenities,
+        features: updatedRoom.inclusions || updatedRoom.features
+      };
+
+      // Call API to update
+      const slug = updatedRoom.slug || updatedRoom.id;
+      await roomTypesService.updateRoomType(slug, updates);
+
+      // Update local state
+      setRoomTypes(prev =>
+        prev.map(rt => (rt.id === updatedRoom.id ? { ...rt, ...updatedRoom, price: updatedRoom.price } : rt))
+      );
+
+      setEditingRoom(null);
+      toast.showToast('Room type updated successfully! Changes will reflect on /rooms page.', 'success');
+    } catch (err: any) {
+      console.error('Failed to update room type:', err);
+      toast.showToast(err.message || 'Failed to update room type', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDeleteRoom = (id) => {
-    saveRoomTypes(roomTypes.filter((rt) => rt.id !== id));
+  const handleDeleteRoom = (id: string) => {
+    // For now, just remove from local state
+    setRoomTypes(prev => prev.filter(rt => rt.id !== id));
     setDeleteConfirm(null);
+    toast.showToast('Room type removed from view. Note: Full delete API coming soon.', 'info');
   };
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('en-IN', {
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'INR',
+      currency: 'USD',
       maximumFractionDigits: 0
     }).format(price);
   };
 
-  const getAmenityLabel = (amenityId) => {
+  const getAmenityLabel = (amenityId: string) => {
+    // If it's already a label (from API), return it
+    if (amenityId.includes(' ') || amenityId.length > 10) {
+      return amenityId;
+    }
     return AMENITIES.find((a) => a.id === amenityId)?.label || amenityId;
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <RefreshCw className="w-6 h-6 animate-spin text-terra-500 mr-3" />
+        <span className="text-neutral-600">Loading room types...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-rose-50 rounded-xl p-6 text-center">
+        <AlertCircle className="w-8 h-8 text-rose-500 mx-auto mb-3" />
+        <p className="text-rose-700 font-medium mb-4">{error}</p>
+        <Button variant="outline" onClick={fetchRoomTypes}>
+          Try Again
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl space-y-6">
@@ -113,9 +163,14 @@ export default function RoomTypesTab() {
             Manage your room categories and pricing
           </p>
         </div>
-        <Button variant="primary" icon={Plus} onClick={() => setShowAddModal(true)}>
-          Add Room Type
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" icon={RefreshCw} onClick={fetchRoomTypes} disabled={isLoading}>
+            Refresh
+          </Button>
+          <Button variant="primary" icon={Plus} onClick={() => setShowAddModal(true)}>
+            Add Room Type
+          </Button>
+        </div>
       </div>
 
       {/* Room Types Grid */}
@@ -138,6 +193,7 @@ export default function RoomTypesTab() {
                     size="sm"
                     icon={Pencil}
                     onClick={() => setEditingRoom(room)}
+                    disabled={isSaving}
                   />
                   <Button
                     variant="ghost"
@@ -160,7 +216,7 @@ export default function RoomTypesTab() {
                 </div>
                 <div className="flex items-center gap-1.5 text-neutral-500">
                   <Users className="w-4 h-4" />
-                  <span className="text-xs">Up to {room.maxOccupancy} guests</span>
+                  <span className="text-xs">Up to {room.maxGuests} guests</span>
                 </div>
               </div>
 
@@ -168,9 +224,9 @@ export default function RoomTypesTab() {
               <div>
                 <p className="block text-[13px] font-medium text-neutral-600 mb-1.5">Amenities</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {room.amenities.slice(0, 5).map((amenity) => (
+                  {room.amenities.slice(0, 5).map((amenity, idx) => (
                     <span
-                      key={amenity}
+                      key={`${amenity}-${idx}`}
                       className="px-2.5 py-1 bg-neutral-100 text-neutral-600 text-xs rounded-md"
                     >
                       {getAmenityLabel(amenity)}
@@ -184,25 +240,27 @@ export default function RoomTypesTab() {
                 </div>
               </div>
 
-              {/* Inclusions */}
-              <div>
-                <p className="block text-[13px] font-medium text-neutral-600 mb-1.5">Inclusions</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {room.inclusions.slice(0, 4).map((inclusion, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2.5 py-1 bg-neutral-50 text-neutral-600 text-xs rounded-md border border-neutral-200"
-                    >
-                      {inclusion}
-                    </span>
-                  ))}
-                  {room.inclusions.length > 4 && (
-                    <span className="px-2.5 py-1 bg-neutral-50 text-neutral-500 text-xs rounded-md border border-neutral-200">
-                      +{room.inclusions.length - 4} more
-                    </span>
-                  )}
+              {/* Features/Inclusions */}
+              {room.features && room.features.length > 0 && (
+                <div>
+                  <p className="block text-[13px] font-medium text-neutral-600 mb-1.5">Features</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {room.features.slice(0, 4).map((feature, idx) => (
+                      <span
+                        key={idx}
+                        className="px-2.5 py-1 bg-neutral-50 text-neutral-600 text-xs rounded-md border border-neutral-200"
+                      >
+                        {feature}
+                      </span>
+                    ))}
+                    {room.features.length > 4 && (
+                      <span className="px-2.5 py-1 bg-neutral-50 text-neutral-500 text-xs rounded-md border border-neutral-200">
+                        +{room.features.length - 4} more
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Delete Confirmation */}

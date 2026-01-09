@@ -76,13 +76,16 @@ export const SOURCE_CONFIG = {
   },
 };
 
-// Room type options
+// Room type options - matches database room types
 export const ROOM_TYPES = [
-  { value: 'Standard', label: 'Standard Room', price: 120 },
-  { value: 'Premium', label: 'Premium King', price: 180 },
-  { value: 'Deluxe', label: 'Deluxe Suite', price: 250 },
-  { value: 'Suite', label: 'Executive Suite', price: 400 },
-  { value: 'Presidential', label: 'Presidential Suite', price: 500 },
+  { value: 'Minimalist Studio', label: 'Minimalist Studio', price: 150 },
+  { value: 'Coastal Retreat', label: 'Coastal Retreat', price: 199 },
+  { value: 'Urban Oasis', label: 'Urban Oasis', price: 245 },
+  { value: 'Sunset Vista', label: 'Sunset Vista', price: 315 },
+  { value: 'Pacific Suite', label: 'Pacific Suite', price: 385 },
+  { value: 'Wellness Suite', label: 'Wellness Suite', price: 425 },
+  { value: 'Family Sanctuary', label: 'Family Sanctuary', price: 485 },
+  { value: 'Oceanfront Penthouse', label: 'Oceanfront Penthouse', price: 750 },
 ];
 
 // Source options

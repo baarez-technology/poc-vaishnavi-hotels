@@ -8,30 +8,85 @@ import {
   Building2
 } from 'lucide-react';
 
-const formatCurrency = (value) => {
-  if (value >= 100000) {
-    return `₹${(value / 100000).toFixed(1)}L`;
+interface KPIData {
+  // API format (snake_case)
+  total_revenue?: number;
+  revenue_trend?: number;
+  adr?: number;
+  adr_trend?: number;
+  revpar?: number;
+  revpar_trend?: number;
+  occupancy?: number;
+  occupancy_trend?: number;
+  occupied_room_nights?: number;
+  available_room_nights?: number;
+  // Legacy format (camelCase)
+  todayRevenue?: number;
+  yesterdayRevenue?: number;
+  forecastedRevenue7Days?: number;
+  growth?: number;
+  roomsSold?: number;
+  totalRooms?: number;
+}
+
+interface KPICardsProps {
+  data?: KPIData | null;
+}
+
+const formatCurrency = (value: number) => {
+  if (value >= 1000000) {
+    return `$${(value / 1000000).toFixed(1)}M`;
   }
-  return `₹${value.toLocaleString()}`;
+  if (value >= 1000) {
+    return `$${(value / 1000).toFixed(0)}K`;
+  }
+  return `$${value.toLocaleString()}`;
 };
 
-export default function KPICards({ data }) {
+export default function KPICards({ data }: KPICardsProps) {
+  // Loading skeleton when no data
+  if (!data) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="rounded-[10px] bg-white p-5">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-neutral-100 animate-pulse" />
+              <div className="h-3 w-16 bg-neutral-100 rounded animate-pulse" />
+            </div>
+            <div className="h-7 w-24 bg-neutral-200 rounded animate-pulse mb-2" />
+            <div className="h-3 w-20 bg-neutral-100 rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Normalize data - handle both API format and legacy format
+  const todayRevenue = data.total_revenue ?? data.todayRevenue ?? 0;
+  const revenueTrend = data.revenue_trend ?? (data.yesterdayRevenue ? Math.round(((todayRevenue - data.yesterdayRevenue) / data.yesterdayRevenue) * 100) : 0);
+  const adr = data.adr ?? 0;
+  const revpar = data.revpar ?? 0;
+  const occupancy = data.occupancy ?? 0;
+  const roomsSold = data.occupied_room_nights ?? data.roomsSold ?? 0;
+  const totalRooms = data.available_room_nights ?? data.totalRooms ?? 0;
+  const forecastedRevenue = data.forecastedRevenue7Days ?? (todayRevenue * 7) ?? 0;
+  const growth = data.revenue_trend ?? data.growth ?? 0;
+
   const kpis = [
     {
       id: 'todayRevenue',
       label: "Today's Revenue",
-      value: formatCurrency(data.todayRevenue || 0),
+      value: formatCurrency(todayRevenue),
       icon: DollarSign,
       accentColor: 'terra',
-      trend: data.todayRevenue > data.yesterdayRevenue ? 'up' : 'down',
-      trendValue: data.yesterdayRevenue
-        ? Math.round(((data.todayRevenue - data.yesterdayRevenue) / data.yesterdayRevenue) * 100)
-        : 0
+      trend: revenueTrend >= 0 ? 'up' : 'down',
+      trendValue: revenueTrend
     },
     {
       id: 'adr',
       label: 'ADR',
-      value: `₹${(data.adr || 0).toLocaleString()}`,
+      value: `$${adr.toLocaleString()}`,
       icon: Building2,
       accentColor: 'ocean',
       subLabel: 'Avg Daily Rate'
@@ -39,7 +94,7 @@ export default function KPICards({ data }) {
     {
       id: 'revpar',
       label: 'RevPAR',
-      value: `₹${(data.revpar || 0).toLocaleString()}`,
+      value: `$${revpar.toLocaleString()}`,
       icon: BarChart3,
       accentColor: 'sage',
       subLabel: 'Revenue Per Room'
@@ -47,15 +102,15 @@ export default function KPICards({ data }) {
     {
       id: 'occupancy',
       label: 'Occupancy',
-      value: `${data.occupancy || 0}%`,
+      value: `${occupancy}%`,
       icon: Percent,
       accentColor: 'gold',
-      progress: data.occupancy || 0
+      progress: occupancy
     },
     {
       id: 'forecast',
       label: '7-Day Forecast',
-      value: formatCurrency(data.forecastedRevenue7Days || 0),
+      value: formatCurrency(forecastedRevenue),
       icon: Calendar,
       accentColor: 'terra',
       subLabel: 'Projected revenue'
@@ -63,10 +118,10 @@ export default function KPICards({ data }) {
     {
       id: 'growth',
       label: 'Revenue Growth',
-      value: `${data.growth > 0 ? '+' : ''}${data.growth || 0}%`,
-      icon: data.growth >= 0 ? TrendingUp : TrendingDown,
-      accentColor: data.growth >= 0 ? 'sage' : 'rose',
-      subLabel: 'vs Last Week'
+      value: `${growth > 0 ? '+' : ''}${growth}%`,
+      icon: growth >= 0 ? TrendingUp : TrendingDown,
+      accentColor: growth >= 0 ? 'sage' : 'rose',
+      subLabel: 'vs Last Period'
     }
   ];
 
@@ -137,7 +192,7 @@ export default function KPICards({ data }) {
                   />
                 </div>
                 <p className="text-[11px] text-neutral-400 font-medium mt-1">
-                  {data.roomsSold || 0} / {data.totalRooms || 0} rooms
+                  {roomsSold} / {totalRooms} rooms
                 </p>
               </div>
             )}

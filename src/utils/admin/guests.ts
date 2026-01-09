@@ -3,6 +3,9 @@
  * Handles filtering, sorting, CSV export, and guest calculations
  */
 
+// Import comprehensive country list from shared utils
+import { COUNTRY_NAMES } from '@/utils/countries';
+
 // Loyalty tier configurations
 export const LOYALTY_TIERS = {
   'Bronze': {
@@ -163,29 +166,9 @@ export const GUEST_TAGS = [
   'Pet Friendly',
 ];
 
-// Country options
-export const COUNTRIES = [
-  'United States',
-  'United Kingdom',
-  'Canada',
-  'Australia',
-  'Germany',
-  'France',
-  'Japan',
-  'China',
-  'India',
-  'Brazil',
-  'Mexico',
-  'Spain',
-  'Italy',
-  'Netherlands',
-  'Singapore',
-  'UAE',
-  'South Korea',
-  'Switzerland',
-  'Sweden',
-  'Norway',
-];
+// Re-export comprehensive country list for backwards compatibility
+// (uses all 200+ countries from shared utils instead of limited list)
+export const COUNTRIES = COUNTRY_NAMES;
 
 // Generate unique guest ID
 export function generateGuestId() {

@@ -83,6 +83,13 @@ export default function useCMSRatePlans() {
 
   // Fetch rate plans from API
   const fetchRatePlans = useCallback(async () => {
+    // Skip API call if not authenticated
+    const token = localStorage.getItem('glimmora_access_token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 

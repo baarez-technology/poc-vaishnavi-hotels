@@ -13,6 +13,7 @@ import { Drawer } from '../../../components/ui2/Modal';
 import { Tooltip } from '../../../components/ui2/Tooltip';
 import { RoomBlockModal } from '../../../components/availability/RoomBlockModal';
 import { AIInsightsPanel } from '../../../components/availability/AIInsightsPanel';
+import { RoomBlocksListPanel } from '../../../components/availability/RoomBlocksListPanel';
 import { cn } from '../../../lib/utils';
 import {
   Calendar, ChevronLeft, ChevronRight, Download, Upload, RefreshCw,
@@ -53,13 +54,16 @@ function AnimatedNumber({ value, prefix = '', suffix = '', duration = 1000 }) {
   return <span>{prefix}{displayValue.toLocaleString()}{suffix}</span>;
 }
 
-// Room type configurations with enhanced data
+// Room type configurations with enhanced data - matches database room types
 const ROOM_TYPE_CONFIG = {
-  'Standard Double': { code: 'STD', color: 'slate', icon: Bed, totalRooms: 20, baseRate: 190, floor: 2 },
-  'Deluxe King': { code: 'DLX-K', color: 'terra', icon: Bed, totalRooms: 15, baseRate: 280, floor: 3 },
-  'Deluxe Twin': { code: 'DLX-T', color: 'ocean', icon: Bed, totalRooms: 12, baseRate: 260, floor: 3 },
-  'Executive Suite': { code: 'EXE', color: 'gold', icon: Building2, totalRooms: 8, baseRate: 450, floor: 5 },
-  'Presidential Suite': { code: 'PRES', color: 'sage', icon: Crown, totalRooms: 2, baseRate: 900, floor: 6 }
+  'Minimalist Studio': { code: 'MINST', color: 'slate', icon: Bed, totalRooms: 10, baseRate: 150, floor: 2 },
+  'Coastal Retreat': { code: 'COAST', color: 'ocean', icon: Bed, totalRooms: 8, baseRate: 199, floor: 2 },
+  'Urban Oasis': { code: 'URBAN', color: 'terra', icon: Bed, totalRooms: 8, baseRate: 245, floor: 3 },
+  'Sunset Vista': { code: 'SUNSET', color: 'gold', icon: Bed, totalRooms: 6, baseRate: 315, floor: 3 },
+  'Pacific Suite': { code: 'PACSUI', color: 'sage', icon: Building2, totalRooms: 6, baseRate: 385, floor: 4 },
+  'Wellness Suite': { code: 'WELLNS', color: 'rose', icon: Building2, totalRooms: 4, baseRate: 425, floor: 4 },
+  'Family Sanctuary': { code: 'FAMILY', color: 'ocean', icon: Home, totalRooms: 4, baseRate: 485, floor: 5 },
+  'Oceanfront Penthouse': { code: 'OCNPNT', color: 'gold', icon: Crown, totalRooms: 2, baseRate: 750, floor: 6 }
 };
 
 // Channel configurations
@@ -226,19 +230,20 @@ function OccupancyHeatmap({ dates, availabilityData, selectedRoomTypes, isDark }
   const heatmapData = useMemo(() => {
     return dates.slice(0, 14).map(dateInfo => {
       let totalRooms = 0;
-      let totalSold = 0;
+      let totalOccupied = 0;
 
       selectedRoomTypes.forEach(roomType => {
         const dayData = availabilityData[dateInfo.date]?.[roomType];
         if (dayData) {
           totalRooms += dayData.totalRooms;
-          totalSold += dayData.sold;
+          // Include both sold (checked_in) and reserved (confirmed bookings) for occupancy
+          totalOccupied += (dayData.sold || 0) + (dayData.reserved || 0);
         }
       });
 
       return {
         ...dateInfo,
-        occupancy: totalRooms > 0 ? Math.round((totalSold / totalRooms) * 100) : 0
+        occupancy: totalRooms > 0 ? Math.round((totalOccupied / totalRooms) * 100) : 0
       };
     });
   }, [dates, availabilityData, selectedRoomTypes]);
@@ -386,6 +391,28 @@ function QuickStatsStrip({ stats, todayStats, isDark }) {
 
       <div className={cn('h-8 w-px', isDark ? 'bg-neutral-800' : 'bg-neutral-200')} />
 
+      {/* Reserved (confirmed but not checked in) */}
+      <div className="flex items-center gap-3 min-w-fit">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-ocean-400 to-ocean-600 flex items-center justify-center shadow-lg shadow-ocean-500/20">
+          <Calendar className="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <p className={cn(
+            'text-xl font-bold text-ocean-500'
+          )}>
+            {stats.totalReserved || 0}
+          </p>
+          <p className={cn(
+            'text-[10px] font-medium uppercase tracking-wider',
+            isDark ? 'text-neutral-500' : 'text-neutral-400'
+          )}>
+            Reserved
+          </p>
+        </div>
+      </div>
+
+      <div className={cn('h-8 w-px', isDark ? 'bg-neutral-800' : 'bg-neutral-200')} />
+
       {/* Available */}
       <div className="flex items-center gap-3 min-w-fit">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-terra-400 to-terra-600 flex items-center justify-center shadow-lg shadow-terra-500/20">
@@ -486,8 +513,10 @@ function CalendarDayCell({
 }) {
   if (!dayData) return null;
 
-  const { sold, remaining, totalRooms, isClosed, restrictions } = dayData;
-  const occupancy = totalRooms > 0 ? Math.round((sold / totalRooms) * 100) : 0;
+  const { sold, reserved = 0, remaining, totalRooms, isClosed, restrictions } = dayData;
+  // Calculate total occupied (sold + reserved)
+  const totalOccupied = (sold || 0) + (reserved || 0);
+  const occupancy = totalRooms > 0 ? Math.round((totalOccupied / totalRooms) * 100) : 0;
   const minStay = restrictions?.minStay || 1;
 
   // Pickup indicator (simulated)
@@ -639,6 +668,7 @@ function RoomInventoryGrid({ rooms, isDark }) {
   const getStatusColor = (status) => {
     switch (status) {
       case 'Occupied': return isDark ? 'bg-terra-500' : 'bg-terra-500';
+      case 'Reserved': return isDark ? 'bg-ocean-500' : 'bg-ocean-500';
       case 'Available': return isDark ? 'bg-sage-500' : 'bg-sage-500';
       case 'Maintenance': return isDark ? 'bg-gold-500' : 'bg-gold-500';
       default: return isDark ? 'bg-neutral-500' : 'bg-neutral-400';
@@ -682,6 +712,10 @@ function RoomInventoryGrid({ rooms, isDark }) {
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-sage-500" />
             <span className={isDark ? 'text-neutral-400' : 'text-neutral-500'}>Available</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-ocean-500" />
+            <span className={isDark ? 'text-neutral-400' : 'text-neutral-500'}>Reserved</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-terra-500" />
@@ -1251,7 +1285,7 @@ export default function CMSAvailability() {
     }
   }, [roomTypeConfig]);
 
-  // Generate dates for calendar
+  // Generate dates for calendar - use local date formatting to match sampleAvailability.ts
   const dates = useMemo(() => {
     const result = [];
     const today = new Date();
@@ -1260,7 +1294,13 @@ export default function CMSAvailability() {
     for (let i = 0; i < 30; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
+
+      // Use local date formatting (not UTC) to match sampleAvailability.ts format
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+
       const dayOfWeek = date.getDay();
 
       result.push({
@@ -1298,6 +1338,7 @@ export default function CMSAvailability() {
     // Calculate TODAY's stats (not mixed with future dates)
     let totalRooms = 0;
     let todaySold = 0;
+    let todayReserved = 0;
     let todayAvailable = 0;
     let todayBlocked = 0;
 
@@ -1306,14 +1347,16 @@ export default function CMSAvailability() {
       const todayData = availabilityData[today]?.[roomType];
       if (todayData) {
         totalRooms += todayData.totalRooms;
-        todaySold += todayData.sold;
+        todaySold += todayData.sold || 0;
+        todayReserved += todayData.reserved || 0;
         todayAvailable += todayData.remaining;
         todayBlocked += todayData.blocked || 0;
       }
     });
 
-    // Calculate TODAY's occupancy rate
-    const occupancyRate = totalRooms > 0 ? Math.round((todaySold / totalRooms) * 100) : 0;
+    // Calculate TODAY's occupancy rate (sold + reserved)
+    const totalOccupied = todaySold + todayReserved;
+    const occupancyRate = totalRooms > 0 ? Math.round((totalOccupied / totalRooms) * 100) : 0;
 
     // Count restrictions/closed days across all dates (for analytics)
     let closedDays = 0;
@@ -1326,7 +1369,9 @@ export default function CMSAvailability() {
         if (dayData) {
           if (dayData.isClosed) closedDays++;
           if (dayData.restrictions?.CTA || dayData.restrictions?.CTD) restrictedDays++;
-          if (dayData.totalRooms > 0 && (dayData.sold / dayData.totalRooms) >= 0.8) highDemandDays++;
+          // Use combined sold + reserved for high demand calculation
+          const occupied = (dayData.sold || 0) + (dayData.reserved || 0);
+          if (dayData.totalRooms > 0 && (occupied / dayData.totalRooms) >= 0.8) highDemandDays++;
         }
       });
     });
@@ -1334,9 +1379,11 @@ export default function CMSAvailability() {
     return {
       totalRooms,
       totalSold: todaySold,
+      totalReserved: todayReserved,
+      totalOccupied,
       totalAvailable: todayAvailable,
       totalBlocked: todayBlocked,
-      occupancyRate, // Today's occupancy, not average
+      occupancyRate, // Today's occupancy (sold + reserved), not average
       closedDays,
       restrictedDays,
       highDemandDays
@@ -1355,8 +1402,50 @@ export default function CMSAvailability() {
     return { arrivals: 0, departures: 0, inHouse: stats.totalSold };
   }, [cmsAvailability.todayStats, stats.totalSold]);
 
-  // Get rooms data
-  const rooms = cmsAvailability.getRooms?.() || [];
+  // Generate rooms data from room types for inventory display
+  const rooms = useMemo(() => {
+    const roomList: Array<{
+      number: string;
+      type: string;
+      floor: number;
+      status: string;
+    }> = [];
+
+    const today = dates.find(d => d.isToday)?.date || dates[0]?.date;
+
+    cmsAvailability.roomTypes?.forEach((roomType, rtIndex) => {
+      const todayData = availabilityData[today]?.[roomType.name];
+      const sold = todayData?.sold || 0;
+      const reserved = todayData?.reserved || 0;
+      const blocked = todayData?.blocked || 0;
+      const totalRooms = roomType.total_rooms || 0;
+
+      // Generate room numbers for this room type
+      for (let i = 0; i < totalRooms; i++) {
+        const floor = Math.floor(rtIndex / 2) + 2; // Distribute across floors
+        const roomNum = `${floor}${(rtIndex * 10 + i + 1).toString().padStart(2, '0')}`;
+
+        // Determine room status based on availability
+        let status = 'Available';
+        if (i < sold) {
+          status = 'Occupied';
+        } else if (i < sold + reserved) {
+          status = 'Reserved';
+        } else if (i < sold + reserved + blocked) {
+          status = 'Maintenance';
+        }
+
+        roomList.push({
+          number: roomNum,
+          type: roomType.name,
+          floor,
+          status
+        });
+      }
+    });
+
+    return roomList;
+  }, [cmsAvailability.roomTypes, availabilityData, dates]);
 
   // Scroll to today
   const scrollToToday = useCallback(() => {
@@ -1871,6 +1960,24 @@ export default function CMSAvailability() {
                 selectedRoomTypes={selectedRoomTypes}
                 isDark={isDark}
               />
+              {/* Room Blocks List - View/Edit/Unblock */}
+              <RoomBlocksListPanel
+                blocks={cmsAvailability.roomBlocks}
+                isLoading={cmsAvailability.isLoading}
+                onEdit={(block) => {
+                  setBlockToEdit(block);
+                  setIsBlockModalOpen(true);
+                }}
+                onDelete={async (blockId) => {
+                  try {
+                    await cmsAvailability.removeRoomBlock(blockId);
+                    success('Room block removed - rooms are now available');
+                  } catch (error) {
+                    console.error('Error removing block:', error);
+                  }
+                }}
+                onRefresh={cmsAvailability.fetchRoomBlocks}
+              />
               <ChannelSyncStatus isDark={isDark} />
               <AIInsightsPanel
                 insights={cmsAvailability.aiInsights}
@@ -1980,6 +2087,7 @@ export default function CMSAvailability() {
         }}
         mode={blockToEdit ? 'edit' : 'create'}
         existingBlock={blockToEdit}
+        roomTypes={cmsAvailability.roomTypes?.map(rt => ({ id: rt.id, name: rt.name })) || []}
       />
     </div>
   );

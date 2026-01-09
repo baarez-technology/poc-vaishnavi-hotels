@@ -20,6 +20,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { adminAIService, AdminAIChatResponse } from '../../../api/services/admin-ai.service';
+import crmAIService, { SidebarStats } from '../../../api/services/crm-ai.service';
 import VoiceRecorderModal from '../../../components/admin-panel/ai/VoiceRecorderModal';
 
 /**
@@ -172,6 +173,9 @@ export default function CRMAI() {
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [sessionId, setSessionId] = useState(() => adminAIService.generateSessionId());
   const [isExecutingAction, setIsExecutingAction] = useState(false);
+  const [sidebarStats, setSidebarStats] = useState<SidebarStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -180,6 +184,36 @@ export default function CRMAI() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Fetch sidebar stats on mount
+  const fetchSidebarStats = useCallback(async () => {
+    setStatsLoading(true);
+    setStatsError(false);
+    try {
+      const stats = await crmAIService.getSidebarStats();
+      setSidebarStats(stats);
+    } catch (error) {
+      console.error('Failed to fetch sidebar stats:', error);
+      setStatsError(true);
+      // Set default fallback values
+      setSidebarStats({
+        total_guests: 0,
+        loyalty_members: 0,
+        vip_guests: 0,
+        avg_ltv: 0,
+        at_risk_count: 0,
+        recovery_pending: 0,
+        open_alerts: 0,
+        campaigns_active: 0
+      });
+    } finally {
+      setStatsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSidebarStats();
+  }, [fetchSidebarStats]);
 
   // Send message to AI
   const sendMessage = useCallback(async (text: string) => {
@@ -353,37 +387,72 @@ export default function CRMAI() {
 
             {/* CRM Stats Summary */}
             <div className="mb-6">
-              <h3 className="text-[10px] font-semibold text-neutral-500 uppercase tracking-widest mb-3">
-                CRM Overview
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[10px] font-semibold text-neutral-500 uppercase tracking-widest">
+                  CRM Overview
+                </h3>
+                {statsError && (
+                  <button
+                    onClick={fetchSidebarStats}
+                    className="text-[10px] text-terra-600 hover:text-terra-700 flex items-center gap-1"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    Retry
+                  </button>
+                )}
+              </div>
               <div className="space-y-3">
                 <div className="p-4 bg-white rounded-[10px] border border-neutral-200">
                   <div className="flex items-center gap-2 mb-1">
                     <Users className="w-4 h-4 text-terra-600" />
                     <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-400">Total Guests</span>
                   </div>
-                  <p className="text-xl font-bold text-neutral-900">2,847</p>
+                  <p className="text-xl font-bold text-neutral-900">
+                    {statsLoading ? (
+                      <span className="inline-block w-16 h-6 bg-neutral-200 rounded animate-pulse" />
+                    ) : (
+                      sidebarStats?.total_guests?.toLocaleString() ?? '-'
+                    )}
+                  </p>
                 </div>
                 <div className="p-4 bg-white rounded-[10px] border border-neutral-200">
                   <div className="flex items-center gap-2 mb-1">
                     <Heart className="w-4 h-4 text-rose-500" />
                     <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-400">Loyalty Members</span>
                   </div>
-                  <p className="text-xl font-bold text-neutral-900">1,234</p>
+                  <p className="text-xl font-bold text-neutral-900">
+                    {statsLoading ? (
+                      <span className="inline-block w-16 h-6 bg-neutral-200 rounded animate-pulse" />
+                    ) : (
+                      sidebarStats?.loyalty_members?.toLocaleString() ?? '-'
+                    )}
+                  </p>
                 </div>
                 <div className="p-4 bg-white rounded-[10px] border border-neutral-200">
                   <div className="flex items-center gap-2 mb-1">
                     <Award className="w-4 h-4 text-gold-500" />
                     <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-400">VIP Guests</span>
                   </div>
-                  <p className="text-xl font-bold text-neutral-900">156</p>
+                  <p className="text-xl font-bold text-neutral-900">
+                    {statsLoading ? (
+                      <span className="inline-block w-16 h-6 bg-neutral-200 rounded animate-pulse" />
+                    ) : (
+                      sidebarStats?.vip_guests?.toLocaleString() ?? '-'
+                    )}
+                  </p>
                 </div>
                 <div className="p-4 bg-white rounded-[10px] border border-neutral-200">
                   <div className="flex items-center gap-2 mb-1">
                     <TrendingUp className="w-4 h-4 text-sage-600" />
                     <span className="text-[10px] font-medium uppercase tracking-widest text-neutral-400">Avg LTV</span>
                   </div>
-                  <p className="text-xl font-bold text-sage-600">$4,250</p>
+                  <p className="text-xl font-bold text-sage-600">
+                    {statsLoading ? (
+                      <span className="inline-block w-16 h-6 bg-neutral-200 rounded animate-pulse" />
+                    ) : (
+                      sidebarStats?.avg_ltv ? `$${sidebarStats.avg_ltv.toLocaleString()}` : '-'
+                    )}
+                  </p>
                 </div>
               </div>
             </div>

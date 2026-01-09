@@ -93,11 +93,14 @@ const DISCOUNT_TYPES = [
 ];
 
 const DEFAULT_ROOM_TYPES = [
-  { id: 'rt1', name: 'Standard Double' },
-  { id: 'rt2', name: 'Deluxe King' },
-  { id: 'rt3', name: 'Deluxe Twin' },
-  { id: 'rt4', name: 'Executive Suite' },
-  { id: 'rt5', name: 'Presidential Suite' },
+  { id: 'rt1', name: 'Minimalist Studio' },
+  { id: 'rt2', name: 'Coastal Retreat' },
+  { id: 'rt3', name: 'Urban Oasis' },
+  { id: 'rt4', name: 'Sunset Vista' },
+  { id: 'rt5', name: 'Pacific Suite' },
+  { id: 'rt6', name: 'Wellness Suite' },
+  { id: 'rt7', name: 'Family Sanctuary' },
+  { id: 'rt8', name: 'Oceanfront Penthouse' },
 ];
 
 const CHANNELS = [

@@ -1,5 +1,16 @@
-import { useState, useCallback } from 'react';
-import { Download, RefreshCw, MessageSquare, Sparkles } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import {
+  Download,
+  RefreshCw,
+  MessageSquare,
+  LayoutDashboard,
+  Bell,
+  Target,
+  FolderOpen,
+  CheckSquare,
+  Settings,
+  AlertTriangle
+} from 'lucide-react';
 
 // Import context
 import { ReputationProvider, useReputation } from '../../../context/ReputationContext';
@@ -15,6 +26,23 @@ import AutoReplies from '../../../components/reputation/AutoReplies';
 import FiltersBar from '../../../components/reputation/FiltersBar';
 import ImpactOnRevenue from '../../../components/reputation/ImpactOnRevenue';
 import CRMGuestImpact from '../../../components/reputation/CRMGuestImpact';
+import GoalsPanel from '../../../components/reputation/GoalsPanel';
+import AlertsPanel from '../../../components/reputation/AlertsPanel';
+import CategoryManager from '../../../components/reputation/CategoryManager';
+import ApprovalQueue from '../../../components/reputation/ApprovalQueue';
+import TemplatesManager from '../../../components/reputation/TemplatesManager';
+import EngineStats from '../../../components/reputation/EngineStats';
+
+type TabId = 'overview' | 'alerts' | 'goals' | 'categories' | 'approvals' | 'settings';
+
+const TABS: Array<{ id: TabId; label: string; icon: React.ElementType }> = [
+  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'alerts', label: 'Alerts', icon: Bell },
+  { id: 'goals', label: 'Goals', icon: Target },
+  { id: 'categories', label: 'Categories', icon: FolderOpen },
+  { id: 'approvals', label: 'Approvals', icon: CheckSquare },
+  { id: 'settings', label: 'Settings', icon: Settings },
+];
 
 function ReputationAIContent() {
   const {
@@ -26,20 +54,56 @@ function ReputationAIContent() {
     settings,
     metrics,
     isLoading,
+    error,
+    alerts,
+    pendingApprovals,
     updateFilters,
     updateSettings,
     addReviewResponse,
     generateAutoReply,
     influenceChurnProbability,
     influenceLTVCurve,
-    affectRateRecommendations
+    affectRateRecommendations,
+    loadReputation,
+    loadAlerts,
+    loadGoals,
+    loadCategories,
+    loadPendingApprovals,
+    loadEngineStats,
+    loadAutomationConfig
   } = useReputation();
 
-  const [selectedReview, setSelectedReview] = useState(null);
+  const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [selectedReview, setSelectedReview] = useState<any>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
-  const handleReviewClick = useCallback((review) => {
+  // Load tab-specific data when tab changes
+  useEffect(() => {
+    const loadTabData = async () => {
+      switch (activeTab) {
+        case 'alerts':
+          await loadAlerts();
+          break;
+        case 'goals':
+          await loadGoals();
+          break;
+        case 'categories':
+          await loadCategories();
+          break;
+        case 'approvals':
+          await loadPendingApprovals();
+          break;
+        case 'settings':
+          await loadAutomationConfig();
+          await loadEngineStats();
+          break;
+      }
+    };
+    loadTabData();
+  }, [activeTab, loadAlerts, loadGoals, loadCategories, loadPendingApprovals, loadEngineStats, loadAutomationConfig]);
+
+  const handleReviewClick = useCallback((review: any) => {
     setSelectedReview(review);
   }, []);
 
@@ -47,18 +111,22 @@ function ReputationAIContent() {
     setSelectedReview(null);
   }, []);
 
-  const handleRespondToReview = useCallback((reviewId, responseText) => {
+  const handleRespondToReview = useCallback((reviewId: number, responseText: string) => {
     addReviewResponse(reviewId, responseText);
     setSelectedReview(null);
   }, [addReviewResponse]);
 
-  const handleRefresh = useCallback(() => {
+  const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    setTimeout(() => {
+    try {
+      await loadReputation();
       setLastUpdated(new Date());
+    } catch (err) {
+      console.error('Failed to refresh:', err);
+    } finally {
       setIsRefreshing(false);
-    }, 1500);
-  }, []);
+    }
+  }, [loadReputation]);
 
   const handleExportCSV = useCallback(() => {
     const csvRows = [
@@ -73,20 +141,20 @@ function ReputationAIContent() {
       [],
       ['Reviews'],
       ['ID', 'Guest', 'Source', 'Rating', 'Sentiment', 'Date', 'Title', 'Responded'],
-      ...filteredReviews.map(r => [
+      ...filteredReviews.map((r: any) => [
         r.id,
-        r.guest,
+        r.guest_name || r.guest,
         r.source,
         r.rating,
-        r.sentiment,
-        r.date,
-        `"${r.title}"`,
+        r.sentiment_score || r.sentiment,
+        r.created_at || r.date,
+        `"${r.title || ''}"`,
         r.responded ? 'Yes' : 'No'
       ]),
       [],
       ['Keywords'],
       ['Keyword', 'Mentions', 'Sentiment'],
-      ...keywords.map(k => [k.keyword, k.mentions, k.sentiment])
+      ...keywords.map((k: any) => [k.keyword, k.count || k.mentions, k.sentiment])
     ];
 
     const csvContent = csvRows.map(row => row.join(',')).join('\n');
@@ -97,12 +165,34 @@ function ReputationAIContent() {
     link.click();
   }, [filteredReviews, keywords, metrics]);
 
+  // Calculate alert count for badge
+  const activeAlertCount = alerts.filter(a => a.status === 'active' || a.status === 'new').length;
+  const pendingApprovalCount = pendingApprovals.length;
+
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#FAF7F4]">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 text-[#A57865] animate-spin mx-auto mb-2" />
           <p className="text-neutral-600">Loading reputation data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-[#FAF7F4]">
+        <div className="text-center max-w-md">
+          <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-neutral-900 mb-2">Failed to Load Data</h3>
+          <p className="text-neutral-600 mb-4">{error}</p>
+          <button
+            onClick={handleRefresh}
+            className="px-4 py-2 bg-[#A57865] text-white rounded-lg hover:bg-[#A57865]/90 transition-colors"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -152,72 +242,107 @@ function ReputationAIContent() {
           </div>
         </div>
 
-        {/* Filters Bar */}
-        <FiltersBar filters={filters} onFilterChange={updateFilters} />
+        {/* Tab Navigation */}
+        <div className="bg-white rounded-xl border border-neutral-200 p-1 flex gap-1">
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            const badgeCount = tab.id === 'alerts' ? activeAlertCount :
+                              tab.id === 'approvals' ? pendingApprovalCount : 0;
 
-        {/* Sentiment Summary KPIs */}
-        <SentimentSummary metrics={metrics} />
-
-        {/* Main Charts Row */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <SentimentTrendChart data={sentiment} />
-          <OTAScoreChart data={otaRatings} />
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${
+                  isActive
+                    ? 'bg-[#A57865] text-white'
+                    : 'text-neutral-600 hover:bg-neutral-50'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+                {badgeCount > 0 && (
+                  <span className={`ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-full ${
+                    isActive ? 'bg-white text-[#A57865]' : 'bg-red-500 text-white'
+                  }`}>
+                    {badgeCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Secondary Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <KeywordFrequency data={keywords} />
-          <div className="lg:col-span-2">
-            <ReviewFeed reviews={filteredReviews} onReviewClick={handleReviewClick} />
-          </div>
-        </div>
+        {/* Tab Content */}
+        {activeTab === 'overview' && (
+          <>
+            {/* Filters Bar */}
+            <FiltersBar filters={filters} onFilterChange={updateFilters} />
 
-        {/* AI Integration Row */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <ImpactOnRevenue
-            sentimentData={sentiment}
-            recommendations={affectRateRecommendations}
-          />
-          <CRMGuestImpact
-            review={selectedReview}
-            influenceChurnProbability={influenceChurnProbability}
-            influenceLTVCurve={influenceLTVCurve}
-          />
-        </div>
+            {/* Sentiment Summary KPIs */}
+            <SentimentSummary metrics={metrics} />
 
-        {/* Auto-Reply Engine */}
-        <AutoReplies settings={settings} onSettingsChange={updateSettings} />
+            {/* Main Charts Row */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <SentimentTrendChart data={sentiment} />
+              <OTAScoreChart data={otaRatings} />
+            </div>
 
-        {/* Footer Stats */}
-        <div className="bg-white rounded-xl border border-[#E5E5E5] p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div>
-                <p className="text-xs text-neutral-500 uppercase tracking-wider">Reputation Engine</p>
-                <p className="text-lg font-bold text-[#4E5840]">Active</p>
-              </div>
-              <div className="h-8 w-px bg-neutral-200" />
-              <div>
-                <p className="text-xs text-neutral-500 uppercase tracking-wider">NLP Model</p>
-                <p className="text-lg font-bold text-neutral-900">v3.2.0</p>
-              </div>
-              <div className="h-8 w-px bg-neutral-200" />
-              <div>
-                <p className="text-xs text-neutral-500 uppercase tracking-wider">Sentiment Accuracy</p>
-                <p className="text-lg font-bold text-[#5C9BA4]">92.7%</p>
-              </div>
-              <div className="h-8 w-px bg-neutral-200" />
-              <div>
-                <p className="text-xs text-neutral-500 uppercase tracking-wider">Auto-Replies Sent</p>
-                <p className="text-lg font-bold text-[#A57865]">24 this week</p>
+            {/* Secondary Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <KeywordFrequency data={keywords} />
+              <div className="lg:col-span-2">
+                <ReviewFeed reviews={filteredReviews} onReviewClick={handleReviewClick} />
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-xs text-neutral-500">Powered by</p>
-              <p className="text-sm font-bold text-neutral-900">Glimmora AI</p>
+
+            {/* AI Integration Row */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <ImpactOnRevenue
+                sentimentData={sentiment}
+                recommendations={affectRateRecommendations}
+              />
+              <CRMGuestImpact
+                review={selectedReview}
+                influenceChurnProbability={influenceChurnProbability}
+                influenceLTVCurve={influenceLTVCurve}
+              />
             </div>
+
+            {/* Engine Stats Footer */}
+            <EngineStats compact />
+          </>
+        )}
+
+        {activeTab === 'alerts' && (
+          <AlertsPanel />
+        )}
+
+        {activeTab === 'goals' && (
+          <GoalsPanel />
+        )}
+
+        {activeTab === 'categories' && (
+          <CategoryManager />
+        )}
+
+        {activeTab === 'approvals' && (
+          <ApprovalQueue />
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="space-y-6">
+            {/* Auto-Reply Engine */}
+            <AutoReplies settings={settings} onSettingsChange={updateSettings} />
+
+            {/* Templates Manager */}
+            <TemplatesManager />
+
+            {/* Engine Stats (full version) */}
+            <EngineStats />
           </div>
-        </div>
+        )}
       </div>
 
       {/* Review Detail Drawer */}
@@ -228,9 +353,9 @@ function ReputationAIContent() {
           onRespond={handleRespondToReview}
           generateAutoReply={generateAutoReply}
           guestCRMData={{
-            totalStays: Math.floor(Math.random() * 10) + 1,
-            ltv: Math.floor(Math.random() * 200000) + 50000,
-            segment: ['Leisure', 'Business', 'VIP', 'Corporate'][Math.floor(Math.random() * 4)]
+            totalStays: selectedReview.guest_stays || 1,
+            ltv: selectedReview.guest_ltv || 50000,
+            segment: selectedReview.guest_segment || 'Leisure'
           }}
         />
       )}

@@ -328,16 +328,41 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
       return [];
     }
 
-    // Get or create pre-checkin first
+    // Build payload with ALL preferences including room preferences
+    const createPayload: PreCheckInServiceData = {
+      reservation_id: preCheckInData.reservationId,
+      email: preCheckInData.personalInfo.email || '',
+      phone: preCheckInData.personalInfo.phone || '',
+      address: preCheckInData.personalInfo.address,
+      city: preCheckInData.personalInfo.city,
+      zip_code: preCheckInData.personalInfo.zipCode,
+      country: preCheckInData.personalInfo.country,
+      // CRITICAL: Include room preferences for AI recommendations
+      floor_preference: preCheckInData.roomPreferences?.floor === 'any' ? undefined : preCheckInData.roomPreferences?.floor,
+      view_preference: preCheckInData.roomPreferences?.view === 'any' ? undefined : preCheckInData.roomPreferences?.view,
+      bed_type_preference: preCheckInData.roomPreferences?.bedType === 'any' ? undefined : preCheckInData.roomPreferences?.bedType,
+      quietness_preference: preCheckInData.roomPreferences?.quietness === 'any' ? undefined : preCheckInData.roomPreferences?.quietness,
+    };
+
+    // Get or create pre-checkin with preferences
     let precheckin = await precheckinService.getByReservation(preCheckInData.reservationId);
     if (!precheckin) {
-      // Create a basic pre-checkin first
-      const created = await precheckinService.create({
-        reservation_id: preCheckInData.reservationId,
-        email: preCheckInData.personalInfo.email,
-        phone: preCheckInData.personalInfo.phone,
-      });
+      // Create pre-checkin with all preferences
+      const created = await precheckinService.create(createPayload);
       precheckin = created;
+    } else {
+      // Update existing pre-checkin with current preferences before getting recommendations
+      // This ensures the backend has the latest preferences for AI scoring
+      try {
+        await precheckinService.update(precheckin.id, {
+          floor_preference: preCheckInData.roomPreferences?.floor === 'any' ? undefined : preCheckInData.roomPreferences?.floor,
+          view_preference: preCheckInData.roomPreferences?.view === 'any' ? undefined : preCheckInData.roomPreferences?.view,
+          bed_type_preference: preCheckInData.roomPreferences?.bedType === 'any' ? undefined : preCheckInData.roomPreferences?.bedType,
+          quietness_preference: preCheckInData.roomPreferences?.quietness === 'any' ? undefined : preCheckInData.roomPreferences?.quietness,
+        } as any);
+      } catch (e) {
+        console.warn('Could not update preferences before recommendation:', e);
+      }
     }
 
     const rooms = await getRecommendedRoomsMutation.mutateAsync(precheckin.id);

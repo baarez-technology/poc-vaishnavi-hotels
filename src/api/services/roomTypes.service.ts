@@ -1,7 +1,23 @@
-import { apiClient } from '../client';
+import { apiClient, clearApiCache } from '../client';
 import { API_ENDPOINTS } from '@/config/constants';
 import type { Room, RoomFilters } from '../types/room.types';
 import type { ApiResponse, PaginatedResponse } from '../types/common.types';
+
+export interface RoomTypeUpdate {
+  name?: string;
+  description?: string;
+  short_description?: string;
+  base_price?: number;
+  max_guests?: number;
+  amenities?: string[];
+  features?: string[];
+  bed_type?: string;
+  size_sqft?: number;
+  view_type?: string;
+  category?: string;
+  images?: string[];
+  is_active?: boolean;
+}
 
 export const roomTypesService = {
   getRoomTypes: async (filters?: RoomFilters) => {
@@ -12,7 +28,7 @@ export const roomTypesService = {
     if (filters?.minPrice) params.minPrice = String(filters.minPrice);
     if (filters?.maxPrice) params.maxPrice = String(filters.maxPrice);
     if (filters?.type) params.category = filters.type;
-    
+
     const response = await apiClient.get<ApiResponse<PaginatedResponse<Room>>>(
       API_ENDPOINTS.ROOM_TYPES.LIST,
       { params }
@@ -31,11 +47,21 @@ export const roomTypesService = {
     if (filters?.checkIn) params.checkIn = filters.checkIn;
     if (filters?.checkOut) params.checkOut = filters.checkOut;
     if (filters?.guests) params.guests = String(filters.guests);
-    
+
     const response = await apiClient.get<ApiResponse<Room>>(
       API_ENDPOINTS.ROOM_TYPES.DETAIL(slug),
       { params }
     );
+    return response.data.data || response.data;
+  },
+
+  updateRoomType: async (slug: string, updates: RoomTypeUpdate): Promise<Room> => {
+    const response = await apiClient.put<ApiResponse<Room>>(
+      API_ENDPOINTS.ROOM_TYPES.UPDATE(slug),
+      updates
+    );
+    // Clear the room-types cache so the /rooms page shows updated prices
+    clearApiCache('room-types');
     return response.data.data || response.data;
   },
 };

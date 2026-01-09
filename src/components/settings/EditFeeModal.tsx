@@ -126,7 +126,7 @@ export default function EditFeeModal({ fee, onClose, onSave }) {
                   : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
               }`}
             >
-              Fixed Amount (₹)
+              Fixed Amount ($)
             </button>
           </div>
         </div>
@@ -134,7 +134,7 @@ export default function EditFeeModal({ fee, onClose, onSave }) {
         {/* Value */}
         <div>
           <label className={labelClass}>
-            {form.type === 'percentage' ? 'Rate (%)' : 'Amount (₹)'} <span className="text-rose-500">*</span>
+            {form.type === 'percentage' ? 'Rate (%)' : 'Amount ($)'} <span className="text-rose-500">*</span>
           </label>
           <input
             type="number"

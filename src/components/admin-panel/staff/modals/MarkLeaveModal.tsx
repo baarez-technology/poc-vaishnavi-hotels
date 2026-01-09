@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, Calendar } from 'lucide-react';
+import { X, Calendar, Loader2 } from 'lucide-react';
+import { staffService } from '../../../../api/services/staff.service';
 
 export default function MarkLeaveModal({ staff, isOpen, onClose, onMarkLeave }) {
   const [formData, setFormData] = useState({
@@ -8,6 +9,8 @@ export default function MarkLeaveModal({ staff, isOpen, onClose, onMarkLeave }) 
     type: 'paid',
     notes: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -20,6 +23,7 @@ export default function MarkLeaveModal({ staff, isOpen, onClose, onMarkLeave }) 
         type: 'paid',
         notes: ''
       });
+      setError(null);
     } else {
       document.body.style.overflow = 'unset';
     }
@@ -35,10 +39,26 @@ export default function MarkLeaveModal({ staff, isOpen, onClose, onMarkLeave }) 
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onMarkLeave(staff.id, formData);
-    onClose();
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      await staffService.requestLeave(staff.id, {
+        leave_type: formData.type,
+        start_date: formData.startDate,
+        end_date: formData.endDate,
+        reason: formData.notes
+      });
+      onMarkLeave(staff.id, formData);
+      onClose();
+    } catch (err: any) {
+      console.error('Failed to mark leave:', err);
+      setError(err.response?.data?.detail || err.message || 'Failed to mark leave. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Get min date (today)
@@ -72,6 +92,12 @@ export default function MarkLeaveModal({ staff, isOpen, onClose, onMarkLeave }) 
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
           {/* Leave Type */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
@@ -82,7 +108,8 @@ export default function MarkLeaveModal({ staff, isOpen, onClose, onMarkLeave }) 
               value={formData.type}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200"
+              disabled={isSubmitting}
+              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 disabled:opacity-50"
             >
               <option value="paid">Paid Leave</option>
               <option value="unpaid">Unpaid Leave</option>
@@ -103,7 +130,8 @@ export default function MarkLeaveModal({ staff, isOpen, onClose, onMarkLeave }) 
                 onChange={handleChange}
                 min={today}
                 required
-                className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200"
+                disabled={isSubmitting}
+                className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 disabled:opacity-50"
               />
             </div>
             <div>
@@ -117,7 +145,8 @@ export default function MarkLeaveModal({ staff, isOpen, onClose, onMarkLeave }) 
                 onChange={handleChange}
                 min={formData.startDate || today}
                 required
-                className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200"
+                disabled={isSubmitting}
+                className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 disabled:opacity-50"
               />
             </div>
           </div>
@@ -132,8 +161,9 @@ export default function MarkLeaveModal({ staff, isOpen, onClose, onMarkLeave }) 
               value={formData.notes}
               onChange={handleChange}
               rows={4}
+              disabled={isSubmitting}
               placeholder="Add any additional notes about this leave..."
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 resize-none"
+              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 resize-none disabled:opacity-50"
             />
           </div>
 
@@ -151,16 +181,22 @@ export default function MarkLeaveModal({ staff, isOpen, onClose, onMarkLeave }) 
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-all duration-200"
+            disabled={isSubmitting}
+            className="px-6 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-all duration-200 disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="px-6 py-2 text-sm font-semibold text-white bg-amber-600 rounded-lg hover:bg-amber-700 hover:shadow transition-all duration-200 flex items-center gap-2"
+            disabled={isSubmitting}
+            className="px-6 py-2 text-sm font-semibold text-white bg-amber-600 rounded-lg hover:bg-amber-700 hover:shadow transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
           >
-            <Calendar className="w-4 h-4" />
-            Mark Leave
+            {isSubmitting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Calendar className="w-4 h-4" />
+            )}
+            {isSubmitting ? 'Saving...' : 'Mark Leave'}
           </button>
         </div>
       </div>

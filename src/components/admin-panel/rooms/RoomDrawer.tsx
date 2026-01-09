@@ -170,6 +170,15 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
             <div className="space-y-3 bg-[#FAF8F6] rounded-xl p-4 border border-neutral-100">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-white border border-neutral-200 flex items-center justify-center flex-shrink-0">
+                  <Building2 className="w-4 h-4 text-[#A57865]" />
+                </div>
+                <div className="flex-1 flex items-center justify-between">
+                  <span className="text-xs font-medium text-neutral-600">Room Type</span>
+                  <span className="text-sm font-semibold text-neutral-900">{room.type}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white border border-neutral-200 flex items-center justify-center flex-shrink-0">
                   <Bed className="w-4 h-4 text-[#A57865]" />
                 </div>
                 <div className="flex-1 flex items-center justify-between">

@@ -1,6 +1,16 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { Room } from '@/api/types/booking.types';
 
+interface OriginalBookingData {
+  id: string;
+  bookingNumber: string;
+  checkIn: string;
+  checkOut: string;
+  totalPrice: number;
+  paymentStatus: string;
+  nights: number;
+}
+
 interface BookingData {
   room: Room | null;
   checkIn: string;
@@ -28,6 +38,9 @@ interface BookingData {
   };
   bookingNumber?: string;
   datesFromUrl?: boolean; // Track if dates came from URL parameters
+  // Modification mode fields
+  isModifyMode?: boolean;
+  originalBooking?: OriginalBookingData | null;
 }
 
 interface BookingContextType {
@@ -65,6 +78,8 @@ const initialBookingData: BookingData = {
     country: '',
   },
   datesFromUrl: false,
+  isModifyMode: false,
+  originalBooking: null,
 };
 
 export function BookingProvider({ children }: { children: ReactNode }) {

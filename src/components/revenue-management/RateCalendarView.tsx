@@ -1,15 +1,26 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Filter, Download, RefreshCw, Sparkles, ChevronDown, Check, HelpCircle, Undo2, Redo2 } from 'lucide-react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, Calendar, Filter, Download, RefreshCw, Sparkles, ChevronDown, Check, HelpCircle, Undo2, Redo2, Loader2, Play } from 'lucide-react';
 import { useRMS } from '../../context/RMSContext';
 import { useToast } from '../../contexts/ToastContext';
 import RateCell from './RateCell';
+import revenueIntelligenceService, {
+  RateCalendarData,
+  ExecuteRulesResponse,
+} from '../../api/services/revenue-intelligence.service';
 
-const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, selectedDates = [] }) => {
+interface RateCalendarViewProps {
+  onDateSelect?: (date: string) => void;
+  onOpenDrawer?: () => void;
+  bulkEditMode?: boolean;
+  selectedDates?: string[];
+}
+
+const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, selectedDates = [] }: RateCalendarViewProps) => {
   const {
     rateCalendar,
     roomTypes,
     getRateForDate,
-    updateRate,
+    updateRate: localUpdateRate,
     applyRestriction,
     runAllRules,
     recommendations,
@@ -19,23 +30,51 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
     canRedo,
   } = useRMS();
 
-  const { success, error: showError } = useToast();
+  const { success, error: showError, info } = useToast();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedRoomType, setSelectedRoomType] = useState('STD');
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [viewMode, setViewMode] = useState('month'); // 'month' | 'week'
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [isRecalculating, setIsRecalculating] = useState(false);
+  const [isRunningRules, setIsRunningRules] = useState(false);
   const [isRoomDropdownOpen, setIsRoomDropdownOpen] = useState(false);
-  const [focusedDateIndex, setFocusedDateIndex] = useState(null);
+  const [focusedDateIndex, setFocusedDateIndex] = useState<number | null>(null);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
-  const dropdownRef = useRef(null);
-  const calendarRef = useRef(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiCalendarData, setApiCalendarData] = useState<RateCalendarData | null>(null);
+  const [updatingRates, setUpdatingRates] = useState<Set<string>>(new Set());
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
+
+  // Fetch rate calendar data from API
+  const fetchCalendarData = useCallback(async () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const startDate = new Date(year, month, 1).toISOString().split('T')[0];
+    const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
+
+    setIsLoading(true);
+    try {
+      const data = await revenueIntelligenceService.getRateCalendar(startDate, endDate);
+      setApiCalendarData(data);
+    } catch (err) {
+      console.error('Error fetching rate calendar:', err);
+      // Fall back to local data on error
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentMonth]);
+
+  // Fetch data when month changes
+  useEffect(() => {
+    fetchCalendarData();
+  }, [fetchCalendarData]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsRoomDropdownOpen(false);
       }
     };
@@ -53,7 +92,7 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
     const lastDay = new Date(year, month + 1, 0);
     const startPadding = firstDay.getDay();
 
-    const days = [];
+    const days: Array<{ date: Date; isCurrentMonth: boolean }> = [];
 
     // Previous month padding
     for (let i = 0; i < startPadding; i++) {
@@ -79,9 +118,14 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
 
   const today = new Date().toISOString().split('T')[0];
 
+  // Helper function for toast notifications
+  const showToastSuccess = (message: string) => {
+    success(message, { duration: 2000 });
+  };
+
   // Keyboard navigation
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       // Show keyboard help with ? or Shift+?
       if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
@@ -90,7 +134,7 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
       }
 
       // Don't handle keyboard nav if user is typing in an input
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') {
         return;
       }
 
@@ -186,8 +230,8 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         if (canUndo) {
-          const success = undo();
-          if (success) {
+          const undoResult = undo();
+          if (undoResult) {
             showToastSuccess('Rate change undone');
           }
         }
@@ -198,8 +242,8 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
           ((e.ctrlKey || e.metaKey) && e.key === 'y')) {
         e.preventDefault();
         if (canRedo) {
-          const success = redo();
-          if (success) {
+          const redoResult = redo();
+          if (redoResult) {
             showToastSuccess('Rate change redone');
           }
         }
@@ -216,11 +260,6 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [focusedDateIndex, calendarDays, today, isRecalculating, canUndo, canRedo, undo, redo]);
 
-  // Helper function for toast notifications
-  const showToastSuccess = (message) => {
-    success(message, { duration: 2000 });
-  };
-
   const handlePrevMonth = () => {
     setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
   };
@@ -232,24 +271,79 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
   const handleRecalculate = async () => {
     setIsRecalculating(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500));
       runAllRules();
+      await fetchCalendarData();
+      success('Rates recalculated successfully');
+    } catch (err) {
+      showError('Failed to recalculate rates');
     } finally {
       setIsRecalculating(false);
     }
   };
 
-  const handleDateSelect = (date) => {
+  // Run all pricing rules via API
+  const handleRunAllRules = async () => {
+    setIsRunningRules(true);
+    try {
+      const result: ExecuteRulesResponse = await revenueIntelligenceService.executePricingRules();
+
+      // Show results
+      if (result.rulesTriggered > 0) {
+        success(`Executed ${result.rulesTriggered} rules, updated ${result.ratesUpdated} rates`);
+      } else {
+        info('No rules were triggered');
+      }
+
+      // Refresh calendar data
+      await fetchCalendarData();
+
+      // Also update local context
+      runAllRules();
+    } catch (err) {
+      showError('Failed to execute pricing rules');
+      console.error('Error executing rules:', err);
+    } finally {
+      setIsRunningRules(false);
+    }
+  };
+
+  const handleDateSelect = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
     setSelectedDate(dateStr);
     if (onDateSelect) onDateSelect(dateStr);
   };
 
-  const handleUpdateRate = (date, newRate) => {
-    updateRate(selectedRoomType, date, newRate);
+  // Update rate via API
+  const handleUpdateRate = async (date: string, newRate: number, reason?: string) => {
+    const rateKey = `${selectedRoomType}_${date}`;
+    setUpdatingRates(prev => new Set(prev).add(rateKey));
+
+    try {
+      // Get room type ID from name
+      const roomType = roomTypes.find(r => r.id === selectedRoomType);
+      const roomTypeId = roomType?.id ? parseInt(roomType.id, 10) || 1 : 1;
+
+      // Call API
+      await revenueIntelligenceService.updateRate(roomTypeId, date, newRate, reason);
+
+      // Update local state for immediate feedback
+      localUpdateRate(selectedRoomType, date, newRate, reason);
+
+      success(`Rate updated to ${new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(newRate)}`);
+    } catch (err) {
+      showError('Failed to update rate');
+      console.error('Error updating rate:', err);
+    } finally {
+      setUpdatingRates(prev => {
+        const next = new Set(prev);
+        next.delete(rateKey);
+        return next;
+      });
+    }
   };
 
-  const formatMonthYear = (date) => {
+  const formatMonthYear = (date: Date) => {
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   };
 
@@ -261,6 +355,32 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
     return recDate.getMonth() === currentMonth.getMonth() &&
            recDate.getFullYear() === currentMonth.getFullYear();
   });
+
+  // Loading skeleton
+  const renderLoadingSkeleton = () => (
+    <div className="p-4">
+      <div className="grid grid-cols-7 gap-2 mb-3">
+        {dayNames.map(day => (
+          <div key={day} className="text-center text-[11px] font-semibold text-neutral-400 uppercase tracking-wider py-2">
+            {day}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-2">
+        {Array.from({ length: 35 }).map((_, i) => (
+          <div key={i} className="min-h-[130px] rounded-lg border border-neutral-100 bg-neutral-50/50 animate-pulse">
+            <div className="px-2.5 py-1.5 bg-white border-b border-neutral-100 rounded-t-lg">
+              <div className="h-4 w-6 bg-neutral-200 rounded" />
+            </div>
+            <div className="p-3 space-y-2">
+              <div className="h-5 w-16 bg-neutral-200 rounded" />
+              <div className="h-3 w-12 bg-neutral-100 rounded" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="bg-white rounded-[10px] overflow-hidden">
@@ -332,6 +452,20 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
               className="px-3 py-1.5 text-[13px] font-medium text-terra-600 hover:bg-terra-50 rounded-lg transition-colors"
             >
               Today
+            </button>
+
+            {/* Run All Rules Button */}
+            <button
+              onClick={handleRunAllRules}
+              disabled={isRunningRules}
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-sage-700 bg-sage-50 border border-sage-200 rounded-lg hover:bg-sage-100 transition-colors disabled:opacity-50"
+            >
+              {isRunningRules ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Play className="w-4 h-4" />
+              )}
+              {isRunningRules ? 'Running...' : 'Run All Rules'}
             </button>
 
             <button
@@ -418,76 +552,86 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
       </div>
 
       {/* Calendar Grid */}
-      <div className="p-4">
-        {/* Day Headers */}
-        <div className="grid grid-cols-7 gap-2 mb-3">
-          {dayNames.map(day => (
-            <div key={day} className="text-center text-[11px] font-semibold text-neutral-400 uppercase tracking-wider py-2">
-              {day}
-            </div>
-          ))}
-        </div>
-
-        {/* Calendar Days */}
-        <div ref={calendarRef} className="grid grid-cols-7 gap-2">
-          {calendarDays.map(({ date, isCurrentMonth }, index) => {
-            const dateStr = date.toISOString().split('T')[0];
-            const calendarData = rateCalendar[dateStr];
-            const roomData = calendarData?.rooms?.[selectedRoomType];
-            const isToday = dateStr === today;
-            const isPast = dateStr < today;
-            const hasSuggestion = recommendations.some(r => r.date === dateStr);
-            const isSelected = selectedDates.includes(dateStr);
-            const isFocused = focusedDateIndex === index;
-
-            return (
-              <div
-                key={index}
-                data-calendar-cell
-                className={`min-h-[130px] rounded-lg border border-neutral-100 bg-neutral-50/50 transition-all ${!isCurrentMonth ? 'opacity-30' : ''} ${isPast ? 'opacity-50 bg-neutral-100' : ''} ${
-                  bulkEditMode && isSelected ? 'ring-2 ring-terra-500 bg-terra-50/30' : ''
-                } ${isFocused ? 'ring-2 ring-ocean-500 shadow-md scale-[1.02]' : ''}`}
-                onClick={bulkEditMode && !isPast ? () => onDateSelect(dateStr) : undefined}
-                style={{ cursor: bulkEditMode && !isPast ? 'pointer' : 'default' }}
-              >
-                {/* Date Header */}
-                <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-t-lg ${isToday ? 'bg-terra-500 text-white' : 'bg-white border-b border-neutral-100'}`}>
-                  <span className={`text-[12px] font-semibold ${isToday ? 'text-white' : 'text-neutral-600'}`}>
-                    {date.getDate()}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    {hasSuggestion && (
-                      <Sparkles className="w-3 h-3 text-gold-500" />
-                    )}
-                    {calendarData?.event && (
-                      <span className="text-[9px] font-medium text-sage-700 bg-sage-50 px-1.5 py-0.5 rounded truncate max-w-[70px]">
-                        {calendarData.event}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Rate Cell */}
-                {roomData && !isPast ? (
-                  <RateCell
-                    date={dateStr}
-                    roomData={roomData}
-                    isSelected={selectedDate === dateStr}
-                    onSelect={() => handleDateSelect(date)}
-                    onUpdateRate={handleUpdateRate}
-                    onApplyRestriction={(restriction) => applyRestriction(selectedRoomType, dateStr, restriction)}
-                    compact={true}
-                  />
-                ) : (
-                  <div className="p-3 text-center text-[11px] text-neutral-400">
-                    {isPast ? 'Past' : 'No data'}
-                  </div>
-                )}
+      {isLoading ? (
+        renderLoadingSkeleton()
+      ) : (
+        <div className="p-4">
+          {/* Day Headers */}
+          <div className="grid grid-cols-7 gap-2 mb-3">
+            {dayNames.map(day => (
+              <div key={day} className="text-center text-[11px] font-semibold text-neutral-400 uppercase tracking-wider py-2">
+                {day}
               </div>
-            );
-          })}
+            ))}
+          </div>
+
+          {/* Calendar Days */}
+          <div ref={calendarRef} className="grid grid-cols-7 gap-2">
+            {calendarDays.map(({ date, isCurrentMonth }, index) => {
+              const dateStr = date.toISOString().split('T')[0];
+              const calendarData = rateCalendar[dateStr];
+              const roomData = calendarData?.rooms?.[selectedRoomType];
+              const isToday = dateStr === today;
+              const isPast = dateStr < today;
+              const hasSuggestion = recommendations.some(r => r.date === dateStr);
+              const isSelected = selectedDates.includes(dateStr);
+              const isFocused = focusedDateIndex === index;
+              const rateKey = `${selectedRoomType}_${dateStr}`;
+              const isUpdating = updatingRates.has(rateKey);
+
+              return (
+                <div
+                  key={index}
+                  data-calendar-cell
+                  className={`min-h-[130px] rounded-lg border border-neutral-100 bg-neutral-50/50 transition-all ${!isCurrentMonth ? 'opacity-30' : ''} ${isPast ? 'opacity-50 bg-neutral-100' : ''} ${
+                    bulkEditMode && isSelected ? 'ring-2 ring-terra-500 bg-terra-50/30' : ''
+                  } ${isFocused ? 'ring-2 ring-ocean-500 shadow-md scale-[1.02]' : ''}`}
+                  onClick={bulkEditMode && !isPast ? () => onDateSelect?.(dateStr) : undefined}
+                  style={{ cursor: bulkEditMode && !isPast ? 'pointer' : 'default' }}
+                >
+                  {/* Date Header */}
+                  <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-t-lg ${isToday ? 'bg-terra-500 text-white' : 'bg-white border-b border-neutral-100'}`}>
+                    <span className={`text-[12px] font-semibold ${isToday ? 'text-white' : 'text-neutral-600'}`}>
+                      {date.getDate()}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      {isUpdating && (
+                        <Loader2 className="w-3 h-3 text-terra-500 animate-spin" />
+                      )}
+                      {hasSuggestion && (
+                        <Sparkles className="w-3 h-3 text-gold-500" />
+                      )}
+                      {calendarData?.event && (
+                        <span className="text-[9px] font-medium text-sage-700 bg-sage-50 px-1.5 py-0.5 rounded truncate max-w-[70px]">
+                          {calendarData.event}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Rate Cell */}
+                  {roomData && !isPast ? (
+                    <RateCell
+                      date={dateStr}
+                      roomData={roomData}
+                      isSelected={selectedDate === dateStr}
+                      onSelect={() => handleDateSelect(date)}
+                      onUpdateRate={(newRate, reason) => handleUpdateRate(dateStr, newRate, reason)}
+                      onApplyRestriction={(restriction) => applyRestriction(selectedRoomType, dateStr, restriction)}
+                      compact={true}
+                      isUpdating={isUpdating}
+                    />
+                  ) : (
+                    <div className="p-3 text-center text-[11px] text-neutral-400">
+                      {isPast ? 'Past' : 'No data'}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Keyboard Help Overlay */}
       {showKeyboardHelp && (
@@ -512,7 +656,7 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
                 <div className="space-y-2">
                   <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
                     <span className="text-neutral-700">Arrow keys</span>
-                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">↑ ↓ ← →</kbd>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Arrow Keys</kbd>
                   </div>
                   <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
                     <span className="text-neutral-700">Select date</span>
@@ -531,11 +675,11 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
                 <div className="space-y-2">
                   <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
                     <span className="text-neutral-700">Previous month</span>
-                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + ←</kbd>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + Left</kbd>
                   </div>
                   <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
                     <span className="text-neutral-700">Next month</span>
-                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + →</kbd>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + Right</kbd>
                   </div>
                   <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
                     <span className="text-neutral-700">Go to today</span>

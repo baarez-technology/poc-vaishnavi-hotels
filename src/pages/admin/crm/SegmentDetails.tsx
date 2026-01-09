@@ -14,7 +14,13 @@ import {
   Globe,
   Calendar,
   DollarSign,
-  Award
+  Award,
+  Brain,
+  Sparkles,
+  TrendingUp,
+  AlertTriangle,
+  Target,
+  Lightbulb
 } from 'lucide-react';
 import {
   LineChart,
@@ -52,13 +58,32 @@ const TIER_COLORS = {
   platinum: '#E5E4E2'
 };
 
+// AI Insights interface
+interface SegmentAIInsights {
+  healthDistribution: { excellent: number; good: number; fair: number; at_risk: number; critical: number };
+  churnRisk: { low: number; medium: number; high: number };
+  ltvSegments: { low: number; medium: number; high: number; premium: number };
+  recommendations: string[];
+}
+
 export default function SegmentDetails({
   segments,
   guests,
   loyaltyTiers,
   onUpdateSegment,
   onDeleteSegment,
-  showToast
+  showToast,
+  aiInsights,
+  aiLoading
+}: {
+  segments: any[];
+  guests: any[];
+  loyaltyTiers: any;
+  onUpdateSegment: (segment: any) => void;
+  onDeleteSegment: (id: string) => void;
+  showToast: (msg: string, type: string) => void;
+  aiInsights?: SegmentAIInsights | null;
+  aiLoading?: boolean;
 }) {
   const { segmentId } = useParams();
   const navigate = useNavigate();
@@ -304,6 +329,123 @@ export default function SegmentDetails({
           </p>
         </div>
       </div>
+
+      {/* AI Insights Panel */}
+      {aiInsights && (
+        <div className="bg-gradient-to-r from-[#5C9BA4]/5 via-[#4E5840]/5 to-[#A57865]/5 rounded-xl border border-neutral-200 p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#5C9BA4] to-[#4E5840] flex items-center justify-center">
+              <Brain className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-bold text-neutral-900">AI Segment Intelligence</h3>
+              <p className="text-xs text-neutral-500">Powered by ReConnect AI</p>
+            </div>
+            {aiLoading && (
+              <div className="ml-auto w-4 h-4 border-2 border-[#5C9BA4] border-t-transparent rounded-full animate-spin" />
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            {/* Health Distribution */}
+            <div className="bg-white rounded-lg border border-neutral-200 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp className="w-4 h-4 text-[#4E5840]" />
+                <span className="text-xs font-semibold text-neutral-600 uppercase">Health Score</span>
+              </div>
+              <div className="space-y-2">
+                {Object.entries(aiInsights.healthDistribution).map(([level, count]) => (
+                  <div key={level} className="flex items-center justify-between">
+                    <span className="text-xs text-neutral-600 capitalize">{level.replace('_', ' ')}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${Math.min(100, count)}%`,
+                            backgroundColor: level === 'excellent' ? '#22C55E' : level === 'good' ? '#4E5840' : level === 'fair' ? '#CDB261' : level === 'at_risk' ? '#F59E0B' : '#EF4444'
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs font-medium text-neutral-900 w-8 text-right">{count}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Churn Risk */}
+            <div className="bg-white rounded-lg border border-neutral-200 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
+                <span className="text-xs font-semibold text-neutral-600 uppercase">Churn Risk</span>
+              </div>
+              <div className="space-y-2">
+                {Object.entries(aiInsights.churnRisk).map(([level, count]) => (
+                  <div key={level} className="flex items-center justify-between">
+                    <span className="text-xs text-neutral-600 capitalize">{level}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${Math.min(100, count)}%`,
+                            backgroundColor: level === 'low' ? '#22C55E' : level === 'medium' ? '#F59E0B' : '#EF4444'
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs font-medium text-neutral-900 w-8 text-right">{count}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* LTV Segments */}
+            <div className="bg-white rounded-lg border border-neutral-200 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <DollarSign className="w-4 h-4 text-[#A57865]" />
+                <span className="text-xs font-semibold text-neutral-600 uppercase">LTV Distribution</span>
+              </div>
+              <div className="space-y-2">
+                {Object.entries(aiInsights.ltvSegments).map(([level, count]) => (
+                  <div key={level} className="flex items-center justify-between">
+                    <span className="text-xs text-neutral-600 capitalize">{level}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${Math.min(100, count)}%`,
+                            backgroundColor: level === 'premium' ? '#A57865' : level === 'high' ? '#4E5840' : level === 'medium' ? '#5C9BA4' : '#CDB261'
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs font-medium text-neutral-900 w-8 text-right">{count}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* AI Recommendations */}
+          <div className="bg-white rounded-lg border border-neutral-200 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Lightbulb className="w-4 h-4 text-[#CDB261]" />
+              <span className="text-xs font-semibold text-neutral-600 uppercase">AI Recommendations</span>
+            </div>
+            <div className="space-y-2">
+              {aiInsights.recommendations.map((rec, idx) => (
+                <div key={idx} className="flex items-start gap-2">
+                  <Sparkles className="w-3 h-3 text-[#5C9BA4] mt-0.5 flex-shrink-0" />
+                  <span className="text-sm text-neutral-700">{rec}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

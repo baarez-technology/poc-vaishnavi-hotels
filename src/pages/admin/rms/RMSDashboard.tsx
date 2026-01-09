@@ -58,11 +58,14 @@ const FORECAST_DATA = [
 ];
 
 const ROOM_TYPE_PRICING = [
-  { name: 'Standard', current: 189, suggested: 199, change: 5.3, demand: 'high' },
-  { name: 'Deluxe King', current: 279, suggested: 299, change: 7.2, demand: 'high' },
-  { name: 'Deluxe Twin', current: 259, suggested: 269, change: 3.9, demand: 'medium' },
-  { name: 'Executive Suite', current: 449, suggested: 449, change: 0, demand: 'low' },
-  { name: 'Presidential', current: 899, suggested: 899, change: 0, demand: 'medium' },
+  { name: 'Minimalist Studio', current: 150, suggested: 159, change: 6.0, demand: 'high' },
+  { name: 'Coastal Retreat', current: 199, suggested: 219, change: 10.1, demand: 'high' },
+  { name: 'Urban Oasis', current: 245, suggested: 259, change: 5.7, demand: 'medium' },
+  { name: 'Sunset Vista', current: 315, suggested: 329, change: 4.4, demand: 'high' },
+  { name: 'Pacific Suite', current: 385, suggested: 399, change: 3.6, demand: 'medium' },
+  { name: 'Wellness Suite', current: 425, suggested: 449, change: 5.6, demand: 'low' },
+  { name: 'Family Sanctuary', current: 485, suggested: 499, change: 2.9, demand: 'medium' },
+  { name: 'Oceanfront Penthouse', current: 750, suggested: 799, change: 6.5, demand: 'high' },
 ];
 
 const COMPETITOR_DATA = [

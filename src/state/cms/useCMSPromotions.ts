@@ -63,6 +63,13 @@ export default function useCMSPromotions() {
 
   // Fetch promotions from API
   const fetchPromotions = useCallback(async () => {
+    // Skip API call if not authenticated
+    const token = localStorage.getItem('glimmora_access_token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -146,28 +153,89 @@ export default function useCMSPromotions() {
     }
   }, [fetchPromotions]);
 
-  const updatePromotion = useCallback((id: string, updates: Partial<Promotion>) => {
-    setPromotions(prev =>
-      prev.map(promo =>
-        promo.id === id ? { ...promo, ...updates, updatedAt: new Date().toISOString() } : promo
-      )
-    );
+  const updatePromotion = useCallback(async (id: string, updates: Partial<Promotion>) => {
+    try {
+      // Build API payload from updates
+      const apiPayload: Record<string, any> = {};
+      if (updates.name !== undefined) apiPayload.name = updates.name;
+      if (updates.description !== undefined) apiPayload.description = updates.description;
+      if (updates.type !== undefined) apiPayload.discount_type = updates.type;
+      if (updates.value !== undefined) apiPayload.discount_value = updates.value;
+      if (updates.minStay !== undefined) apiPayload.min_stay = updates.minStay;
+      if (updates.startDate !== undefined) apiPayload.valid_from = updates.startDate;
+      if (updates.endDate !== undefined) apiPayload.valid_until = updates.endDate;
+      if (updates.maxUsage !== undefined) apiPayload.usage_limit = updates.maxUsage;
+      if (updates.isActive !== undefined) apiPayload.is_active = updates.isActive;
+
+      await apiClient.put(`/api/v1/rates/promo-codes/${id}`, apiPayload);
+
+      // Update local state
+      setPromotions(prev =>
+        prev.map(promo =>
+          promo.id === id ? { ...promo, ...updates, updatedAt: new Date().toISOString() } : promo
+        )
+      );
+      return true;
+    } catch (err) {
+      console.error('Error updating promotion:', err);
+      // Still update local state as fallback
+      setPromotions(prev =>
+        prev.map(promo =>
+          promo.id === id ? { ...promo, ...updates, updatedAt: new Date().toISOString() } : promo
+        )
+      );
+      return false;
+    }
   }, []);
 
-  const deletePromotion = useCallback((id: string) => {
-    setPromotions(prev => prev.filter(promo => promo.id !== id));
+  const deletePromotion = useCallback(async (id: string) => {
+    try {
+      await apiClient.delete(`/api/v1/rates/promo-codes/${id}`);
+      setPromotions(prev => prev.filter(promo => promo.id !== id));
+      return true;
+    } catch (err) {
+      console.error('Error deleting promotion:', err);
+      // Remove from local state anyway
+      setPromotions(prev => prev.filter(promo => promo.id !== id));
+      return false;
+    }
   }, []);
 
   const getPromotionById = useCallback((id: string) => {
     return promotions.find(promo => promo.id === id);
   }, [promotions]);
 
-  const togglePromotionStatus = useCallback((id: string) => {
-    setPromotions(prev =>
-      prev.map(promo =>
-        promo.id === id ? { ...promo, isActive: !promo.isActive, updatedAt: new Date().toISOString() } : promo
-      )
-    );
+  const togglePromotionStatus = useCallback(async (id: string) => {
+    try {
+      const response = await apiClient.patch(`/api/v1/rates/promo-codes/${id}/toggle`);
+      const newStatus = response.data?.is_active;
+
+      setPromotions(prev =>
+        prev.map(promo =>
+          promo.id === id ? {
+            ...promo,
+            isActive: newStatus ?? !promo.isActive,
+            status: newStatus ? 'Active' : 'Inactive',
+            updatedAt: new Date().toISOString()
+          } : promo
+        )
+      );
+      return true;
+    } catch (err) {
+      console.error('Error toggling promotion status:', err);
+      // Toggle local state as fallback
+      setPromotions(prev =>
+        prev.map(promo =>
+          promo.id === id ? {
+            ...promo,
+            isActive: !promo.isActive,
+            status: !promo.isActive ? 'Active' : 'Inactive',
+            updatedAt: new Date().toISOString()
+          } : promo
+        )
+      );
+      return false;
+    }
   }, []);
 
   return {

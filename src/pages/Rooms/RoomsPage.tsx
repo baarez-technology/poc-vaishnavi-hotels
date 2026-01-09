@@ -22,6 +22,7 @@ import { formatCurrency } from '@/utils/helpers/format';
 import type { Room } from '@/api/types/booking.types';
 import { RoomsSearchWidget, SearchData } from '@/components/rooms/RoomsSearchWidget';
 import { roomTypesService } from '@/api/services/roomTypes.service';
+import { useCBS } from '@/context/CBSContext';
 
 type ViewMode = 'grid' | 'list';
 type SortOption = 'price-low' | 'price-high' | 'rating' | 'popularity';
@@ -33,10 +34,53 @@ export const RoomsPage = () => {
   const filterButtonRef = useRef<HTMLButtonElement>(null);
   const [searchParams] = useSearchParams();
 
+  // Get CBS context for dynamic rates from availability
+  const { availability } = useCBS();
+
   // Rooms state - loaded from API
   const [rooms, setRooms] = useState<Room[]>(mockRooms);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Mapping from old room types to CBS room type names
+  const TYPE_TO_CBS_NAME: Record<string, string> = {
+    'Standard': 'Minimalist Studio',
+    'Premium': 'Coastal Retreat',
+    'Deluxe': 'Urban Oasis',
+    'Suite': 'Pacific Suite'
+  };
+
+  // Helper function to get current rate from CBS availability
+  const getCBSRate = (roomName: string): number | null => {
+    if (!availability || !roomName) return null;
+
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+
+    // Check if we have availability data for today
+    if (availability[todayStr] && availability[todayStr][roomName]) {
+      return availability[todayStr][roomName].rate;
+    }
+    return null;
+  };
+
+  // Apply CBS rates to rooms
+  const applyDynamicRates = (roomsList: Room[]): Room[] => {
+    return roomsList.map(room => {
+      // Try room.name first, then map room.type to CBS name
+      const cbsName = room.name || TYPE_TO_CBS_NAME[(room as any).type] || '';
+      const cbsRate = getCBSRate(cbsName);
+      if (cbsRate !== null && cbsRate > 0) {
+        console.log(`[RoomsPage] Applying CBS rate for ${cbsName}: $${cbsRate}`);
+        return { ...room, price: cbsRate };
+      }
+      return room;
+    });
+  };
 
   // View and filter state
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -69,24 +113,28 @@ export const RoomsPage = () => {
         console.log('[RoomsPage] Is array:', Array.isArray(apiRooms), 'Length:', apiRooms?.length);
         if (Array.isArray(apiRooms) && apiRooms.length > 0) {
           console.log('[RoomsPage] Using API data, first room slug:', apiRooms[0]?.slug);
-          setRooms(apiRooms);
+          // Apply dynamic CBS rates from availability
+          const roomsWithDynamicRates = applyDynamicRates(apiRooms);
+          setRooms(roomsWithDynamicRates);
         } else {
           console.log('[RoomsPage] Falling back to mock data');
-          // Fallback to mock data if API returns empty
-          setRooms(mockRooms);
+          // Fallback to mock data if API returns empty - also apply CBS rates
+          const roomsWithDynamicRates = applyDynamicRates(mockRooms);
+          setRooms(roomsWithDynamicRates);
         }
       } catch (err) {
         console.error('Failed to fetch rooms from API:', err);
         setError('Failed to load rooms');
-        // Keep using mock data as fallback
-        setRooms(mockRooms);
+        // Keep using mock data as fallback - apply CBS rates
+        const roomsWithDynamicRates = applyDynamicRates(mockRooms);
+        setRooms(roomsWithDynamicRates);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchRooms();
-  }, [searchData.checkIn, searchData.checkOut, searchData.adults, searchData.children]);
+  }, [searchData.checkIn, searchData.checkOut, searchData.adults, searchData.children, availability]);
 
   // Filter state
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);

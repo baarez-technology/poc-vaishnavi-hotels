@@ -18,40 +18,76 @@ export const defaultSettings = {
   },
   roomTypes: [
     {
-      id: 'rt-001',
-      name: 'Standard Room',
-      description: 'Comfortable room with essential amenities',
-      price: 5500,
+      id: 'minimalist-studio',
+      name: 'Minimalist Studio',
+      description: 'Clean, modern studio with essential amenities',
+      price: 150,
       maxOccupancy: 2,
       amenities: ['wifi', 'tv', 'ac', 'minibar'],
-      inclusions: ['Breakfast', 'Wi-Fi', 'Newspaper']
+      inclusions: ['Breakfast', 'Wi-Fi', 'Welcome Drink']
     },
     {
-      id: 'rt-002',
-      name: 'Deluxe Room',
-      description: 'Spacious room with city views',
-      price: 8500,
+      id: 'coastal-retreat',
+      name: 'Coastal Retreat',
+      description: 'Relaxing coastal-themed room with ocean views',
+      price: 199,
+      maxOccupancy: 2,
+      amenities: ['wifi', 'tv', 'ac', 'minibar', 'safe'],
+      inclusions: ['Breakfast', 'Wi-Fi', 'Welcome Drink', 'Beach Access']
+    },
+    {
+      id: 'urban-oasis',
+      name: 'Urban Oasis',
+      description: 'Contemporary city retreat with modern design',
+      price: 245,
+      maxOccupancy: 2,
+      amenities: ['wifi', 'tv', 'ac', 'minibar', 'safe', 'workspace'],
+      inclusions: ['Breakfast', 'Wi-Fi', 'Welcome Drink', 'Gym Access']
+    },
+    {
+      id: 'sunset-vista',
+      name: 'Sunset Vista',
+      description: 'Premium room with stunning sunset views',
+      price: 315,
       maxOccupancy: 3,
-      amenities: ['wifi', 'tv', 'ac', 'minibar', 'safe', 'bathtub'],
-      inclusions: ['Breakfast', 'Wi-Fi', 'Newspaper', 'Welcome Drink']
+      amenities: ['wifi', 'tv', 'ac', 'minibar', 'safe', 'bathtub', 'balcony'],
+      inclusions: ['Breakfast', 'Wi-Fi', 'Welcome Drink', 'Sunset Cocktails']
     },
     {
-      id: 'rt-003',
-      name: 'Premium Suite',
-      description: 'Luxury suite with separate living area',
-      price: 15000,
+      id: 'pacific-suite',
+      name: 'Pacific Suite',
+      description: 'Spacious suite with Pacific Ocean views',
+      price: 385,
       maxOccupancy: 4,
-      amenities: ['wifi', 'tv', 'ac', 'minibar', 'safe', 'bathtub', 'jacuzzi', 'balcony'],
-      inclusions: ['Breakfast', 'Wi-Fi', 'Newspaper', 'Welcome Drink', 'Airport Transfer', 'Butler Service']
+      amenities: ['wifi', 'tv', 'ac', 'minibar', 'safe', 'bathtub', 'balcony', 'workspace'],
+      inclusions: ['Breakfast', 'Wi-Fi', 'Welcome Drink', 'Butler Service']
     },
     {
-      id: 'rt-004',
-      name: 'Presidential Suite',
-      description: 'Ultimate luxury with panoramic views',
-      price: 35000,
+      id: 'wellness-suite',
+      name: 'Wellness Suite',
+      description: 'Tranquil suite designed for relaxation and wellness',
+      price: 425,
+      maxOccupancy: 2,
+      amenities: ['wifi', 'tv', 'ac', 'minibar', 'safe', 'bathtub', 'jacuzzi'],
+      inclusions: ['Breakfast', 'Wi-Fi', 'Spa Credits', 'Wellness Amenities']
+    },
+    {
+      id: 'family-sanctuary',
+      name: 'Family Sanctuary',
+      description: 'Spacious family-friendly accommodation',
+      price: 485,
+      maxOccupancy: 6,
+      amenities: ['wifi', 'tv', 'ac', 'minibar', 'safe', 'bathtub', 'kitchen'],
+      inclusions: ['Breakfast', 'Wi-Fi', 'Kids Club Access', 'Family Activities']
+    },
+    {
+      id: 'oceanfront-penthouse',
+      name: 'Oceanfront Penthouse',
+      description: 'Ultimate luxury penthouse with panoramic ocean views',
+      price: 750,
       maxOccupancy: 6,
       amenities: ['wifi', 'tv', 'ac', 'minibar', 'safe', 'bathtub', 'jacuzzi', 'balcony', 'kitchen', 'dining'],
-      inclusions: ['All meals', 'Wi-Fi', 'Newspaper', 'Welcome Drink', 'Airport Transfer', 'Butler Service', 'Spa Access']
+      inclusions: ['All meals', 'Wi-Fi', 'Butler Service', 'Airport Transfer', 'Spa Access', 'Private Chef']
     }
   ],
   fees: [

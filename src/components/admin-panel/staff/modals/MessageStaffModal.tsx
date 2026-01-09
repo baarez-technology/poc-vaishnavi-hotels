@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, Send } from 'lucide-react';
+import { X, Send, Loader2 } from 'lucide-react';
+import { staffService } from '../../../../api/services/staff.service';
 
 export default function MessageStaffModal({ staff, isOpen, onClose, onSend }) {
   const [formData, setFormData] = useState({
@@ -7,6 +8,8 @@ export default function MessageStaffModal({ staff, isOpen, onClose, onSend }) {
     subject: '',
     message: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const messageTemplates = {
     welcome: {
@@ -60,6 +63,7 @@ Terra Suites Management`
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       setFormData({ template: 'custom', subject: '', message: '' });
+      setError(null);
     } else {
       document.body.style.overflow = 'unset';
     }
@@ -85,10 +89,25 @@ Terra Suites Management`
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSend(staff.id, formData);
-    onClose();
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      await staffService.sendMessage(staff.id, {
+        subject: formData.subject,
+        message: formData.message,
+        priority: 'normal'
+      });
+      onSend(staff.id, formData);
+      onClose();
+    } catch (err: any) {
+      console.error('Failed to send message:', err);
+      setError(err.response?.data?.detail || err.message || 'Failed to send message. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -119,6 +138,12 @@ Terra Suites Management`
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
           {/* Template Selector */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
@@ -127,7 +152,8 @@ Terra Suites Management`
             <select
               value={formData.template}
               onChange={handleTemplateChange}
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200"
+              disabled={isSubmitting}
+              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 disabled:opacity-50"
             >
               <option value="custom">Custom Message</option>
               <option value="welcome">Welcome - New team member greeting</option>
@@ -147,8 +173,9 @@ Terra Suites Management`
               value={formData.subject}
               onChange={handleChange}
               required
+              disabled={isSubmitting}
               placeholder="Enter message subject"
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200"
+              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 disabled:opacity-50"
             />
           </div>
 
@@ -162,9 +189,10 @@ Terra Suites Management`
               value={formData.message}
               onChange={handleChange}
               required
+              disabled={isSubmitting}
               rows={10}
               placeholder="Type your message here..."
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 resize-none"
+              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 resize-none disabled:opacity-50"
             />
           </div>
 
@@ -181,16 +209,22 @@ Terra Suites Management`
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-all duration-200"
+            disabled={isSubmitting}
+            className="px-6 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-all duration-200 disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="px-6 py-2 text-sm font-semibold text-white bg-[#8E6554] rounded-lg hover:bg-[#A57865] hover:shadow transition-all duration-200 flex items-center gap-2"
+            disabled={isSubmitting}
+            className="px-6 py-2 text-sm font-semibold text-white bg-[#8E6554] rounded-lg hover:bg-[#A57865] hover:shadow transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
           >
-            <Send className="w-4 h-4" />
-            Send Message
+            {isSubmitting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+            {isSubmitting ? 'Sending...' : 'Send Message'}
           </button>
         </div>
       </div>

@@ -47,7 +47,7 @@ export const useAuthStore = create<AuthState>()(
             });
           } catch (error: any) {
             set({
-              error: error.response?.data?.message || 'Login failed',
+              error: error.message || error.response?.data?.detail || error.response?.data?.message || 'Login failed',
               isLoading: false,
             });
             throw error;
@@ -70,7 +70,7 @@ export const useAuthStore = create<AuthState>()(
             });
           } catch (error: any) {
             set({
-              error: error.response?.data?.message || 'Signup failed',
+              error: error.message || error.response?.data?.detail || error.response?.data?.message || 'Signup failed',
               isLoading: false,
             });
             throw error;

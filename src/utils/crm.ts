@@ -52,11 +52,14 @@ export const BOOKING_SOURCES = [
 
 // Room Types
 export const ROOM_TYPES = [
-  { id: 'standard', name: 'Standard' },
-  { id: 'deluxe', name: 'Deluxe' },
-  { id: 'suite', name: 'Suite' },
-  { id: 'villa', name: 'Villa' },
-  { id: 'penthouse', name: 'Penthouse' }
+  { id: 'minimalist-studio', name: 'Minimalist Studio' },
+  { id: 'coastal-retreat', name: 'Coastal Retreat' },
+  { id: 'urban-oasis', name: 'Urban Oasis' },
+  { id: 'sunset-vista', name: 'Sunset Vista' },
+  { id: 'pacific-suite', name: 'Pacific Suite' },
+  { id: 'wellness-suite', name: 'Wellness Suite' },
+  { id: 'family-sanctuary', name: 'Family Sanctuary' },
+  { id: 'oceanfront-penthouse', name: 'Oceanfront Penthouse' }
 ];
 
 // Campaign Types

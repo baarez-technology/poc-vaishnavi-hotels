@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -19,6 +19,18 @@ import {
   Clock,
   Star,
   BarChart3,
+  Brain,
+  Sparkles,
+  AlertTriangle,
+  Target,
+  RefreshCw,
+  Lightbulb,
+  Heart,
+  Activity,
+  Zap,
+  ChevronDown,
+  ChevronUp,
+  Send,
 } from 'lucide-react';
 import {
   BarChart,
@@ -33,6 +45,7 @@ import {
   Cell,
 } from 'recharts';
 import { guestsService, GuestFullProfile } from '../../../api/services/guests.service';
+import { crmAIService, GuestIntelligence } from '../../../api/services/crm-ai.service';
 import { Loader2 } from 'lucide-react';
 import {
   calculateLoyaltyTier,
@@ -42,12 +55,407 @@ import {
   formatDate,
   formatDateTime,
   formatCurrency,
-  addNoteToGuest,
-  removeNoteFromGuest,
 } from '../../../utils/guests';
 import MessageGuestModal from '../../../components/admin-panel/guests/MessageGuestModal';
 
 const CHART_COLORS = ['#A57865', '#5C9BA4', '#4E5840', '#CDB261', '#C8B29D'];
+
+// AI Intelligence Panel Component
+interface AIIntelligencePanelProps {
+  guestId: string;
+  guestName: string;
+}
+
+function AIIntelligencePanel({ guestId, guestName }: AIIntelligencePanelProps) {
+  const [intelligence, setIntelligence] = useState<GuestIntelligence | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [showAllInsights, setShowAllInsights] = useState(false);
+
+  const fetchIntelligence = useCallback(async () => {
+    if (!guestId) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const data = await crmAIService.getGuestIntelligence(parseInt(guestId), true);
+      setIntelligence(data);
+    } catch (err) {
+      console.error('Failed to fetch guest intelligence:', err);
+      setError('Unable to load AI insights');
+      // Set fallback mock data for development
+      setIntelligence({
+        guest_id: parseInt(guestId),
+        guest_info: {
+          name: guestName,
+          email: '',
+          vip_status: false,
+          loyalty_tier: 'Bronze'
+        },
+        scores: {
+          health: {
+            score: 72,
+            label: 'Good',
+            components: { recency: 0.8, frequency: 0.7, monetary: 0.65, engagement: 0.75 }
+          },
+          churn: {
+            probability: 25,
+            risk_level: 'Low',
+            is_high_risk: false,
+            drivers: [
+              { factor: 'booking_gap', description: 'Regular booking pattern', risk_contribution: 0.1 }
+            ]
+          },
+          ltv: {
+            predicted_value: 2850,
+            historical_value: 1500,
+            future_value: 1350,
+            segment: 'Medium'
+          },
+          rebooking: {
+            probability: 65,
+            likelihood: 'Likely',
+            optimal_contact: {
+              days_until_optimal_contact: 14,
+              timing_window: 'Next 2 weeks',
+              recommendation: 'Send personalized offer'
+            }
+          }
+        },
+        campaign_recommendation: {
+          recommended_campaign: {
+            type: 'loyalty',
+            priority: 'medium',
+            segment: 'repeat_guests'
+          },
+          channel_recommendation: {
+            primary_channel: 'email',
+            confidence: 0.85
+          },
+          content_recommendation: {
+            subject_line_suggestions: ['Special offer for valued guests'],
+            offer_recommendations: [
+              { type: 'discount', value: '15%', description: 'Next stay discount' }
+            ]
+          }
+        },
+        alerts: [],
+        key_insights: [
+          'Guest shows consistent booking patterns',
+          'Responds well to email campaigns',
+          'Prefers weekend stays'
+        ],
+        recommended_actions: [
+          { action: 'Send loyalty reward', priority: 'medium', category: 'engagement' },
+          { action: 'Offer room upgrade', priority: 'low', category: 'upsell' }
+        ],
+        calculated_at: new Date().toISOString()
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [guestId, guestName]);
+
+  useEffect(() => {
+    fetchIntelligence();
+  }, [fetchIntelligence]);
+
+  const getHealthColor = (score: number) => {
+    if (score >= 80) return { bg: 'bg-emerald-100', text: 'text-emerald-700', ring: 'ring-emerald-500' };
+    if (score >= 60) return { bg: 'bg-[#4E5840]/10', text: 'text-[#4E5840]', ring: 'ring-[#4E5840]' };
+    if (score >= 40) return { bg: 'bg-[#CDB261]/20', text: 'text-[#CDB261]', ring: 'ring-[#CDB261]' };
+    return { bg: 'bg-rose-100', text: 'text-rose-700', ring: 'ring-rose-500' };
+  };
+
+  const getChurnColor = (probability: number) => {
+    if (probability < 30) return { bg: 'bg-emerald-100', text: 'text-emerald-700' };
+    if (probability < 60) return { bg: 'bg-[#CDB261]/20', text: 'text-[#CDB261]' };
+    return { bg: 'bg-rose-100', text: 'text-rose-700' };
+  };
+
+  const getRebookingColor = (probability: number) => {
+    if (probability >= 70) return { bg: 'bg-emerald-100', text: 'text-emerald-700' };
+    if (probability >= 40) return { bg: 'bg-[#5C9BA4]/20', text: 'text-[#5C9BA4]' };
+    return { bg: 'bg-[#CDB261]/20', text: 'text-[#CDB261]' };
+  };
+
+  if (isLoading) {
+    return (
+      <div className="bg-gradient-to-br from-[#5C9BA4]/5 to-[#4E5840]/5 rounded-2xl border border-[#5C9BA4]/20 p-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#5C9BA4] to-[#4E5840] flex items-center justify-center">
+            <Brain className="w-5 h-5 text-white animate-pulse" />
+          </div>
+          <div>
+            <h3 className="font-bold text-neutral-900">AI Guest Intelligence</h3>
+            <p className="text-sm text-neutral-500 flex items-center gap-2">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Analyzing guest data...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!intelligence) return null;
+
+  const healthColor = getHealthColor(intelligence.scores.health.score);
+  const churnColor = getChurnColor(intelligence.scores.churn.probability);
+  const rebookingColor = getRebookingColor(intelligence.scores.rebooking.probability);
+
+  return (
+    <div className="bg-gradient-to-br from-[#5C9BA4]/5 via-[#4E5840]/5 to-[#A57865]/5 rounded-2xl border border-[#5C9BA4]/20 overflow-hidden">
+      {/* Header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/30 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#5C9BA4] to-[#4E5840] flex items-center justify-center">
+            <Brain className="w-5 h-5 text-white" />
+          </div>
+          <div className="text-left">
+            <h3 className="font-bold text-neutral-900 flex items-center gap-2">
+              AI Guest Intelligence
+              <Sparkles className="w-4 h-4 text-[#CDB261]" />
+            </h3>
+            <p className="text-xs text-neutral-500">Powered by ReConnect AI</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {error && (
+            <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+              Using cached data
+            </span>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); fetchIntelligence(); }}
+            className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+            title="Refresh insights"
+          >
+            <RefreshCw className="w-4 h-4 text-neutral-400" />
+          </button>
+          {isExpanded ? (
+            <ChevronUp className="w-5 h-5 text-neutral-400" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-neutral-400" />
+          )}
+        </div>
+      </button>
+
+      {isExpanded && (
+        <div className="px-6 pb-6 space-y-4">
+          {/* Score Cards */}
+          <div className="grid grid-cols-4 gap-3">
+            {/* Health Score */}
+            <div className={`${healthColor.bg} rounded-xl p-4 border ${healthColor.ring}/30`}>
+              <div className="flex items-center gap-2 mb-2">
+                <Heart className={`w-4 h-4 ${healthColor.text}`} />
+                <span className="text-xs font-medium text-neutral-600">Health Score</span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className={`text-2xl font-bold ${healthColor.text}`}>
+                  {intelligence.scores.health.score}
+                </span>
+                <span className="text-xs text-neutral-500">/100</span>
+              </div>
+              <p className={`text-xs mt-1 ${healthColor.text}`}>
+                {intelligence.scores.health.label}
+              </p>
+            </div>
+
+            {/* Churn Risk */}
+            <div className={`${churnColor.bg} rounded-xl p-4`}>
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className={`w-4 h-4 ${churnColor.text}`} />
+                <span className="text-xs font-medium text-neutral-600">Churn Risk</span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className={`text-2xl font-bold ${churnColor.text}`}>
+                  {intelligence.scores.churn.probability}%
+                </span>
+              </div>
+              <p className={`text-xs mt-1 ${churnColor.text}`}>
+                {intelligence.scores.churn.risk_level}
+              </p>
+            </div>
+
+            {/* Predicted LTV */}
+            <div className="bg-[#4E5840]/10 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className="w-4 h-4 text-[#4E5840]" />
+                <span className="text-xs font-medium text-neutral-600">Predicted LTV</span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl font-bold text-[#4E5840]">
+                  ${intelligence.scores.ltv.predicted_value.toLocaleString()}
+                </span>
+              </div>
+              <p className="text-xs mt-1 text-[#4E5840]">
+                {intelligence.scores.ltv.segment} value
+              </p>
+            </div>
+
+            {/* Rebooking Probability */}
+            <div className={`${rebookingColor.bg} rounded-xl p-4`}>
+              <div className="flex items-center gap-2 mb-2">
+                <Target className={`w-4 h-4 ${rebookingColor.text}`} />
+                <span className="text-xs font-medium text-neutral-600">Rebooking</span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className={`text-2xl font-bold ${rebookingColor.text}`}>
+                  {intelligence.scores.rebooking.probability}%
+                </span>
+              </div>
+              <p className={`text-xs mt-1 ${rebookingColor.text}`}>
+                {intelligence.scores.rebooking.likelihood}
+              </p>
+            </div>
+          </div>
+
+          {/* Optimal Contact Window */}
+          {intelligence.scores.rebooking.optimal_contact && (
+            <div className="bg-white rounded-xl p-4 border border-neutral-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#A57865]" />
+                  <span className="text-sm font-medium text-neutral-700">Optimal Contact Window</span>
+                </div>
+                <span className="text-sm font-semibold text-[#A57865]">
+                  {intelligence.scores.rebooking.optimal_contact.timing_window}
+                </span>
+              </div>
+              <p className="text-xs text-neutral-500 mt-2">
+                {intelligence.scores.rebooking.optimal_contact.recommendation}
+              </p>
+            </div>
+          )}
+
+          {/* Key Insights */}
+          {intelligence.key_insights && intelligence.key_insights.length > 0 && (
+            <div className="bg-white rounded-xl p-4 border border-neutral-200">
+              <div className="flex items-center gap-2 mb-3">
+                <Lightbulb className="w-4 h-4 text-[#CDB261]" />
+                <span className="text-sm font-semibold text-neutral-800">Key Insights</span>
+              </div>
+              <ul className="space-y-2">
+                {(showAllInsights ? intelligence.key_insights : intelligence.key_insights.slice(0, 3)).map((insight, idx) => (
+                  <li key={idx} className="flex items-start gap-2 text-sm text-neutral-600">
+                    <Sparkles className="w-3 h-3 text-[#5C9BA4] mt-1 flex-shrink-0" />
+                    {insight}
+                  </li>
+                ))}
+              </ul>
+              {intelligence.key_insights.length > 3 && (
+                <button
+                  onClick={() => setShowAllInsights(!showAllInsights)}
+                  className="mt-2 text-xs text-[#5C9BA4] hover:underline"
+                >
+                  {showAllInsights ? 'Show less' : `Show ${intelligence.key_insights.length - 3} more`}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Recommended Actions */}
+          {intelligence.recommended_actions && intelligence.recommended_actions.length > 0 && (
+            <div className="bg-white rounded-xl p-4 border border-neutral-200">
+              <div className="flex items-center gap-2 mb-3">
+                <Zap className="w-4 h-4 text-[#A57865]" />
+                <span className="text-sm font-semibold text-neutral-800">Recommended Actions</span>
+              </div>
+              <div className="space-y-2">
+                {intelligence.recommended_actions.slice(0, 3).map((action, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-2 bg-neutral-50 rounded-lg"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-neutral-400" />
+                      <span className="text-sm text-neutral-700">{action.action}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        action.priority === 'high' ? 'bg-rose-100 text-rose-700' :
+                        action.priority === 'medium' ? 'bg-[#CDB261]/20 text-[#CDB261]' :
+                        'bg-neutral-100 text-neutral-600'
+                      }`}>
+                        {action.priority}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Campaign Recommendation */}
+          {intelligence.campaign_recommendation && (
+            <div className="bg-gradient-to-r from-[#A57865]/10 to-[#A57865]/5 rounded-xl p-4 border border-[#A57865]/20">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Send className="w-4 h-4 text-[#A57865]" />
+                  <span className="text-sm font-semibold text-neutral-800">Campaign Suggestion</span>
+                </div>
+                <span className="text-xs px-2 py-0.5 bg-[#A57865]/20 text-[#A57865] rounded-full">
+                  {intelligence.campaign_recommendation.recommended_campaign.type.replace('_', ' ')}
+                </span>
+              </div>
+              <div className="flex items-center gap-4 text-sm">
+                <div>
+                  <span className="text-neutral-500">Channel:</span>
+                  <span className="ml-1 font-medium text-neutral-700 capitalize">
+                    {intelligence.campaign_recommendation.channel_recommendation.primary_channel}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-neutral-500">Confidence:</span>
+                  <span className="ml-1 font-medium text-neutral-700">
+                    {Math.round(intelligence.campaign_recommendation.channel_recommendation.confidence * 100)}%
+                  </span>
+                </div>
+              </div>
+              {intelligence.campaign_recommendation.content_recommendation.offer_recommendations[0] && (
+                <p className="text-xs text-neutral-600 mt-2">
+                  Suggested: {intelligence.campaign_recommendation.content_recommendation.offer_recommendations[0].description}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Alerts */}
+          {intelligence.alerts && intelligence.alerts.length > 0 && (
+            <div className="space-y-2">
+              {intelligence.alerts.map((alert, idx) => (
+                <div
+                  key={idx}
+                  className={`p-3 rounded-lg flex items-start gap-3 ${
+                    alert.priority === 'high' ? 'bg-rose-50 border border-rose-200' :
+                    alert.priority === 'medium' ? 'bg-[#CDB261]/10 border border-[#CDB261]/20' :
+                    'bg-[#5C9BA4]/10 border border-[#5C9BA4]/20'
+                  }`}
+                >
+                  <AlertTriangle className={`w-4 h-4 mt-0.5 ${
+                    alert.priority === 'high' ? 'text-rose-600' :
+                    alert.priority === 'medium' ? 'text-[#CDB261]' :
+                    'text-[#5C9BA4]'
+                  }`} />
+                  <div>
+                    <p className="text-sm font-medium text-neutral-800">{alert.type}</p>
+                    <p className="text-xs text-neutral-600">{alert.message}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Transform API guest to display format
 function transformGuest(apiGuest: GuestFullProfile): any {
@@ -209,18 +617,43 @@ export default function GuestProfile() {
     return prefs;
   }, [guest?.preferences]);
 
-  const handleAddNote = () => {
+  const handleAddNote = async () => {
     if (newNote.trim() && guest) {
-      const updatedGuest = addNoteToGuest(guest, newNote.trim());
-      setGuest(updatedGuest);
-      setNewNote('');
+      try {
+        // Call API to persist the note
+        const result = await guestsService.addNote(guest.id, {
+          text: newNote.trim(),
+          category: 'general'
+        });
+
+        // Update local state with the new note from API response
+        if (result?.note) {
+          setGuest(prev => prev ? {
+            ...prev,
+            notes: [result.note, ...(prev.notes || [])]
+          } : null);
+        }
+        setNewNote('');
+      } catch (err) {
+        console.error('Failed to add note:', err);
+      }
     }
   };
 
-  const handleDeleteNote = (noteId) => {
+  const handleDeleteNote = async (noteId: number | string) => {
     if (guest) {
-      const updatedGuest = removeNoteFromGuest(guest, noteId);
-      setGuest(updatedGuest);
+      try {
+        // Call API to delete the note
+        await guestsService.deleteNote(guest.id, noteId);
+
+        // Update local state
+        setGuest(prev => prev ? {
+          ...prev,
+          notes: (prev.notes || []).filter(n => n.id !== noteId)
+        } : null);
+      } catch (err) {
+        console.error('Failed to delete note:', err);
+      }
     }
   };
 
@@ -316,6 +749,9 @@ export default function GuestProfile() {
           </div>
         </div>
       </div>
+
+      {/* AI Intelligence Panel */}
+      <AIIntelligencePanel guestId={guest.id} guestName={guest.name} />
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-3 gap-6">

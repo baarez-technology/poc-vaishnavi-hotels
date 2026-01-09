@@ -8,24 +8,8 @@ import { BookingProgressStepper } from '@/components/booking/BookingProgressStep
 import { BookingSummaryWidget } from '@/components/booking/BookingSummaryWidget';
 import { Button, Input } from '@/components/ui';
 import { guestInfoSchema } from '@/utils/validation/booking.schema';
+import { COUNTRIES } from '@/utils/countries';
 import type { GuestInformation } from '@/api/types/booking.types';
-
-const countries = [
-  'United States',
-  'United Kingdom',
-  'Canada',
-  'Australia',
-  'Germany',
-  'France',
-  'Spain',
-  'Italy',
-  'Japan',
-  'China',
-  'India',
-  'Brazil',
-  'Mexico',
-  'Other',
-];
 
 export const BookingReview = () => {
   const navigate = useNavigate();
@@ -148,9 +132,9 @@ export const BookingReview = () => {
                     aria-describedby={errors.country ? 'country-error' : undefined}
                   >
                     <option value="">Select a country</option>
-                    {countries.map((country) => (
-                      <option key={country} value={country}>
-                        {country}
+                    {COUNTRIES.map((country) => (
+                      <option key={country.code} value={country.code}>
+                        {country.name}
                       </option>
                     ))}
                   </select>

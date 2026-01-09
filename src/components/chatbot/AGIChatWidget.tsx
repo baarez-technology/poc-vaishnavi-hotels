@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { useAGIChat, AGIMessage } from '@/contexts/AGIChatContext';
 import { useAdvancedVoice } from '@/hooks/useAdvancedVoice';
+import { ChatActionRenderer } from './ChatActionRenderer';
 
 // OTP Input Component
 function OTPInput({ email, onSubmit }: { email: string; onSubmit: (code: string) => void }) {
@@ -137,7 +138,7 @@ function BookingConfirmationBadge({ bookingId }: { bookingId: number }) {
 
 // Message Component
 function AGIChatMessage({ message }: { message: AGIMessage }) {
-  const { handleQuickAction, playResponse, voiceEnabled, sendMessage } = useAGIChat();
+  const { handleQuickAction, playResponse, voiceEnabled, sendMessage, handleActionSelection } = useAGIChat();
   const isUser = message.type === 'user';
   const isSystem = message.type === 'system';
 
@@ -230,6 +231,14 @@ function AGIChatMessage({ message }: { message: AGIMessage }) {
           </ReactMarkdown>
         </div>
 
+        {/* Action UI - rendered when AI returns structured actions */}
+        {message.action && (
+          <ChatActionRenderer
+            action={message.action}
+            onSelection={handleActionSelection}
+          />
+        )}
+
         {/* Booking confirmation badge */}
         {message.bookingCreated && (
           <BookingConfirmationBadge bookingId={message.bookingCreated} />
@@ -300,7 +309,7 @@ function AGIChatMessage({ message }: { message: AGIMessage }) {
 }
 
 // Typing Indicator
-function TypingIndicator() {
+function TypingIndicator({ aiName = 'Aria' }: { aiName?: string }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -323,7 +332,7 @@ function TypingIndicator() {
               />
             ))}
           </div>
-          <span className="text-sm text-gray-500 ml-2">Aria is thinking...</span>
+          <span className="text-sm text-gray-500 ml-2">{aiName} is thinking...</span>
         </div>
       </div>
     </motion.div>
@@ -632,12 +641,16 @@ export function AGIChatWidget() {
     isPlayingAudio,
     unreadCount,
     voiceEnabled,
+    hotelInfo,
     sendMessage,
     toggleChat,
     clearHistory,
     setVoiceEnabled,
     stopAudio,
   } = useAGIChat();
+
+  // Get AI name from hotel config or default
+  const aiName = hotelInfo?.ai_assistant_name || 'Aria';
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -702,7 +715,7 @@ export function AGIChatWidget() {
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-white font-bold text-lg">Aria</h3>
+                  <h3 className="text-white font-bold text-lg">{aiName}</h3>
                   <p className="text-white/80 text-xs">AI Concierge • Always here to help</p>
                 </div>
               </div>
@@ -764,7 +777,7 @@ export function AGIChatWidget() {
               {messages.map((message) => (
                 <AGIChatMessage key={message.id} message={message} />
               ))}
-              {isTyping && <TypingIndicator />}
+              {isTyping && <TypingIndicator aiName={aiName} />}
               <div ref={messagesEndRef} />
             </div>
 

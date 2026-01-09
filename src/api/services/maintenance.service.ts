@@ -242,4 +242,113 @@ export const maintenanceService = {
     const response = await apiClient.get('/api/v1/maintenance/my-dashboard');
     return extractData<MaintenanceDashboard>(response.data);
   },
+
+  // ===== OUT OF ORDER (OOO) MANAGEMENT =====
+
+  markWorkOrderOOO: async (
+    workOrderId: number,
+    data: {
+      is_out_of_order: boolean;
+      estimated_completion?: string;
+      ooo_category?: string;
+      notes?: string;
+    }
+  ): Promise<OOOBlockResponse> => {
+    const response = await apiClient.post(
+      `/api/v1/maintenance/work-orders/${workOrderId}/mark-ooo`,
+      data
+    );
+    return extractData<OOOBlockResponse>(response.data);
+  },
+
+  extendWorkOrderOOO: async (
+    workOrderId: number,
+    newEstimatedCompletion: string,
+    notes?: string
+  ): Promise<OOOBlockResponse> => {
+    const response = await apiClient.post(
+      `/api/v1/maintenance/work-orders/${workOrderId}/extend-ooo`,
+      { new_estimated_completion: newEstimatedCompletion, notes }
+    );
+    return extractData<OOOBlockResponse>(response.data);
+  },
+
+  completeAndReleaseOOO: async (
+    workOrderId: number,
+    resolutionNotes?: string
+  ): Promise<OOOBlockResponse> => {
+    const response = await apiClient.post(
+      `/api/v1/maintenance/work-orders/${workOrderId}/complete-and-release`,
+      { resolution_notes: resolutionNotes }
+    );
+    return extractData<OOOBlockResponse>(response.data);
+  },
+
+  getMaintenanceRoomBlocks: async (filters?: {
+    status?: string;
+    room_id?: number;
+  }): Promise<MaintenanceRoomBlock[]> => {
+    const response = await apiClient.get('/api/v1/maintenance/room-blocks', {
+      params: filters,
+    });
+    return extractData<MaintenanceRoomBlock[]>(response.data);
+  },
+
+  getWorkOrderOOOStatus: async (
+    workOrderId: number
+  ): Promise<OOOStatusResponse> => {
+    const response = await apiClient.get(
+      `/api/v1/maintenance/work-orders/${workOrderId}/ooo-status`
+    );
+    return extractData<OOOStatusResponse>(response.data);
+  },
 };
+
+// ===== OOO TYPES =====
+
+export interface OOOBlockResponse {
+  success: boolean;
+  room_block_id?: number;
+  maintenance_request_id: number;
+  action_taken: string;
+  message: string;
+  affected_bookings_count: number;
+  affected_bookings?: AffectedBooking[];
+}
+
+export interface AffectedBooking {
+  booking_id: number;
+  confirmation_code: string;
+  guest_name: string;
+  arrival_date: string;
+  departure_date: string;
+  room_type: string;
+  status: string;
+}
+
+export interface MaintenanceRoomBlock {
+  id: number;
+  room_id: number;
+  room_number: string;
+  block_type: string;
+  reason: string;
+  start_date: string;
+  end_date: string;
+  maintenance_request_id?: number;
+  work_order_number?: string;
+  auto_created: boolean;
+  auto_released: boolean;
+  status: string;
+  created_at: string;
+}
+
+export interface OOOStatusResponse {
+  work_order_id: number;
+  is_ooo: boolean;
+  room_block_id?: number;
+  block_start_date?: string;
+  block_end_date?: string;
+  estimated_completion?: string;
+  ooo_category?: string;
+  affected_bookings_count: number;
+}

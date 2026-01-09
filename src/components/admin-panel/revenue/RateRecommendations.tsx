@@ -2,11 +2,14 @@ import { useMemo } from 'react';
 import { Sparkles, TrendingUp, TrendingDown, Check, AlertTriangle } from 'lucide-react';
 
 const ROOM_TYPES = [
-  { id: 'standard', name: 'Standard Room', baseRate: 6500 },
-  { id: 'deluxe', name: 'Deluxe Room', baseRate: 8500 },
-  { id: 'suite', name: 'Executive Suite', baseRate: 14500 },
-  { id: 'presidential', name: 'Presidential Suite', baseRate: 28500 },
-  { id: 'villa', name: 'Garden Villa', baseRate: 22000 }
+  { id: 'minimalist-studio', name: 'Minimalist Studio', baseRate: 150 },
+  { id: 'coastal-retreat', name: 'Coastal Retreat', baseRate: 199 },
+  { id: 'urban-oasis', name: 'Urban Oasis', baseRate: 245 },
+  { id: 'sunset-vista', name: 'Sunset Vista', baseRate: 315 },
+  { id: 'pacific-suite', name: 'Pacific Suite', baseRate: 385 },
+  { id: 'wellness-suite', name: 'Wellness Suite', baseRate: 425 },
+  { id: 'family-sanctuary', name: 'Family Sanctuary', baseRate: 485 },
+  { id: 'oceanfront-penthouse', name: 'Oceanfront Penthouse', baseRate: 750 }
 ];
 
 export default function RateRecommendations({ forecastData, competitorData, settings }) {
@@ -98,7 +101,7 @@ export default function RateRecommendations({ forecastData, competitorData, sett
                 <div className="flex items-center gap-4">
                   <div>
                     <p className="font-semibold text-neutral-900">{rec.name}</p>
-                    <p className="text-xs text-neutral-500">Current: ₹{rec.baseRate.toLocaleString()}</p>
+                    <p className="text-xs text-neutral-500">Current: ${rec.baseRate.toLocaleString()}</p>
                   </div>
                 </div>
 
@@ -119,7 +122,7 @@ export default function RateRecommendations({ forecastData, competitorData, sett
                   <div className="text-right min-w-[140px]">
                     <div className="flex items-center justify-end gap-2">
                       <span className="text-lg font-bold text-neutral-900">
-                        ₹{rec.recommendedRate.toLocaleString()}
+                        ${rec.recommendedRate.toLocaleString()}
                       </span>
                       <span
                         className={`flex items-center gap-0.5 text-sm font-semibold ${

@@ -33,19 +33,26 @@ export default function KeywordFrequency({ data }) {
   }, [data]);
 
   const maxMentions = useMemo(() => {
-    return Math.max(...data.map(k => k.mentions));
+    if (!data || data.length === 0) return 1;
+    const mentions = data.map(k => k.mentions || k.count || 0);
+    return Math.max(...mentions, 1);
   }, [data]);
 
   const stats = useMemo(() => {
+    if (!data || data.length === 0) {
+      return { positive: 0, negative: 0, neutral: 0, total: 1 }; // total: 1 prevents NaN in percentage calculations
+    }
     const positive = data.filter(k => k.sentiment === 'positive');
     const negative = data.filter(k => k.sentiment === 'negative');
-    const neutral = data.filter(k => k.sentiment === 'neutral');
+    const neutral = data.filter(k => k.sentiment === 'neutral' || !k.sentiment);
+
+    const getMentions = (items: any[]) => items.reduce((sum, k) => sum + (k.mentions || k.count || 0), 0);
 
     return {
-      positive: positive.reduce((sum, k) => sum + k.mentions, 0),
-      negative: negative.reduce((sum, k) => sum + k.mentions, 0),
-      neutral: neutral.reduce((sum, k) => sum + k.mentions, 0),
-      total: data.reduce((sum, k) => sum + k.mentions, 0)
+      positive: getMentions(positive),
+      negative: getMentions(negative),
+      neutral: getMentions(neutral),
+      total: getMentions(data) || 1 // Prevent division by zero
     };
   }, [data]);
 
@@ -147,9 +154,13 @@ export default function KeywordFrequency({ data }) {
         <p className="text-[12px] text-neutral-700 leading-relaxed">
           <span className="font-semibold text-ocean-600">AI Insight:</span>
           {' '}
-          {stats.positive > stats.negative
-            ? `"${sortedData[0]?.keyword}" is your most mentioned topic. Focus on maintaining this strength while addressing "${sortedData.find(k => k.sentiment === 'negative')?.keyword || 'minor concerns'}".`
-            : `Address "${sortedData.find(k => k.sentiment === 'negative')?.keyword}" as a priority - it's frequently mentioned in negative reviews.`
+          {sortedData.length === 0
+            ? 'No keyword data available yet. As reviews come in, AI will analyze common topics and sentiments.'
+            : stats.positive > stats.negative
+            ? `"${sortedData[0]?.keyword || 'Your top topic'}" is your most mentioned topic. Focus on maintaining this strength while addressing "${sortedData.find(k => k.sentiment === 'negative')?.keyword || 'minor concerns'}".`
+            : sortedData.find(k => k.sentiment === 'negative')?.keyword
+            ? `Address "${sortedData.find(k => k.sentiment === 'negative')?.keyword}" as a priority - it's frequently mentioned in negative reviews.`
+            : 'Monitor your reviews for emerging topics and sentiment patterns.'
           }
         </p>
       </div>

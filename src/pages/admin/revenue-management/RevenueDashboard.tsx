@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BarChart3,
@@ -12,22 +12,34 @@ import {
   Download,
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { useRMS } from '../../../context/RMSContext';
+import { revenueIntelligenceService, DashboardData, Recommendation, PricingRule } from '../../../api/services/revenue-intelligence.service';
 import { useToast } from '../../../contexts/ToastContext';
 import { DemandLevelBadge } from '../../../components/revenue-management/DemandChart';
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalContent, ModalFooter, ConfirmModal } from '../../../components/ui2/Modal';
 import { Button } from '../../../components/ui2/Button';
 
 // Skeleton Loader Component
-function SkeletonLoader({ className = '' }) {
+function SkeletonLoader({ className = '' }: { className?: string }) {
   return (
     <div className={`animate-pulse bg-neutral-100 ${className}`} />
   );
 }
 
 // KPI Card Component - Consistent with Design System
-function KPICard({ title, value, trendValue, icon: Icon, accentColor = 'terra', index = 0, children, isLoading, subtitle }) {
-  const isPositive = trendValue >= 0;
+interface KPICardProps {
+  title: string;
+  value: string | number;
+  trendValue?: number | null;
+  icon: React.ElementType;
+  accentColor?: 'terra' | 'sage' | 'gold' | 'ocean';
+  index?: number;
+  children?: React.ReactNode;
+  isLoading?: boolean;
+  subtitle?: string;
+}
+
+function KPICard({ title, value, trendValue, icon: Icon, accentColor = 'terra', index = 0, children, isLoading, subtitle }: KPICardProps) {
+  const isPositive = trendValue !== null && trendValue !== undefined && trendValue >= 0;
 
   const accentStyles = {
     terra: { bg: 'bg-terra-50', icon: 'text-terra-600' },
@@ -89,21 +101,14 @@ function KPICard({ title, value, trendValue, icon: Icon, accentColor = 'terra', 
 
 const RevenueDashboard = () => {
   const { showToast } = useToast();
-  const {
-    rateCalendar,
-    forecastSummary,
-    highImpactDays,
-    pickupMetrics,
-    competitorInsights,
-    segmentComparison,
-    recommendations,
-    rules,
-    runAllRules,
-    generateRecommendations,
-  } = useRMS();
 
+  // State for API data
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [rules, setRules] = useState<PricingRule[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [timePeriod, setTimePeriod] = useState('7d');
   const [showRefreshConfirm, setShowRefreshConfirm] = useState(false);
@@ -114,17 +119,37 @@ const RevenueDashboard = () => {
   });
   const [showExportOptions, setShowExportOptions] = useState(false);
 
-  // Simulate initial load
-  useEffect(() => {
-    const timer = setTimeout(() => {
+  // Fetch dashboard data from API
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setError(null);
+      const [dashboard, recs, pricingRules] = await Promise.all([
+        revenueIntelligenceService.getDashboard(),
+        revenueIntelligenceService.getRecommendations(),
+        revenueIntelligenceService.getPricingRules(),
+      ]);
+
+      setDashboardData(dashboard);
+      setRecommendations(recs || []);
+      setRules(pricingRules || []);
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.error('Failed to fetch dashboard data:', err);
+      setError('Failed to load dashboard data');
+      showToast('Failed to load dashboard', 'error');
+    } finally {
       setIsLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+      setIsRefreshing(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   // Keyboard shortcuts
   useEffect(() => {
-    const handleKeyPress = (e) => {
+    const handleKeyPress = (e: KeyboardEvent) => {
       // Cmd/Ctrl + R - Refresh
       if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
         e.preventDefault();
@@ -143,15 +168,15 @@ const RevenueDashboard = () => {
 
   const handleRefreshAll = async () => {
     setIsRefreshing(true);
+    setShowRefreshConfirm(false);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      runAllRules();
-      generateRecommendations();
-      setLastUpdated(new Date());
+      // Run all rules via API
+      await revenueIntelligenceService.runAllRules();
+      // Refetch dashboard data
+      await fetchDashboardData();
       showToast('Dashboard data refreshed successfully', 'success');
     } catch (error) {
       showToast('Failed to refresh dashboard data', 'error');
-    } finally {
       setIsRefreshing(false);
     }
   };
@@ -161,8 +186,13 @@ const RevenueDashboard = () => {
     try {
       showToast('Generating CSV export...', 'info');
 
+      if (!dashboardData) {
+        showToast('No data to export', 'error');
+        return;
+      }
+
       // Prepare CSV data
-      const csvData = [];
+      const csvData: (string | number)[][] = [];
 
       // Add headers
       csvData.push(['Revenue Management Dashboard Export']);
@@ -176,19 +206,19 @@ const RevenueDashboard = () => {
       csvData.push([
         `${getPeriodDays()}-Day Revenue`,
         `$${getPeriodRevenue().toLocaleString()}`,
-        `${forecastSummary.next7Days?.revenueTrend || 0}%`
+        `${dashboardData.summary?.revenue_trend || 0}%`
       ]);
       csvData.push([
         'Avg Occupancy',
-        `${forecastSummary.next7Days?.avgOccupancy || 0}%`,
-        `${forecastSummary.next7Days?.occupancyTrend || 0}%`
+        `${dashboardData.summary?.avg_occupancy || 0}%`,
+        `${dashboardData.summary?.occupancy_trend || 0}%`
       ]);
       csvData.push([
         'Avg ADR',
-        `$${forecastSummary.next7Days?.avgADR || 0}`,
-        `${forecastSummary.next7Days?.adrTrend || 0}%`
+        `$${dashboardData.summary?.avg_adr || 0}`,
+        `${dashboardData.summary?.adr_trend || 0}%`
       ]);
-      csvData.push(['Active Pricing Rules', rules.filter(r => r.isActive).length, '']);
+      csvData.push(['Active Pricing Rules', rules.filter(r => r.is_active).length, '']);
       csvData.push([]);
 
       // Revenue Forecast
@@ -200,24 +230,28 @@ const RevenueDashboard = () => {
       csvData.push([]);
 
       // High Impact Days
-      csvData.push(['HIGH DEMAND DAYS']);
-      csvData.push(['Date', 'Demand Level', 'Occupancy %']);
-      highImpactDays.slice(0, 5).forEach(day => {
-        const date = new Date(day.date).toLocaleDateString('en-US', {
-          weekday: 'short', month: 'short', day: 'numeric'
+      if (dashboardData.high_impact_days) {
+        csvData.push(['HIGH DEMAND DAYS']);
+        csvData.push(['Date', 'Demand Level', 'Occupancy %']);
+        dashboardData.high_impact_days.slice(0, 5).forEach(day => {
+          const date = new Date(day.date).toLocaleDateString('en-US', {
+            weekday: 'short', month: 'short', day: 'numeric'
+          });
+          csvData.push([date, day.demand_level, `${day.forecasted_occupancy}%`]);
         });
-        csvData.push([date, day.demandLevel, `${day.occupancy}%`]);
-      });
-      csvData.push([]);
+        csvData.push([]);
+      }
 
       // Market Position
-      csvData.push(['MARKET POSITION']);
-      csvData.push(['Metric', 'Value']);
-      csvData.push(['Avg Gap vs Market', `${competitorInsights.avgGapPercent}%`]);
-      csvData.push(['Days Underpriced', competitorInsights.daysUnderpriced]);
-      csvData.push(['Days Overpriced', competitorInsights.daysOverpriced]);
-      csvData.push(['Revenue Opportunity', `$${competitorInsights.revenueOpportunity?.toLocaleString()}`]);
-      csvData.push([]);
+      if (dashboardData.competitor_insights) {
+        csvData.push(['MARKET POSITION']);
+        csvData.push(['Metric', 'Value']);
+        csvData.push(['Avg Gap vs Market', `${dashboardData.competitor_insights.avg_gap_percent}%`]);
+        csvData.push(['Days Underpriced', dashboardData.competitor_insights.underpriced_days]);
+        csvData.push(['Days Overpriced', dashboardData.competitor_insights.overpriced_days]);
+        csvData.push(['Revenue Opportunity', `$${dashboardData.competitor_insights.potential_revenue_loss?.toLocaleString()}`]);
+        csvData.push([]);
+      }
 
       // Convert to CSV string
       const csvContent = csvData.map(row => row.join(',')).join('\n');
@@ -245,8 +279,18 @@ const RevenueDashboard = () => {
     try {
       showToast('Generating PDF export...', 'info');
 
+      if (!dashboardData) {
+        showToast('No data to export', 'error');
+        return;
+      }
+
       // Create a simple HTML-based PDF export using print
       const printWindow = window.open('', '', 'width=800,height=600');
+
+      if (!printWindow) {
+        showToast('Failed to open print window', 'error');
+        return;
+      }
 
       const htmlContent = `
         <!DOCTYPE html>
@@ -344,27 +388,27 @@ const RevenueDashboard = () => {
             <div class="kpi-card">
               <div class="kpi-label">${getPeriodDays()}-Day Revenue Forecast</div>
               <div class="kpi-value">$${getPeriodRevenue().toLocaleString()}</div>
-              <div class="kpi-trend ${(forecastSummary.next7Days?.revenueTrend || 0) >= 0 ? 'positive' : 'negative'}">
-                ${(forecastSummary.next7Days?.revenueTrend || 0) >= 0 ? '↑' : '↓'} ${Math.abs(forecastSummary.next7Days?.revenueTrend || 0)}%
+              <div class="kpi-trend ${(dashboardData.summary?.revenue_trend || 0) >= 0 ? 'positive' : 'negative'}">
+                ${(dashboardData.summary?.revenue_trend || 0) >= 0 ? '↑' : '↓'} ${Math.abs(dashboardData.summary?.revenue_trend || 0)}%
               </div>
             </div>
             <div class="kpi-card">
               <div class="kpi-label">Avg Occupancy</div>
-              <div class="kpi-value">${forecastSummary.next7Days?.avgOccupancy || 0}%</div>
-              <div class="kpi-trend ${(forecastSummary.next7Days?.occupancyTrend || 0) >= 0 ? 'positive' : 'negative'}">
-                ${(forecastSummary.next7Days?.occupancyTrend || 0) >= 0 ? '↑' : '↓'} ${Math.abs(forecastSummary.next7Days?.occupancyTrend || 0)}%
+              <div class="kpi-value">${dashboardData.summary?.avg_occupancy || 0}%</div>
+              <div class="kpi-trend ${(dashboardData.summary?.occupancy_trend || 0) >= 0 ? 'positive' : 'negative'}">
+                ${(dashboardData.summary?.occupancy_trend || 0) >= 0 ? '↑' : '↓'} ${Math.abs(dashboardData.summary?.occupancy_trend || 0)}%
               </div>
             </div>
             <div class="kpi-card">
               <div class="kpi-label">Avg ADR</div>
-              <div class="kpi-value">$${forecastSummary.next7Days?.avgADR || 0}</div>
-              <div class="kpi-trend ${(forecastSummary.next7Days?.adrTrend || 0) >= 0 ? 'positive' : 'negative'}">
-                ${(forecastSummary.next7Days?.adrTrend || 0) >= 0 ? '↑' : '↓'} ${Math.abs(forecastSummary.next7Days?.adrTrend || 0)}%
+              <div class="kpi-value">$${dashboardData.summary?.avg_adr || 0}</div>
+              <div class="kpi-trend ${(dashboardData.summary?.adr_trend || 0) >= 0 ? 'positive' : 'negative'}">
+                ${(dashboardData.summary?.adr_trend || 0) >= 0 ? '↑' : '↓'} ${Math.abs(dashboardData.summary?.adr_trend || 0)}%
               </div>
             </div>
             <div class="kpi-card">
               <div class="kpi-label">Active Pricing Rules</div>
-              <div class="kpi-value">${rules.filter(r => r.isActive).length}</div>
+              <div class="kpi-value">${rules.filter(r => r.is_active).length}</div>
             </div>
           </div>
 
@@ -388,6 +432,7 @@ const RevenueDashboard = () => {
             </tbody>
           </table>
 
+          ${dashboardData.high_impact_days ? `
           <h2>High Demand Days</h2>
           <table>
             <thead>
@@ -398,21 +443,23 @@ const RevenueDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              ${highImpactDays.slice(0, 5).map(day => {
+              ${dashboardData.high_impact_days.slice(0, 5).map(day => {
                 const date = new Date(day.date).toLocaleDateString('en-US', {
                   weekday: 'short', month: 'short', day: 'numeric'
                 });
                 return `
                   <tr>
                     <td>${date}</td>
-                    <td>${day.demandLevel}</td>
-                    <td>${day.occupancy}%</td>
+                    <td>${day.demand_level}</td>
+                    <td>${day.forecasted_occupancy}%</td>
                   </tr>
                 `;
               }).join('')}
             </tbody>
           </table>
+          ` : ''}
 
+          ${dashboardData.competitor_insights ? `
           <h2>Market Position</h2>
           <table>
             <thead>
@@ -424,22 +471,23 @@ const RevenueDashboard = () => {
             <tbody>
               <tr>
                 <td>Avg Gap vs Market</td>
-                <td class="${competitorInsights.avgGapPercent < 0 ? 'positive' : 'negative'}">${competitorInsights.avgGapPercent}%</td>
+                <td class="${dashboardData.competitor_insights.avg_gap_percent < 0 ? 'positive' : 'negative'}">${dashboardData.competitor_insights.avg_gap_percent}%</td>
               </tr>
               <tr>
                 <td>Days Underpriced</td>
-                <td>${competitorInsights.daysUnderpriced}</td>
+                <td>${dashboardData.competitor_insights.underpriced_days}</td>
               </tr>
               <tr>
                 <td>Days Overpriced</td>
-                <td>${competitorInsights.daysOverpriced}</td>
+                <td>${dashboardData.competitor_insights.overpriced_days}</td>
               </tr>
               <tr>
                 <td>Revenue Opportunity</td>
-                <td>$${competitorInsights.revenueOpportunity?.toLocaleString()}</td>
+                <td>$${dashboardData.competitor_insights.potential_revenue_loss?.toLocaleString()}</td>
               </tr>
             </tbody>
           </table>
+          ` : ''}
 
           <div class="no-print" style="margin-top: 40px; text-align: center;">
             <button onclick="window.print()" style="padding: 10px 20px; background: #4E5840; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
@@ -472,7 +520,7 @@ const RevenueDashboard = () => {
   // Format last updated time
   const getLastUpdatedText = () => {
     const now = new Date();
-    const diffMs = now - lastUpdated;
+    const diffMs = now.getTime() - lastUpdated.getTime();
     const diffMins = Math.floor(diffMs / 60000);
 
     if (diffMins < 1) return 'Just now';
@@ -491,20 +539,22 @@ const RevenueDashboard = () => {
 
   // Calculate revenue based on time period
   const getPeriodRevenue = () => {
+    if (!dashboardData?.summary) return 0;
+
     switch (timePeriod) {
       case '30d':
-        return forecastSummary.next30Days?.totalRevenue || 0;
+        return dashboardData.summary.total_revenue_30d || 0;
       case '90d':
-        return (forecastSummary.next30Days?.totalRevenue || 0) * 3;
+        return (dashboardData.summary.total_revenue_30d || 0) * 3;
       case 'custom': {
         // Calculate based on custom date range
-        const days = Math.ceil((customDateRange.end - customDateRange.start) / (1000 * 60 * 60 * 24));
-        const dailyAvg = (forecastSummary.next30Days?.totalRevenue || 0) / 30;
+        const days = Math.ceil((customDateRange.end.getTime() - customDateRange.start.getTime()) / (1000 * 60 * 60 * 24));
+        const dailyAvg = (dashboardData.summary.total_revenue_30d || 0) / 30;
         return Math.round(dailyAvg * days);
       }
       case '7d':
       default:
-        return forecastSummary.next7Days?.totalRevenue || 0;
+        return dashboardData.summary.total_revenue_7d || 0;
     }
   };
 
@@ -513,7 +563,7 @@ const RevenueDashboard = () => {
       case '30d': return 30;
       case '90d': return 90;
       case 'custom': {
-        const days = Math.ceil((customDateRange.end - customDateRange.start) / (1000 * 60 * 60 * 24));
+        const days = Math.ceil((customDateRange.end.getTime() - customDateRange.start.getTime()) / (1000 * 60 * 60 * 24));
         return days;
       }
       case '7d':
@@ -521,7 +571,7 @@ const RevenueDashboard = () => {
     }
   };
 
-  const handlePeriodChange = (value) => {
+  const handlePeriodChange = (value: string) => {
     if (value === 'custom') {
       setShowDatePicker(true);
     } else {
@@ -540,20 +590,33 @@ const RevenueDashboard = () => {
   const highAlerts = recommendations.filter(r => r.priority === 'high').length;
 
   // Chart data for revenue trend
-  const revenueChartData = Object.entries(rateCalendar)
-    .slice(0, 14)
-    .map(([date, data]) => ({
-      date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      revenue: Math.round(data.occupancy * 70 * (data.rooms?.STD?.dynamicRate || 200)),
-      occupancy: data.occupancy,
-    }));
+  const revenueChartData = dashboardData?.forecast_data?.slice(0, 14).map(item => ({
+    date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    revenue: Math.round(item.forecasted_occupancy * 70 * (item.forecasted_adr || 200)),
+    occupancy: item.forecasted_occupancy,
+  })) || [];
 
   // Segment pie data
-  const segmentPieData = Object.values(segmentComparison?.byRevenue || []).slice(0, 5).map(seg => ({
-    name: seg.segmentName,
-    value: seg.metrics.revenueContribution,
-    color: seg.segmentColor,
-  }));
+  const segmentPieData = dashboardData?.segment_data?.slice(0, 5).map(seg => ({
+    name: seg.segment_name,
+    value: seg.revenue_contribution,
+    color: seg.color || '#4E5840',
+  })) || [];
+
+  if (error && !dashboardData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F9F7F7' }}>
+        <div className="text-center">
+          <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+          <h2 className="text-lg font-semibold text-neutral-800 mb-2">Failed to Load Dashboard</h2>
+          <p className="text-sm text-neutral-500 mb-4">{error}</p>
+          <Button onClick={fetchDashboardData} variant="primary">
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
@@ -566,7 +629,7 @@ const RevenueDashboard = () => {
               Revenue Management
             </h1>
             <p className="text-[13px] text-neutral-500 mt-1">
-              AI-powered pricing optimization • Updated {getLastUpdatedText()}
+              AI-powered pricing optimization - Updated {getLastUpdatedText()}
             </p>
           </div>
 
@@ -650,7 +713,7 @@ const RevenueDashboard = () => {
           <KPICard
             title={`${getPeriodDays()}-Day Revenue`}
             value={`$${(getPeriodRevenue() / 1000).toFixed(0)}K`}
-            trendValue={12}
+            trendValue={dashboardData?.summary?.revenue_trend || null}
             icon={DollarSign}
             accentColor="sage"
             index={0}
@@ -660,8 +723,8 @@ const RevenueDashboard = () => {
 
           <KPICard
             title="Avg Occupancy"
-            value={`${forecastSummary.next7Days?.avgOccupancy || 0}%`}
-            trendValue={forecastSummary.next7Days?.avgOccupancy >= 75 ? 3.2 : -1.5}
+            value={`${dashboardData?.summary?.avg_occupancy || 0}%`}
+            trendValue={dashboardData?.summary?.occupancy_trend || null}
             icon={BarChart3}
             accentColor="terra"
             index={1}
@@ -671,8 +734,8 @@ const RevenueDashboard = () => {
 
           <KPICard
             title="Avg ADR"
-            value={`$${forecastSummary.next7Days?.avgADR || 0}`}
-            trendValue={8}
+            value={`$${dashboardData?.summary?.avg_adr || 0}`}
+            trendValue={dashboardData?.summary?.adr_trend || null}
             icon={TrendingUp}
             accentColor="ocean"
             index={2}
@@ -682,7 +745,7 @@ const RevenueDashboard = () => {
 
           <KPICard
             title="Active Rules"
-            value={rules.filter(r => r.isActive).length}
+            value={rules.filter(r => r.is_active).length}
             trendValue={null}
             icon={Sparkles}
             accentColor="gold"
@@ -739,13 +802,13 @@ const RevenueDashboard = () => {
               <div className="p-3 rounded-lg bg-neutral-50">
                 <p className="text-[11px] text-neutral-400 font-medium">Avg Daily Revenue</p>
                 <p className="text-lg font-semibold text-neutral-800">
-                  ${(revenueChartData.reduce((sum, d) => sum + d.revenue, 0) / revenueChartData.length / 1000).toFixed(1)}K
+                  ${(revenueChartData.reduce((sum, d) => sum + d.revenue, 0) / Math.max(revenueChartData.length, 1) / 1000).toFixed(1)}K
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-neutral-50">
                 <p className="text-[11px] text-neutral-400 font-medium">Avg Occupancy</p>
                 <p className="text-lg font-semibold text-neutral-800">
-                  {(revenueChartData.reduce((sum, d) => sum + d.occupancy, 0) / revenueChartData.length).toFixed(0)}%
+                  {(revenueChartData.reduce((sum, d) => sum + d.occupancy, 0) / Math.max(revenueChartData.length, 1)).toFixed(0)}%
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-neutral-50">
@@ -810,7 +873,7 @@ const RevenueDashboard = () => {
                       fontSize: '12px',
                       boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                     }}
-                    formatter={(value, name) => [
+                    formatter={(value: number, name: string) => [
                       name === 'revenue' ? `$${value.toLocaleString()}` : `${value}%`,
                       name === 'revenue' ? 'Revenue' : 'Occupancy'
                     ]}
@@ -865,7 +928,7 @@ const RevenueDashboard = () => {
             </div>
           ) : (
             <div className="grid grid-cols-5 gap-3 px-6 pb-6">
-              {highImpactDays.slice(0, 5).map((day, index) => (
+              {(dashboardData?.high_impact_days || []).slice(0, 5).map((day, index) => (
                 <div
                   key={day.date}
                   className="p-3 rounded-lg bg-rose-50 border border-rose-100 text-center hover:bg-rose-100 transition-colors"
@@ -881,10 +944,10 @@ const RevenueDashboard = () => {
                     {new Date(day.date).toLocaleDateString('en-US', { month: 'short' })}
                   </p>
                   <div className="flex justify-center mt-1">
-                    <DemandLevelBadge level={day.demandLevel} />
+                    <DemandLevelBadge level={day.demand_level} />
                   </div>
                   <p className="text-[13px] font-bold text-rose-600 mt-1">
-                    {day.forecast.occupancy}%
+                    {day.forecasted_occupancy}%
                   </p>
                 </div>
               ))}
@@ -923,7 +986,7 @@ const RevenueDashboard = () => {
                         ))}
                       </Pie>
                       <ChartTooltip
-                        formatter={(value) => [`${value}%`, 'Share']}
+                        formatter={(value: number) => [`${value}%`, 'Share']}
                         contentStyle={{
                           backgroundColor: '#ffffff',
                           border: '1px solid #E5E4E0',
@@ -974,27 +1037,27 @@ const RevenueDashboard = () => {
                 <div className="flex items-center justify-between py-2">
                   <span className="text-[13px] text-neutral-600">Avg Gap vs Market</span>
                   <span className={`text-[15px] font-bold ${
-                    competitorInsights.avgGapPercent < 0 ? 'text-sage-600' : 'text-rose-600'
+                    (dashboardData?.competitor_insights?.avg_gap_percent || 0) < 0 ? 'text-sage-600' : 'text-rose-600'
                   }`}>
-                    {competitorInsights.avgGapPercent > 0 ? '+' : ''}{competitorInsights.avgGapPercent}%
+                    {(dashboardData?.competitor_insights?.avg_gap_percent || 0) > 0 ? '+' : ''}{dashboardData?.competitor_insights?.avg_gap_percent || 0}%
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-2">
                   <span className="text-[13px] text-neutral-600">Days Underpriced</span>
                   <span className="text-[15px] font-bold text-sage-600">
-                    {competitorInsights.underpricedDays}
+                    {dashboardData?.competitor_insights?.underpriced_days || 0}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-2">
                   <span className="text-[13px] text-neutral-600">Days Overpriced</span>
                   <span className="text-[15px] font-bold text-rose-600">
-                    {competitorInsights.overpricedDays}
+                    {dashboardData?.competitor_insights?.overpriced_days || 0}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-2 border-t border-neutral-100 pt-3">
                   <span className="text-[13px] text-neutral-600">Revenue Opportunity</span>
                   <span className="text-[15px] font-bold text-gold-600">
-                    ${competitorInsights.potentialRevenueLoss.toLocaleString()}
+                    ${(dashboardData?.competitor_insights?.potential_revenue_loss || 0).toLocaleString()}
                   </span>
                 </div>
                 <Link to="/admin/rms/competitors" className="block">
@@ -1023,19 +1086,19 @@ const RevenueDashboard = () => {
                 <div className="flex items-center justify-between py-2">
                   <span className="text-[13px] text-neutral-600">Strong Pace Days (7d)</span>
                   <span className="text-[15px] font-bold text-sage-600">
-                    {pickupMetrics.next7Days?.strongDays || 0}
+                    {dashboardData?.pickup_summary?.strong_days || 0}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-2">
                   <span className="text-[13px] text-neutral-600">Critical Pace Days</span>
                   <span className="text-[15px] font-bold text-rose-600">
-                    {pickupMetrics.next7Days?.criticalDays || 0}
+                    {dashboardData?.pickup_summary?.critical_days || 0}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-2">
                   <span className="text-[13px] text-neutral-600">Rooms to Sell (7d)</span>
                   <span className="text-[15px] font-bold text-neutral-800">
-                    {pickupMetrics.next7Days?.totalRemaining || 0}
+                    {dashboardData?.pickup_summary?.total_remaining || 0}
                   </span>
                 </div>
                 <Link to="/admin/rms/pickup" className="block mt-2">
@@ -1086,7 +1149,7 @@ const RevenueDashboard = () => {
                       Potential Revenue
                     </p>
                     <p className="text-xl font-bold text-sage-700">
-                      +${recommendations.reduce((sum, r) => sum + (r.potentialRevenue || 0), 0).toLocaleString()}
+                      +${recommendations.reduce((sum, r) => sum + (r.potential_revenue || 0), 0).toLocaleString()}
                     </p>
                   </div>
                 </div>

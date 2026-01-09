@@ -2,7 +2,7 @@
  * CRM AI Service - ReConnect AI Integration
  * Provides access to guest intelligence, churn prediction, LTV, sentiment analysis, and campaign optimization
  */
-import { apiClient as api } from '../client';
+import { apiClient as api, cachedGet } from '../client';
 
 // Types
 export interface GuestIntelligence {
@@ -166,41 +166,57 @@ export interface SegmentAnalysis {
   analyzed_at: string;
 }
 
+export interface SidebarStats {
+  total_guests: number;
+  loyalty_members: number;
+  vip_guests: number;
+  avg_ltv: number;
+  at_risk_count: number;
+  recovery_pending: number;
+  open_alerts: number;
+  campaigns_active: number;
+}
+
 // API Service
 class CRMAIService {
   private baseUrl = '/api/v1/crm-ai';
 
-  // Dashboard
+  // Dashboard - use cached requests to prevent duplicate calls
   async getDashboardStats(): Promise<DashboardStats> {
-    const response = await api.get(`${this.baseUrl}/dashboard`);
+    const response = await cachedGet(`${this.baseUrl}/dashboard`);
     return response.data.data;
   }
 
-  // Guest Intelligence
+  async getSidebarStats(): Promise<SidebarStats> {
+    const response = await cachedGet(`${this.baseUrl}/sidebar-stats`);
+    return response.data.data;
+  }
+
+  // Guest Intelligence - cached since these are expensive AI calls
   async getGuestIntelligence(guestId: number, includeHistory = false): Promise<GuestIntelligence> {
-    const response = await api.get(`${this.baseUrl}/guests/${guestId}/intelligence`, {
+    const response = await cachedGet(`${this.baseUrl}/guests/${guestId}/intelligence`, {
       params: { include_history: includeHistory }
     });
     return response.data.data;
   }
 
   async getGuestHealthScore(guestId: number): Promise<any> {
-    const response = await api.get(`${this.baseUrl}/guests/${guestId}/health-score`);
+    const response = await cachedGet(`${this.baseUrl}/guests/${guestId}/health-score`);
     return response.data.data;
   }
 
   async getGuestChurnRisk(guestId: number): Promise<any> {
-    const response = await api.get(`${this.baseUrl}/guests/${guestId}/churn-risk`);
+    const response = await cachedGet(`${this.baseUrl}/guests/${guestId}/churn-risk`);
     return response.data.data;
   }
 
   async getGuestLTV(guestId: number): Promise<any> {
-    const response = await api.get(`${this.baseUrl}/guests/${guestId}/ltv`);
+    const response = await cachedGet(`${this.baseUrl}/guests/${guestId}/ltv`);
     return response.data.data;
   }
 
   async getGuestRebookingProbability(guestId: number, timeframeDays = 90): Promise<any> {
-    const response = await api.get(`${this.baseUrl}/guests/${guestId}/rebooking`, {
+    const response = await cachedGet(`${this.baseUrl}/guests/${guestId}/rebooking`, {
       params: { timeframe_days: timeframeDays }
     });
     return response.data.data;
@@ -222,7 +238,7 @@ class CRMAIService {
   }
 
   async getGuestSentimentTimeline(guestId: number, days = 90): Promise<any> {
-    const response = await api.get(`${this.baseUrl}/guests/${guestId}/sentiment/timeline`, {
+    const response = await cachedGet(`${this.baseUrl}/guests/${guestId}/sentiment/timeline`, {
       params: { days }
     });
     return response.data.data;
@@ -233,16 +249,16 @@ class CRMAIService {
     return response.data.data;
   }
 
-  // At-Risk Guests & Recovery
+  // At-Risk Guests & Recovery - cached
   async getAtRiskGuests(limit = 50, minChurnRisk = 60): Promise<{ at_risk_count: number; guests: AtRiskGuest[] }> {
-    const response = await api.get(`${this.baseUrl}/at-risk-guests`, {
+    const response = await cachedGet(`${this.baseUrl}/at-risk-guests`, {
       params: { limit, min_churn_risk: minChurnRisk }
     });
     return response.data.data;
   }
 
   async getRecoveryOpportunities(status = 'detected', limit = 20): Promise<{ count: number; opportunities: RecoveryOpportunity[] }> {
-    const response = await api.get(`${this.baseUrl}/recovery/opportunities`, {
+    const response = await cachedGet(`${this.baseUrl}/recovery/opportunities`, {
       params: { status, limit }
     });
     return response.data.data;
@@ -262,22 +278,22 @@ class CRMAIService {
     return response.data;
   }
 
-  // Campaign Optimization
+  // Campaign Optimization - cached
   async getCampaignRecommendations(campaignType?: string, limit = 100): Promise<CampaignRecommendations> {
-    const response = await api.get(`${this.baseUrl}/campaigns/recommendations`, {
+    const response = await cachedGet(`${this.baseUrl}/campaigns/recommendations`, {
       params: { campaign_type: campaignType, limit }
     });
     return response.data.data;
   }
 
   async getGuestCampaignRecommendation(guestId: number): Promise<any> {
-    const response = await api.get(`${this.baseUrl}/guests/${guestId}/campaign-recommendation`);
+    const response = await cachedGet(`${this.baseUrl}/guests/${guestId}/campaign-recommendation`);
     return response.data.data;
   }
 
-  // Alerts
+  // Alerts - cached
   async getAIAlerts(status = 'open', priority?: string, limit = 50): Promise<{ count: number; alerts: AIAlert[] }> {
-    const response = await api.get(`${this.baseUrl}/alerts`, {
+    const response = await cachedGet(`${this.baseUrl}/alerts`, {
       params: { status, priority, limit }
     });
     return response.data.data;
@@ -300,9 +316,156 @@ class CRMAIService {
   }
 
   async getSegmentAnalysis(): Promise<SegmentAnalysis> {
-    const response = await api.get(`${this.baseUrl}/segments/analysis`);
+    const response = await cachedGet(`${this.baseUrl}/segments/analysis`);
     return response.data.data;
   }
+
+  // CRM Page Data Endpoints - cached to prevent duplicate fetches
+  async getCRMGuests(page = 1, pageSize = 100): Promise<{
+    guests: CRMGuest[];
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+  }> {
+    try {
+      const response = await cachedGet(`${this.baseUrl}/crm-guests`, {
+        params: { page, page_size: pageSize }
+      });
+      // Handle both wrapped and unwrapped responses
+      const data = response.data?.data || response.data;
+      return data;
+    } catch (error) {
+      console.error('[CRMAIService.getCRMGuests] Error:', error);
+      throw error;
+    }
+  }
+
+  async getCRMSegments(): Promise<{
+    segments: CRMSegment[];
+    total: number;
+  }> {
+    try {
+      const response = await cachedGet(`${this.baseUrl}/crm-segments`);
+      // Handle both wrapped and unwrapped responses
+      const data = response.data?.data || response.data;
+      return data;
+    } catch (error) {
+      console.error('[CRMAIService.getCRMSegments] Error:', error);
+      throw error;
+    }
+  }
+
+  async getCRMStats(): Promise<CRMStats> {
+    try {
+      const response = await cachedGet(`${this.baseUrl}/crm-stats`);
+      // Handle both wrapped and unwrapped responses
+      const data = response.data?.data || response.data;
+      return data;
+    } catch (error) {
+      console.error('[CRMAIService.getCRMStats] Error:', error);
+      throw error;
+    }
+  }
+
+  // AI Suggestions - cached (expensive AI operation)
+  async getAISuggestions(): Promise<AISuggestions> {
+    try {
+      const response = await cachedGet(`${this.baseUrl}/ai-suggestions`);
+      // Handle both wrapped and unwrapped responses
+      const data = response.data?.data || response.data;
+      return data;
+    } catch (error) {
+      console.error('[CRMAIService.getAISuggestions] Error:', error);
+      throw error;
+    }
+  }
+}
+
+// CRM Page Types
+export interface CRMGuest {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  country: string;
+  totalStays: number;
+  totalNights: number;
+  totalRevenue: number;
+  loyaltyTier: string | null;
+  lastStay: string | null;
+  bookingSource: string;
+  preferredRoomType: string;
+  tags: string[];
+  createdAt: string | null;
+}
+
+export interface CRMSegment {
+  id: string;
+  name: string;
+  description: string;
+  conditions: Array<{ field: string; operator: string; value: any }>;
+  guestCount: number;
+  avgRevenue: number;
+  repeatRate: number;
+  color: string;
+  icon: string;
+}
+
+export interface CRMStats {
+  totalGuests: number;
+  repeatGuests: number;
+  avgLTV: number;
+  vipGuests: number;
+  loyaltyMembers: number;
+  activeCampaigns: number;
+  engagementRate: number;
+}
+
+// AI Suggestions Types
+export interface CampaignSuggestion {
+  id: string;
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  type: string;
+  target_count: number;
+  estimated_impact: string;
+  recommended_offer: string;
+  best_channel: string;
+  icon: string;
+}
+
+export interface SegmentInsight {
+  title: string;
+  insight: string;
+  recommendation: string;
+  icon: string;
+}
+
+export interface ActionItem {
+  title: string;
+  description: string;
+  urgency: 'high' | 'medium' | 'low';
+  action_type: string;
+  icon: string;
+}
+
+export interface QuickWin {
+  title: string;
+  description: string;
+  effort: 'low' | 'medium' | 'high';
+  impact: 'low' | 'medium' | 'high';
+  icon: string;
+}
+
+export interface AISuggestions {
+  campaign_suggestions: CampaignSuggestion[];
+  segment_insights: SegmentInsight[];
+  action_items: ActionItem[];
+  quick_wins: QuickWin[];
+  analyzed_guests: number;
+  generated_at: string;
 }
 
 export const crmAIService = new CRMAIService();

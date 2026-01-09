@@ -312,6 +312,10 @@ export function applyRuleActions(actions, baseRate) {
 
 // Get rules that would apply for a given context
 export function getApplicableRules(rules, context) {
+  // Safety check - ensure rules is an array
+  if (!Array.isArray(rules)) {
+    return [];
+  }
   return rules
     .filter(rule => rule.isActive)
     .map(rule => evaluateRule(rule, context))
@@ -355,8 +359,22 @@ export function calculateRuleBasedRate(rules, baseRate, context) {
 
 // Rule performance analytics
 export function getRuleAnalytics(rules) {
+  // Safety check - ensure rules is an array
+  if (!Array.isArray(rules) || rules.length === 0) {
+    return {
+      totalRules: 0,
+      activeRules: 0,
+      inactiveRules: 0,
+      totalTriggers: 0,
+      avgTriggersPerRule: 0,
+      mostTriggered: [],
+      leastTriggered: [],
+      byPriority: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+    };
+  }
+
   const activeRules = rules.filter(r => r.isActive);
-  const totalTriggers = rules.reduce((sum, r) => sum + r.timesTriggered, 0);
+  const totalTriggers = rules.reduce((sum, r) => sum + (r.timesTriggered || 0), 0);
 
   return {
     totalRules: rules.length,
@@ -364,8 +382,8 @@ export function getRuleAnalytics(rules) {
     inactiveRules: rules.length - activeRules.length,
     totalTriggers,
     avgTriggersPerRule: Math.round(totalTriggers / rules.length),
-    mostTriggered: [...rules].sort((a, b) => b.timesTriggered - a.timesTriggered).slice(0, 5),
-    leastTriggered: [...rules].sort((a, b) => a.timesTriggered - b.timesTriggered).slice(0, 5),
+    mostTriggered: [...rules].sort((a, b) => (b.timesTriggered || 0) - (a.timesTriggered || 0)).slice(0, 5),
+    leastTriggered: [...rules].sort((a, b) => (a.timesTriggered || 0) - (b.timesTriggered || 0)).slice(0, 5),
     byPriority: {
       1: rules.filter(r => r.priority === 1).length,
       2: rules.filter(r => r.priority === 2).length,

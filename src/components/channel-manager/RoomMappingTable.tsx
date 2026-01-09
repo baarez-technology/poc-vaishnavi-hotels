@@ -26,12 +26,16 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
   // Get OTA info
   const ota = otas.find(o => o.code === otaCode);
 
-  // PMS room types (would come from CBS context in real app)
+  // PMS room types matching database
   const pmsRoomTypes = [
-    { id: 'Standard', name: 'Standard Room', baseOccupancy: 2, maxOccupancy: 3 },
-    { id: 'Premium', name: 'Premium Room', baseOccupancy: 2, maxOccupancy: 3 },
-    { id: 'Deluxe', name: 'Deluxe Room', baseOccupancy: 2, maxOccupancy: 4 },
-    { id: 'Suite', name: 'Suite', baseOccupancy: 2, maxOccupancy: 4 }
+    { id: 'minimalist-studio', name: 'Minimalist Studio', baseOccupancy: 2, maxOccupancy: 2 },
+    { id: 'coastal-retreat', name: 'Coastal Retreat', baseOccupancy: 2, maxOccupancy: 2 },
+    { id: 'urban-oasis', name: 'Urban Oasis', baseOccupancy: 2, maxOccupancy: 2 },
+    { id: 'sunset-vista', name: 'Sunset Vista', baseOccupancy: 2, maxOccupancy: 3 },
+    { id: 'pacific-suite', name: 'Pacific Suite', baseOccupancy: 2, maxOccupancy: 4 },
+    { id: 'wellness-suite', name: 'Wellness Suite', baseOccupancy: 2, maxOccupancy: 2 },
+    { id: 'family-sanctuary', name: 'Family Sanctuary', baseOccupancy: 4, maxOccupancy: 6 },
+    { id: 'oceanfront-penthouse', name: 'Oceanfront Penthouse', baseOccupancy: 2, maxOccupancy: 6 }
   ];
 
   // Filter by search query

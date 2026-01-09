@@ -9,15 +9,23 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts';
+import { RefreshCw } from 'lucide-react';
+import { useForecast, useKPISummary } from '../../contexts/RevenueDataContext';
 
-const CustomTooltip = ({ active, payload, label }) => {
+interface ChartDataItem {
+  date: string;
+  adr: number;
+  occupancy: number;
+}
+
+const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white border border-neutral-200 rounded-[10px] p-3 shadow-lg">
         <p className="text-[11px] text-neutral-500 font-medium mb-2">{label}</p>
-        {payload.map((entry, index) => (
+        {payload.map((entry: any, index: number) => (
           <p key={index} className="text-sm font-semibold" style={{ color: entry.color }}>
-            {entry.name}: {entry.name === 'ADR' ? `₹${entry.value.toLocaleString()}` : `${entry.value}%`}
+            {entry.name}: {entry.name === 'ADR' ? `$${entry.value.toLocaleString()}` : `${entry.value}%`}
           </p>
         ))}
       </div>
@@ -26,7 +34,37 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-export default function ADROccupancyChart({ data }) {
+export default function ADROccupancyChart() {
+  const { data: forecastResponse, loading: forecastLoading, error: forecastError, refresh } = useForecast();
+  const { data: kpiSummary, loading: kpiLoading } = useKPISummary();
+
+  const isLoading = forecastLoading || kpiLoading;
+  const error = forecastError;
+
+  // Transform API data to chart format
+  const data = useMemo(() => {
+    if (!forecastResponse?.forecasts) return [];
+
+    // Get base ADR from KPI summary
+    const baseADR = kpiSummary?.today?.adr || 150;
+
+    // Demand level multipliers for ADR estimation
+    const demandMultipliers: Record<string, number> = {
+      critical: 1.3,
+      high: 1.15,
+      moderate: 1.0,
+      low: 0.9,
+      very_low: 0.8,
+    };
+
+    // Transform forecast data to chart format
+    return forecastResponse.forecasts.map((item) => ({
+      date: item.date,
+      adr: Math.round(baseADR * (demandMultipliers[item.demand_level] || 1.0)),
+      occupancy: Math.round(item.forecasted_occupancy),
+    }));
+  }, [forecastResponse, kpiSummary]);
+
   const chartData = useMemo(() => {
     return data.map((item) => ({
       ...item,
@@ -38,12 +76,76 @@ export default function ADROccupancyChart({ data }) {
   }, [data]);
 
   const avgADR = useMemo(() => {
+    if (data.length === 0) return 0;
     return Math.round(data.reduce((sum, item) => sum + item.adr, 0) / data.length);
   }, [data]);
 
   const avgOccupancy = useMemo(() => {
+    if (data.length === 0) return 0;
     return Math.round(data.reduce((sum, item) => sum + item.occupancy, 0) / data.length);
   }, [data]);
+
+  // Loading skeleton
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <div className="h-4 w-32 bg-neutral-200 rounded animate-pulse" />
+            <div className="h-3 w-40 bg-neutral-100 rounded animate-pulse mt-2" />
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="h-10 w-20 bg-neutral-100 rounded animate-pulse" />
+            <div className="h-10 w-20 bg-neutral-100 rounded animate-pulse" />
+          </div>
+        </div>
+        <div className="h-[260px] bg-neutral-100 rounded-lg animate-pulse" />
+      </div>
+    );
+  }
+
+  // Error state
+  if (error && data.length === 0) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-sm font-semibold text-neutral-800">ADR & Occupancy</h3>
+            <p className="text-[11px] text-neutral-400 font-medium mt-0.5">Rate vs occupancy performance</p>
+          </div>
+        </div>
+        <div className="h-[260px] flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-sm text-neutral-500 mb-4">{error}</p>
+            <button
+              onClick={refresh}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-100 text-neutral-700 rounded-lg hover:bg-neutral-200 transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (data.length === 0) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-sm font-semibold text-neutral-800">ADR & Occupancy</h3>
+            <p className="text-[11px] text-neutral-400 font-medium mt-0.5">Rate vs occupancy performance</p>
+          </div>
+        </div>
+        <div className="h-[260px] flex items-center justify-center">
+          <p className="text-sm text-neutral-500">No forecast data available</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -56,7 +158,7 @@ export default function ADROccupancyChart({ data }) {
         <div className="flex items-center gap-4">
           <div className="text-right">
             <p className="text-[11px] text-neutral-400 font-medium">Avg ADR</p>
-            <p className="text-lg font-bold text-ocean-600">₹{avgADR.toLocaleString()}</p>
+            <p className="text-lg font-bold text-ocean-600">${avgADR.toLocaleString()}</p>
           </div>
           <div className="text-right">
             <p className="text-[11px] text-neutral-400 font-medium">Avg Occupancy</p>
@@ -83,7 +185,7 @@ export default function ADROccupancyChart({ data }) {
               tick={{ fontSize: 11, fill: '#9ca3af' }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}K`}
+              tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
               domain={['dataMin - 1000', 'dataMax + 1000']}
               dx={-5}
             />
@@ -126,13 +228,13 @@ export default function ADROccupancyChart({ data }) {
         <div className="p-3 rounded-lg bg-neutral-50 text-center">
           <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-wider">Peak ADR</p>
           <p className="text-[15px] font-bold text-ocean-600 mt-1">
-            ₹{Math.max(...data.map(d => d.adr)).toLocaleString()}
+            ${Math.max(...data.map(d => d.adr)).toLocaleString()}
           </p>
         </div>
         <div className="p-3 rounded-lg bg-neutral-50 text-center">
           <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-wider">Low ADR</p>
           <p className="text-[15px] font-bold text-neutral-600 mt-1">
-            ₹{Math.min(...data.map(d => d.adr)).toLocaleString()}
+            ${Math.min(...data.map(d => d.adr)).toLocaleString()}
           </p>
         </div>
         <div className="p-3 rounded-lg bg-neutral-50 text-center">

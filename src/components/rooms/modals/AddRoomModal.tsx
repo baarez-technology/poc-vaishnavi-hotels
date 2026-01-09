@@ -12,7 +12,7 @@ import { Button } from '../../ui2/Button';
 export default function AddRoomModal({ isOpen, onClose, onAdd }) {
   const [formData, setFormData] = useState({
     roomNumber: '',
-    type: 'Standard',
+    type: 'Minimalist Studio',
     floor: '1',
     bedType: 'Queen',
     capacity: '2',
@@ -22,7 +22,16 @@ export default function AddRoomModal({ isOpen, onClose, onAdd }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const roomTypes = ['Standard', 'Premium', 'Deluxe', 'Suite'];
+  const roomTypes = [
+    'Minimalist Studio',
+    'Coastal Retreat',
+    'Urban Oasis',
+    'Sunset Vista',
+    'Pacific Suite',
+    'Wellness Suite',
+    'Family Sanctuary',
+    'Oceanfront Penthouse'
+  ];
   const bedTypes = ['Single', 'Double', 'Queen', 'King', 'Twin'];
   const availableAmenities = ['WiFi', 'TV', 'Air Conditioning', 'Mini Fridge', 'Safe', 'Coffee Maker', 'Balcony', 'Ocean View'];
 
@@ -30,7 +39,7 @@ export default function AddRoomModal({ isOpen, onClose, onAdd }) {
     if (isOpen) {
       setFormData({
         roomNumber: '',
-        type: 'Standard',
+        type: 'Minimalist Studio',
         floor: '1',
         bedType: 'Queen',
         capacity: '2',

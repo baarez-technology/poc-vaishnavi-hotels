@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { guestAssistantService, ChatMessageResponse, QuickAction, BookingLookupResponse } from '@/api/services/guest-assistant.service';
+import { guestChatService, QuickAction } from '@/api/services/guest-chat.service';
+import { guestAssistantService, BookingLookupResponse } from '@/api/services/guest-assistant.service';
 
 // ============== Types ==============
 
@@ -189,34 +190,29 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       // Try backend first if authenticated
       if (isAuthenticated && sessionIdRef.current) {
         try {
-          const history = await guestAssistantService.getHistory(sessionIdRef.current);
-          if (history.conversations.length > 0) {
-            const loadedMessages: Message[] = history.conversations
-              .reverse()
-              .flatMap(conv => [
-                {
-                  id: `user_${conv.conversation_id}`,
-                  type: 'user' as const,
-                  content: conv.user_query,
-                  timestamp: new Date(conv.created_at),
-                },
-                {
-                  id: `assistant_${conv.conversation_id}`,
-                  type: 'assistant' as const,
-                  content: conv.bot_response,
-                  timestamp: new Date(conv.created_at),
-                  intent: conv.classification,
-                },
-              ]);
+          const history = await guestChatService.getHistory(undefined, 50);
+          if (history.messages && history.messages.length > 0) {
+            const loadedMessages: Message[] = history.messages.map((msg, idx) => ({
+              id: `${msg.type}_${idx}_${Date.now()}`,
+              type: msg.type === 'user' ? 'user' as const : 'assistant' as const,
+              content: msg.content,
+              timestamp: new Date(msg.timestamp),
+              intent: msg.classification,
+            }));
+            // Update session ID from server
+            if (history.session_id) {
+              sessionIdRef.current = history.session_id;
+              localStorage.setItem(SESSION_ID_KEY, history.session_id);
+            }
             setMessages(loadedMessages);
             return;
           }
         } catch (error: unknown) {
-          // 404 is expected for new sessions that haven't sent any messages yet
-          const isNotFound = error instanceof Error &&
+          // 404 or 401 is expected for new sessions or unauthenticated users
+          const isExpected = error instanceof Error &&
             'response' in error &&
-            (error as { response?: { status?: number } }).response?.status === 404;
-          if (!isNotFound) {
+            [401, 404].includes((error as { response?: { status?: number } }).response?.status || 0);
+          if (!isExpected) {
             console.error('Error loading chat history from backend:', error);
           }
         }
@@ -306,6 +302,35 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
     return newMessage;
   }, []);
 
+  // Build quick actions based on detected intent
+  const buildQuickActionsForIntent = (intent?: string): QuickAction[] => {
+    if (!intent) return [];
+
+    switch (intent) {
+      case 'check_bookings':
+        return [
+          { label: 'Pre-Check-in', action: 'I want to do pre-check-in' },
+          { label: 'Modify Booking', action: 'I want to modify my booking' },
+        ];
+      case 'booking_lookup':
+        return [
+          { label: 'Pre-Check-in', action: 'I want to do pre-check-in for this booking' },
+          { label: 'Cancel Booking', action: 'I want to cancel this booking' },
+        ];
+      case 'pre_checkin':
+        return [{ label: 'My Bookings', action: 'Show my bookings' }];
+      case 'make_request':
+        return [
+          { label: 'More Requests', action: 'I have another request' },
+          { label: 'My Bookings', action: 'Show my bookings' },
+        ];
+      case 'escalate':
+        return [{ label: 'Contact Info', action: 'Give me contact information' }];
+      default:
+        return [];
+    }
+  };
+
   const sendMessage = async (content: string) => {
     if (!content.trim()) return;
 
@@ -318,11 +343,9 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
     setIsTyping(true);
 
     try {
-      const response = await guestAssistantService.sendMessage({
+      const response = await guestChatService.chat({
         message: content.trim(),
         session_id: sessionIdRef.current || undefined,
-        room_number: bookingContext?.roomNumber,
-        booking_number: bookingContext?.bookingNumber,
       });
 
       // Update session ID if returned
@@ -336,73 +359,21 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
         type: 'assistant',
         content: response.response,
         intent: response.intent,
-        confidence: response.confidence,
-        quickActions: response.quick_actions,
-        // New comprehensive AGI fields
-        roomSearchResults: response.room_search_results,
-        profileInfo: response.profile_info,
-        bookingsList: response.bookings_list,
-        precheckinInfo: response.precheckin_info,
-        flowState: response.flow_state ? {
-          flowType: response.flow_state.flow_type,
-          currentStep: response.flow_state.current_step,
-          totalSteps: response.flow_state.total_steps,
-          stepLabel: response.flow_state.step_label,
-          progress: response.flow_state.progress,
-          canGoBack: response.flow_state.can_go_back,
-          canCancel: response.flow_state.can_cancel,
-        } : undefined,
-        requiresAuth: response.requires_auth,
-        authError: response.auth_error,
       };
 
-      // Add task info if staff action was created
-      if (response.requires_staff_action && response.staff_task_id) {
+      // Add quick actions based on intent
+      const quickActions = buildQuickActionsForIntent(response.intent);
+      if (quickActions.length > 0) {
+        assistantMessage.quickActions = quickActions;
+      }
+
+      // If staff action is required, note it
+      if (response.requires_staff_action) {
         assistantMessage.taskInfo = {
-          taskId: response.staff_task_id,
-          taskType: response.task_type || 'service',
-          assignedStaffName: response.assigned_staff_name,
-          estimatedTime: response.estimated_response_time,
-          status: 'assigned',
-          // Enhanced task details from backend
-          priority: response.task_priority,
-          title: response.task_title,
-          description: response.task_description,
-          category: response.task_category,
-          detectedIssue: response.detected_issue,
-          requiredSkills: response.required_skills,
-          assignedStaffRole: response.assigned_staff_role,
+          taskId: 0, // Task created on server
+          taskType: response.intent || 'service',
+          status: 'pending',
         };
-
-        // Start polling for task status
-        pollTaskStatus(response.staff_task_id);
-      }
-
-      // Add booking info if present
-      if (response.booking_info) {
-        assistantMessage.bookingInfo = {
-          confirmationCode: response.booking_info.confirmation_code,
-          roomNumber: response.booking_info.room_number,
-          guestName: response.booking_info.guest_name,
-          checkout: response.booking_info.checkout,
-          status: response.booking_info.status,
-        };
-
-        // Update booking context
-        setBookingContextState({
-          bookingNumber: response.booking_info.confirmation_code,
-          roomNumber: response.booking_info.room_number,
-          guestName: response.booking_info.guest_name,
-          isCheckedIn: response.booking_info.status === 'checked_in',
-        });
-      }
-
-      // If chatbot needs booking info, show a prompt
-      if (response.needs_booking && !bookingContext?.bookingNumber) {
-        assistantMessage.quickActions = [
-          { label: 'Enter Booking Number', action: 'enter_booking' },
-          { label: 'Contact Front Desk', action: 'front_desk' },
-        ];
       }
 
       addMessage(assistantMessage);

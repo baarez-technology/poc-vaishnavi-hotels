@@ -13,7 +13,7 @@ const formatDate = (daysOffset) => {
 export const sampleRateOverrides = [
   {
     id: 'rate-001',
-    roomType: 'Standard',
+    roomType: 'Minimalist Studio',
     otaCode: 'BOOKING',
     dateRange: {
       start: formatDate(0),
@@ -27,7 +27,7 @@ export const sampleRateOverrides = [
   },
   {
     id: 'rate-002',
-    roomType: 'Standard',
+    roomType: 'Coastal Retreat',
     otaCode: 'EXPEDIA',
     dateRange: {
       start: formatDate(0),
@@ -41,7 +41,7 @@ export const sampleRateOverrides = [
   },
   {
     id: 'rate-003',
-    roomType: 'Premium',
+    roomType: 'Urban Oasis',
     otaCode: 'AGODA',
     dateRange: {
       start: formatDate(10),
@@ -55,7 +55,7 @@ export const sampleRateOverrides = [
   },
   {
     id: 'rate-004',
-    roomType: 'Deluxe',
+    roomType: 'Sunset Vista',
     otaCode: 'ALL',
     dateRange: {
       start: formatDate(20),
@@ -69,7 +69,7 @@ export const sampleRateOverrides = [
   },
   {
     id: 'rate-005',
-    roomType: 'Suite',
+    roomType: 'Pacific Suite',
     otaCode: 'GOOGLE',
     dateRange: {
       start: formatDate(5),
@@ -80,13 +80,64 @@ export const sampleRateOverrides = [
     reason: 'Google Hotel Ads promotion',
     isActive: true,
     createdAt: formatDate(-1)
+  },
+  {
+    id: 'rate-006',
+    roomType: 'Wellness Suite',
+    otaCode: 'BOOKING',
+    dateRange: {
+      start: formatDate(3),
+      end: formatDate(12)
+    },
+    rateType: 'percentage',
+    adjustment: 8,
+    reason: 'Wellness package premium',
+    isActive: true,
+    createdAt: formatDate(-4)
+  },
+  {
+    id: 'rate-007',
+    roomType: 'Family Sanctuary',
+    otaCode: 'ALL',
+    dateRange: {
+      start: formatDate(15),
+      end: formatDate(25)
+    },
+    rateType: 'percentage',
+    adjustment: 10,
+    reason: 'School holiday premium',
+    isActive: true,
+    createdAt: formatDate(-6)
+  },
+  {
+    id: 'rate-008',
+    roomType: 'Oceanfront Penthouse',
+    otaCode: 'EXPEDIA',
+    dateRange: {
+      start: formatDate(0),
+      end: formatDate(30)
+    },
+    rateType: 'percentage',
+    adjustment: -5,
+    reason: 'Luxury suite promotional rate',
+    isActive: true,
+    createdAt: formatDate(-8)
   }
 ];
 
 // Generate 30-day rate calendar data
 export function generateRateCalendar(baseRates, rateOverrides) {
   const calendar = {};
-  const roomTypes = ['Standard', 'Premium', 'Deluxe', 'Suite'];
+  const roomTypes = [
+    'Minimalist Studio',
+    'Coastal Retreat',
+    'Urban Oasis',
+    'Sunset Vista',
+    'Pacific Suite',
+    'Wellness Suite',
+    'Family Sanctuary',
+    'Oceanfront Penthouse'
+  ];
   const ratePlans = ['BAR', 'Corporate', 'OTA'];
 
   for (let i = 0; i < 30; i++) {
@@ -147,10 +198,14 @@ export function generateRateCalendar(baseRates, rateOverrides) {
 }
 
 export const baseRates = {
-  Standard: 120,
-  Premium: 180,
-  Deluxe: 250,
-  Suite: 400
+  'Minimalist Studio': 150,
+  'Coastal Retreat': 199,
+  'Urban Oasis': 245,
+  'Sunset Vista': 315,
+  'Pacific Suite': 385,
+  'Wellness Suite': 425,
+  'Family Sanctuary': 485,
+  'Oceanfront Penthouse': 750
 };
 
 export default sampleRateOverrides;

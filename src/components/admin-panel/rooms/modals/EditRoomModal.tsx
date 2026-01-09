@@ -5,7 +5,7 @@ import { X, Save, Bed, Users, DollarSign, MapPin, Tag } from 'lucide-react';
 export default function EditRoomModal({ room, isOpen, onClose, onSave }) {
   const [formData, setFormData] = useState({
     roomNumber: '',
-    type: 'Standard',
+    type: 'Minimalist Studio',
     floor: '1',
     bedType: 'Queen',
     capacity: '2',
@@ -14,7 +14,16 @@ export default function EditRoomModal({ room, isOpen, onClose, onSave }) {
     description: ''
   });
 
-  const roomTypes = ['Standard', 'Premium', 'Deluxe', 'Suite'];
+  const roomTypes = [
+    'Minimalist Studio',
+    'Coastal Retreat',
+    'Urban Oasis',
+    'Sunset Vista',
+    'Pacific Suite',
+    'Wellness Suite',
+    'Family Sanctuary',
+    'Oceanfront Penthouse'
+  ];
   const bedTypes = ['Single', 'Double', 'Queen', 'King', 'Twin', 'King + Sofa Bed', 'King + 2 Queens'];
   const availableAmenities = [
     'WiFi', 'TV', 'Air Conditioning', 'Mini Fridge', 'Safe', 'Coffee Maker',

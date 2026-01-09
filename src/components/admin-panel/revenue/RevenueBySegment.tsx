@@ -13,11 +13,14 @@ const DEFAULT_COLOR = '#6B7280';
 const SEGMENT_COLORS = ['#A57865', '#5C9BA4', '#4E5840', '#CDB261', '#8E6554'];
 
 const formatCurrency = (value) => {
-  if (!value || isNaN(value)) return '₹0';
-  if (value >= 100000) {
-    return `₹${(value / 100000).toFixed(1)}L`;
+  if (!value || isNaN(value)) return '$0';
+  if (value >= 1000000) {
+    return `$${(value / 1000000).toFixed(1)}M`;
   }
-  return `₹${value.toLocaleString()}`;
+  if (value >= 1000) {
+    return `$${(value / 1000).toFixed(0)}K`;
+  }
+  return `$${value.toLocaleString()}`;
 };
 
 const CustomTooltip = ({ active, payload }) => {
@@ -30,7 +33,7 @@ const CustomTooltip = ({ active, payload }) => {
           {formatCurrency(data.value)}
         </p>
         <p className="text-xs text-neutral-500 mt-1">
-          {data.bookings} bookings • Avg ₹{data.avgRate.toLocaleString()}
+          {data.bookings} bookings • Avg ${data.avgRate.toLocaleString()}
         </p>
       </div>
     );
@@ -136,7 +139,7 @@ export default function RevenueBySegment({ data: rawData }) {
         <div className="text-center">
           <p className="text-xs text-neutral-500">Highest Avg Rate</p>
           <p className="text-sm font-bold text-neutral-900">
-            ₹{Math.max(...data.map(d => d.avgRate)).toLocaleString()}
+            ${Math.max(...data.map(d => d.avgRate)).toLocaleString()}
           </p>
         </div>
         <div className="text-center">

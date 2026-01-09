@@ -1,4 +1,4 @@
-import { apiClient } from '../client';
+import { apiClient, cachedGet } from '../client';
 import type { ApiResponse } from '../types/common.types';
 
 export interface AdminDashboardKPIs {
@@ -126,8 +126,9 @@ export interface FrontDeskDashboard {
 }
 
 export const dashboardsService = {
+  // All dashboard endpoints use cached GET to prevent duplicate calls
   getAdminDashboard: async () => {
-    const response = await apiClient.get<ApiResponse<AdminDashboard>>(
+    const response = await cachedGet<ApiResponse<AdminDashboard>>(
       '/api/v1/dashboards/admin'
     );
     return response.data.data || response.data;
@@ -137,8 +138,8 @@ export const dashboardsService = {
     const params: Record<string, string> = {};
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
-    
-    const response = await apiClient.get<ApiResponse<FinanceDashboard>>(
+
+    const response = await cachedGet<ApiResponse<FinanceDashboard>>(
       '/api/v1/dashboards/finance',
       { params }
     );
@@ -146,21 +147,21 @@ export const dashboardsService = {
   },
 
   getOperationsDashboard: async () => {
-    const response = await apiClient.get<ApiResponse<OperationsDashboard>>(
+    const response = await cachedGet<ApiResponse<OperationsDashboard>>(
       '/api/v1/dashboards/operations'
     );
     return response.data.data || response.data;
   },
 
   getFrontDeskDashboard: async () => {
-    const response = await apiClient.get<ApiResponse<FrontDeskDashboard>>(
+    const response = await cachedGet<ApiResponse<FrontDeskDashboard>>(
       '/api/v1/dashboards/frontdesk'
     );
     return response.data.data || response.data;
   },
 
   getManagementDashboard: async () => {
-    const response = await apiClient.get('/api/v1/dashboards/management');
+    const response = await cachedGet('/api/v1/dashboards/management');
     return response.data.data || response.data;
   },
 };

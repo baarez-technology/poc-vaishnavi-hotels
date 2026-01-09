@@ -3,7 +3,7 @@
  * Handles filtering, sorting, CSV export, and booking calculations
  */
 
-// Status configurations
+// Status configurations - includes both legacy (CHECKED-IN) and new (IN_HOUSE) formats
 export const STATUS_CONFIG = {
   'PENDING': {
     label: 'Pending',
@@ -23,7 +23,19 @@ export const STATUS_CONFIG = {
     textColor: 'text-[#5C9BA4]',
     borderColor: 'border-[#5C9BA4]/30',
   },
+  'IN_HOUSE': {
+    label: 'In-House',
+    bgColor: 'bg-[#5C9BA4]/15',
+    textColor: 'text-[#5C9BA4]',
+    borderColor: 'border-[#5C9BA4]/30',
+  },
   'CHECKED-OUT': {
+    label: 'Completed',
+    bgColor: 'bg-[#A57865]/15',
+    textColor: 'text-[#A57865]',
+    borderColor: 'border-[#A57865]/30',
+  },
+  'COMPLETED': {
     label: 'Completed',
     bgColor: 'bg-[#A57865]/15',
     textColor: 'text-[#A57865]',
@@ -34,6 +46,12 @@ export const STATUS_CONFIG = {
     bgColor: 'bg-red-100',
     textColor: 'text-red-600',
     borderColor: 'border-red-200',
+  },
+  'NO_SHOW': {
+    label: 'No Show',
+    bgColor: 'bg-orange-100',
+    textColor: 'text-orange-600',
+    borderColor: 'border-orange-200',
   },
 };
 
@@ -340,9 +358,10 @@ export function calculateBookingStats(bookings) {
     sourceCounts,
     pendingCount: statusCounts['PENDING'] || 0,
     confirmedCount: statusCounts['CONFIRMED'] || 0,
-    checkedInCount: statusCounts['CHECKED-IN'] || 0,
-    completedCount: statusCounts['CHECKED-OUT'] || 0,
+    checkedInCount: (statusCounts['CHECKED-IN'] || 0) + (statusCounts['IN_HOUSE'] || 0),
+    completedCount: (statusCounts['CHECKED-OUT'] || 0) + (statusCounts['COMPLETED'] || 0),
     cancelledCount: statusCounts['CANCELLED'] || 0,
+    noShowCount: statusCounts['NO_SHOW'] || 0,
   };
 }
 

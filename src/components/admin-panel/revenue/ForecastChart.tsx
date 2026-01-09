@@ -12,10 +12,13 @@ import {
 import { TrendingUp } from 'lucide-react';
 
 const formatCurrency = (value) => {
-  if (value >= 100000) {
-    return `₹${(value / 100000).toFixed(1)}L`;
+  if (value >= 1000000) {
+    return `$${(value / 1000000).toFixed(1)}M`;
   }
-  return `₹${value.toLocaleString()}`;
+  if (value >= 1000) {
+    return `$${(value / 1000).toFixed(0)}K`;
+  }
+  return `$${value.toLocaleString()}`;
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -95,7 +98,7 @@ export default function ForecastChart({ data }) {
               tick={{ fontSize: 11, fill: '#6B7280' }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}K`}
+              tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
             />
             <Tooltip content={<CustomTooltip />} />
 

@@ -20,7 +20,7 @@ export const sampleSyncLogs = [
     status: 'success',
     message: 'Rates synced successfully for all room types',
     details: {
-      roomTypes: ['Standard', 'Premium', 'Deluxe', 'Suite'],
+      roomTypes: ['Minimalist Studio', 'Coastal Retreat', 'Urban Oasis', 'Sunset Vista', 'Pacific Suite', 'Wellness Suite', 'Family Sanctuary', 'Oceanfront Penthouse'],
       dateRange: '30 days',
       changesCount: 120
     }
@@ -34,7 +34,7 @@ export const sampleSyncLogs = [
     status: 'success',
     message: 'Inventory updated for next 14 days',
     details: {
-      roomTypes: ['Standard', 'Premium'],
+      roomTypes: ['Minimalist Studio', 'Coastal Retreat'],
       dateRange: '14 days',
       changesCount: 28
     }
@@ -46,9 +46,9 @@ export const sampleSyncLogs = [
     otaName: 'Agoda',
     action: 'restriction_update',
     status: 'success',
-    message: 'Stop sell activated for Premium rooms',
+    message: 'Stop sell activated for Pacific Suite rooms',
     details: {
-      roomType: 'Premium',
+      roomType: 'Pacific Suite',
       restriction: 'Stop Sell',
       dateRange: 'Dec 12-14'
     }
@@ -76,7 +76,7 @@ export const sampleSyncLogs = [
     status: 'success',
     message: 'Price feed updated successfully',
     details: {
-      roomTypes: ['Standard', 'Premium', 'Deluxe', 'Suite'],
+      roomTypes: ['Minimalist Studio', 'Coastal Retreat', 'Urban Oasis', 'Sunset Vista', 'Pacific Suite', 'Wellness Suite', 'Family Sanctuary', 'Oceanfront Penthouse'],
       dateRange: '30 days',
       changesCount: 120
     }
@@ -120,7 +120,7 @@ export const sampleSyncLogs = [
     details: {
       bookingId: 'EXP-789456',
       guestName: 'John Smith',
-      roomType: 'Deluxe',
+      roomType: 'Sunset Vista',
       checkIn: '2025-01-15'
     }
   },
@@ -146,7 +146,7 @@ export const sampleSyncLogs = [
     status: 'success',
     message: 'Inventory synchronized successfully',
     details: {
-      roomTypes: ['Standard', 'Premium', 'Deluxe', 'Suite'],
+      roomTypes: ['Minimalist Studio', 'Coastal Retreat', 'Urban Oasis', 'Sunset Vista', 'Pacific Suite', 'Wellness Suite', 'Family Sanctuary', 'Oceanfront Penthouse'],
       dateRange: '30 days',
       changesCount: 45
     }

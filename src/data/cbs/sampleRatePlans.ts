@@ -11,10 +11,14 @@ export const sampleRatePlans = [
     description: 'Our standard flexible rate with free cancellation up to 24 hours before arrival',
     isActive: true,
     basePrice: {
-      'Standard': 120,
-      'Premium': 180,
-      'Deluxe': 250,
-      'Suite': 400
+      'Minimalist Studio': 150,
+      'Coastal Retreat': 199,
+      'Urban Oasis': 245,
+      'Sunset Vista': 315,
+      'Pacific Suite': 385,
+      'Wellness Suite': 425,
+      'Family Sanctuary': 485,
+      'Oceanfront Penthouse': 750
     },
     priceRules: [
       { type: 'weekend', adjustment: 15, adjustmentType: 'percentage' },
@@ -39,10 +43,14 @@ export const sampleRatePlans = [
     description: 'Special negotiated rate for business travelers with flexible check-in/out',
     isActive: true,
     basePrice: {
-      'Standard': 108,
-      'Premium': 162,
-      'Deluxe': 225,
-      'Suite': 360
+      'Minimalist Studio': 135,
+      'Coastal Retreat': 179,
+      'Urban Oasis': 220,
+      'Sunset Vista': 284,
+      'Pacific Suite': 347,
+      'Wellness Suite': 383,
+      'Family Sanctuary': 437,
+      'Oceanfront Penthouse': 675
     },
     priceRules: [
       { type: 'flat', adjustment: -10, adjustmentType: 'percentage' }
@@ -65,10 +73,14 @@ export const sampleRatePlans = [
     description: 'Competitive rate for OTA channels with prepayment required',
     isActive: true,
     basePrice: {
-      'Standard': 108,
-      'Premium': 162,
-      'Deluxe': 225,
-      'Suite': 360
+      'Minimalist Studio': 135,
+      'Coastal Retreat': 179,
+      'Urban Oasis': 220,
+      'Sunset Vista': 284,
+      'Pacific Suite': 347,
+      'Wellness Suite': 383,
+      'Family Sanctuary': 437,
+      'Oceanfront Penthouse': 675
     },
     priceRules: [
       { type: 'weekend', adjustment: 10, adjustmentType: 'percentage' },
@@ -92,10 +104,14 @@ export const sampleRatePlans = [
     description: 'Discounted rate for guests staying 3 nights or more',
     isActive: true,
     basePrice: {
-      'Standard': 102,
-      'Premium': 153,
-      'Deluxe': 212.50,
-      'Suite': 340
+      'Minimalist Studio': 128,
+      'Coastal Retreat': 169,
+      'Urban Oasis': 208,
+      'Sunset Vista': 268,
+      'Pacific Suite': 327,
+      'Wellness Suite': 361,
+      'Family Sanctuary': 412,
+      'Oceanfront Penthouse': 638
     },
     priceRules: [
       { type: 'length_of_stay', minNights: 3, adjustment: -15, adjustmentType: 'percentage' },
@@ -115,7 +131,16 @@ export const sampleRatePlans = [
   }
 ];
 
-export const roomTypes = ['Standard', 'Premium', 'Deluxe', 'Suite'];
+export const roomTypes = [
+  'Minimalist Studio',
+  'Coastal Retreat',
+  'Urban Oasis',
+  'Sunset Vista',
+  'Pacific Suite',
+  'Wellness Suite',
+  'Family Sanctuary',
+  'Oceanfront Penthouse'
+];
 
 export const mealPlans = [
   { id: 'RO', name: 'Room Only' },

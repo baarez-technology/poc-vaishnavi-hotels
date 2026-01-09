@@ -156,10 +156,14 @@ export default function RestrictionDrawer({
 
   const roomTypeOptions = [
     { value: 'ALL', label: 'All Room Types' },
-    { value: 'Standard', label: 'Standard' },
-    { value: 'Premium', label: 'Premium' },
-    { value: 'Deluxe', label: 'Deluxe' },
-    { value: 'Suite', label: 'Suite' }
+    { value: 'Minimalist Studio', label: 'Minimalist Studio' },
+    { value: 'Coastal Retreat', label: 'Coastal Retreat' },
+    { value: 'Urban Oasis', label: 'Urban Oasis' },
+    { value: 'Sunset Vista', label: 'Sunset Vista' },
+    { value: 'Pacific Suite', label: 'Pacific Suite' },
+    { value: 'Wellness Suite', label: 'Wellness Suite' },
+    { value: 'Family Sanctuary', label: 'Family Sanctuary' },
+    { value: 'Oceanfront Penthouse', label: 'Oceanfront Penthouse' }
   ];
 
   const channelOptions = [

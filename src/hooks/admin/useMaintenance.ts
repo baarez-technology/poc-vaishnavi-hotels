@@ -26,7 +26,7 @@ function transformApiMaintenanceToWorkOrder(apiMaint: any) {
     issue: apiMaint.issue || 'Maintenance Required',
     description: apiMaint.description || '',
     assignedTo: apiMaint.assigned_to,
-    technicianName: apiMaint.assigned_staff_name || null,
+    technicianName: apiMaint.assigned_to_name || null,
     estimatedCost: apiMaint.estimated_cost,
     actualCost: apiMaint.actual_cost,
     estimatedDuration: apiMaint.estimated_duration || 60,

@@ -7,6 +7,7 @@ import {
   Brain,
   Users,
   AlertTriangle,
+  AlertCircle,
   TrendingUp,
   TrendingDown,
   Heart,
@@ -27,7 +28,8 @@ import {
   CheckCircle2,
   XCircle,
   User,
-  Sparkles
+  Sparkles,
+  WifiOff
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import crmAIService, {
@@ -280,6 +282,25 @@ const AlertItem = ({ alert, onAcknowledge }: { alert: AIAlert; onAcknowledge: (i
   </div>
 );
 
+// Default fallback data when API fails
+const defaultStats: DashboardStats = {
+  total_guests: 0,
+  guests_analyzed: 0,
+  health_distribution: { excellent: 0, good: 0, fair: 0, at_risk: 0, critical: 0 },
+  average_health_score: 0,
+  average_churn_risk: 0,
+  open_alerts: 0,
+  recovery_pending: 0,
+  last_updated: new Date().toISOString()
+};
+
+const defaultCampaigns: CampaignRecommendations = {
+  win_back: [],
+  loyalty: [],
+  upsell: [],
+  direct_booking: []
+};
+
 export default function CRMAIDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [atRiskGuests, setAtRiskGuests] = useState<AtRiskGuest[]>([]);
@@ -289,30 +310,83 @@ export default function CRMAIDashboard() {
   const [segments, setSegments] = useState<SegmentAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [partialLoad, setPartialLoad] = useState(false);
 
   const fetchData = async () => {
-    try {
-      const [statsData, atRiskData, recoveryData, campaignData, alertData, segmentData] = await Promise.all([
-        crmAIService.getDashboardStats(),
-        crmAIService.getAtRiskGuests(10, 60),
-        crmAIService.getRecoveryOpportunities('detected', 10),
-        crmAIService.getCampaignRecommendations(),
-        crmAIService.getAIAlerts('open', undefined, 10),
-        crmAIService.getSegmentAnalysis()
-      ]);
+    setError(null);
+    const errors: string[] = [];
+    let hasAnyData = false;
 
+    // Fetch each endpoint separately with fallbacks
+    try {
+      const statsData = await crmAIService.getDashboardStats();
       setStats(statsData);
-      setAtRiskGuests(atRiskData.guests);
-      setRecoveryOpportunities(recoveryData.opportunities);
-      setCampaigns(campaignData);
-      setAlerts(alertData.alerts);
-      setSegments(segmentData);
-    } catch (error) {
-      console.error('Failed to fetch CRM AI data:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      hasAnyData = true;
+    } catch (e) {
+      console.error('Failed to fetch dashboard stats:', e);
+      setStats(defaultStats);
+      errors.push('dashboard stats');
     }
+
+    try {
+      const atRiskData = await crmAIService.getAtRiskGuests(10, 60);
+      setAtRiskGuests(atRiskData.guests || []);
+      hasAnyData = true;
+    } catch (e) {
+      console.error('Failed to fetch at-risk guests:', e);
+      setAtRiskGuests([]);
+      errors.push('at-risk guests');
+    }
+
+    try {
+      const recoveryData = await crmAIService.getRecoveryOpportunities('detected', 10);
+      setRecoveryOpportunities(recoveryData.opportunities || []);
+      hasAnyData = true;
+    } catch (e) {
+      console.error('Failed to fetch recovery opportunities:', e);
+      setRecoveryOpportunities([]);
+      errors.push('recovery opportunities');
+    }
+
+    try {
+      const campaignData = await crmAIService.getCampaignRecommendations();
+      setCampaigns(campaignData);
+      hasAnyData = true;
+    } catch (e) {
+      console.error('Failed to fetch campaign recommendations:', e);
+      setCampaigns(defaultCampaigns);
+      errors.push('campaign recommendations');
+    }
+
+    try {
+      const alertData = await crmAIService.getAIAlerts('open', undefined, 10);
+      setAlerts(alertData.alerts || []);
+      hasAnyData = true;
+    } catch (e) {
+      console.error('Failed to fetch AI alerts:', e);
+      setAlerts([]);
+      errors.push('AI alerts');
+    }
+
+    try {
+      const segmentData = await crmAIService.getSegmentAnalysis();
+      setSegments(segmentData);
+      hasAnyData = true;
+    } catch (e) {
+      console.error('Failed to fetch segment analysis:', e);
+      setSegments(null);
+      errors.push('segment analysis');
+    }
+
+    if (errors.length > 0 && !hasAnyData) {
+      setError('Failed to load dashboard data. Please check your connection and try again.');
+    } else if (errors.length > 0) {
+      setPartialLoad(true);
+    }
+
+    setLoading(false);
+    setRefreshing(false);
   };
 
   useEffect(() => {
@@ -335,7 +409,7 @@ export default function CRMAIDashboard() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center bg-neutral-50">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 text-[#A57865] animate-spin mx-auto mb-3" />
           <p className="text-neutral-500">Loading CRM AI Dashboard...</p>
@@ -344,8 +418,54 @@ export default function CRMAIDashboard() {
     );
   }
 
+  if (error && !stats) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-neutral-50 p-6">
+        <div className="bg-white rounded-xl border border-neutral-200 p-12 text-center max-w-md">
+          <WifiOff className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-neutral-900 mb-2">Unable to Load Dashboard</h3>
+          <p className="text-neutral-600 mb-6">{error}</p>
+          <div className="flex items-center justify-center gap-4">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center gap-2 px-4 py-2 bg-[#A57865] text-white rounded-lg text-sm font-medium hover:bg-[#8E6554] transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Retrying...' : 'Try Again'}
+            </button>
+            <Link
+              to="/admin/crm"
+              className="px-4 py-2 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+            >
+              Back to CRM
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 overflow-auto bg-neutral-50 p-6">
+      {/* Partial Load Warning Banner */}
+      {partialLoad && (
+        <div className="mb-4 flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+          <p className="text-sm text-amber-800">
+            Some data could not be loaded. The dashboard is showing available information.
+          </p>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="ml-auto flex items-center gap-1 px-3 py-1 text-xs font-medium text-amber-700 bg-amber-100 rounded-lg hover:bg-amber-200 transition-colors"
+          >
+            <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">

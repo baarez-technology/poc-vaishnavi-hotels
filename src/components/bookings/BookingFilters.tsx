@@ -50,11 +50,14 @@ export default function BookingFilters({
 
   const roomTypeOptions = [
     { value: 'all', label: 'All Room Types' },
-    { value: 'Standard Queen', label: 'Standard Queen' },
-    { value: 'Premium King', label: 'Premium King' },
-    { value: 'Deluxe Suite', label: 'Deluxe Suite' },
-    { value: 'Executive Suite', label: 'Executive Suite' },
-    { value: 'Presidential Suite', label: 'Presidential Suite' }
+    { value: 'Minimalist Studio', label: 'Minimalist Studio' },
+    { value: 'Coastal Retreat', label: 'Coastal Retreat' },
+    { value: 'Urban Oasis', label: 'Urban Oasis' },
+    { value: 'Sunset Vista', label: 'Sunset Vista' },
+    { value: 'Pacific Suite', label: 'Pacific Suite' },
+    { value: 'Wellness Suite', label: 'Wellness Suite' },
+    { value: 'Family Sanctuary', label: 'Family Sanctuary' },
+    { value: 'Oceanfront Penthouse', label: 'Oceanfront Penthouse' }
   ];
 
   const datePresets = [

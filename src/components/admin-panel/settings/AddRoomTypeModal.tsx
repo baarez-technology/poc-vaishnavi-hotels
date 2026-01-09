@@ -128,7 +128,7 @@ export default function AddRoomTypeModal({ onClose, onSave }) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Price per Night (₹) *
+                  Price per Night ($) *
                 </label>
                 <input
                   type="number"

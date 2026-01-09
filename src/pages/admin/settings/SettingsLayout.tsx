@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Building2, Shield, Plug, Palette, Brain, ChevronRight } from 'lucide-react';
+import { Building2, Shield, Plug, Palette, Brain, ChevronRight, TrendingUp } from 'lucide-react';
 import HotelInfoTab from '../../../components/settings/HotelInfoTab';
 import RoomTypesTab from '../../../components/settings/RoomTypesTab';
 import TaxesTab from '../../../components/settings/TaxesTab';
@@ -9,14 +9,16 @@ import NotificationsTab from '../../../components/settings/NotificationsTab';
 import BrandingTab from '../../../components/settings/BrandingTab';
 import StaffPortalSettingsTab from '../../../components/settings/StaffPortalSettingsTab';
 import AISettingsTab from '../../../components/settings/AISettingsTab';
+import OverbookingSettingsTab from '../../../components/settings/OverbookingSettingsTab';
 import { defaultSettings } from '../../../utils/settings';
 
 const BRANDING_KEY = 'glimmora_branding';
 
-type MainTab = 'property' | 'security' | 'connectivity' | 'appearance' | 'ai';
+type MainTab = 'property' | 'security' | 'connectivity' | 'appearance' | 'ai' | 'revenue';
 type PropertySubTab = 'hotel-info' | 'room-types' | 'taxes';
 type ConnectivitySubTab = 'integrations' | 'notifications';
 type AISubTab = 'ai-settings' | 'staff-portal';
+type RevenueSubTab = 'overbooking';
 
 const navigationConfig = [
   {
@@ -64,6 +66,15 @@ const navigationConfig = [
       { id: 'staff-portal' as AISubTab, label: 'Staff Portal' },
     ],
   },
+  {
+    id: 'revenue' as MainTab,
+    label: 'Revenue',
+    icon: TrendingUp,
+    description: 'Overbooking & yield management',
+    subTabs: [
+      { id: 'overbooking' as RevenueSubTab, label: 'Overbooking' },
+    ],
+  },
 ];
 
 export default function SettingsLayout() {
@@ -71,6 +82,7 @@ export default function SettingsLayout() {
   const [propertySubTab, setPropertySubTab] = useState<PropertySubTab>('hotel-info');
   const [connectivitySubTab, setConnectivitySubTab] = useState<ConnectivitySubTab>('integrations');
   const [aiSubTab, setAISubTab] = useState<AISubTab>('ai-settings');
+  const [revenueSubTab, setRevenueSubTab] = useState<RevenueSubTab>('overbooking');
   const [primaryColor, setPrimaryColor] = useState(defaultSettings.branding.primaryColor);
 
   useEffect(() => {
@@ -117,6 +129,12 @@ export default function SettingsLayout() {
             return <StaffPortalSettingsTab />;
         }
         break;
+      case 'revenue':
+        switch (revenueSubTab) {
+          case 'overbooking':
+            return <OverbookingSettingsTab />;
+        }
+        break;
     }
     return null;
   };
@@ -129,6 +147,8 @@ export default function SettingsLayout() {
         return connectivitySubTab;
       case 'ai':
         return aiSubTab;
+      case 'revenue':
+        return revenueSubTab;
       default:
         return null;
     }
@@ -144,6 +164,9 @@ export default function SettingsLayout() {
         break;
       case 'ai':
         setAISubTab(tabId as AISubTab);
+        break;
+      case 'revenue':
+        setRevenueSubTab(tabId as RevenueSubTab);
         break;
     }
   };

@@ -333,10 +333,14 @@ export function ChannelManagerProvider({ children }) {
 
   const autoSuggestMapping = useCallback((pmsRoomType, otaCode) => {
     const suggestions = {
-      Standard: { BOOKING: 'Standard Double Room', EXPEDIA: 'Standard Room', AGODA: 'Standard Double' },
-      Premium: { BOOKING: 'Superior King Room', EXPEDIA: 'Premium Room', AGODA: 'Superior Room' },
-      Deluxe: { BOOKING: 'Deluxe Room with Ocean View', EXPEDIA: 'Deluxe Ocean View', AGODA: 'Deluxe View Room' },
-      Suite: { BOOKING: 'Executive Suite', EXPEDIA: 'Premium Suite', AGODA: 'Luxury Suite' }
+      'Minimalist Studio': { BOOKING: 'Minimalist Studio Room', EXPEDIA: 'Studio Room', AGODA: 'Minimalist Studio' },
+      'Coastal Retreat': { BOOKING: 'Coastal Retreat Room', EXPEDIA: 'Coastal Room', AGODA: 'Coastal Retreat' },
+      'Urban Oasis': { BOOKING: 'Urban Oasis Room', EXPEDIA: 'Urban Room', AGODA: 'Urban Oasis' },
+      'Sunset Vista': { BOOKING: 'Sunset Vista Room', EXPEDIA: 'Vista Room', AGODA: 'Sunset Vista' },
+      'Pacific Suite': { BOOKING: 'Pacific Suite', EXPEDIA: 'Pacific Suite', AGODA: 'Pacific Suite' },
+      'Wellness Suite': { BOOKING: 'Wellness Suite', EXPEDIA: 'Spa Suite', AGODA: 'Wellness Suite' },
+      'Family Sanctuary': { BOOKING: 'Family Room', EXPEDIA: 'Family Suite', AGODA: 'Family Sanctuary' },
+      'Oceanfront Penthouse': { BOOKING: 'Oceanfront Penthouse', EXPEDIA: 'Penthouse Suite', AGODA: 'Oceanfront Penthouse' }
     };
 
     return suggestions[pmsRoomType]?.[otaCode] || `${pmsRoomType} Room`;

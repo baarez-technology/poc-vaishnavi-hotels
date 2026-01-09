@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MessageSquare, Wand2, Star, Clock, Send, Loader2 } from 'lucide-react';
-import { useReputation } from '@/contexts/ReputationContext';
+import { useReputation } from '@/context/ReputationContext';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 import { Textarea } from '../ui2/Input';
@@ -96,9 +96,14 @@ function ReviewDraftDrawer({ isOpen, review, onClose, onApprove }: ReviewDraftDr
                 {review.source || 'Direct'}
               </span>
             </div>
-            <p className="text-[13px] text-neutral-700 leading-relaxed">{review.content || review.text}</p>
+            <p className="text-[13px] text-neutral-700 leading-relaxed">{review.comment || review.content || review.text}</p>
             <p className="text-[11px] text-neutral-500 mt-3 font-medium">
-              {review.guest_name} • {new Date(review.created_at || review.date).toLocaleDateString()}
+              {review.guest_name || review.guest || `Guest ${review.id}`} • {(() => {
+                const dateStr = review.review_date || review.created_at || review.date;
+                if (!dateStr) return 'No date';
+                const d = new Date(dateStr);
+                return isNaN(d.getTime()) ? 'No date' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+              })()}
             </p>
           </div>
         </div>
@@ -229,13 +234,19 @@ export default function PendingReviewsPanel() {
                     </span>
                     <span className="text-[11px] text-neutral-400 flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      {new Date(review.created_at || review.date).toLocaleDateString()}
+                      {(() => {
+                        // Backend returns review_date for pending reviews
+                        const dateStr = review.review_date || review.created_at || review.date;
+                        if (!dateStr) return 'No date';
+                        const d = new Date(dateStr);
+                        return isNaN(d.getTime()) ? 'No date' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                      })()}
                     </span>
                   </div>
                   <p className="text-[13px] text-neutral-700 line-clamp-2">
-                    {review.content || review.text}
+                    {review.comment || review.content || review.text}
                   </p>
-                  <p className="text-[11px] text-neutral-500 mt-1.5 font-medium">{review.guest_name || 'Anonymous Guest'}</p>
+                  <p className="text-[11px] text-neutral-500 mt-1.5 font-medium">{review.guest_name || review.guest || `Guest ${review.id}`}</p>
                 </div>
                 <Button
                   variant="primary"

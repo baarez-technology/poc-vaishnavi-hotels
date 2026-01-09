@@ -28,7 +28,25 @@ function loadFromStorage() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const data = JSON.parse(stored);
+
+      // Check if stored availability has current dates
+      // If today's date is not in stored availability, the data is stale
+      if (data?.availability) {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+
+        if (!data.availability[todayStr]) {
+          console.log('[CBS] Stored availability dates are stale, using fresh sample data');
+          // Return data but with null availability to trigger fresh sample data
+          return { ...data, availability: null };
+        }
+      }
+
+      return data;
     }
   } catch (e) {
     console.error('Failed to load CBS data from storage:', e);
@@ -51,6 +69,7 @@ export function CBSProvider({ children }) {
   const [availability, setAvailability] = useState(stored?.availability || sampleAvailability);
   const [ratePlans, setRatePlans] = useState(stored?.ratePlans || sampleRatePlans);
   const [promotions, setPromotions] = useState(stored?.promotions || samplePromotions);
+  const [rooms, setRooms] = useState([]); // Rooms from API with database IDs
   const [isLoading, setIsLoading] = useState(true);
 
   // CMS Zustand stores - these provide enhanced functionality and are persisted separately
@@ -66,8 +85,16 @@ export function CBSProvider({ children }) {
   }, [bookings, availability, ratePlans, promotions]);
 
   // Fetch bookings, rate plans, and promotions from API on mount
+  // Only fetch if user has an access token (is authenticated)
   useEffect(() => {
     const fetchFromApi = async () => {
+      // Check if user is authenticated before making API calls
+      const token = localStorage.getItem('glimmora_access_token');
+      if (!token) {
+        setIsLoading(false);
+        return; // Skip API calls if not authenticated
+      }
+
       setIsLoading(true);
       try {
         // Fetch bookings from API
@@ -115,6 +142,7 @@ export function CBSProvider({ children }) {
 
             return {
               id: b.bookingNumber || b.id,
+              dbId: b.id, // Store original database ID for API calls
               guestName: guestName,
               guestEmail: guest?.email || '',
               guestPhone: guest?.phone || '',
@@ -122,7 +150,7 @@ export function CBSProvider({ children }) {
               checkIn: b.checkIn || b.arrival_date,
               checkOut: b.checkOut || b.departure_date,
               nights: b.nights || 1,
-              roomType: b.room?.name || 'Standard',
+              roomType: b.room?.name || 'Minimalist Studio',
               roomNumber: b.room?.number || null,
               ratePlan: 'BAR',
               adults: (b.guests?.adults || b.adults || 1),
@@ -218,6 +246,30 @@ export function CBSProvider({ children }) {
             const newPromos = transformedPromos.filter((p: any) => !existingIds.has(p.code));
             return [...prev, ...newPromos];
           });
+        }
+
+        // Fetch rooms from API for room assignment
+        try {
+          const roomsResponse = await apiClient.get('/api/v1/rooms');
+          const apiRooms = roomsResponse.data?.items || roomsResponse.data || [];
+          if (Array.isArray(apiRooms) && apiRooms.length > 0) {
+            const transformedRooms = apiRooms.map((r: any) => ({
+              id: r.id, // Database ID for API calls
+              roomNumber: r.number || r.roomNumber || String(r.id),
+              type: r.category || r.room_type?.name || r.type || 'Minimalist Studio',
+              floor: r.floor || 1,
+              status: r.status || 'available',
+              cleaning: r.status === 'available' ? 'clean' : 'dirty',
+              price: r.price || r.room_type?.base_price || 0,
+              capacity: r.max_occupancy || r.maxGuests || 2,
+              bedType: r.bed_type || 'King',
+              amenities: r.amenities || [],
+            }));
+            setRooms(transformedRooms);
+          }
+        } catch (roomErr) {
+          console.error('Error fetching rooms from API:', roomErr);
+          // Keep using sample roomsData as fallback
         }
       } catch (err) {
         console.error('Error fetching CBS data from API:', err);
@@ -433,12 +485,15 @@ export function CBSProvider({ children }) {
 
   // ============ ROOM ASSIGNMENT FUNCTIONS ============
 
-  const assignRoom = useCallback((bookingId, roomNumber) => {
+  const assignRoom = useCallback(async (bookingId, roomNumber) => {
     const booking = bookings.find(b => b.id === bookingId);
     if (!booking) return { success: false, error: 'Booking not found' };
 
-    // Check if room is available
-    const room = roomsData.find(r => r.roomNumber === roomNumber);
+    // Check if room is available - first try API rooms, then fall back to sample data
+    let room = rooms.find(r => r.roomNumber === roomNumber);
+    if (!room) {
+      room = roomsData.find(r => r.roomNumber === roomNumber);
+    }
     if (!room) return { success: false, error: 'Room not found' };
 
     // Check for conflicts
@@ -455,36 +510,52 @@ export function CBSProvider({ children }) {
       return { success: false, error: `Room ${roomNumber} is already assigned to booking ${conflictingBooking.id}` };
     }
 
-    // If previous room was assigned, release it
-    if (booking.roomNumber) {
-      updateAvailabilityForBooking(booking.checkIn, booking.checkOut, booking.roomType, 1);
-    }
+    // Call backend API to update the booking with the room
+    // Use booking.dbId (the original database ID) for API call
+    const bookingDbId = booking.dbId || booking.id;
+    const roomDbId = room.id;
 
-    // Assign new room
-    setBookings(prev => prev.map(b => {
-      if (b.id === bookingId) {
-        return {
-          ...b,
-          roomNumber,
-          roomType: room.type,
-          activityLog: [
-            ...b.activityLog,
-            {
-              date: new Date().toISOString().split('T')[0],
-              action: `Room ${roomNumber} assigned`,
-              user: 'Front Desk'
-            }
-          ]
-        };
+    try {
+      // Call the booking update API with roomId
+      await apiClient.patch(`/api/v1/bookings/${bookingDbId}`, {
+        roomId: String(roomDbId)
+      });
+
+      // If previous room was assigned, release it
+      if (booking.roomNumber) {
+        updateAvailabilityForBooking(booking.checkIn, booking.checkOut, booking.roomType, 1);
       }
-      return b;
-    }));
 
-    // Update availability
-    updateAvailabilityForBooking(booking.checkIn, booking.checkOut, room.type, -1);
+      // Update local state on success
+      setBookings(prev => prev.map(b => {
+        if (b.id === bookingId) {
+          return {
+            ...b,
+            roomNumber,
+            roomType: room.type,
+            activityLog: [
+              ...(b.activityLog || []),
+              {
+                date: new Date().toISOString().split('T')[0],
+                action: `Room ${roomNumber} assigned`,
+                user: 'Front Desk'
+              }
+            ]
+          };
+        }
+        return b;
+      }));
 
-    return { success: true };
-  }, [bookings]);
+      // Update availability
+      updateAvailabilityForBooking(booking.checkIn, booking.checkOut, room.type, -1);
+
+      return { success: true };
+    } catch (err: any) {
+      console.error('[CBS] Error assigning room via API:', err);
+      const errorMessage = err?.response?.data?.detail || err?.message || 'Failed to assign room';
+      return { success: false, error: errorMessage };
+    }
+  }, [bookings, rooms]);
 
   const unassignRoom = useCallback((bookingId) => {
     const booking = bookings.find(b => b.id === bookingId);
@@ -559,7 +630,10 @@ export function CBSProvider({ children }) {
   }, []);
 
   const getAvailableRooms = useCallback((checkIn, checkOut, roomType = null) => {
-    const availableRooms = roomsData.filter(room => {
+    // Use API rooms if available, otherwise fall back to sample data
+    const roomSource = rooms.length > 0 ? rooms : roomsData;
+
+    const availableRooms = roomSource.filter(room => {
       // Filter by room type if specified
       if (roomType && room.type !== roomType) return false;
 
@@ -587,7 +661,7 @@ export function CBSProvider({ children }) {
         cleaningStatus: room.cleaning
       };
     });
-  }, [bookings]);
+  }, [bookings, rooms]);
 
   // ============ RATE PLAN FUNCTIONS ============
 
@@ -604,20 +678,26 @@ export function CBSProvider({ children }) {
       // Convert linked rooms to base prices
       basePrice: newPlanData.linkedRooms.reduce((acc, roomId) => {
         const roomMap = {
-          'rt1': 'Standard Double',
-          'rt2': 'Deluxe King',
-          'rt3': 'Deluxe Twin',
-          'rt4': 'Executive Suite',
-          'rt5': 'Presidential Suite',
+          'rt1': 'Minimalist Studio',
+          'rt2': 'Coastal Retreat',
+          'rt3': 'Urban Oasis',
+          'rt4': 'Sunset Vista',
+          'rt5': 'Pacific Suite',
+          'rt6': 'Wellness Suite',
+          'rt7': 'Family Sanctuary',
+          'rt8': 'Oceanfront Penthouse',
         };
         const roomName = roomMap[roomId] || roomId;
         // Default base prices based on room type
         const defaultPrices = {
-          'Standard Double': 190,
-          'Deluxe King': 280,
-          'Deluxe Twin': 260,
-          'Executive Suite': 450,
-          'Presidential Suite': 900,
+          'Minimalist Studio': 150,
+          'Coastal Retreat': 199,
+          'Urban Oasis': 245,
+          'Sunset Vista': 315,
+          'Pacific Suite': 385,
+          'Wellness Suite': 425,
+          'Family Sanctuary': 485,
+          'Oceanfront Penthouse': 750,
         };
         acc[roomName] = newPlanData.pricing?.base || defaultPrices[roomName] || 200;
         return acc;
@@ -784,11 +864,14 @@ export function CBSProvider({ children }) {
   const createPromotion = useCallback((promoData) => {
     // Map room IDs to room names for display
     const roomMap = {
-      'rt1': 'Standard Double',
-      'rt2': 'Deluxe King',
-      'rt3': 'Deluxe Twin',
-      'rt4': 'Executive Suite',
-      'rt5': 'Presidential Suite',
+      'rt1': 'Minimalist Studio',
+      'rt2': 'Coastal Retreat',
+      'rt3': 'Urban Oasis',
+      'rt4': 'Sunset Vista',
+      'rt5': 'Pacific Suite',
+      'rt6': 'Wellness Suite',
+      'rt7': 'Family Sanctuary',
+      'rt8': 'Oceanfront Penthouse',
     };
 
     const eligibleRoomNames = (promoData.eligibleRooms || []).map(id => roomMap[id] || id);
@@ -1021,7 +1104,9 @@ export function CBSProvider({ children }) {
 
     // Check housekeeping status
     if (booking.roomNumber) {
-      const room = roomsData.find(r => r.roomNumber === booking.roomNumber);
+      // Use API rooms if available, otherwise fall back to sample data
+      const roomSource = rooms.length > 0 ? rooms : roomsData;
+      const room = roomSource.find(r => r.roomNumber === booking.roomNumber);
       if (room && room.cleaning === 'dirty') {
         insights.push({
           type: 'warning',
@@ -1031,7 +1116,7 @@ export function CBSProvider({ children }) {
     }
 
     return insights;
-  }, [bookings, availability]);
+  }, [bookings, availability, rooms]);
 
   // ============ UTILITY FUNCTIONS ============
 

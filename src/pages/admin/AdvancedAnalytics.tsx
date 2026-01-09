@@ -232,10 +232,13 @@ export default function AdvancedAnalytics() {
   };
 
   const formatCurrency = (value: number) => {
-    if (value >= 100000) {
-      return `₹${(value / 100000).toFixed(1)}L`;
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`;
     }
-    return `₹${value.toLocaleString()}`;
+    if (value >= 1000) {
+      return `$${(value / 1000).toFixed(1)}K`;
+    }
+    return `$${value.toLocaleString()}`;
   };
 
   const formatPercent = (value: number) => `${value.toFixed(1)}%`;

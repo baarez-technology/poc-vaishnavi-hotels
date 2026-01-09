@@ -141,7 +141,7 @@ export default function CRMGuestImpact({ review, influenceChurnProbability, infl
           <div>
             <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-0.5">Original</p>
             <p className="text-[16px] font-semibold tracking-tight text-neutral-600">
-              ₹{impactAnalysis.originalLTV.toLocaleString()}
+              ${impactAnalysis.originalLTV.toLocaleString()}
             </p>
           </div>
           <div>
@@ -149,7 +149,7 @@ export default function CRMGuestImpact({ review, influenceChurnProbability, infl
             <p className={`text-[16px] font-semibold tracking-tight ${
               impactAnalysis.ltvChange >= 0 ? 'text-sage-600' : 'text-gold-600'
             }`}>
-              ₹{impactAnalysis.adjustedLTV.toLocaleString()}
+              ${impactAnalysis.adjustedLTV.toLocaleString()}
             </p>
           </div>
           <div>

@@ -1,4 +1,4 @@
-import { apiClient } from '../client';
+import { apiClient, cachedGet, clearApiCache } from '../client';
 import { API_ENDPOINTS } from '@/config/constants';
 import type { Booking, CreateBookingData } from '../types/booking.types';
 import type { ApiResponse, PaginatedResponse } from '../types/common.types';
@@ -33,6 +33,8 @@ export const bookingService = {
       API_ENDPOINTS.BOOKINGS.CREATE,
       bookingData
     );
+    // Clear bookings cache after creating new booking
+    clearApiCache('/bookings');
     return response.data.data || response.data;
   },
 
@@ -42,15 +44,17 @@ export const bookingService = {
       pageSize: String(pageSize),
     };
     if (status) params.status = status;
-    
-    const response = await apiClient.get<
+
+    // Use cached GET to prevent duplicate calls
+    const response = await cachedGet<
       ApiResponse<PaginatedResponse<Booking>>
     >(API_ENDPOINTS.BOOKINGS.LIST, { params });
     return response.data.data || response.data;
   },
 
   getBookingById: async (id: string) => {
-    const response = await apiClient.get<ApiResponse<Booking>>(
+    // Use cached GET for booking details
+    const response = await cachedGet<ApiResponse<Booking>>(
       API_ENDPOINTS.BOOKINGS.DETAIL(id)
     );
     return response.data.data || response.data;
@@ -68,6 +72,8 @@ export const bookingService = {
         bookingData
       );
       console.log('[bookingService.updateBooking] Response:', response.data);
+      // Clear bookings cache after update
+      clearApiCache('/bookings');
       return response.data.data || response.data;
     } catch (error: any) {
       console.error('[bookingService.updateBooking] Error:', error.response?.data || error.message);
@@ -84,6 +90,8 @@ export const bookingService = {
       API_ENDPOINTS.BOOKINGS.CANCEL(id),
       Object.keys(payload).length > 0 ? payload : undefined
     );
+    // Clear bookings cache after cancel
+    clearApiCache('/bookings');
     return response.data.data || response.data;
   },
 
@@ -93,6 +101,8 @@ export const bookingService = {
       `/api/v1/bookings/${bookingId}/checkin`,
       data || {}
     );
+    // Clear bookings cache after check-in
+    clearApiCache('/bookings');
     return response.data.data || response.data;
   },
 
@@ -102,6 +112,8 @@ export const bookingService = {
       `/api/v1/bookings/${bookingId}/checkout`,
       data || {}
     );
+    // Clear bookings cache after check-out
+    clearApiCache('/bookings');
     return response.data.data || response.data;
   },
 
@@ -111,6 +123,9 @@ export const bookingService = {
       `/api/v1/bookings/${bookingId}/room-change`,
       data
     );
+    // Clear bookings and rooms cache after room change
+    clearApiCache('/bookings');
+    clearApiCache('/rooms');
     return response.data.data || response.data;
   },
 
@@ -120,30 +135,32 @@ export const bookingService = {
       `/api/v1/bookings/${bookingId}/extend`,
       data
     );
+    // Clear bookings cache after extending stay
+    clearApiCache('/bookings');
     return response.data.data || response.data;
   },
 
-  // Get today's arrivals
+  // Get today's arrivals - cached
   getTodayArrivals: async () => {
     const today = new Date().toISOString().split('T')[0];
-    const response = await apiClient.get<Booking[]>('/api/v1/bookings', {
+    const response = await cachedGet<Booking[]>('/api/v1/bookings', {
       params: { arrival_date: today, status: 'confirmed' }
     });
     return Array.isArray(response.data) ? response.data : (response.data as any).data || [];
   },
 
-  // Get today's departures
+  // Get today's departures - cached
   getTodayDepartures: async () => {
     const today = new Date().toISOString().split('T')[0];
-    const response = await apiClient.get<Booking[]>('/api/v1/bookings', {
+    const response = await cachedGet<Booking[]>('/api/v1/bookings', {
       params: { departure_date: today, status: 'checked_in' }
     });
     return Array.isArray(response.data) ? response.data : (response.data as any).data || [];
   },
 
-  // Get in-house guests (currently checked in)
+  // Get in-house guests (currently checked in) - cached
   getInHouseGuests: async () => {
-    const response = await apiClient.get<Booking[]>('/api/v1/bookings', {
+    const response = await cachedGet<Booking[]>('/api/v1/bookings', {
       params: { status: 'checked_in' }
     });
     return Array.isArray(response.data) ? response.data : (response.data as any).data || [];
@@ -157,6 +174,64 @@ export const bookingService = {
     const response = await apiClient.post<{ success: boolean; notes: string; reason: string }>(
       `/api/v1/bookings/${bookingId}/draft-cancellation`,
       data
+    );
+    return response.data;
+  },
+
+  // Get AI-recommended rooms for a booking
+  getRoomRecommendations: async (
+    bookingId: string | number,
+    limit: number = 5
+  ): Promise<{
+    success: boolean;
+    recommendations: Array<{
+      room_id: number;
+      room_number: string;
+      floor: number | null;
+      room_type: string;
+      bed_type: string | null;
+      view_type: string | null;
+      status: string;
+      is_accessible: boolean;
+      is_smoking: boolean;
+      match_score: number;
+      last_cleaned: string | null;
+    }>;
+    booking_id: string;
+    guest_preferences: Record<string, any> | null;
+  }> => {
+    try {
+      // Use cached GET for room recommendations
+      const response = await cachedGet(
+        `/api/v1/bookings/${bookingId}/room-recommendations`,
+        { params: { limit } }
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error('[bookingService.getRoomRecommendations] Error:', error);
+      return {
+        success: false,
+        recommendations: [],
+        booking_id: String(bookingId),
+        guest_preferences: null
+      };
+    }
+  },
+
+  // Smart room assignment with AI-powered matching
+  smartAssignRoom: async (
+    bookingId: string | number,
+    data?: { room_id?: number; preferences?: Record<string, any> }
+  ): Promise<{
+    success: boolean;
+    room_id: number;
+    room_number: string;
+    room_type: string;
+    message: string;
+  }> => {
+    const response = await apiClient.post(
+      `/api/v1/bookings/${bookingId}/smart-assign`,
+      data || {}
     );
     return response.data;
   },

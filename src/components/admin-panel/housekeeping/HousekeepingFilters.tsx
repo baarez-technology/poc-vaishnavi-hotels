@@ -30,7 +30,7 @@ export default function HousekeepingFilters({
 
   const floors = ['All', '1', '2', '3', '4', '5'];
   const statuses = ['All', 'Clean', 'Dirty', 'In Progress', 'Out of Service'];
-  const roomTypes = ['All', 'Standard', 'Premium', 'Deluxe', 'Suite'];
+  const roomTypes = ['All', 'Minimalist Studio', 'Coastal Retreat', 'Urban Oasis', 'Sunset Vista', 'Pacific Suite', 'Wellness Suite', 'Family Sanctuary', 'Oceanfront Penthouse'];
 
   return (
     <div className="relative" ref={dropdownRef}>

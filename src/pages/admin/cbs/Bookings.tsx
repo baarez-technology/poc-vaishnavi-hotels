@@ -249,8 +249,8 @@ export default function CBSBookings() {
     });
   }, [bookings, cancelBooking, updateBookingStatus, success]);
 
-  const handleRoomAssignment = useCallback((bookingId, roomNumber, upgradeFee = 0) => {
-    const result = assignRoom(bookingId, roomNumber);
+  const handleRoomAssignment = useCallback(async (bookingId, roomNumber, upgradeFee = 0) => {
+    const result = await assignRoom(bookingId, roomNumber);
     if (result.success) {
       success(`Room ${roomNumber} assigned successfully`);
 

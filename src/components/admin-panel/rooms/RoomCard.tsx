@@ -45,50 +45,69 @@ export default function RoomCard({ room, onClick }) {
   // Room type color and background
   const getTypeStyle = (type) => {
     const styles = {
-      'Standard': { text: 'text-neutral-700', bg: 'bg-neutral-50', border: 'border-neutral-200' },
-      'Premium': { text: 'text-[#A57865]', bg: 'bg-[#A57865]/5', border: 'border-[#A57865]/20' },
-      'Deluxe': { text: 'text-[#8E6554]', bg: 'bg-[#8E6554]/10', border: 'border-[#8E6554]/30' },
-      'Suite': { text: 'text-[#CDB261]', bg: 'bg-[#CDB261]/10', border: 'border-[#CDB261]/30' }
+      'Minimalist Studio': { text: 'text-neutral-700', bg: 'bg-neutral-50', border: 'border-neutral-200' },
+      'Coastal Retreat': { text: 'text-[#5C9BA4]', bg: 'bg-[#5C9BA4]/10', border: 'border-[#5C9BA4]/30' },
+      'Urban Oasis': { text: 'text-[#4E5840]', bg: 'bg-[#4E5840]/10', border: 'border-[#4E5840]/30' },
+      'Sunset Vista': { text: 'text-[#CDB261]', bg: 'bg-[#CDB261]/10', border: 'border-[#CDB261]/30' },
+      'Pacific Suite': { text: 'text-[#A57865]', bg: 'bg-[#A57865]/5', border: 'border-[#A57865]/20' },
+      'Wellness Suite': { text: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+      'Family Sanctuary': { text: 'text-[#8E6554]', bg: 'bg-[#8E6554]/10', border: 'border-[#8E6554]/30' },
+      'Oceanfront Penthouse': { text: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' }
     };
-    return styles[type] || styles['Standard'];
+    return styles[type] || styles['Minimalist Studio'];
   };
 
   const typeStyle = getTypeStyle(room.type);
 
+  // Get primary image or fallback
+  const primaryImage = room.images?.[0] || 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800';
+
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-6 hover:shadow-lg hover:border-[#A57865]/30 transition-all duration-200 group flex flex-col">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-[#A57865]/10 flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-[#A57865]" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-serif font-bold text-neutral-900">
+    <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden hover:shadow-lg hover:border-[#A57865]/30 transition-all duration-200 group flex flex-col">
+      {/* Room Image */}
+      <div className="relative h-40 overflow-hidden">
+        <img
+          src={primaryImage}
+          alt={`Room ${room.roomNumber}`}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={(e) => {
+            e.currentTarget.src = 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800';
+          }}
+        />
+        {/* Status Badge Overlay */}
+        <div className="absolute top-3 left-3">
+          {getStatusBadge(room.status)}
+        </div>
+        {/* Floor Badge */}
+        <div className="absolute top-3 right-3">
+          <div className="flex items-center gap-1 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-lg border border-neutral-200">
+            <span className="text-[10px] text-neutral-500">Floor</span>
+            <span className="text-sm font-bold text-neutral-900">{room.floor}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-5">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-[#A57865]/10 flex items-center justify-center">
+                <Building2 className="w-4 h-4 text-[#A57865]" />
+              </div>
+              <h3 className="text-xl font-serif font-bold text-neutral-900">
                 {room.roomNumber}
               </h3>
             </div>
+            <div className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold border ${typeStyle.bg} ${typeStyle.text} ${typeStyle.border}`}>
+              {room.type}
+            </div>
           </div>
-          <div className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold border ${typeStyle.bg} ${typeStyle.text} ${typeStyle.border}`}>
-            {room.type}
-          </div>
+          {getCleaningBadge(room.cleaning)}
         </div>
-        <div className="text-right">
-          <p className="text-xs font-medium text-neutral-500 mb-1">Floor</p>
-          <div className="w-10 h-10 rounded-lg bg-neutral-50 border border-neutral-200 flex items-center justify-center">
-            <p className="text-lg font-bold text-neutral-900">{room.floor}</p>
-          </div>
-        </div>
-      </div>
 
-      {/* Status Badges */}
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
-        {getStatusBadge(room.status)}
-        {getCleaningBadge(room.cleaning)}
-      </div>
-
-      {/* Guest Info */}
+        {/* Guest Info */}
       {room.guests && (
         <div className="flex items-center gap-3 mb-4 p-3.5 bg-[#A57865]/10 rounded-xl border border-[#A57865]/30">
           <div className="w-8 h-8 rounded-lg bg-[#A57865]/20 border border-[#A57865]/30 flex items-center justify-center">

@@ -53,17 +53,35 @@ export default function SentimentTrendChart({ data }) {
   }, [data]);
 
   const avgSentiment = useMemo(() => {
-    return Math.round(data.reduce((sum, d) => sum + d.score, 0) / data.length);
+    if (!data || data.length === 0) return 0;
+    const total = data.reduce((sum, d) => sum + (d.score || 0), 0);
+    return Math.round(total / data.length);
   }, [data]);
 
   const trend = useMemo(() => {
-    if (data.length < 7) return 0;
-    const recent = data.slice(-7).reduce((sum, d) => sum + d.score, 0) / 7;
-    const previous = data.slice(-14, -7).reduce((sum, d) => sum + d.score, 0) / 7;
+    if (!data || data.length < 7) return 0;
+    const recent = data.slice(-7).reduce((sum, d) => sum + (d.score || 0), 0) / 7;
+    const prevSlice = data.slice(-14, -7);
+    if (prevSlice.length === 0) return 0;
+    const previous = prevSlice.reduce((sum, d) => sum + (d.score || 0), 0) / prevSlice.length;
     return Math.round(recent - previous);
   }, [data]);
 
-  const latestData = data[data.length - 1] || { positive: 0, negative: 0, neutral: 0 };
+  const latestData = useMemo(() => {
+    if (!data || data.length === 0) return { positive: 0, negative: 0, neutral: 0 };
+    const last = data[data.length - 1];
+    // Convert raw counts to percentages if needed
+    const total = (last.positive || 0) + (last.neutral || 0) + (last.negative || 0);
+    if (total === 0) return { positive: 0, negative: 0, neutral: 0 };
+    // If values are already percentages (sum ~100), return as-is
+    if (total >= 90 && total <= 110) return last;
+    // Otherwise convert to percentages
+    return {
+      positive: Math.round((last.positive || 0) / total * 100),
+      neutral: Math.round((last.neutral || 0) / total * 100),
+      negative: Math.round((last.negative || 0) / total * 100)
+    };
+  }, [data]);
 
   const sentimentLabel = avgSentiment >= 70 ? 'Positive' : avgSentiment >= 40 ? 'Neutral' : 'Negative';
   const sentimentColor = avgSentiment >= 70 ? 'text-sage-600' : avgSentiment >= 40 ? 'text-neutral-500' : 'text-gold-600';

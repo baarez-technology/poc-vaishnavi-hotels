@@ -6,16 +6,67 @@ import {
   ResponsiveContainer,
   Tooltip
 } from 'recharts';
-import { TrendingUp, Users, DollarSign } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, AlertCircle, RefreshCw } from 'lucide-react';
+import { useChannels } from '../../contexts/RevenueDataContext';
 
-const formatCurrency = (value) => {
-  if (value >= 100000) {
-    return `₹${(value / 100000).toFixed(1)}L`;
-  }
-  return `₹${value.toLocaleString()}`;
+// Segment colors mapping
+const SEGMENT_COLORS: Record<string, string> = {
+  'Corporate': '#A57865',
+  'OTA': '#5C9BA4',
+  'Direct Web': '#4E5840',
+  'Travel Agent': '#CDB261',
+  'VIP': '#C8B29D',
+  'Walk-in': '#9E9891',
+  'Leisure': '#7B9E87',
+  'Group': '#8B7355',
+  'Government': '#6B7B8C',
+  'default': '#A57865'
 };
 
-const CustomTooltip = ({ active, payload }) => {
+interface SegmentData {
+  segment: string;
+  value: number;
+  bookings: number;
+  avgRate: number;
+  color: string;
+  percentage?: number;
+}
+
+interface SegmentPerformance {
+  segment_name: string;
+  total_revenue: number;
+  booking_count: number;
+  avg_rate: number;
+  revenue_share: number;
+}
+
+interface SegmentApiResponse {
+  segments: SegmentPerformance[];
+  period: {
+    start: string;
+    end: string;
+  };
+  totals: {
+    revenue: number;
+    bookings: number;
+  };
+}
+
+const formatCurrency = (value: number) => {
+  if (value >= 1000000) {
+    return `$${(value / 1000000).toFixed(1)}M`;
+  }
+  if (value >= 1000) {
+    return `$${(value / 1000).toFixed(0)}K`;
+  }
+  return `$${value.toLocaleString()}`;
+};
+
+interface TooltipPayload {
+  payload: SegmentData;
+}
+
+const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: TooltipPayload[] }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
@@ -32,7 +83,7 @@ const CustomTooltip = ({ active, payload }) => {
         </p>
         <div className="space-y-1 text-[11px] text-neutral-500">
           <p>{data.bookings} bookings</p>
-          <p>Avg Rate: ₹{data.avgRate.toLocaleString()}</p>
+          <p>Avg Rate: ${data.avgRate.toLocaleString()}</p>
         </div>
       </div>
     );
@@ -40,7 +91,88 @@ const CustomTooltip = ({ active, payload }) => {
   return null;
 };
 
-export default function RevenueBySegment({ data }) {
+// Skeleton loader component
+const SkeletonLoader = () => (
+  <div className="p-6 animate-pulse">
+    <div className="mb-6">
+      <div className="h-4 bg-neutral-200 rounded w-32 mb-2" />
+      <div className="h-3 bg-neutral-200 rounded w-24" />
+    </div>
+    <div className="flex items-start gap-6">
+      <div className="w-[160px] h-[160px] bg-neutral-200 rounded-full" />
+      <div className="flex-1 space-y-3 pt-1">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="flex items-center justify-between py-1.5">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-neutral-200" />
+              <div className="h-3 bg-neutral-200 rounded w-20" />
+            </div>
+            <div className="h-3 bg-neutral-200 rounded w-16" />
+          </div>
+        ))}
+      </div>
+    </div>
+    <div className="grid grid-cols-3 gap-3 mt-5 pt-4 border-t border-neutral-100">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="p-3 rounded-lg bg-neutral-100">
+          <div className="h-3 bg-neutral-200 rounded w-16 mb-2" />
+          <div className="h-4 bg-neutral-200 rounded w-20" />
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// Error component
+const ErrorDisplay = ({ error, onRetry }: { error: string; onRetry: () => void }) => (
+  <div className="p-6">
+    <div className="flex flex-col items-center justify-center py-8">
+      <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center mb-4">
+        <AlertCircle className="w-6 h-6 text-rose-500" />
+      </div>
+      <p className="text-sm font-medium text-neutral-900 mb-1">Failed to load segment data</p>
+      <p className="text-xs text-neutral-500 mb-4">{error}</p>
+      <button
+        onClick={onRetry}
+        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-terra-600 bg-terra-50 rounded-lg hover:bg-terra-100 transition-colors"
+      >
+        <RefreshCw className="w-4 h-4" />
+        Retry
+      </button>
+    </div>
+  </div>
+);
+
+// Fallback data
+const FALLBACK_SEGMENT_DATA: SegmentData[] = [
+  { segment: 'Corporate', value: 420000, bookings: 85, avgRate: 8500, color: '#A57865' },
+  { segment: 'OTA', value: 380000, bookings: 72, avgRate: 7200, color: '#5C9BA4' },
+  { segment: 'Direct Web', value: 345000, bookings: 58, avgRate: 8200, color: '#4E5840' },
+  { segment: 'Travel Agent', value: 285000, bookings: 45, avgRate: 7800, color: '#CDB261' },
+  { segment: 'VIP', value: 265000, bookings: 28, avgRate: 12500, color: '#C8B29D' },
+  { segment: 'Walk-in', value: 125000, bookings: 22, avgRate: 6800, color: '#9E9891' }
+];
+
+export default function RevenueBySegment() {
+  const { data: channelsResponse, loading, error, refresh } = useChannels();
+
+  // Transform API response to component format
+  const data = useMemo(() => {
+    const response = channelsResponse as unknown as SegmentApiResponse;
+    if (!response?.segments || response.segments.length === 0) {
+      return FALLBACK_SEGMENT_DATA;
+    }
+
+    return response.segments.map((segment: SegmentPerformance) => ({
+      segment: segment.segment_name,
+      value: segment.total_revenue,
+      bookings: segment.booking_count,
+      avgRate: segment.avg_rate,
+      color: SEGMENT_COLORS[segment.segment_name] || SEGMENT_COLORS.default,
+      percentage: segment.revenue_share
+    }));
+  }, [channelsResponse]);
+
   const totalRevenue = useMemo(() => {
     return data.reduce((sum, segment) => sum + segment.value, 0);
   }, [data]);
@@ -58,8 +190,17 @@ export default function RevenueBySegment({ data }) {
   }, [data]);
 
   const highestAvgRate = useMemo(() => {
+    if (data.length === 0) return 0;
     return Math.max(...data.map(d => d.avgRate));
   }, [data]);
+
+  if (loading) {
+    return <SkeletonLoader />;
+  }
+
+  if (error && data.length === 0) {
+    return <ErrorDisplay error={error} onRetry={refresh} />;
+  }
 
   return (
     <div className="p-6">
@@ -101,7 +242,9 @@ export default function RevenueBySegment({ data }) {
         {/* Legend */}
         <div className="flex-1 space-y-1.5 pt-1">
           {data.map((segment, index) => {
-            const percentage = Math.round((segment.value / totalRevenue) * 100);
+            const percentage = totalRevenue > 0
+              ? Math.round((segment.value / totalRevenue) * 100)
+              : 0;
             return (
               <div
                 key={index}
@@ -138,7 +281,7 @@ export default function RevenueBySegment({ data }) {
             <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">Top Segment</p>
           </div>
           <p className="text-[13px] font-bold" style={{ color: sortedByValue[0]?.color }}>
-            {sortedByValue[0]?.segment}
+            {sortedByValue[0]?.segment || '-'}
           </p>
         </div>
 
@@ -150,7 +293,7 @@ export default function RevenueBySegment({ data }) {
             <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">Peak Rate</p>
           </div>
           <p className="text-[13px] font-bold text-neutral-900">
-            ₹{highestAvgRate.toLocaleString()}
+            ${highestAvgRate.toLocaleString()}
           </p>
         </div>
 
@@ -162,7 +305,7 @@ export default function RevenueBySegment({ data }) {
             <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">Most Bookings</p>
           </div>
           <p className="text-[13px] font-bold text-neutral-900">
-            {sortedByBookings[0]?.segment}
+            {sortedByBookings[0]?.segment || '-'}
           </p>
         </div>
       </div>

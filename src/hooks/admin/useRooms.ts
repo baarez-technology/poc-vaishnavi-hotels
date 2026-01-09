@@ -27,6 +27,7 @@ function transformApiRoom(apiRoom: any): any {
     maxOccupancy: apiRoom.maxGuests || apiRoom.max_occupancy || apiRoom.maxOccupancy || 2,
     price: apiRoom.price || 150,
     amenities: Array.isArray(apiRoom.amenities) ? apiRoom.amenities : [],
+    images: Array.isArray(apiRoom.images) ? apiRoom.images : [],
     guests: null,
     blockedReason: null,
     blockedUntil: null,
@@ -143,11 +144,12 @@ export function useRooms() {
   // Update room status
   const updateStatus = async (roomId: number | string, newStatus: string) => {
     // Map frontend status to backend status
+    // Backend supports: available, occupied, clean, dirty, inspected, cleaning, maintenance, out_of_service
     const backendStatusMap: Record<string, string> = {
       'available': 'available',
       'occupied': 'occupied',
       'dirty': 'dirty',
-      'out_of_service': 'maintenance',
+      'out_of_service': 'out_of_service',
     };
     const backendStatus = backendStatusMap[newStatus] || newStatus;
 
@@ -300,6 +302,8 @@ export function useRooms() {
         bed_type: roomData.bedType,
         view_type: roomData.viewType,
         amenities: Array.isArray(roomData.amenities) ? roomData.amenities.join(', ') : roomData.amenities,
+        price_per_night: roomData.price,  // Send room-specific price to API
+        description: roomData.description,
       };
 
       const createdRoom = await roomsService.createRoom(apiData);

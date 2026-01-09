@@ -10,10 +10,22 @@ const SOURCE_COLORS = {
   'Agoda': '#5C2D91'
 };
 
-const getSentimentBadge = (sentiment) => {
-  if (sentiment >= 70) return { bg: 'bg-[#4E5840]/15', text: 'text-[#4E5840]', label: 'Positive' };
-  if (sentiment >= 40) return { bg: 'bg-[#C8B29D]/20', text: 'text-[#C8B29D]', label: 'Neutral' };
-  return { bg: 'bg-[#CDB261]/20', text: 'text-[#CDB261]', label: 'Negative' };
+const getSentimentBadge = (sentiment, sentimentLabel?: string) => {
+  // If we have a valid numeric sentiment score, use it
+  if (typeof sentiment === 'number' && !isNaN(sentiment)) {
+    if (sentiment >= 70) return { bg: 'bg-[#4E5840]/15', text: 'text-[#4E5840]', label: 'Positive' };
+    if (sentiment >= 40) return { bg: 'bg-[#C8B29D]/20', text: 'text-[#C8B29D]', label: 'Neutral' };
+    return { bg: 'bg-[#CDB261]/20', text: 'text-[#CDB261]', label: 'Negative' };
+  }
+  // Fallback to sentiment label if available
+  if (sentimentLabel) {
+    const label = sentimentLabel.toLowerCase();
+    if (label === 'positive') return { bg: 'bg-[#4E5840]/15', text: 'text-[#4E5840]', label: 'Positive' };
+    if (label === 'negative') return { bg: 'bg-[#CDB261]/20', text: 'text-[#CDB261]', label: 'Negative' };
+    return { bg: 'bg-[#C8B29D]/20', text: 'text-[#C8B29D]', label: 'Neutral' };
+  }
+  // Default to neutral
+  return { bg: 'bg-[#C8B29D]/20', text: 'text-[#C8B29D]', label: 'Neutral' };
 };
 
 const StarRating = ({ rating }) => {
@@ -71,7 +83,10 @@ export default function ReviewFeed({ reviews, onReviewClick }) {
       {/* Reviews List */}
       <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
         {reviews.map((review) => {
-          const sentimentStyle = getSentimentBadge(review.sentiment);
+          const sentimentStyle = getSentimentBadge(
+            review.sentiment ?? review.sentiment_score,
+            review.sentimentLabel ?? review.sentiment_label
+          );
           const sourceColor = SOURCE_COLORS[review.source] || '#A57865';
 
           return (
@@ -139,11 +154,16 @@ export default function ReviewFeed({ reviews, onReviewClick }) {
                 <div className="flex flex-col items-end gap-2 flex-shrink-0">
                   <div className="flex items-center gap-1 text-[11px] text-neutral-400">
                     <Calendar className="w-3 h-3" />
-                    {new Date(review.date).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
+                    {(() => {
+                      const dateStr = review.date || review.created_at;
+                      if (!dateStr) return 'No date';
+                      const d = new Date(dateStr);
+                      return isNaN(d.getTime()) ? 'No date' : d.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      });
+                    })()}
                   </div>
 
                   <Button

@@ -4,13 +4,18 @@ import reputationService, {
   ReviewAnalytics,
   TrendData,
   Review,
-  ResponseDraft
+  ResponseDraft,
+  Alert,
+  Category,
+  Goal,
+  AutomationConfig,
+  EngineStats,
+  ReputationSettings,
+  RoutingRule
 } from '../api/services/reputation.service';
 
-const SETTINGS_KEY = 'glimmora_reputation_settings';
-
 interface ReputationContextType {
-  // State
+  // Core State
   dashboard: ReputationDashboard | null;
   analytics: ReviewAnalytics | null;
   trends: TrendData | null;
@@ -24,20 +29,17 @@ interface ReputationContextType {
     dateRange: string;
     keyword: string;
   };
-  settings: {
-    autoReply: {
-      enabled: boolean;
-      delay: string;
-      language: string;
-      templates: {
-        positive: string;
-        neutral: string;
-        negative: string;
-      };
-    };
-  };
 
-  // Computed
+  // New State
+  alerts: Alert[];
+  categories: Category[];
+  goals: Goal[];
+  automationConfig: AutomationConfig | null;
+  pendingApprovals: ResponseDraft[];
+  engineStats: EngineStats | null;
+  userSettings: ReputationSettings | null;
+
+  // Computed/Derived (backward compatibility)
   reviews: Review[];
   keywords: Array<{ keyword: string; count: number; sentiment: string }>;
   sentiment: Array<{ date: string; score: number; positive: number; neutral: number; negative: number }>;
@@ -54,19 +56,76 @@ interface ReputationContextType {
     totalReviews: number;
   };
 
-  // Functions
+  // Core Functions
   loadReputation: () => Promise<void>;
   refreshDashboard: () => Promise<void>;
   refreshAnalytics: (source?: string, startDate?: string, endDate?: string) => Promise<void>;
   refreshTrends: (days?: number) => Promise<void>;
   loadPendingReviews: (page?: number) => Promise<void>;
-  generateResponseDraft: (reviewId: number, tone?: string) => Promise<ResponseDraft>;
+  generateResponseDraft: (reviewId: number, tone?: string, includeResolution?: boolean) => Promise<ResponseDraft>;
   approveResponse: (draftId: number, finalText?: string) => Promise<void>;
   updateFilters: (newFilters: Partial<ReputationContextType['filters']>) => void;
-  updateSettings: (newSettings: Partial<ReputationContextType['settings']>) => void;
-  addReviewResponse: (reviewId: number, responseText: string) => void;
 
-  // AI Analysis (local)
+  // Alerts Functions
+  loadAlerts: (status?: string, type?: string) => Promise<void>;
+  acknowledgeAlert: (id: number) => Promise<void>;
+  resolveAlert: (id: number, notes: string) => Promise<void>;
+  dismissAlert: (id: number) => Promise<void>;
+  createWorkOrderFromAlert: (id: number, data: {
+    title: string;
+    description: string;
+    priority: string;
+    assigned_to?: number;
+    department?: string;
+  }) => Promise<void>;
+  runAlertDetection: () => Promise<{ alerts_created: number; categories_scanned: number; issues_detected: number }>;
+
+  // Categories Functions
+  loadCategories: () => Promise<void>;
+  createCategory: (data: {
+    name: string;
+    description?: string;
+    parent_id?: number;
+    icon?: string;
+    color?: string;
+    is_active?: boolean;
+  }) => Promise<void>;
+  updateCategory: (id: number, data: Partial<Category>) => Promise<void>;
+  deleteCategory: (id: number) => Promise<void>;
+  updateRoutingRules: (categoryId: number, rules: RoutingRule) => Promise<void>;
+
+  // Goals Functions
+  loadGoals: () => Promise<void>;
+  createGoal: (metricType: string, targetValue: number, startDate: string, endDate: string) => Promise<void>;
+  updateGoal: (id: number, data: Partial<Goal>) => Promise<void>;
+  deleteGoal: (id: number) => Promise<void>;
+  updateGoalProgress: (id: number) => Promise<void>;
+
+  // Automation Functions
+  loadAutomationConfig: () => Promise<void>;
+  updateAutomationConfig: (config: Partial<AutomationConfig>) => Promise<void>;
+  testAutoResponse: (reviewText: string) => Promise<{
+    generated_response: string;
+    tone_detected: string;
+    would_auto_respond: boolean;
+    confidence_score: number;
+  }>;
+
+  // Approval Workflow Functions
+  loadPendingApprovals: () => Promise<void>;
+  submitForReview: (draftId: number) => Promise<void>;
+  approveDraftStage: (draftId: number, comment?: string) => Promise<void>;
+  rejectDraft: (draftId: number, reason: string) => Promise<void>;
+  getDraftHistory: (draftId: number) => Promise<object[]>;
+
+  // Engine Stats Functions
+  loadEngineStats: () => Promise<void>;
+
+  // Settings Functions
+  loadUserSettings: () => Promise<void>;
+  saveUserSettings: (settings: Partial<ReputationSettings>) => Promise<void>;
+
+  // AI Analysis (local helpers)
   analyzeSentiment: (text: string) => number;
   detectKeywords: (text: string) => Array<{ keyword: string; sentiment: string }>;
   computeOTAScore: number;
@@ -81,6 +140,27 @@ interface ReputationContextType {
   // Revenue AI Integration
   affectDemandWeighting: { modifier: number; reason: string };
   affectRateRecommendations: Array<{ type: string; suggestion: string; reason: string; confidence: string }>;
+
+  // Legacy compatibility
+  addReviewResponse: (reviewId: number, responseText: string) => void;
+  settings: {
+    autoReply: {
+      enabled: boolean;
+      delay: string;
+      language: string;
+      templates: {
+        positive: string;
+        neutral: string;
+        negative: string;
+      };
+    };
+  };
+  updateSettings: (newSettings: Partial<ReputationContextType['settings']>) => void;
+
+  // Additional helper for generating draft
+  generateDraft: (reviewId: number, tone?: string, includeResolution?: boolean) => Promise<ResponseDraft>;
+  fetchPendingReviews: () => Promise<void>;
+  approveDraft: (draftId: number, finalText?: string) => Promise<void>;
 }
 
 const ReputationContext = createContext<ReputationContextType | null>(null);
@@ -94,6 +174,15 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // New state
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [automationConfig, setAutomationConfig] = useState<AutomationConfig | null>(null);
+  const [pendingApprovals, setPendingApprovals] = useState<ResponseDraft[]>([]);
+  const [engineStats, setEngineStats] = useState<EngineStats | null>(null);
+  const [userSettings, setUserSettings] = useState<ReputationSettings | null>(null);
+
   // Filter state
   const [filters, setFilters] = useState({
     source: 'all',
@@ -103,7 +192,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     keyword: ''
   });
 
-  // Settings state (persisted locally)
+  // Legacy settings state (for backward compatibility with AutoReplies component)
   const [settings, setSettings] = useState({
     autoReply: {
       enabled: false,
@@ -117,28 +206,10 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     }
   });
 
-  // Load settings from localStorage on mount
-  useEffect(() => {
-    try {
-      const savedSettings = localStorage.getItem(SETTINGS_KEY);
-      if (savedSettings) {
-        setSettings(JSON.parse(savedSettings));
-      }
-    } catch (err) {
-      console.error('Error loading reputation settings:', err);
-    }
-  }, []);
+  // ========================
+  // CORE DATA LOADING
+  // ========================
 
-  // Save settings when they change
-  useEffect(() => {
-    try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    } catch (err) {
-      console.error('Error saving reputation settings:', err);
-    }
-  }, [settings]);
-
-  // Fetch dashboard data
   const refreshDashboard = useCallback(async () => {
     try {
       const data = await reputationService.getDashboard();
@@ -150,7 +221,6 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
-  // Fetch analytics data
   const refreshAnalytics = useCallback(async (source?: string, startDate?: string, endDate?: string) => {
     try {
       const data = await reputationService.getAnalytics(source, startDate, endDate);
@@ -160,7 +230,6 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
-  // Fetch trends data
   const refreshTrends = useCallback(async (days: number = 14) => {
     try {
       const data = await reputationService.getTrends(days);
@@ -170,7 +239,6 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
-  // Load pending reviews
   const loadPendingReviews = useCallback(async (page: number = 1) => {
     try {
       const data = await reputationService.getPendingReviews(page);
@@ -180,7 +248,6 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
-  // Load all reputation data
   const loadReputation = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -203,26 +270,454 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     loadReputation();
   }, [loadReputation]);
 
-  // Generate response draft
-  const generateResponseDraft = useCallback(async (reviewId: number, tone: string = 'professional'): Promise<ResponseDraft> => {
-    return await reputationService.generateResponseDraft(reviewId, tone);
+  // ========================
+  // ALERTS
+  // ========================
+
+  const loadAlerts = useCallback(async (status?: string, type?: string) => {
+    try {
+      const data = await reputationService.getAlerts(status, type);
+      setAlerts(data || []);
+    } catch (err: any) {
+      console.error('Error fetching alerts:', err);
+    }
   }, []);
 
-  // Approve response
+  const acknowledgeAlert = useCallback(async (id: number) => {
+    try {
+      await reputationService.acknowledgeAlert(id);
+      await loadAlerts();
+    } catch (err: any) {
+      console.error('Error acknowledging alert:', err);
+      throw err;
+    }
+  }, [loadAlerts]);
+
+  const resolveAlert = useCallback(async (id: number, notes: string) => {
+    try {
+      await reputationService.resolveAlert(id, notes);
+      await loadAlerts();
+    } catch (err: any) {
+      console.error('Error resolving alert:', err);
+      throw err;
+    }
+  }, [loadAlerts]);
+
+  const dismissAlert = useCallback(async (id: number) => {
+    try {
+      await reputationService.dismissAlert(id);
+      await loadAlerts();
+    } catch (err: any) {
+      console.error('Error dismissing alert:', err);
+      throw err;
+    }
+  }, [loadAlerts]);
+
+  const createWorkOrderFromAlert = useCallback(async (id: number, data: {
+    title: string;
+    description: string;
+    priority: string;
+    assigned_to?: number;
+    department?: string;
+  }) => {
+    try {
+      await reputationService.createWorkOrderFromAlert(id, data);
+      await loadAlerts();
+    } catch (err: any) {
+      console.error('Error creating work order:', err);
+      throw err;
+    }
+  }, [loadAlerts]);
+
+  const runAlertDetection = useCallback(async () => {
+    try {
+      const result = await reputationService.runAlertDetection();
+      await loadAlerts();
+      return result;
+    } catch (err: any) {
+      console.error('Error running alert detection:', err);
+      throw err;
+    }
+  }, [loadAlerts]);
+
+  // ========================
+  // CATEGORIES
+  // ========================
+
+  const loadCategories = useCallback(async () => {
+    try {
+      const data = await reputationService.getCategories();
+      setCategories(data || []);
+    } catch (err: any) {
+      console.error('Error fetching categories:', err);
+    }
+  }, []);
+
+  const createCategory = useCallback(async (data: {
+    name: string;
+    description?: string;
+    parent_id?: number;
+    icon?: string;
+    color?: string;
+    is_active?: boolean;
+  }) => {
+    try {
+      await reputationService.createCategory(data);
+      await loadCategories();
+    } catch (err: any) {
+      console.error('Error creating category:', err);
+      throw err;
+    }
+  }, [loadCategories]);
+
+  const updateCategory = useCallback(async (id: number, data: Partial<Category>) => {
+    try {
+      await reputationService.updateCategory(id, data);
+      await loadCategories();
+    } catch (err: any) {
+      console.error('Error updating category:', err);
+      throw err;
+    }
+  }, [loadCategories]);
+
+  const deleteCategory = useCallback(async (id: number) => {
+    try {
+      await reputationService.deleteCategory(id);
+      await loadCategories();
+    } catch (err: any) {
+      console.error('Error deleting category:', err);
+      throw err;
+    }
+  }, [loadCategories]);
+
+  const updateRoutingRules = useCallback(async (categoryId: number, rules: RoutingRule) => {
+    try {
+      await reputationService.updateRoutingRules(categoryId, rules);
+      await loadCategories();
+    } catch (err: any) {
+      console.error('Error updating routing rules:', err);
+      throw err;
+    }
+  }, [loadCategories]);
+
+  // ========================
+  // GOALS
+  // ========================
+
+  const loadGoals = useCallback(async () => {
+    try {
+      const data = await reputationService.getGoals();
+      setGoals(data || []);
+    } catch (err: any) {
+      console.error('Error fetching goals:', err);
+    }
+  }, []);
+
+  const createGoal = useCallback(async (metricType: string, targetValue: number, startDate: string, endDate: string) => {
+    try {
+      await reputationService.createGoal({
+        metric_type: metricType,
+        target_value: targetValue,
+        start_date: startDate,
+        end_date: endDate
+      });
+      await loadGoals();
+    } catch (err: any) {
+      console.error('Error creating goal:', err);
+      throw err;
+    }
+  }, [loadGoals]);
+
+  const updateGoal = useCallback(async (id: number, data: Partial<Goal>) => {
+    try {
+      await reputationService.updateGoal(id, data);
+      await loadGoals();
+    } catch (err: any) {
+      console.error('Error updating goal:', err);
+      throw err;
+    }
+  }, [loadGoals]);
+
+  const deleteGoal = useCallback(async (id: number) => {
+    try {
+      await reputationService.deleteGoal(id);
+      await loadGoals();
+    } catch (err: any) {
+      console.error('Error deleting goal:', err);
+      throw err;
+    }
+  }, [loadGoals]);
+
+  const updateGoalProgress = useCallback(async (id: number) => {
+    try {
+      await reputationService.updateGoalProgress(id);
+      await loadGoals();
+    } catch (err: any) {
+      console.error('Error updating goal progress:', err);
+      throw err;
+    }
+  }, [loadGoals]);
+
+  // ========================
+  // AUTOMATION
+  // ========================
+
+  const loadAutomationConfig = useCallback(async () => {
+    try {
+      const data = await reputationService.getAutomationConfig();
+      setAutomationConfig(data);
+      // Sync with legacy settings
+      if (data) {
+        setSettings(prev => ({
+          ...prev,
+          autoReply: {
+            enabled: data.global_enabled,
+            delay: `${data.response_delay_hours}h`,
+            language: 'en',
+            templates: data.templates
+          }
+        }));
+      }
+    } catch (err: any) {
+      console.error('Error fetching automation config:', err);
+    }
+  }, []);
+
+  const updateAutomationConfig = useCallback(async (config: Partial<AutomationConfig>) => {
+    try {
+      const updated = await reputationService.updateAutomationConfig(config);
+      setAutomationConfig(updated);
+      // Sync with legacy settings
+      if (updated) {
+        setSettings(prev => ({
+          ...prev,
+          autoReply: {
+            enabled: updated.global_enabled,
+            delay: `${updated.response_delay_hours}h`,
+            language: 'en',
+            templates: updated.templates
+          }
+        }));
+      }
+    } catch (err: any) {
+      console.error('Error updating automation config:', err);
+      throw err;
+    }
+  }, []);
+
+  const testAutoResponse = useCallback(async (reviewText: string) => {
+    try {
+      return await reputationService.testAutoResponse(reviewText);
+    } catch (err: any) {
+      console.error('Error testing auto response:', err);
+      throw err;
+    }
+  }, []);
+
+  // ========================
+  // APPROVAL WORKFLOW
+  // ========================
+
+  const loadPendingApprovals = useCallback(async () => {
+    try {
+      const data = await reputationService.getPendingApprovals();
+      setPendingApprovals(data || []);
+    } catch (err: any) {
+      console.error('Error fetching pending approvals:', err);
+    }
+  }, []);
+
+  const submitForReview = useCallback(async (draftId: number) => {
+    try {
+      await reputationService.submitForReview(draftId);
+      await loadPendingApprovals();
+    } catch (err: any) {
+      console.error('Error submitting for review:', err);
+      throw err;
+    }
+  }, [loadPendingApprovals]);
+
+  const approveDraftStage = useCallback(async (draftId: number, comment?: string) => {
+    try {
+      await reputationService.approveDraftStage(draftId, comment);
+      await loadPendingApprovals();
+    } catch (err: any) {
+      console.error('Error approving draft stage:', err);
+      throw err;
+    }
+  }, [loadPendingApprovals]);
+
+  const rejectDraft = useCallback(async (draftId: number, reason: string) => {
+    try {
+      await reputationService.rejectDraft(draftId, reason);
+      await loadPendingApprovals();
+    } catch (err: any) {
+      console.error('Error rejecting draft:', err);
+      throw err;
+    }
+  }, [loadPendingApprovals]);
+
+  const getDraftHistory = useCallback(async (draftId: number) => {
+    try {
+      return await reputationService.getDraftHistory(draftId);
+    } catch (err: any) {
+      console.error('Error fetching draft history:', err);
+      throw err;
+    }
+  }, []);
+
+  // ========================
+  // ENGINE STATS
+  // ========================
+
+  const loadEngineStats = useCallback(async () => {
+    try {
+      const data = await reputationService.getEngineStats();
+      setEngineStats(data);
+    } catch (err: any) {
+      console.error('Error fetching engine stats:', err);
+    }
+  }, []);
+
+  // ========================
+  // USER SETTINGS
+  // ========================
+
+  const loadUserSettings = useCallback(async () => {
+    try {
+      const data = await reputationService.getSettings();
+      setUserSettings(data);
+    } catch (err: any) {
+      console.error('Error fetching user settings:', err);
+    }
+  }, []);
+
+  const saveUserSettings = useCallback(async (settings: Partial<ReputationSettings>) => {
+    try {
+      const updated = await reputationService.saveSettings(settings);
+      setUserSettings(updated);
+    } catch (err: any) {
+      console.error('Error saving user settings:', err);
+      throw err;
+    }
+  }, []);
+
+  // ========================
+  // RESPONSE GENERATION
+  // ========================
+
+  const generateResponseDraft = useCallback(async (reviewId: number, tone: string = 'professional', includeResolution: boolean = false): Promise<ResponseDraft> => {
+    return await reputationService.generateResponseDraft(reviewId, tone, includeResolution);
+  }, []);
+
   const approveResponse = useCallback(async (draftId: number, finalText?: string) => {
     await reputationService.approveResponse(draftId, finalText);
-    // Refresh pending reviews after approving
     await loadPendingReviews();
   }, [loadPendingReviews]);
 
-  // Derived data from dashboard/analytics for backward compatibility
+  // Alias for backward compatibility
+  const generateDraft = generateResponseDraft;
+  const fetchPendingReviews = loadPendingReviews;
+  const approveDraft = approveResponse;
+
+  // ========================
+  // DERIVED DATA
+  // ========================
+
   const reviews = useMemo(() => {
-    return dashboard?.recent_reviews || [];
+    if (!dashboard?.recent_reviews) return [];
+    // Transform reviews to match component expectations
+    return dashboard.recent_reviews.map(r => {
+      // Derive sentiment from rating when sentiment data is missing
+      const ratingBasedSentiment = r.rating != null ? (
+        r.rating >= 4.5 ? 92 :
+        r.rating >= 4 ? 78 :
+        r.rating >= 3 ? 55 :
+        r.rating >= 2 ? 32 : 15
+      ) : 55;
+
+      const ratingBasedLabel = r.rating != null ? (
+        r.rating >= 4 ? 'positive' :
+        r.rating >= 3 ? 'neutral' : 'negative'
+      ) : 'neutral';
+
+      const sentiment = r.sentiment_score ?? (
+        r.sentiment_label === 'positive' ? 85 :
+        r.sentiment_label === 'negative' ? 25 :
+        r.sentiment_label === 'neutral' ? 55 :
+        ratingBasedSentiment
+      );
+
+      const sentimentLabel = r.sentiment_label || (
+        sentiment >= 70 ? 'positive' :
+        sentiment < 40 ? 'negative' : 'neutral'
+      );
+
+      return {
+        ...r,
+        sentiment,
+        sentimentLabel,
+        // Map field names for backward compatibility
+        guest: r.guest_name || `Guest ${r.id}`,
+        // Backend returns review_date, not created_at
+        date: r.review_date || r.created_at || r.date,
+        review: r.content || r.comment,
+        title: r.title || ''
+      };
+    });
   }, [dashboard]);
 
   const keywords = useMemo(() => {
-    return analytics?.top_keywords || [];
-  }, [analytics]);
+    // If analytics has top_keywords, use them
+    if (analytics?.top_keywords?.length) {
+      return analytics.top_keywords.map(k => ({
+        keyword: k.keyword,
+        count: k.count,
+        mentions: k.count,
+        sentiment: k.sentiment
+      }));
+    }
+
+    // Otherwise, extract keywords from reviews
+    if (!dashboard?.recent_reviews?.length) return [];
+
+    const positiveWords = ['excellent', 'amazing', 'wonderful', 'great', 'fantastic', 'beautiful', 'clean', 'friendly', 'helpful', 'perfect', 'loved', 'best', 'comfortable', 'delicious', 'exceptional', 'spotless', 'professional', 'attentive', 'luxurious', 'stunning', 'location', 'breakfast', 'staff', 'service', 'room', 'view', 'spa', 'pool'];
+    const negativeWords = ['terrible', 'awful', 'worst', 'dirty', 'rude', 'slow', 'disappointing', 'horrible', 'poor', 'bad', 'issues', 'problem', 'delay', 'wait', 'noise', 'smell', 'broken', 'unresponsive', 'overpriced', 'frustrated', 'small', 'old', 'outdated'];
+
+    const keywordCounts: Record<string, { count: number; sentiment: string }> = {};
+
+    dashboard.recent_reviews.forEach(review => {
+      const text = (review.comment || review.content || '').toLowerCase();
+      const words = text.split(/\s+/);
+
+      words.forEach(word => {
+        const cleanWord = word.replace(/[^a-z]/g, '');
+        if (cleanWord.length < 4) return;
+
+        if (positiveWords.includes(cleanWord)) {
+          keywordCounts[cleanWord] = {
+            count: (keywordCounts[cleanWord]?.count || 0) + 1,
+            sentiment: 'positive'
+          };
+        } else if (negativeWords.includes(cleanWord)) {
+          keywordCounts[cleanWord] = {
+            count: (keywordCounts[cleanWord]?.count || 0) + 1,
+            sentiment: 'negative'
+          };
+        }
+      });
+    });
+
+    return Object.entries(keywordCounts)
+      .map(([keyword, data]) => ({
+        keyword,
+        count: data.count,
+        mentions: data.count,
+        sentiment: data.sentiment
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+  }, [analytics, dashboard]);
 
   const sentiment = useMemo(() => {
     if (!dashboard?.sentiment_trend) return [];
@@ -239,8 +734,9 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     if (!dashboard?.source_breakdown) return {};
     const ratings: Record<string, { rating: number; reviews: number; trend: number }> = {};
     dashboard.source_breakdown.forEach(source => {
-      ratings[source.source] = {
-        rating: source.average_rating,
+      ratings[source.source.toLowerCase()] = {
+        // Backend returns avg_rating, not average_rating
+        rating: source.avg_rating ?? source.average_rating ?? 0,
         reviews: source.count,
         trend: 0
       };
@@ -248,7 +744,10 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     return ratings;
   }, [dashboard]);
 
-  // AI Analysis Functions (local fallbacks)
+  // ========================
+  // AI ANALYSIS FUNCTIONS
+  // ========================
+
   const analyzeSentiment = useCallback((reviewText: string) => {
     const positiveWords = ['excellent', 'amazing', 'wonderful', 'great', 'fantastic', 'beautiful', 'clean', 'friendly', 'helpful', 'perfect', 'loved', 'best', 'comfortable', 'delicious', 'exceptional', 'spotless', 'professional', 'attentive', 'luxurious', 'stunning'];
     const negativeWords = ['terrible', 'awful', 'worst', 'dirty', 'rude', 'slow', 'disappointing', 'horrible', 'poor', 'bad', 'issues', 'problem', 'delay', 'wait', 'noise', 'smell', 'broken', 'unresponsive', 'overpriced', 'frustrated'];
@@ -329,7 +828,10 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     return template.replace('{guest}', guest.split(' ')[0]);
   }, [settings.autoReply.templates]);
 
-  // CRM Integration Functions
+  // ========================
+  // CRM INTEGRATION
+  // ========================
+
   const updateCRMGuestSentiment = useCallback((guestEmail: string, sentimentScore: number, reviewId: number) => {
     console.log(`Updating CRM sentiment for ${guestEmail}: ${sentimentScore}`);
     return {
@@ -352,7 +854,10 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     return Math.round(existingLTV * multiplier);
   }, []);
 
-  // Revenue AI Integration Functions
+  // ========================
+  // REVENUE AI INTEGRATION
+  // ========================
+
   const affectDemandWeighting = useMemo(() => {
     const avgSentiment = dashboard?.metrics?.sentiment
       ? (dashboard.metrics.sentiment.positive * 100) / (dashboard.metrics.sentiment.positive + dashboard.metrics.sentiment.neutral + dashboard.metrics.sentiment.negative || 1)
@@ -398,9 +903,11 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     return recommendations;
   }, [dashboard, trends]);
 
-  // Review management
+  // ========================
+  // LEGACY FUNCTIONS
+  // ========================
+
   const addReviewResponse = useCallback((reviewId: number, responseText: string) => {
-    // Update local state optimistically
     setPendingReviews(prev => prev.filter(r => r.id !== reviewId));
   }, []);
 
@@ -410,7 +917,16 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
 
   const updateSettings = useCallback((newSettings: Partial<typeof settings>) => {
     setSettings(prev => ({ ...prev, ...newSettings }));
-  }, []);
+    // Sync to backend automation config
+    if (newSettings.autoReply && automationConfig) {
+      const delayHours = parseInt(newSettings.autoReply.delay || '3', 10);
+      updateAutomationConfig({
+        global_enabled: newSettings.autoReply.enabled ?? automationConfig.global_enabled,
+        response_delay_hours: isNaN(delayHours) ? automationConfig.response_delay_hours : delayHours,
+        templates: newSettings.autoReply.templates || automationConfig.templates
+      }).catch(err => console.error('Failed to sync settings to backend:', err));
+    }
+  }, [automationConfig, updateAutomationConfig]);
 
   // Filtered reviews
   const filteredReviews = useMemo(() => {
@@ -472,7 +988,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   }, [dashboard, reviews, computeTrend]);
 
   const value: ReputationContextType = {
-    // State
+    // Core State
     dashboard,
     analytics,
     trends,
@@ -480,9 +996,17 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     isLoading,
     error,
     filters,
-    settings,
 
-    // Derived for backward compatibility
+    // New State
+    alerts,
+    categories,
+    goals,
+    automationConfig,
+    pendingApprovals,
+    engineStats,
+    userSettings,
+
+    // Derived
     reviews,
     keywords,
     sentiment,
@@ -490,7 +1014,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     filteredReviews,
     metrics,
 
-    // Core functions
+    // Core Functions
     loadReputation,
     refreshDashboard,
     refreshAnalytics,
@@ -499,8 +1023,47 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     generateResponseDraft,
     approveResponse,
     updateFilters,
-    updateSettings,
-    addReviewResponse,
+
+    // Alerts Functions
+    loadAlerts,
+    acknowledgeAlert,
+    resolveAlert,
+    dismissAlert,
+    createWorkOrderFromAlert,
+    runAlertDetection,
+
+    // Categories Functions
+    loadCategories,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    updateRoutingRules,
+
+    // Goals Functions
+    loadGoals,
+    createGoal,
+    updateGoal,
+    deleteGoal,
+    updateGoalProgress,
+
+    // Automation Functions
+    loadAutomationConfig,
+    updateAutomationConfig,
+    testAutoResponse,
+
+    // Approval Workflow Functions
+    loadPendingApprovals,
+    submitForReview,
+    approveDraftStage,
+    rejectDraft,
+    getDraftHistory,
+
+    // Engine Stats Functions
+    loadEngineStats,
+
+    // Settings Functions
+    loadUserSettings,
+    saveUserSettings,
 
     // AI Analysis
     analyzeSentiment,
@@ -516,7 +1079,15 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
 
     // Revenue AI Integration
     affectDemandWeighting,
-    affectRateRecommendations
+    affectRateRecommendations,
+
+    // Legacy compatibility
+    addReviewResponse,
+    settings,
+    updateSettings,
+    generateDraft,
+    fetchPendingReviews,
+    approveDraft
   };
 
   return (

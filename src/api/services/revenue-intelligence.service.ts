@@ -6,7 +6,277 @@
 
 import { apiClient } from '../client';
 
+// ==================== REQUEST CACHE ====================
+// Prevents duplicate API calls when multiple components request the same data
+
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+  promise?: Promise<T>;
+}
+
+class RequestCache {
+  private cache: Map<string, CacheEntry<any>> = new Map();
+  private pendingRequests: Map<string, Promise<any>> = new Map();
+  private defaultTTL = 30000; // 30 seconds cache TTL
+
+  private getCacheKey(method: string, params?: any): string {
+    return `${method}:${params ? JSON.stringify(params) : ''}`;
+  }
+
+  async get<T>(
+    key: string,
+    fetcher: () => Promise<T>,
+    ttl: number = this.defaultTTL
+  ): Promise<T> {
+    const cacheKey = key;
+    const now = Date.now();
+
+    // Check if we have a valid cached response
+    const cached = this.cache.get(cacheKey);
+    if (cached && now - cached.timestamp < ttl) {
+      return cached.data;
+    }
+
+    // Check if there's already a pending request for this key
+    const pending = this.pendingRequests.get(cacheKey);
+    if (pending) {
+      return pending;
+    }
+
+    // Make the request and cache it
+    const promise = fetcher()
+      .then((data) => {
+        this.cache.set(cacheKey, { data, timestamp: Date.now() });
+        this.pendingRequests.delete(cacheKey);
+        return data;
+      })
+      .catch((error) => {
+        this.pendingRequests.delete(cacheKey);
+        throw error;
+      });
+
+    this.pendingRequests.set(cacheKey, promise);
+    return promise;
+  }
+
+  invalidate(keyPattern?: string): void {
+    if (!keyPattern) {
+      this.cache.clear();
+      return;
+    }
+    for (const key of this.cache.keys()) {
+      if (key.includes(keyPattern)) {
+        this.cache.delete(key);
+      }
+    }
+  }
+}
+
+const requestCache = new RequestCache();
+
 // ==================== TYPES ====================
+
+// Rate Calendar Types
+export interface RateCalendarRoom {
+  roomTypeId: number;
+  roomTypeName: string;
+  baseRate: number;
+  dynamicRate: number;
+  minRate: number;
+  maxRate: number;
+  occupancy: number;
+  available: number;
+  restrictions: {
+    minStay?: number;
+    maxStay?: number;
+    cta?: boolean;
+    ctd?: boolean;
+    stopSell?: boolean;
+  };
+}
+
+export interface RateCalendarDay {
+  date: string;
+  dayOfWeek: string;
+  isWeekend: boolean;
+  event?: string;
+  demandLevel: 'critical' | 'high' | 'moderate' | 'low' | 'very_low';
+  occupancy: number;
+  rooms: Record<string, RateCalendarRoom>;
+}
+
+export interface RateCalendarData {
+  startDate: string;
+  endDate: string;
+  days: RateCalendarDay[];
+}
+
+// Pricing Rules Types
+export interface PricingRuleCondition {
+  type: string;
+  value: number | string | boolean | { min: number; max: number } | string[];
+}
+
+export interface PricingRuleAction {
+  type: string;
+  value: number | boolean;
+}
+
+export interface PricingRule {
+  id: number;
+  name: string;
+  description: string;
+  priority: number;
+  isActive: boolean;
+  roomTypes: string[];
+  conditions: PricingRuleCondition[];
+  actions: PricingRuleAction[];
+  createdAt: string;
+  updatedAt: string;
+  lastTriggered?: string;
+  timesTriggered: number;
+}
+
+export interface CreatePricingRuleRequest {
+  name: string;
+  description?: string;
+  priority: number;
+  isActive: boolean;
+  roomTypes: string[];
+  conditions: PricingRuleCondition[];
+  actions: PricingRuleAction[];
+}
+
+export interface UpdatePricingRuleRequest {
+  name?: string;
+  description?: string;
+  priority?: number;
+  isActive?: boolean;
+  roomTypes?: string[];
+  conditions?: PricingRuleCondition[];
+  actions?: PricingRuleAction[];
+}
+
+export interface ExecuteRulesResponse {
+  executedAt: string;
+  rulesEvaluated: number;
+  rulesTriggered: number;
+  ratesUpdated: number;
+  results: Array<{
+    ruleId: number;
+    ruleName: string;
+    triggered: boolean;
+    ratesAffected: number;
+  }>;
+}
+
+// Auto Pricing Settings Types
+export interface AutoPricingSettings {
+  enabled: boolean;
+  minRateThreshold: number;
+  maxRateThreshold: number;
+  demandBasedPricing: boolean;
+  competitorTracking: boolean;
+  seasonalAdjustments: boolean;
+  lastUpdated: string;
+}
+
+// Competitor Types
+export interface Competitor {
+  id: number;
+  name: string;
+  rating: number;
+  distance: string;
+  url?: string;
+  todayRate: number;
+  avgRate7Day: number;
+  avgRate30Day: number;
+  lastUpdated: string;
+  isActive: boolean;
+}
+
+export interface CreateCompetitorRequest {
+  name: string;
+  rating?: number;
+  distance?: string;
+  url?: string;
+}
+
+export interface CompetitorRateHistory {
+  competitorId: number;
+  competitorName: string;
+  history: Array<{
+    date: string;
+    rate: number;
+  }>;
+}
+
+// AI Insights Types
+export interface AIInsight {
+  id: string;
+  type: 'opportunity' | 'warning' | 'success' | 'recommendation';
+  title: string;
+  description: string;
+  impact: 'High' | 'Medium' | 'Low' | 'Positive';
+  impactColor: 'green' | 'amber' | 'primary';
+  action: string;
+  actionUrl?: string;
+  isRead: boolean;
+  isDismissed: boolean;
+  createdAt: string;
+  expiresAt?: string;
+}
+
+export interface AIInsightsResponse {
+  insights: AIInsight[];
+  stats: {
+    forecastAccuracy: number;
+    revenueOptimized: number;
+    insightsGenerated: number;
+  };
+}
+
+// Segment Performance Types
+export interface SegmentPerformance {
+  segmentId: string;
+  segmentName: string;
+  revenue: number;
+  bookings: number;
+  adr: number;
+  occupancy: number;
+  revenueContribution: number;
+  trend: number;
+}
+
+// Event Types
+export interface Event {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  type: 'local' | 'regional' | 'national' | 'international';
+  expectedImpact: 'high' | 'medium' | 'low';
+  description?: string;
+}
+
+export interface CreateEventRequest {
+  name: string;
+  startDate: string;
+  endDate: string;
+  type: 'local' | 'regional' | 'national' | 'international';
+  expectedImpact: 'high' | 'medium' | 'low';
+  description?: string;
+}
+
+export interface EventImpact {
+  eventId: number;
+  eventName: string;
+  bookingsIncrease: number;
+  revenueIncrease: number;
+  occupancyIncrease: number;
+  rateIncrease: number;
+}
 
 export interface KPIMetrics {
   total_revenue: number;
@@ -229,22 +499,31 @@ export const revenueIntelligenceService = {
 
   /**
    * Get KPI summary for multiple periods
+   * Cached for 30 seconds to prevent duplicate calls
    */
   async getKPISummary(): Promise<KPISummary> {
-    const response = await apiClient.get<KPISummary>(`${BASE_URL}/kpis/summary`);
-    return response.data;
+    return requestCache.get('kpi-summary', async () => {
+      const response = await apiClient.get<KPISummary>(`${BASE_URL}/kpis/summary`);
+      return response.data;
+    });
   },
 
   /**
    * Get demand forecast
+   */
+  /**
+   * Cached for 30 seconds to prevent duplicate calls
    */
   async getForecast(params?: {
     start_date?: string;
     end_date?: string;
     room_type_id?: number;
   }): Promise<ForecastResponse> {
-    const response = await apiClient.get<ForecastResponse>(`${BASE_URL}/forecast`, { params });
-    return response.data;
+    const cacheKey = `forecast:${JSON.stringify(params || {})}`;
+    return requestCache.get(cacheKey, async () => {
+      const response = await apiClient.get<ForecastResponse>(`${BASE_URL}/forecast`, { params });
+      return response.data;
+    });
   },
 
   /**
@@ -260,6 +539,7 @@ export const revenueIntelligenceService = {
 
   /**
    * Get pricing recommendations
+   * Cached for 30 seconds to prevent duplicate calls
    */
   async getPricingRecommendations(params?: {
     start_date?: string;
@@ -267,31 +547,42 @@ export const revenueIntelligenceService = {
     room_type_id?: number;
     priority?: string;
   }): Promise<PricingRecommendationsResponse> {
-    const response = await apiClient.get<PricingRecommendationsResponse>(
-      `${BASE_URL}/pricing/recommendations`,
-      { params }
-    );
-    return response.data;
+    const cacheKey = `pricing-recommendations:${JSON.stringify(params || {})}`;
+    return requestCache.get(cacheKey, async () => {
+      const response = await apiClient.get<PricingRecommendationsResponse>(
+        `${BASE_URL}/pricing/recommendations`,
+        { params }
+      );
+      return response.data;
+    });
   },
 
   /**
    * Get revenue opportunities
+   * Cached for 30 seconds to prevent duplicate calls
    */
   async getOpportunities(limit?: number): Promise<OpportunitiesResponse> {
-    const response = await apiClient.get<OpportunitiesResponse>(`${BASE_URL}/opportunities`, {
-      params: { limit },
+    const cacheKey = `opportunities:${limit || 'all'}`;
+    return requestCache.get(cacheKey, async () => {
+      const response = await apiClient.get<OpportunitiesResponse>(`${BASE_URL}/opportunities`, {
+        params: { limit },
+      });
+      return response.data;
     });
-    return response.data;
   },
 
   /**
    * Get revenue alerts
+   * Cached for 30 seconds to prevent duplicate calls
    */
   async getAlerts(severity?: string): Promise<AlertsResponse> {
-    const response = await apiClient.get<AlertsResponse>(`${BASE_URL}/alerts`, {
-      params: { severity },
+    const cacheKey = `alerts:${severity || 'all'}`;
+    return requestCache.get(cacheKey, async () => {
+      const response = await apiClient.get<AlertsResponse>(`${BASE_URL}/alerts`, {
+        params: { severity },
+      });
+      return response.data;
     });
-    return response.data;
   },
 
   /**
@@ -308,14 +599,20 @@ export const revenueIntelligenceService = {
   /**
    * Get channel analysis
    */
+  /**
+   * Cached for 30 seconds to prevent duplicate calls
+   */
   async getChannelAnalysis(params?: {
     start_date?: string;
     end_date?: string;
   }): Promise<ChannelAnalysisResponse> {
-    const response = await apiClient.get<ChannelAnalysisResponse>(`${BASE_URL}/channels`, {
-      params,
+    const cacheKey = `channels:${JSON.stringify(params || {})}`;
+    return requestCache.get(cacheKey, async () => {
+      const response = await apiClient.get<ChannelAnalysisResponse>(`${BASE_URL}/channels`, {
+        params,
+      });
+      return response.data;
     });
-    return response.data;
   },
 
   /**
@@ -357,21 +654,319 @@ export const revenueIntelligenceService = {
 
   /**
    * Get pickup metrics
+   * Cached for 30 seconds to prevent duplicate calls
    */
   async getPickupMetrics(days?: number): Promise<PickupMetricsResponse> {
-    const response = await apiClient.get<PickupMetricsResponse>(`${BASE_URL}/metrics/pickup`, {
-      params: { days },
+    const cacheKey = `pickup-metrics:${days || 'default'}`;
+    return requestCache.get(cacheKey, async () => {
+      const response = await apiClient.get<PickupMetricsResponse>(`${BASE_URL}/metrics/pickup`, {
+        params: { days },
+      });
+      return response.data;
     });
-    return response.data;
   },
 
   /**
    * Get complete dashboard data
    */
+  /**
+   * Cached for 30 seconds to prevent duplicate calls
+   */
   async getDashboard(): Promise<DashboardResponse> {
-    const response = await apiClient.get<DashboardResponse>(`${BASE_URL}/dashboard`);
+    return requestCache.get('dashboard', async () => {
+      const response = await apiClient.get<DashboardResponse>(`${BASE_URL}/dashboard`);
+      return response.data;
+    });
+  },
+
+  // ==================== PRICING RECOMMENDATIONS ACTIONS ====================
+
+  /**
+   * Accept a pricing recommendation
+   */
+  async acceptRecommendation(id: string): Promise<void> {
+    await apiClient.post(`${BASE_URL}/pricing/recommendations/${id}/accept`);
+    // Invalidate related caches
+    requestCache.invalidate('pricing-recommendations');
+    requestCache.invalidate('kpi');
+    requestCache.invalidate('dashboard');
+  },
+
+  /**
+   * Dismiss a pricing recommendation
+   */
+  async dismissRecommendation(id: string): Promise<void> {
+    await apiClient.post(`${BASE_URL}/pricing/recommendations/${id}/dismiss`);
+    requestCache.invalidate('pricing-recommendations');
+  },
+
+  /**
+   * Apply all pending recommendations
+   */
+  async applyAllRecommendations(): Promise<void> {
+    await apiClient.post(`${BASE_URL}/pricing/recommendations/apply-all`);
+    // Invalidate all data caches since rates are changing
+    requestCache.invalidate();
+  },
+
+  /**
+   * Dismiss all pending recommendations
+   */
+  async dismissAllRecommendations(): Promise<void> {
+    await apiClient.post(`${BASE_URL}/pricing/recommendations/dismiss-all`);
+    requestCache.invalidate('pricing-recommendations');
+  },
+
+  // ==================== RATE MANAGEMENT ====================
+
+  /**
+   * Update a single rate
+   */
+  async updateRate(
+    roomTypeId: string | number,
+    date: string,
+    data: { rate: number; reason?: string }
+  ): Promise<void> {
+    await apiClient.put(`${BASE_URL}/rates/${roomTypeId}/${date}`, data);
+    // Invalidate caches that depend on rate data
+    requestCache.invalidate('kpi');
+    requestCache.invalidate('forecast');
+    requestCache.invalidate('dashboard');
+    requestCache.invalidate('pricing-recommendations');
+  },
+
+  /**
+   * Bulk update rates
+   */
+  async bulkUpdateRates(
+    updates: Array<{ roomTypeId: number; date: string; rate: number }>
+  ): Promise<void> {
+    await apiClient.put(`${BASE_URL}/rates/bulk-update`, { updates });
+    // Invalidate all data caches since multiple rates changed
+    requestCache.invalidate();
+  },
+
+  /**
+   * Get rate calendar for a date range
+   */
+  async getRateCalendar(startDate: string, endDate: string): Promise<RateCalendarData> {
+    const response = await apiClient.get<RateCalendarData>(`${BASE_URL}/rates/calendar`, {
+      params: { start_date: startDate, end_date: endDate },
+    });
     return response.data;
   },
+
+  // ==================== PRICING RULES ====================
+
+  /**
+   * Get all pricing rules
+   */
+  async getPricingRules(): Promise<PricingRule[]> {
+    const response = await apiClient.get<PricingRule[]>(`${BASE_URL}/pricing-rules`);
+    return response.data;
+  },
+
+  /**
+   * Create a new pricing rule
+   */
+  async createPricingRule(rule: CreatePricingRuleRequest): Promise<PricingRule> {
+    const response = await apiClient.post<PricingRule>(`${BASE_URL}/pricing-rules`, rule);
+    return response.data;
+  },
+
+  /**
+   * Update an existing pricing rule
+   */
+  async updatePricingRule(id: number, rule: UpdatePricingRuleRequest): Promise<PricingRule> {
+    const response = await apiClient.put<PricingRule>(`${BASE_URL}/pricing-rules/${id}`, rule);
+    return response.data;
+  },
+
+  /**
+   * Delete a pricing rule
+   */
+  async deletePricingRule(id: number): Promise<void> {
+    await apiClient.delete(`${BASE_URL}/pricing-rules/${id}`);
+  },
+
+  /**
+   * Toggle a pricing rule active/inactive
+   */
+  async togglePricingRule(id: number): Promise<void> {
+    await apiClient.post(`${BASE_URL}/pricing-rules/${id}/toggle`);
+  },
+
+  /**
+   * Execute all active pricing rules
+   */
+  async executePricingRules(): Promise<ExecuteRulesResponse> {
+    const response = await apiClient.post<ExecuteRulesResponse>(
+      `${BASE_URL}/pricing-rules/execute`
+    );
+    return response.data;
+  },
+
+  // ==================== SETTINGS ====================
+
+  /**
+   * Get auto pricing settings
+   */
+  async getAutoPricingSettings(): Promise<AutoPricingSettings> {
+    const response = await apiClient.get<AutoPricingSettings>(`${BASE_URL}/settings/auto-pricing`);
+    return response.data;
+  },
+
+  /**
+   * Update auto pricing settings
+   */
+  async updateAutoPricingSettings(settings: AutoPricingSettings): Promise<void> {
+    await apiClient.put(`${BASE_URL}/settings/auto-pricing`, settings);
+  },
+
+  /**
+   * Toggle auto pricing on/off
+   */
+  async toggleAutoPricing(enabled: boolean): Promise<void> {
+    await apiClient.post(`${BASE_URL}/settings/auto-pricing/toggle`, { enabled });
+  },
+
+  /**
+   * Toggle competitor scan on/off
+   */
+  async toggleCompetitorScan(enabled: boolean): Promise<void> {
+    await apiClient.post(`${BASE_URL}/settings/competitor-scan/toggle`, { enabled });
+  },
+
+  /**
+   * Toggle demand pricing on/off
+   */
+  async toggleDemandPricing(enabled: boolean): Promise<void> {
+    await apiClient.post(`${BASE_URL}/settings/demand-pricing/toggle`, { enabled });
+  },
+
+  // ==================== COMPETITORS ====================
+
+  /**
+   * Get all competitors
+   */
+  /**
+   * Cached for 30 seconds to prevent duplicate calls
+   */
+  async getCompetitors(): Promise<Competitor[]> {
+    return requestCache.get('competitors', async () => {
+      const response = await apiClient.get<Competitor[]>(`${BASE_URL}/competitors`);
+      return response.data;
+    });
+  },
+
+  /**
+   * Add a new competitor
+   */
+  async addCompetitor(competitor: CreateCompetitorRequest): Promise<Competitor> {
+    const response = await apiClient.post<Competitor>(`${BASE_URL}/competitors`, competitor);
+    return response.data;
+  },
+
+  /**
+   * Delete a competitor
+   */
+  async deleteCompetitor(id: number): Promise<void> {
+    await apiClient.delete(`${BASE_URL}/competitors/${id}`);
+  },
+
+  /**
+   * Refresh competitor rates
+   */
+  async refreshCompetitorRates(): Promise<void> {
+    await apiClient.post(`${BASE_URL}/competitors/refresh`);
+  },
+
+  /**
+   * Get competitor rate history
+   */
+  async getCompetitorRateHistory(id: number, days?: number): Promise<CompetitorRateHistory> {
+    const response = await apiClient.get<CompetitorRateHistory>(
+      `${BASE_URL}/competitors/${id}/rates`,
+      { params: { days } }
+    );
+    return response.data;
+  },
+
+  // ==================== AI INSIGHTS ====================
+
+  /**
+   * Get AI insights
+   */
+  async getAIInsights(): Promise<AIInsightsResponse> {
+    const response = await apiClient.get<AIInsightsResponse>(`${BASE_URL}/ai/insights`);
+    return response.data;
+  },
+
+  /**
+   * Dismiss an insight
+   */
+  async dismissInsight(id: string): Promise<void> {
+    await apiClient.post(`${BASE_URL}/ai/insights/${id}/dismiss`);
+  },
+
+  /**
+   * Mark an insight as read
+   */
+  async markInsightRead(id: string): Promise<void> {
+    await apiClient.post(`${BASE_URL}/ai/insights/${id}/read`);
+  },
+
+  // ==================== SEGMENTS ====================
+
+  /**
+   * Get segment performance
+   */
+  /**
+   * Cached for 30 seconds to prevent duplicate calls
+   */
+  async getSegmentPerformance(): Promise<SegmentPerformance[]> {
+    return requestCache.get('segments-performance', async () => {
+      const response = await apiClient.get<SegmentPerformance[]>(`${BASE_URL}/segments/performance`);
+      return response.data;
+    });
+  },
+
+  // ==================== EVENTS ====================
+
+  /**
+   * Get events
+   */
+  async getEvents(startDate?: string, endDate?: string): Promise<Event[]> {
+    const response = await apiClient.get<Event[]>(`${BASE_URL}/events`, {
+      params: { start_date: startDate, end_date: endDate },
+    });
+    return response.data;
+  },
+
+  /**
+   * Create an event
+   */
+  async createEvent(event: CreateEventRequest): Promise<Event> {
+    const response = await apiClient.post<Event>(`${BASE_URL}/events`, event);
+    return response.data;
+  },
+
+  /**
+   * Get event impact analysis
+   */
+  async getEventImpact(params?: { start_date?: string; end_date?: string }): Promise<EventImpact> {
+    const response = await apiClient.get<EventImpact>(`${BASE_URL}/events/impact`, { params });
+    return response.data;
+  },
+};
+
+/**
+ * Invalidate cache entries to force fresh data on next request
+ * Call this after mutations (rate updates, applying recommendations, etc.)
+ * @param pattern - Optional pattern to match cache keys. If not provided, clears all cache.
+ */
+export const invalidateRevenueCache = (pattern?: string): void => {
+  requestCache.invalidate(pattern);
 };
 
 export default revenueIntelligenceService;

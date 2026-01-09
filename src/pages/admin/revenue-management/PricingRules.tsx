@@ -1,38 +1,62 @@
-import { useState, useRef, useEffect } from 'react';
-import { Plus, Play, RefreshCw, Zap, ChevronDown, Check } from 'lucide-react';
-import { useRMS } from '../../../context/RMSContext';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Plus, Play, RefreshCw, Zap, AlertCircle } from 'lucide-react';
+import { revenueIntelligenceService, PricingRule } from '../../../api/services/revenue-intelligence.service';
+import { useToast } from '../../../contexts/ToastContext';
 import RuleCard, { RuleSummary } from '../../../components/revenue-management/RuleCard';
 import RuleEditorDrawer from '../../../components/revenue-management/RuleEditorDrawer';
 import { Button } from '../../../components/ui2/Button';
 import { ConfirmModal } from '../../../components/ui2/Modal';
 
 const PricingRules = () => {
-  const {
-    rules,
-    ruleAnalytics,
-    runAllRules,
-    deleteRule,
-  } = useRMS();
+  const { showToast } = useToast();
 
+  // State for API data
+  const [rules, setRules] = useState<PricingRule[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [editingRule, setEditingRule] = useState(null);
+  const [editingRule, setEditingRule] = useState<PricingRule | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [filterActive, setFilterActive] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
   const [isActiveDropdownOpen, setIsActiveDropdownOpen] = useState(false);
   const [isPriorityDropdownOpen, setIsPriorityDropdownOpen] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, rule: null });
-  const [selectedRule, setSelectedRule] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; rule: PricingRule | null }>({ isOpen: false, rule: null });
+  const [selectedRule, setSelectedRule] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const activeDropdownRef = useRef(null);
-  const priorityDropdownRef = useRef(null);
+  const activeDropdownRef = useRef<HTMLDivElement>(null);
+  const priorityDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fetch rules from API
+  const fetchRules = useCallback(async () => {
+    try {
+      setError(null);
+      const data = await revenueIntelligenceService.getPricingRules();
+      setRules(data || []);
+    } catch (err) {
+      console.error('Failed to fetch pricing rules:', err);
+      setError('Failed to load pricing rules');
+      showToast('Failed to load pricing rules', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchRules();
+  }, [fetchRules]);
 
   const handleRunAllRules = async () => {
     setIsRunning(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      const results = runAllRules();
-      console.log('Rules applied:', results);
+      await revenueIntelligenceService.runAllRules();
+      showToast('All rules executed successfully', 'success');
+      // Refresh rules to get updated execution status
+      await fetchRules();
+    } catch (err) {
+      console.error('Failed to run rules:', err);
+      showToast('Failed to run pricing rules', 'error');
     } finally {
       setIsRunning(false);
     }
@@ -43,28 +67,59 @@ const PricingRules = () => {
     setIsDrawerOpen(true);
   };
 
-  const handleEditRule = (rule) => {
+  const handleEditRule = (rule: PricingRule) => {
     setEditingRule(rule);
     setIsDrawerOpen(true);
   };
 
-  const handleDeleteRule = (rule) => {
+  const handleDeleteRule = (rule: PricingRule) => {
     setDeleteConfirm({ isOpen: true, rule });
   };
 
-  const confirmDelete = () => {
-    if (deleteConfirm.rule) {
-      deleteRule(deleteConfirm.rule.id);
+  const confirmDelete = async () => {
+    if (!deleteConfirm.rule) return;
+
+    setIsDeleting(true);
+    try {
+      await revenueIntelligenceService.deletePricingRule(deleteConfirm.rule.id);
+      showToast('Rule deleted successfully', 'success');
+      // Refresh rules
+      await fetchRules();
+    } catch (err) {
+      console.error('Failed to delete rule:', err);
+      showToast('Failed to delete rule', 'error');
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirm({ isOpen: false, rule: null });
     }
-    setDeleteConfirm({ isOpen: false, rule: null });
+  };
+
+  const handleToggleRule = async (rule: PricingRule) => {
+    try {
+      await revenueIntelligenceService.togglePricingRule(rule.id);
+      showToast(`Rule ${rule.is_active ? 'disabled' : 'enabled'} successfully`, 'success');
+      // Refresh rules
+      await fetchRules();
+    } catch (err) {
+      console.error('Failed to toggle rule:', err);
+      showToast('Failed to toggle rule', 'error');
+    }
+  };
+
+  const handleSaveRule = async () => {
+    setIsDrawerOpen(false);
+    setEditingRule(null);
+    // Refresh rules after save
+    await fetchRules();
+    showToast(editingRule ? 'Rule updated successfully' : 'Rule created successfully', 'success');
   };
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (activeDropdownRef.current && !activeDropdownRef.current.contains(event.target)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (activeDropdownRef.current && !activeDropdownRef.current.contains(event.target as Node)) {
         setIsActiveDropdownOpen(false);
       }
-      if (priorityDropdownRef.current && !priorityDropdownRef.current.contains(event.target)) {
+      if (priorityDropdownRef.current && !priorityDropdownRef.current.contains(event.target as Node)) {
         setIsPriorityDropdownOpen(false);
       }
     };
@@ -74,13 +129,34 @@ const PricingRules = () => {
   }, []);
 
   const filteredRules = rules.filter(rule => {
-    if (filterActive === 'active' && !rule.isActive) return false;
-    if (filterActive === 'inactive' && rule.isActive) return false;
+    if (filterActive === 'active' && !rule.is_active) return false;
+    if (filterActive === 'inactive' && rule.is_active) return false;
     if (filterPriority !== 'all' && rule.priority !== parseInt(filterPriority)) return false;
     return true;
   });
 
   const sortedRules = [...filteredRules].sort((a, b) => a.priority - b.priority);
+
+  // Convert API rules to format expected by RuleSummary
+  const ruleSummaryData = rules.map(rule => ({
+    ...rule,
+    isActive: rule.is_active,
+  }));
+
+  if (error && rules.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F9F7F7' }}>
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+          <h2 className="text-lg font-semibold text-neutral-800 mb-2">Failed to Load Rules</h2>
+          <p className="text-sm text-neutral-500 mb-4">{error}</p>
+          <Button onClick={fetchRules} variant="primary">
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
@@ -120,6 +196,7 @@ const PricingRules = () => {
               loading={isRunning}
               icon={isRunning ? RefreshCw : Play}
               variant="outline"
+              disabled={rules.length === 0}
             >
               {isRunning ? 'Running...' : 'Run All'}
             </Button>
@@ -135,7 +212,18 @@ const PricingRules = () => {
 
         {/* Summary Stats */}
         <section>
-          <RuleSummary rules={rules} />
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="rounded-[10px] bg-white p-5 animate-pulse">
+                  <div className="h-4 bg-neutral-100 rounded w-24 mb-2" />
+                  <div className="h-8 bg-neutral-100 rounded w-16" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <RuleSummary rules={ruleSummaryData} />
+          )}
         </section>
 
         {/* Priority Filter */}
@@ -188,7 +276,28 @@ const PricingRules = () => {
 
         {/* Rules Grid */}
         <section>
-          {sortedRules.length === 0 ? (
+          {isLoading ? (
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="rounded-[10px] bg-white p-6 animate-pulse">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-neutral-100 rounded-lg" />
+                      <div>
+                        <div className="h-5 bg-neutral-100 rounded w-40 mb-2" />
+                        <div className="h-4 bg-neutral-100 rounded w-60" />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-20 h-8 bg-neutral-100 rounded-lg" />
+                      <div className="w-8 h-8 bg-neutral-100 rounded-lg" />
+                    </div>
+                  </div>
+                  <div className="h-16 bg-neutral-100 rounded" />
+                </div>
+              ))}
+            </div>
+          ) : sortedRules.length === 0 ? (
             <div className="rounded-[10px] bg-white p-12 text-center">
               <div className="w-16 h-16 mx-auto mb-5 rounded-lg flex items-center justify-center bg-terra-50">
                 <Zap className="w-8 h-8 text-terra-500" />
@@ -212,9 +321,15 @@ const PricingRules = () => {
               {sortedRules.map(rule => (
                 <RuleCard
                   key={rule.id}
-                  rule={rule}
-                  onEdit={handleEditRule}
-                  onDelete={handleDeleteRule}
+                  rule={{
+                    ...rule,
+                    isActive: rule.is_active,
+                    lastTriggeredAt: rule.last_triggered_at,
+                    executionStatus: rule.execution_status,
+                  }}
+                  onEdit={() => handleEditRule(rule)}
+                  onDelete={() => handleDeleteRule(rule)}
+                  onToggle={() => handleToggleRule(rule)}
                   isSelected={selectedRule === rule.id}
                   onClick={() => setSelectedRule(selectedRule === rule.id ? null : rule.id)}
                 />
@@ -230,11 +345,11 @@ const PricingRules = () => {
             setIsDrawerOpen(false);
             setEditingRule(null);
           }}
-          rule={editingRule}
-          onSave={() => {
-            setIsDrawerOpen(false);
-            setEditingRule(null);
-          }}
+          rule={editingRule ? {
+            ...editingRule,
+            isActive: editingRule.is_active,
+          } : null}
+          onSave={handleSaveRule}
         />
 
         {/* Delete Confirmation Modal */}
@@ -245,7 +360,7 @@ const PricingRules = () => {
           title="Delete Rule"
           description={`Are you sure you want to delete "${deleteConfirm.rule?.name}"? This action cannot be undone.`}
           variant="danger"
-          confirmText="Delete"
+          confirmText={isDeleting ? 'Deleting...' : 'Delete'}
           cancelText="Cancel"
         />
       </main>

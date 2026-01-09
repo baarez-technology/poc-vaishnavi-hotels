@@ -16,7 +16,16 @@ import { Input, FormField, Select, Textarea } from '../ui2/Input';
 import { Button } from '../ui2/Button';
 import DatePicker from '../ui2/DatePicker';
 
-const roomTypes = ['Standard', 'Premium', 'Deluxe', 'Suite'];
+const roomTypes = [
+  'Minimalist Studio',
+  'Coastal Retreat',
+  'Urban Oasis',
+  'Sunset Vista',
+  'Pacific Suite',
+  'Wellness Suite',
+  'Family Sanctuary',
+  'Oceanfront Penthouse'
+];
 const ratePlans = ['BAR', 'Corporate', 'OTA', 'Long Stay'];
 const sources = [
   { id: 'Direct', label: 'Direct', icon: Building },
@@ -43,7 +52,7 @@ export default function NewBookingModal({
     checkOut: '',
     nights: 0,
     ratePlan: 'BAR',
-    roomType: 'Standard',
+    roomType: 'Minimalist Studio',
     adults: 2,
     children: 0,
     source: 'Direct',
@@ -163,7 +172,7 @@ export default function NewBookingModal({
       checkOut: '',
       nights: 0,
       ratePlan: 'BAR',
-      roomType: 'Standard',
+      roomType: 'Minimalist Studio',
       adults: 2,
       children: 0,
       source: 'Direct',

@@ -288,7 +288,7 @@ export function DatesStep({ onNext }: DatesStepProps) {
                 <motion.button
                   type="button"
                   onClick={() => updateGuests('adults', 1)}
-                  disabled={bookingData.guests.adults + bookingData.guests.children >= bookingData.room!.maxGuests}
+                  disabled={bookingData.guests.adults >= bookingData.room!.maxGuests}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className="w-11 h-11 rounded-lg border-2 border-neutral-300 flex items-center justify-center hover:border-primary-500 hover:bg-primary-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
@@ -323,7 +323,7 @@ export function DatesStep({ onNext }: DatesStepProps) {
                 <motion.button
                   type="button"
                   onClick={() => updateGuests('children', 1)}
-                  disabled={bookingData.guests.adults + bookingData.guests.children >= bookingData.room!.maxGuests}
+                  disabled={bookingData.guests.children >= 5}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className="w-11 h-11 rounded-lg border-2 border-neutral-300 flex items-center justify-center hover:border-primary-500 hover:bg-primary-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
@@ -340,7 +340,7 @@ export function DatesStep({ onNext }: DatesStepProps) {
             <div className="flex-1">
               <p className="text-sm text-primary-900 font-semibold">Room Capacity</p>
               <p className="text-sm text-primary-700 mt-1">
-                This suite accommodates up to {bookingData.room!.maxGuests} guests. Currently selected: {totalGuests} {totalGuests === 1 ? 'guest' : 'guests'}.
+                This suite accommodates up to {bookingData.room!.maxGuests} adults. Children do not count towards the room capacity. Currently selected: {bookingData.guests.adults} {bookingData.guests.adults === 1 ? 'adult' : 'adults'}{bookingData.guests.children > 0 ? ` + ${bookingData.guests.children} ${bookingData.guests.children === 1 ? 'child' : 'children'}` : ''}.
               </p>
             </div>
           </div>

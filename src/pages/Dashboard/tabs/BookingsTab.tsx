@@ -72,9 +72,20 @@ export function BookingsTab() {
     // Fetch booking details to get the room information
     try {
       const bookingDetails = await bookingService.getBookingById(bookingId);
-      if (bookingDetails && bookingDetails.room) {
+      if (!bookingDetails) {
+        toast.error('Unable to load booking details');
+        return;
+      }
+
+      // Check if room data exists and has valid info (slug or name)
+      // Note: Backend may return empty room object {} when no room is assigned yet
+      const hasValidRoomInfo = bookingDetails.room &&
+        (bookingDetails.room.slug || bookingDetails.room.name);
+
+      if (hasValidRoomInfo) {
         // Navigate to booking page with room slug and booking details
-        const roomSlug = bookingDetails.room.slug || bookingDetails.room.name?.toLowerCase().replace(/\s+/g, '-');
+        const roomSlug = bookingDetails.room.slug ||
+          bookingDetails.room.name?.toLowerCase().replace(/\s+/g, '-');
         const params = new URLSearchParams({
           room: roomSlug,
           checkIn: bookingDetails.checkIn,
@@ -86,7 +97,25 @@ export function BookingsTab() {
         });
         window.location.href = `/booking?${params.toString()}`;
       } else {
-        toast.error('Unable to modify booking: Room information not found');
+        // No room assigned yet - use roomType from the booking list
+        // Find the booking in our local state to get the room type name
+        const localBooking = bookings.find(b => b.id === bookingId);
+        if (localBooking && localBooking.roomType) {
+          // Convert room type name to slug (e.g., "Wellness Suite" -> "wellness-suite")
+          const roomSlug = localBooking.roomType.toLowerCase().replace(/\s+/g, '-');
+          const params = new URLSearchParams({
+            room: roomSlug,
+            checkIn: bookingDetails.checkIn,
+            checkOut: bookingDetails.checkOut,
+            adults: String(bookingDetails.guests?.adults || 1),
+            children: String(bookingDetails.guests?.children || 0),
+            modify: 'true',
+            bookingId: bookingId,
+          });
+          window.location.href = `/booking?${params.toString()}`;
+        } else {
+          toast.error('Unable to modify booking: Room information not found');
+        }
       }
     } catch (error) {
       console.error('Failed to fetch booking details for modification:', error);

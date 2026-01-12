@@ -372,29 +372,29 @@ class ReputationService {
     if (status) params.status = status;
     if (type) params.type = type;
 
-    const response = await api.get(`${this.baseUrl}/alerts`, { params });
+    const response = await api.get(`${this.baseUrl}/alerts/`, { params });
     return response.data.data || response.data;
   }
 
   async getAlert(alertId: number): Promise<Alert> {
-    const response = await api.get(`${this.baseUrl}/alerts/${alertId}`);
+    const response = await api.get(`${this.baseUrl}/alerts/${alertId}/`);
     return response.data.data || response.data;
   }
 
   async acknowledgeAlert(alertId: number): Promise<Alert> {
-    const response = await api.post(`${this.baseUrl}/alerts/${alertId}/acknowledge`);
+    const response = await api.post(`${this.baseUrl}/alerts/${alertId}/acknowledge/`);
     return response.data.data || response.data;
   }
 
   async resolveAlert(alertId: number, notes: string): Promise<Alert> {
-    const response = await api.post(`${this.baseUrl}/alerts/${alertId}/resolve`, {
+    const response = await api.post(`${this.baseUrl}/alerts/${alertId}/resolve/`, {
       resolution_notes: notes
     });
     return response.data.data || response.data;
   }
 
   async dismissAlert(alertId: number): Promise<void> {
-    await api.post(`${this.baseUrl}/alerts/${alertId}/dismiss`);
+    await api.post(`${this.baseUrl}/alerts/${alertId}/dismiss/`);
   }
 
   async createWorkOrderFromAlert(alertId: number, data: {
@@ -404,7 +404,7 @@ class ReputationService {
     assigned_to?: number;
     department?: string;
   }): Promise<{ work_order_id: number }> {
-    const response = await api.post(`${this.baseUrl}/alerts/${alertId}/work-order`, data);
+    const response = await api.post(`${this.baseUrl}/alerts/${alertId}/work-order/`, data);
     return response.data.data || response.data;
   }
 
@@ -413,7 +413,7 @@ class ReputationService {
     categories_scanned: number;
     issues_detected: number;
   }> {
-    const response = await api.post(`${this.baseUrl}/alerts/detect`);
+    const response = await api.post(`${this.baseUrl}/alerts/detect/`);
     return response.data.data || response.data;
   }
 
@@ -422,12 +422,12 @@ class ReputationService {
   // ========================
 
   async getCategories(): Promise<Category[]> {
-    const response = await api.get(`${this.baseUrl}/categories`);
+    const response = await api.get(`${this.baseUrl}/categories/`);
     return response.data.data || response.data;
   }
 
   async getCategory(id: number): Promise<Category> {
-    const response = await api.get(`${this.baseUrl}/categories/${id}`);
+    const response = await api.get(`${this.baseUrl}/categories/${id}/`);
     return response.data.data || response.data;
   }
 
@@ -439,21 +439,21 @@ class ReputationService {
     color?: string;
     is_active?: boolean;
   }): Promise<Category> {
-    const response = await api.post(`${this.baseUrl}/categories`, data);
+    const response = await api.post(`${this.baseUrl}/categories/`, data);
     return response.data.data || response.data;
   }
 
   async updateCategory(id: number, data: Partial<Category>): Promise<Category> {
-    const response = await api.patch(`${this.baseUrl}/categories/${id}`, data);
+    const response = await api.patch(`${this.baseUrl}/categories/${id}/`, data);
     return response.data.data || response.data;
   }
 
   async deleteCategory(id: number): Promise<void> {
-    await api.delete(`${this.baseUrl}/categories/${id}`);
+    await api.delete(`${this.baseUrl}/categories/${id}/`);
   }
 
   async updateRoutingRules(categoryId: number, rules: RoutingRule): Promise<Category> {
-    const response = await api.put(`${this.baseUrl}/categories/${categoryId}/routing`, rules);
+    const response = await api.put(`${this.baseUrl}/categories/${categoryId}/routing/`, rules);
     return response.data.data || response.data;
   }
 
@@ -463,7 +463,7 @@ class ReputationService {
     avg_rating: number;
     trend: number;
   }> {
-    const response = await api.get(`${this.baseUrl}/categories/${categoryId}/stats`);
+    const response = await api.get(`${this.baseUrl}/categories/${categoryId}/stats/`);
     return response.data.data || response.data;
   }
 

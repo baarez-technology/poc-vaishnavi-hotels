@@ -9,19 +9,68 @@ import {
   ChevronRight,
   Play,
   AlertCircle,
-  Calendar,
-  Loader2
+  Loader2,
+  Settings
 } from 'lucide-react';
 import { DashboardHeader } from '../../../layouts/staff-portal/PageHeader';
-import Card, { StatCard } from '../../../components/staff-portal/ui/Card';
+import { StatCard } from '../../../components/staff-portal/ui/Card';
 import { StatusBadge, SeverityBadge } from '../../../components/staff-portal/ui/Badge';
 import Button from '../../../components/staff-portal/ui/Button';
 import { useStaffProfile, useMyMaintenanceDashboard, useWorkOrders, useEquipmentIssues, useNotifications, useMaintenanceActions } from '@/hooks/staff-portal/useStaffApi';
 
+// Section Card matching admin LuxurySectionCard
+function SectionCard({
+  title,
+  subtitle,
+  action,
+  actionLabel,
+  children,
+  className = '',
+  noPadding = false
+}: {
+  title?: string;
+  subtitle?: string;
+  action?: () => void;
+  actionLabel?: string;
+  children: React.ReactNode;
+  className?: string;
+  noPadding?: boolean;
+}) {
+  return (
+    <div className={`rounded-[10px] bg-white overflow-hidden ${className}`}>
+      {(title || action) && (
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-neutral-100 flex-shrink-0">
+          <div className="min-w-0">
+            {title && (
+              <h3 className="text-sm font-semibold text-neutral-800">
+                {title}
+              </h3>
+            )}
+            {subtitle && (
+              <p className="text-[11px] text-neutral-400 font-medium mt-0.5">{subtitle}</p>
+            )}
+          </div>
+          {action && (
+            <button
+              onClick={action}
+              className="flex items-center gap-1 text-[11px] font-semibold text-terra-600 px-3 py-1.5 rounded-lg hover:bg-terra-50 transition-colors flex-shrink-0"
+            >
+              <span className="hidden xs:inline">{actionLabel}</span>
+              <span className="xs:hidden">View</span>
+              <ChevronRight className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      )}
+      <div className={noPadding ? '' : 'px-4 sm:px-6 py-4 sm:pb-6'}>{children}</div>
+    </div>
+  );
+}
+
 const MaintenanceDashboard = () => {
   const navigate = useNavigate();
   const { data: profile } = useStaffProfile();
-  const { data: dashboard, loading: dashboardLoading } = useMyMaintenanceDashboard();
+  const { loading: dashboardLoading } = useMyMaintenanceDashboard();
   const { data: pendingWorkOrders, loading: pendingLoading, refetch: refetchPending } = useWorkOrders({ status: 'pending' });
   const { data: inProgressWorkOrders, loading: inProgressLoading, refetch: refetchInProgress } = useWorkOrders({ status: 'in_progress' });
   const { data: completedWorkOrders } = useWorkOrders({ status: 'completed' });
@@ -52,6 +101,21 @@ const MaintenanceDashboard = () => {
     pendingIssues: equipmentIssues?.filter(i => i.status === 'pending').length || 0
   }), [pendingWorkOrders, inProgressWorkOrders, completedWorkOrders, workOrders, equipmentIssues]);
 
+  const shiftHoursLeft = useMemo(() => {
+    if (!profile?.shift_end || !profile?.clocked_in) return null;
+    const [endHour, endMin] = profile.shift_end.split(':').map(Number);
+    const now = new Date();
+    const shiftEnd = new Date();
+    shiftEnd.setHours(endHour, endMin, 0);
+
+    const diffMs = shiftEnd.getTime() - now.getTime();
+    if (diffMs <= 0) return '0h 0m';
+
+    const hours = Math.floor(diffMs / 3600000);
+    const minutes = Math.floor((diffMs % 3600000) / 60000);
+    return `${hours}h ${minutes}m`;
+  }, [profile]);
+
   const recentWorkOrders = useMemo(() => {
     return workOrders
       .filter(wo => wo.status !== 'completed')
@@ -68,7 +132,7 @@ const MaintenanceDashboard = () => {
       type: 'work_order',
       title: wo.title,
       status: wo.status,
-      timestamp: wo.updated_at || wo.created_at,
+      timestamp: wo.completed_at || wo.started_at || wo.reported_at,
       priority: wo.priority
     }));
 
@@ -80,7 +144,7 @@ const MaintenanceDashboard = () => {
   const urgentNotifications = useMemo(() => {
     const notificationsList = notifications || [];
     return notificationsList
-      .filter(n => !n.is_read && (n.priority === 'urgent' || n.priority === 'high'))
+      .filter((n: any) => !n.is_read && (n.task?.priority === 'urgent' || n.task?.priority === 'high'))
       .slice(0, 3);
   }, [notifications]);
 
@@ -113,94 +177,100 @@ const MaintenanceDashboard = () => {
     <div>
       <DashboardHeader name={profile?.name} />
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard
-          title="Open Work Orders"
-          value={stats.pendingWorkOrders + stats.inProgressWorkOrders}
-          subtitle={`${stats.pendingWorkOrders} pending`}
-          icon={Wrench}
-          color="primary"
-        />
-        <StatCard
-          title="Critical Issues"
-          value={stats.criticalWorkOrders}
-          subtitle="Require immediate action"
-          icon={AlertTriangle}
-          color="danger"
-        />
-        <StatCard
-          title="Tasks Due Today"
-          value={stats.pendingTasks + stats.inProgressTasks}
-          subtitle={`${stats.inProgressTasks} in progress`}
-          icon={ClipboardList}
-          color="gold"
-        />
-        <StatCard
-          title="Completed This Week"
-          value={stats.completedWorkOrders + stats.completedTasks}
-          subtitle="Work orders & tasks"
-          icon={CheckCircle}
-          color="green"
-        />
+      {/* KPI Cards - 12 Column Grid matching admin dashboard */}
+      <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
+        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+          <StatCard
+            title="Open Work Orders"
+            value={stats.pendingWorkOrders + stats.inProgressWorkOrders}
+            subtitle={`${stats.pendingWorkOrders} pending`}
+            icon={Wrench}
+            color="terra"
+          />
+        </div>
+        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+          <StatCard
+            title="Critical Issues"
+            value={stats.criticalWorkOrders}
+            subtitle="Require immediate action"
+            icon={AlertTriangle}
+            color="danger"
+          />
+        </div>
+        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+          <StatCard
+            title="Tasks Due Today"
+            value={stats.pendingTasks + stats.inProgressTasks}
+            subtitle={`${stats.inProgressTasks} in progress`}
+            icon={ClipboardList}
+            color="gold"
+          />
+        </div>
+        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+          <StatCard
+            title="Shift Hours Left"
+            value={shiftHoursLeft || '--'}
+            subtitle={profile?.clocked_in ? 'Currently clocked in' : 'Not clocked in'}
+            icon={Clock}
+            color="ocean"
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Work Orders */}
-        <div className="lg:col-span-2">
-          <Card>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-text">Recent Work Orders</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/staff/maintenance/work-orders')}
-                icon={ChevronRight}
-                iconPosition="right"
-              >
-                View All
-              </Button>
-            </div>
-
+      {/* Main Content - 12 Column Grid matching admin dashboard */}
+      <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
+        {/* Recent Work Orders - 8 columns */}
+        <div className="col-span-12 lg:col-span-8">
+          <SectionCard
+            title="Recent Work Orders"
+            subtitle={`${recentWorkOrders.length} active orders`}
+            action={() => navigate('/staff/maintenance/work-orders')}
+            actionLabel="View All"
+            className="h-full"
+          >
             {recentWorkOrders.length === 0 ? (
               <div className="text-center py-8">
-                <Wrench className="w-12 h-12 text-text-muted mx-auto mb-3" />
-                <p className="text-text-light">No open work orders</p>
+                <Wrench className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
+                <p className="text-[13px] text-neutral-500">No open work orders</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {recentWorkOrders.map((wo) => (
                   <div
                     key={wo.id}
-                    className="flex items-center gap-4 p-4 rounded-[12px] bg-neutral hover:bg-neutral-dark transition-colors cursor-pointer"
+                    className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-neutral-50/50 hover:bg-neutral-50 transition-colors cursor-pointer"
                     onClick={() => navigate(`/staff/maintenance/work-orders/${wo.id}`)}
                   >
-                    <div className={`
-                      w-12 h-12 rounded-[10px] flex items-center justify-center flex-shrink-0
-                      ${wo.priority === 'critical' ? 'bg-danger-light' :
-                        wo.priority === 'high' ? 'bg-warning-light' :
-                        'bg-primary/10'}
-                    `}>
-                      {wo.priority === 'critical' ? (
-                        <AlertCircle className="w-6 h-6 text-danger" />
-                      ) : (
-                        <Wrench className="w-6 h-6 text-primary" />
-                      )}
+                    <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        wo.priority === 'critical' ? 'bg-rose-50' :
+                        wo.priority === 'high' ? 'bg-amber-50' :
+                        'bg-terra-50'
+                      }`}>
+                        {wo.priority === 'critical' ? (
+                          <AlertCircle className="w-4.5 h-4.5 text-rose-600" />
+                        ) : (
+                          <Wrench className={`w-4.5 h-4.5 ${wo.priority === 'high' ? 'text-amber-600' : 'text-terra-600'}`} />
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                          <span className="text-[13px] font-semibold text-neutral-800 truncate">{wo.title}</span>
+                          <StatusBadge status={wo.status} />
+                          {(wo.priority === 'critical' || wo.priority === 'high') && (
+                            <SeverityBadge severity={wo.priority} />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px] text-neutral-500">
+                          <span className="font-medium">{wo.location}</span>
+                          <span className="text-neutral-300">•</span>
+                          <span>{wo.issue_type}</span>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-text truncate">{wo.title}</span>
-                        <SeverityBadge severity={wo.priority} />
-                      </div>
-                      <div className="flex items-center gap-3 mt-1 text-sm text-text-light">
-                        <span>{wo.location}</span>
-                        <span>•</span>
-                        <span>{wo.issue_type}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 pl-13 sm:pl-0">
                       {wo.status === 'pending' && (
                         <Button
                           size="sm"
@@ -213,135 +283,196 @@ const MaintenanceDashboard = () => {
                           Start
                         </Button>
                       )}
-                      <StatusBadge status={wo.status} />
+                      <ChevronRight className="w-3.5 h-3.5 text-neutral-300 hidden sm:block" />
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </Card>
+          </SectionCard>
+        </div>
 
-          {/* Activity Timeline */}
-          <Card className="mt-6">
-            <h2 className="text-lg font-semibold text-text mb-4">Recent Activity</h2>
+        {/* Quick Actions - 4 columns */}
+        <div className="col-span-12 lg:col-span-4">
+          <SectionCard
+            title="Quick Actions"
+            subtitle="Common tasks"
+            className="h-full"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+              <button
+                onClick={() => {
+                  const nextOrder = workOrders.find((wo: any) => wo.status === 'pending');
+                  if (nextOrder) handleStartWorkOrder(nextOrder);
+                }}
+                className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-terra-50 text-left hover:bg-terra-100 transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-terra-100 flex items-center justify-center flex-shrink-0">
+                  <Play className="w-4.5 h-4.5 text-terra-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-neutral-800 mb-0.5">Start Next Order</p>
+                  <p className="text-[11px] text-neutral-400 font-medium">Begin work order</p>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-terra-600 group-hover:translate-x-0.5 transition-all hidden sm:block" />
+              </button>
+              <button
+                onClick={() => navigate('/staff/maintenance/work-orders')}
+                className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-neutral-50/50 text-left hover:bg-neutral-50 transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-sage-50 flex items-center justify-center flex-shrink-0">
+                  <Wrench className="w-4.5 h-4.5 text-sage-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-neutral-800 mb-0.5">View Work Orders</p>
+                  <p className="text-[11px] text-neutral-400 font-medium">Manage all orders</p>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-terra-600 group-hover:translate-x-0.5 transition-all hidden sm:block" />
+              </button>
+              <button
+                onClick={() => navigate('/staff/maintenance/tasks')}
+                className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-neutral-50/50 text-left hover:bg-neutral-50 transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gold-50 flex items-center justify-center flex-shrink-0">
+                  <ClipboardList className="w-4.5 h-4.5 text-gold-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-neutral-800 mb-0.5">View Tasks</p>
+                  <p className="text-[11px] text-neutral-400 font-medium">Scheduled maintenance</p>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-terra-600 group-hover:translate-x-0.5 transition-all hidden sm:block" />
+              </button>
+              <button
+                onClick={() => navigate('/staff/maintenance/equipment')}
+                className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-neutral-50/50 text-left hover:bg-neutral-50 transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center flex-shrink-0">
+                  <Settings className="w-4.5 h-4.5 text-rose-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-neutral-800 mb-0.5">Equipment Issues</p>
+                  <p className="text-[11px] text-neutral-400 font-medium">{stats.pendingIssues} pending</p>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-terra-600 group-hover:translate-x-0.5 transition-all hidden sm:block" />
+              </button>
+            </div>
+          </SectionCard>
+        </div>
+      </div>
 
+      {/* Activity & Alerts - 6 + 6 = 12 columns */}
+      <div className="grid grid-cols-12 gap-4 sm:gap-6">
+        {/* Recent Activity - 6 columns */}
+        <div className="col-span-12 lg:col-span-6">
+          <SectionCard
+            title="Recent Activity"
+            subtitle="Latest updates"
+            className="h-full"
+          >
             {recentActivity.length === 0 ? (
-              <p className="text-text-light text-center py-4">No recent activity</p>
+              <div className="text-center py-6">
+                <CheckCircle className="w-10 h-10 text-sage-500 mx-auto mb-2" />
+                <p className="text-[13px] font-medium text-neutral-600">No recent activity</p>
+              </div>
             ) : (
-              <div className="relative">
-                <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
-
-                <div className="space-y-4">
-                  {recentActivity.map((activity, index) => (
-                    <div key={`${activity.type}-${activity.id}`} className="relative flex gap-4 pl-10">
-                      <div className={`
-                        absolute left-2 w-5 h-5 rounded-full flex items-center justify-center
-                        ${activity.status === 'completed' ? 'bg-success' :
-                          activity.status === 'in_progress' ? 'bg-warning' :
-                          'bg-neutral-dark'}
-                      `}>
+              <div className="space-y-3">
+                {recentActivity.map((activity) => (
+                  <div
+                    key={`${activity.type}-${activity.id}`}
+                    className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-neutral-50/50 hover:bg-neutral-50 transition-colors"
+                  >
+                    <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        activity.status === 'completed' ? 'bg-sage-50' :
+                        activity.status === 'in_progress' ? 'bg-amber-50' :
+                        'bg-neutral-100'
+                      }`}>
                         {activity.status === 'completed' ? (
-                          <CheckCircle className="w-3 h-3 text-white" />
+                          <CheckCircle className="w-4.5 h-4.5 text-sage-600" />
                         ) : activity.status === 'in_progress' ? (
-                          <Clock className="w-3 h-3 text-white" />
+                          <Clock className="w-4.5 h-4.5 text-amber-600" />
                         ) : (
-                          <div className="w-2 h-2 rounded-full bg-text-muted" />
+                          <Wrench className="w-4.5 h-4.5 text-neutral-500" />
                         )}
                       </div>
-
-                      <div className="flex-1 pb-4">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="text-sm font-medium text-text">{activity.title}</p>
-                            <p className="text-xs text-text-muted capitalize">
-                              {activity.type.replace('_', ' ')} • {activity.status.replace('_', ' ')}
-                            </p>
-                          </div>
-                          <span className="text-xs text-text-muted whitespace-nowrap">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold text-neutral-800 mb-0.5 truncate">{activity.title}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-neutral-500 font-medium capitalize">
+                            {activity.status.replace('_', ' ')}
+                          </span>
+                          <span className="text-[11px] text-neutral-400">
                             {formatTimestamp(activity.timestamp)}
                           </span>
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Equipment Issues Alert */}
-          {stats.pendingIssues > 0 && (
-            <Card className="border-warning">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-[10px] bg-warning-light flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5 text-warning" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-text">Equipment Issues</h3>
-                  <p className="text-sm text-text-light">{stats.pendingIssues} pending</p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => navigate('/staff/maintenance/equipment')}
-              >
-                View Issues
-              </Button>
-            </Card>
-          )}
-
-          {/* Quick Actions */}
-          <Card>
-            <h2 className="text-lg font-semibold text-text mb-4">Quick Actions</h2>
-            <div className="space-y-2">
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                icon={Wrench}
-                onClick={() => navigate('/staff/maintenance/work-orders')}
-              >
-                View Work Orders
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                icon={ClipboardList}
-                onClick={() => navigate('/staff/maintenance/tasks')}
-              >
-                View Tasks
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                icon={AlertTriangle}
-                onClick={() => navigate('/staff/maintenance/equipment')}
-              >
-                Equipment Issues
-              </Button>
-            </div>
-          </Card>
-
-          {/* Urgent Alerts */}
-          {urgentNotifications.length > 0 && (
-            <Card>
-              <h2 className="text-lg font-semibold text-text mb-4">Urgent Alerts</h2>
-              <div className="space-y-3">
-                {urgentNotifications.map((notif) => (
-                  <div
-                    key={notif.id}
-                    className="p-3 rounded-[10px] border-l-3 border-l-danger bg-danger-light/30"
-                  >
-                    <p className="text-sm font-medium text-text">{notif.title}</p>
-                    <p className="text-xs text-text-light mt-0.5 line-clamp-2">{notif.message}</p>
+                    <ChevronRight className="w-3.5 h-3.5 text-neutral-300 hidden sm:block" />
                   </div>
                 ))}
               </div>
-            </Card>
-          )}
+            )}
+          </SectionCard>
+        </div>
+
+        {/* Urgent Alerts - 6 columns */}
+        <div className="col-span-12 lg:col-span-6">
+          <SectionCard
+            title="Urgent Alerts"
+            subtitle="Important notifications"
+            action={() => navigate('/staff/notifications')}
+            actionLabel="View All"
+            className="h-full"
+          >
+            {urgentNotifications.length === 0 && stats.criticalWorkOrders === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-[13px] text-neutral-500">No urgent alerts</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {stats.criticalWorkOrders > 0 && (
+                  <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-gradient-to-br from-rose-50/60 to-white">
+                    <div className="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center flex-shrink-0">
+                      <AlertTriangle className="w-5 h-5 text-rose-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-semibold text-neutral-800 mb-0.5">
+                        {stats.criticalWorkOrders} Critical Work Order{stats.criticalWorkOrders > 1 ? 's' : ''}
+                      </p>
+                      <p className="text-[11px] text-neutral-500 leading-relaxed">
+                        Require immediate attention
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {urgentNotifications.map((notif: any) => (
+                  <div
+                    key={notif.id}
+                    className={`
+                      flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg transition-colors
+                      ${notif.task?.priority === 'urgent' ? 'bg-gradient-to-br from-rose-50/60 to-white' :
+                        notif.task?.priority === 'high' ? 'bg-gradient-to-br from-gold-50/60 to-white' :
+                        'bg-gradient-to-br from-ocean-50/60 to-white'}
+                    `}
+                  >
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      notif.task?.priority === 'urgent' ? 'bg-rose-50' :
+                      notif.task?.priority === 'high' ? 'bg-gold-50' : 'bg-ocean-50'
+                    }`}>
+                      <AlertTriangle className={`w-5 h-5 ${
+                        notif.task?.priority === 'urgent' ? 'text-rose-600' :
+                        notif.task?.priority === 'high' ? 'text-gold-600' : 'text-ocean-600'
+                      }`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-semibold text-neutral-800 mb-0.5">{notif.title}</p>
+                      <p className="text-[11px] text-neutral-500 line-clamp-2 leading-relaxed">{notif.message}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </SectionCard>
         </div>
       </div>
     </div>
@@ -349,8 +480,3 @@ const MaintenanceDashboard = () => {
 };
 
 export default MaintenanceDashboard;
-
-
-
-
-

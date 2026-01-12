@@ -1,14 +1,47 @@
 import { forwardRef, ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 
+/**
+ * Staff Portal Button - Matching admin dashboard ui2/Button.tsx
+ * Glimmora Design System v4.0
+ */
+
+const VARIANT: Record<string, string> = {
+  primary: 'text-white font-semibold bg-terra-500 hover:bg-terra-600 active:bg-terra-700',
+  secondary: 'text-white font-semibold bg-ocean-500 hover:bg-ocean-600 active:bg-ocean-700',
+  outline: 'text-terra-600 font-semibold bg-white border border-terra-200 hover:bg-terra-50 hover:border-terra-300 active:bg-terra-100',
+  'outline-neutral': 'text-neutral-600 font-semibold bg-white border border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300 active:bg-neutral-100',
+  ghost: 'text-neutral-600 font-medium bg-transparent hover:bg-neutral-100 hover:text-neutral-900 active:bg-neutral-200',
+  subtle: 'text-neutral-700 font-medium bg-neutral-100 hover:bg-neutral-200 hover:text-neutral-900 active:bg-neutral-300',
+  danger: 'text-white font-semibold bg-rose-500 hover:bg-rose-600 active:bg-rose-700',
+  success: 'text-white font-semibold bg-sage-500 hover:bg-sage-600 active:bg-sage-700',
+  warning: 'text-gold-900 font-semibold bg-gold-400 hover:bg-gold-500 active:bg-gold-600',
+  link: 'text-terra-600 font-medium bg-transparent hover:text-terra-700 underline-offset-4 hover:underline',
+};
+
+const SIZE: Record<string, string> = {
+  sm: 'h-8 px-3 text-xs gap-1.5 rounded-lg',
+  default: 'h-9 px-4 text-[13px] gap-2 rounded-lg',
+  lg: 'h-10 px-5 text-sm gap-2 rounded-xl',
+  icon: 'h-9 w-9 rounded-lg',
+};
+
+const ICON_SIZE: Record<string, string> = {
+  sm: 'w-3.5 h-3.5',
+  default: 'w-4 h-4',
+  lg: 'w-4 h-4',
+  icon: 'w-4 h-4',
+};
+
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success' | 'warning' | 'green' | 'teal' | 'gold' | 'link';
+  variant?: 'primary' | 'secondary' | 'outline' | 'outline-neutral' | 'ghost' | 'subtle' | 'danger' | 'success' | 'warning' | 'link';
   size?: 'sm' | 'default' | 'lg' | 'icon';
   icon?: React.ComponentType<{ className?: string }>;
   iconPosition?: 'left' | 'right';
   isLoading?: boolean;
   children?: ReactNode;
   className?: string;
+  fullWidth?: boolean;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -22,29 +55,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     disabled = false,
     className = '',
     type = 'button',
+    fullWidth = false,
     ...props
   }, ref) => {
-    const variantStyles = {
-      primary: 'bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-600/90 disabled:bg-primary-500/50',
-      secondary: 'bg-beige text-neutral-900 hover:bg-beige-300 active:bg-beige disabled:bg-beige/50',
-      outline: 'bg-transparent border border-neutral-300 text-neutral-900 hover:bg-neutral-100 active:bg-neutral-200 disabled:opacity-50',
-      ghost: 'bg-transparent text-neutral-700 hover:bg-neutral-100 active:bg-neutral-200 disabled:opacity-50',
-      danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-700/80 disabled:bg-red-600/50',
-      success: 'bg-green-600 text-white hover:bg-green-700 active:bg-green-700/80 disabled:bg-green-600/50',
-      warning: 'bg-amber-600 text-white hover:bg-amber-700 active:bg-amber-700/80 disabled:bg-amber-600/50',
-      green: 'bg-deepGreen text-white hover:bg-deepGreen-600 active:bg-deepGreen-600/90 disabled:bg-deepGreen/50',
-      teal: 'bg-teal text-white hover:bg-teal-600 active:bg-teal-600/90 disabled:bg-teal/50',
-      gold: 'bg-gold text-white hover:bg-gold-600 active:bg-gold-600/90 disabled:bg-gold/50',
-      link: 'bg-transparent text-primary-600 hover:text-primary-700 underline-offset-4 hover:underline disabled:opacity-50'
-    };
-
-    const sizeStyles = {
-      sm: 'text-xs px-3 py-1.5 rounded-lg gap-1.5',
-      default: 'text-sm px-4 py-2.5 rounded-[10px] gap-2',
-      lg: 'text-base px-6 py-3 rounded-[12px] gap-2.5',
-      icon: 'p-2.5 rounded-[10px]'
-    };
-
     const isDisabled = disabled || isLoading;
 
     return (
@@ -53,25 +66,28 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         type={type}
         disabled={isDisabled}
         className={`
-          inline-flex items-center justify-center font-medium transition-all duration-200
-          focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:ring-offset-1
-          disabled:cursor-not-allowed
-          ${variantStyles[variant]}
-          ${sizeStyles[size]}
+          inline-flex items-center justify-center whitespace-nowrap
+          transition-all duration-150 ease-out
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terra-500/40 focus-visible:ring-offset-2
+          disabled:opacity-50 disabled:pointer-events-none
+          active:scale-[0.98]
+          ${VARIANT[variant] || VARIANT.primary}
+          ${SIZE[size] || SIZE.default}
+          ${fullWidth ? 'w-full' : ''}
           ${className}
         `}
         {...props}
       >
         {isLoading ? (
           <>
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className={`${ICON_SIZE[size]} animate-spin`} />
             {size !== 'icon' && <span>Loading...</span>}
           </>
         ) : (
           <>
-            {Icon && iconPosition === 'left' && <Icon className="w-4 h-4" />}
+            {Icon && iconPosition === 'left' && <Icon className={ICON_SIZE[size]} />}
             {children}
-            {Icon && iconPosition === 'right' && <Icon className="w-4 h-4" />}
+            {Icon && iconPosition === 'right' && <Icon className={ICON_SIZE[size]} />}
           </>
         )}
       </button>
@@ -95,48 +111,49 @@ export function IconButton({
   className?: string;
   label?: string;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  const sizeStyles = {
-    sm: 'p-1.5',
-    default: 'p-2',
-    lg: 'p-2.5'
+  const ICON_BUTTON_SIZE: Record<string, string> = {
+    sm: 'w-8 h-8',
+    default: 'w-9 h-9',
+    lg: 'w-10 h-10',
   };
 
-  const iconSizes = {
-    sm: 'w-4 h-4',
-    default: 'w-5 h-5',
-    lg: 'w-6 h-6'
-  };
-
-  const variantStyles = {
-    primary: 'bg-primary-500 text-white hover:bg-primary-600',
-    secondary: 'bg-beige text-neutral-900 hover:bg-beige-300',
-    outline: 'bg-transparent border border-neutral-300 text-neutral-900 hover:bg-neutral-100',
-    ghost: 'bg-transparent text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900',
-    danger: 'bg-transparent text-red-600 hover:bg-red-50'
+  const ICON_SIZES: Record<string, string> = {
+    sm: 'w-3.5 h-3.5',
+    default: 'w-4 h-4',
+    lg: 'w-4 h-4',
   };
 
   return (
     <button
       type="button"
+      aria-label={label}
       className={`
-        rounded-[10px] transition-all duration-200
-        focus:outline-none focus:ring-2 focus:ring-primary-500/20
-        disabled:opacity-50 disabled:cursor-not-allowed
-        ${variantStyles[variant]}
-        ${sizeStyles[size]}
+        inline-flex items-center justify-center rounded-lg
+        transition-all duration-150 ease-out
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terra-500/40 focus-visible:ring-offset-2
+        disabled:opacity-50 disabled:pointer-events-none
+        active:scale-[0.95]
+        ${VARIANT[variant] || VARIANT.ghost}
+        ${ICON_BUTTON_SIZE[size]}
         ${className}
       `}
-      aria-label={label}
       {...props}
     >
-      <Icon className={iconSizes[size]} />
+      <Icon className={ICON_SIZES[size]} />
     </button>
   );
 }
 
 export function ButtonGroup({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`inline-flex rounded-[10px] overflow-hidden border border-neutral-300 ${className}`}>
+    <div className={`
+      inline-flex items-center
+      [&>button]:rounded-none
+      [&>button:first-child]:rounded-l-lg
+      [&>button:last-child]:rounded-r-lg
+      [&>button:not(:last-child)]:border-r-0
+      ${className}
+    `}>
       {children}
     </div>
   );
@@ -156,11 +173,11 @@ export function ButtonGroupItem({
     <button
       type="button"
       className={`
-        px-4 py-2 text-sm font-medium transition-colors
-        border-r border-neutral-300 last:border-r-0
+        px-4 py-2 text-[13px] font-medium transition-colors
+        border-r border-neutral-200 last:border-r-0
         ${isActive
-          ? 'bg-primary-500 text-white'
-          : 'bg-white text-neutral-900 hover:bg-neutral-100'
+          ? 'bg-terra-500 text-white'
+          : 'bg-white text-neutral-700 hover:bg-neutral-50'
         }
         ${className}
       `}

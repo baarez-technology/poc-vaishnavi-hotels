@@ -1,6 +1,8 @@
-import { ReactNode } from 'react';
+import { useState, ReactNode } from 'react';
 import Sidebar from '../../components/staff-portal/nav/Sidebar';
+import StaffHeader from '../../components/staff-portal/nav/StaffHeader';
 import NotificationDrawer from '../../components/staff-portal/notifications/NotificationDrawer';
+import { Menu } from 'lucide-react';
 import { useUI } from '../../hooks/staff-portal/useStaffPortal';
 
 interface StaffLayoutProps {
@@ -8,29 +10,110 @@ interface StaffLayoutProps {
 }
 
 export default function StaffLayout({ children }: StaffLayoutProps) {
-  const { sidebarOpen } = useUI();
+  // Sidebar collapse state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const { sidebarOpen, toggleSidebar } = useUI();
+
+  // Handle sidebar toggle
+  const handleSidebarToggle = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <Sidebar />
+    <>
+      {/* Desktop Layout */}
+      <div className="hidden lg:flex w-screen h-screen items-center justify-center bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100 overflow-hidden">
+        {/* Fixed Frame Container */}
+        <div className="relative w-full max-w-[1440px] h-full max-h-[1024px] bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100 overflow-hidden flex flex-col rounded-xl">
+          {/* Top Row: Sidebar Brand + Header */}
+          <div className="flex flex-shrink-0">
+            {/* Sidebar Brand Section - Dynamic Width */}
+            <div className={`transition-all duration-300 ${
+              isSidebarCollapsed ? 'w-20' : 'w-64'
+            }`}>
+              <Sidebar
+                isCollapsed={isSidebarCollapsed}
+                onToggle={handleSidebarToggle}
+                renderBrandOnly={true}
+              />
+            </div>
 
-      <main
-        className={`
-          transition-all duration-300 ease-in-out
-          lg:ml-[260px] min-h-screen
-        `}
-      >
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-          {children}
+            {/* Header - Takes remaining width */}
+            <div className="flex-1">
+              <StaffHeader />
+            </div>
+          </div>
+
+          {/* Bottom Row: Sidebar Navigation + Main Content */}
+          <div className="flex flex-1 min-h-0">
+            {/* Sidebar Navigation - Dynamic Width */}
+            <aside className={`h-full flex-shrink-0 transition-all duration-300 ${
+              isSidebarCollapsed ? 'w-20' : 'w-64'
+            }`}>
+              <Sidebar
+                isCollapsed={isSidebarCollapsed}
+                onToggle={handleSidebarToggle}
+                renderNavigationOnly={true}
+              />
+            </aside>
+
+            {/* Main Content - Scrollable */}
+            <main className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100">
+              <div className="max-w-[1200px] mx-auto px-6 py-6">
+                {children}
+              </div>
+            </main>
+          </div>
+
+          {/* Notification Drawer */}
+          <NotificationDrawer />
         </div>
-      </main>
+      </div>
 
-      <NotificationDrawer />
-    </div>
+      {/* Mobile Layout */}
+      <div className="lg:hidden w-screen h-screen bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100 overflow-hidden flex flex-col">
+        {/* Mobile Header */}
+        <div className="h-14 bg-white border-b border-neutral-100 flex items-center px-4 flex-shrink-0">
+          <button
+            onClick={toggleSidebar}
+            className="p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 transition-colors"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="ml-3">
+            <h1 className="text-sm font-semibold text-neutral-800">Glimmora</h1>
+            <p className="text-[10px] text-neutral-400">Staff Portal</p>
+          </div>
+        </div>
+
+        {/* Mobile Content */}
+        <main className="flex-1 overflow-y-auto custom-scrollbar">
+          <div className="px-4 py-4">
+            {children}
+          </div>
+        </main>
+
+        {/* Mobile Sidebar Overlay */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-50">
+            <div
+              className="absolute inset-0 bg-neutral-900/40 backdrop-blur-[2px]"
+              onClick={toggleSidebar}
+            />
+            <div className="absolute left-0 top-0 bottom-0 w-[280px] shadow-2xl">
+              <Sidebar
+                isCollapsed={false}
+                onToggle={toggleSidebar}
+                renderBrandOnly={false}
+                renderNavigationOnly={false}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Notification Drawer */}
+        <NotificationDrawer />
+      </div>
+    </>
   );
 }
-
-
-
-
-

@@ -136,10 +136,12 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
     { number: 8, label: 'Confirmation', active: true },
   ];
 
+  const currentStepIndex = steps.findIndex(s => s.active);
+
   return (
     <div className="flex min-h-screen bg-white">
       {/* LEFT COLUMN - Vertical Stepper */}
-      <div className="w-[410px] min-h-screen px-12 py-12 border-r border-neutral-200 bg-white">
+      <div className="hidden lg:block w-[410px] min-h-screen px-12 py-12 border-r border-neutral-200 bg-white">
         <div className="sticky top-12">
           {/* Logo */}
           <motion.div
@@ -168,7 +170,7 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
                     transition={{ delay: index * 0.05 }}
                     className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
                       step.active
-                        ? 'bg-[#A57865] text-white'
+                        ? 'bg-terra-500 text-white'
                         : 'bg-transparent text-neutral-400 border border-neutral-300'
                     }`}
                   >
@@ -190,13 +192,13 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
                 >
                   <div
                     className={`text-sm font-medium mb-1 ${
-                      step.active ? 'text-neutral-900' : 'text-neutral-500'
+                      step.active ? 'text-neutral-800' : 'text-neutral-500'
                     }`}
                   >
                     {step.label}
                   </div>
                   {step.active && (
-                    <div className="text-xs text-neutral-500">
+                    <div className="text-[11px] text-neutral-400">
                       Review and submit your information
                     </div>
                   )}
@@ -207,50 +209,72 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
         </div>
       </div>
 
-      {/* RIGHT COLUMN - Content Card */}
-      <div className="flex-1 flex items-start justify-center pt-16 px-16" style={{ backgroundColor: '#FAFAFA' }}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-lg"
-        >
+      {/* RIGHT COLUMN - Content Area */}
+      <div className="flex-1 min-h-screen bg-neutral-50">
+        {/* Mobile Header */}
+        <div className="lg:hidden bg-white border-b border-neutral-200 px-4 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <img
+              src={logo}
+              alt="Glimmora"
+              className="h-8 w-auto cursor-pointer"
+              onClick={handleLogoClick}
+            />
+            <span className="text-[13px] text-neutral-500">Step {currentStepIndex + 1} of {steps.length}</span>
+          </div>
+          {/* Mobile Progress Bar */}
+          <div className="w-full bg-neutral-200 rounded-full h-1">
+            <div
+              className="bg-terra-500 h-1 rounded-full transition-all duration-300"
+              style={{ width: `${((currentStepIndex + 1) / steps.length) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="px-4 py-6 lg:px-10 lg:py-8">
           {/* Previous Button */}
-          <button
+          <motion.button
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
             onClick={onPrevious}
-            className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors mb-6"
+            className="flex items-center gap-2 text-[13px] text-neutral-600 hover:text-neutral-800 transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Previous</span>
-          </button>
+          </motion.button>
 
           {/* Content Card */}
-          <div className="bg-white p-8 rounded-2xl border-2 border-neutral-200 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white p-6 lg:p-8 rounded-[10px] shadow-sm"
+          >
             {/* Header */}
-            <div className="mb-10">
-              <h1 className="text-2xl font-semibold text-neutral-900 mb-2">
+            <div className="mb-6 lg:mb-8">
+              <h1 className="text-lg font-semibold text-neutral-800 mb-2">
                 Review & Submit
               </h1>
-              <p className="text-sm text-neutral-500">
+              <p className="text-[13px] text-neutral-500">
                 Please review your information before submitting
               </p>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-5">
               {/* Personal Information */}
-              <div className="pb-6 border-b border-neutral-200">
-                <h3 className="text-sm font-semibold text-neutral-900 mb-3">
+              <div className="pb-5 border-b border-neutral-100">
+                <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3">
                   Personal Information
                 </h3>
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-neutral-600">Email</span>
-                    <span className="text-neutral-900 font-medium">
+                  <div className="flex justify-between text-[13px]">
+                    <span className="text-neutral-500">Email</span>
+                    <span className="text-neutral-800 font-medium">
                       {preCheckInData.personalInfo.email || 'Not provided'}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-neutral-600">Phone</span>
-                    <span className="text-neutral-900 font-medium">
+                  <div className="flex justify-between text-[13px]">
+                    <span className="text-neutral-500">Phone</span>
+                    <span className="text-neutral-800 font-medium">
                       {preCheckInData.personalInfo.phone || 'Not provided'}
                     </span>
                   </div>
@@ -258,20 +282,20 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
               </div>
 
               {/* Travel Details */}
-              <div className="pb-6 border-b border-neutral-200">
-                <h3 className="text-sm font-semibold text-neutral-900 mb-3">
+              <div className="pb-5 border-b border-neutral-100">
+                <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3">
                   Travel Details
                 </h3>
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-neutral-600">Arrival Time</span>
-                    <span className="text-neutral-900 font-medium">
+                  <div className="flex justify-between text-[13px]">
+                    <span className="text-neutral-500">Arrival Time</span>
+                    <span className="text-neutral-800 font-medium">
                       {preCheckInData.travelDetails.arrivalTime || 'Not provided'}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-neutral-600">Transportation</span>
-                    <span className="text-neutral-900 font-medium">
+                  <div className="flex justify-between text-[13px]">
+                    <span className="text-neutral-500">Transportation</span>
+                    <span className="text-neutral-800 font-medium">
                       {preCheckInData.travelDetails.transportationNeeded ? 'Requested' : 'Not needed'}
                     </span>
                   </div>
@@ -279,20 +303,20 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
               </div>
 
               {/* Room Preferences */}
-              <div className="pb-6 border-b border-neutral-200">
-                <h3 className="text-sm font-semibold text-neutral-900 mb-3">
+              <div className="pb-5 border-b border-neutral-100">
+                <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3">
                   Room Preferences
                 </h3>
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-neutral-600">Temperature</span>
-                    <span className="text-neutral-900 font-medium">
+                  <div className="flex justify-between text-[13px]">
+                    <span className="text-neutral-500">Temperature</span>
+                    <span className="text-neutral-800 font-medium">
                       {preCheckInData.preferences.temperature}°F
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-neutral-600">Pillow Type</span>
-                    <span className="text-neutral-900 font-medium">
+                  <div className="flex justify-between text-[13px]">
+                    <span className="text-neutral-500">Pillow Type</span>
+                    <span className="text-neutral-800 font-medium">
                       {preCheckInData.preferences.pillowType.join(', ') || 'None'}
                     </span>
                   </div>
@@ -304,18 +328,11 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className={`w-full py-2.5 text-white font-medium rounded-lg transition-all text-sm mt-6 flex items-center justify-center gap-2 ${
-                isSubmitting ? 'bg-neutral-400 cursor-not-allowed' : ''
+              className={`w-full h-10 text-white font-semibold rounded-lg transition-all text-[13px] mt-6 flex items-center justify-center gap-2 ${
+                isSubmitting
+                  ? 'bg-neutral-400 cursor-not-allowed'
+                  : 'bg-terra-500 hover:bg-terra-600 active:scale-[0.98]'
               }`}
-              style={{
-                backgroundColor: isSubmitting ? undefined : '#A57865',
-              }}
-              onMouseEnter={(e) => {
-                if (!isSubmitting) e.currentTarget.style.backgroundColor = '#8E6554';
-              }}
-              onMouseLeave={(e) => {
-                if (!isSubmitting) e.currentTarget.style.backgroundColor = '#A57865';
-              }}
             >
               {isSubmitting ? (
                 <>
@@ -326,8 +343,8 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
                 'Complete Pre-Check-In'
               )}
             </button>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );

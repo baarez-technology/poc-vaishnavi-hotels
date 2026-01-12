@@ -58,10 +58,12 @@ export function TravelDetailsStep({ onNext, onPrevious }: TravelDetailsStepProps
     { number: 8, label: 'Confirmation', active: false },
   ];
 
+  const currentStepIndex = steps.findIndex(s => s.active);
+
   return (
     <div className="flex min-h-screen bg-white">
       {/* LEFT COLUMN - Vertical Stepper */}
-      <div className="w-[410px] min-h-screen px-12 py-12 border-r border-neutral-200 bg-white">
+      <div className="hidden lg:block w-[410px] min-h-screen px-12 py-12 border-r border-neutral-200 bg-white">
         <div className="sticky top-12">
           {/* Logo */}
           <motion.div
@@ -90,7 +92,7 @@ export function TravelDetailsStep({ onNext, onPrevious }: TravelDetailsStepProps
                     transition={{ delay: index * 0.05 }}
                     className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
                       step.active
-                        ? 'bg-[#A57865] text-white'
+                        ? 'bg-terra-500 text-white'
                         : 'bg-transparent text-neutral-400 border border-neutral-300'
                     }`}
                   >
@@ -112,13 +114,13 @@ export function TravelDetailsStep({ onNext, onPrevious }: TravelDetailsStepProps
                 >
                   <div
                     className={`text-sm font-medium mb-1 ${
-                      step.active ? 'text-neutral-900' : 'text-neutral-500'
+                      step.active ? 'text-neutral-800' : 'text-neutral-500'
                     }`}
                   >
                     {step.label}
                   </div>
                   {step.active && (
-                    <div className="text-xs text-neutral-500">
+                    <div className="text-[11px] text-neutral-400">
                       Help us prepare for your arrival
                     </div>
                   )}
@@ -129,30 +131,52 @@ export function TravelDetailsStep({ onNext, onPrevious }: TravelDetailsStepProps
         </div>
       </div>
 
-      {/* RIGHT COLUMN - Content Card */}
-      <div className="flex-1 flex items-start justify-center pt-16 px-16" style={{ backgroundColor: '#FAFAFA' }}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-lg"
-        >
+      {/* RIGHT COLUMN - Content Area */}
+      <div className="flex-1 min-h-screen bg-neutral-50">
+        {/* Mobile Header */}
+        <div className="lg:hidden bg-white border-b border-neutral-200 px-4 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <img
+              src={logo}
+              alt="Glimmora"
+              className="h-8 w-auto cursor-pointer"
+              onClick={handleLogoClick}
+            />
+            <span className="text-[13px] text-neutral-500">Step {currentStepIndex + 1} of {steps.length}</span>
+          </div>
+          {/* Mobile Progress Bar */}
+          <div className="w-full bg-neutral-200 rounded-full h-1">
+            <div
+              className="bg-terra-500 h-1 rounded-full transition-all duration-300"
+              style={{ width: `${((currentStepIndex + 1) / steps.length) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="px-4 py-6 lg:px-10 lg:py-8">
           {/* Previous Button */}
-          <button
+          <motion.button
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
             onClick={onPrevious}
-            className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors mb-6"
+            className="flex items-center gap-2 text-[13px] text-neutral-600 hover:text-neutral-800 transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Previous</span>
-          </button>
+          </motion.button>
 
           {/* Content Card */}
-          <div className="bg-white p-8 rounded-2xl border-2 border-neutral-200 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white p-6 lg:p-8 rounded-[10px] shadow-sm"
+          >
             {/* Header */}
-            <div className="mb-10">
-              <h1 className="text-2xl font-semibold text-neutral-900 mb-2">
+            <div className="mb-6 lg:mb-8">
+              <h1 className="text-lg font-semibold text-neutral-800 mb-2">
                 Travel Details
               </h1>
-              <p className="text-sm text-neutral-500">
+              <p className="text-[13px] text-neutral-500">
                 Help us prepare for your seamless arrival
               </p>
             </div>
@@ -161,7 +185,7 @@ export function TravelDetailsStep({ onNext, onPrevious }: TravelDetailsStepProps
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               {/* Arrival Time */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
                   Expected Arrival Time
                 </label>
                 <div className="relative">
@@ -169,29 +193,22 @@ export function TravelDetailsStep({ onNext, onPrevious }: TravelDetailsStepProps
                   <input
                     type="time"
                     {...register('arrivalTime')}
-                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none transition-all text-sm bg-white"
-                    style={{
-                      borderColor: errors.arrivalTime ? '#ef4444' : '#E5E7EB',
-                    } as React.CSSProperties}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = errors.arrivalTime ? '#ef4444' : '#A57865';
-                      e.target.style.boxShadow = errors.arrivalTime ? '0 0 0 3px #fecaca' : '0 0 0 3px rgba(165, 120, 101, 0.1)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = errors.arrivalTime ? '#ef4444' : '#E5E7EB';
-                      e.target.style.boxShadow = 'none';
-                    }}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${
+                      errors.arrivalTime
+                        ? 'border-rose-500 focus:ring-rose-500/20'
+                        : 'border-neutral-200 focus:ring-terra-500/20'
+                    }`}
                   />
                 </div>
                 {errors.arrivalTime && (
-                  <p className="mt-1.5 text-xs text-red-600">{errors.arrivalTime.message}</p>
+                  <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.arrivalTime.message}</p>
                 )}
               </div>
 
               {/* Flight Number */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Flight Number <span className="text-neutral-500 text-xs">(Optional)</span>
+                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                  Flight Number <span className="text-neutral-300 normal-case">(Optional)</span>
                 </label>
                 <div className="relative">
                   <Plane className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
@@ -199,25 +216,14 @@ export function TravelDetailsStep({ onNext, onPrevious }: TravelDetailsStepProps
                     type="text"
                     placeholder="e.g., UA1234"
                     {...register('flightNumber')}
-                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none transition-all text-sm bg-white"
-                    style={{
-                      borderColor: '#E5E7EB',
-                    } as React.CSSProperties}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#A57865';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(165, 120, 101, 0.1)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#E5E7EB';
-                      e.target.style.boxShadow = 'none';
-                    }}
+                    className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all text-[13px] bg-white"
                   />
                 </div>
               </div>
 
               {/* Purpose of Visit */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-3">
+                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3">
                   Purpose of Visit
                 </label>
                 <div className="grid grid-cols-2 gap-3">
@@ -231,9 +237,9 @@ export function TravelDetailsStep({ onNext, onPrevious }: TravelDetailsStepProps
                     return (
                       <label
                         key={purpose.value}
-                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        className={`p-4 border rounded-lg cursor-pointer transition-all ${
                           isSelected
-                            ? 'border-[#A57865] bg-[#A57865]/5'
+                            ? 'border-terra-500 bg-terra-50'
                             : 'border-neutral-200 hover:border-neutral-300'
                         }`}
                       >
@@ -243,7 +249,7 @@ export function TravelDetailsStep({ onNext, onPrevious }: TravelDetailsStepProps
                           {...register('purpose')}
                           className="sr-only"
                         />
-                        <div className="text-sm font-medium text-neutral-900 text-center">
+                        <div className="text-[13px] font-medium text-neutral-800 text-center">
                           {purpose.label}
                         </div>
                       </label>
@@ -254,23 +260,22 @@ export function TravelDetailsStep({ onNext, onPrevious }: TravelDetailsStepProps
 
               {/* Transportation */}
               <div>
-                <label className="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-neutral-300"
-                  style={{
-                    borderColor: transportationNeeded ? '#A57865' : '#E5E7EB',
-                    backgroundColor: transportationNeeded ? 'rgba(165, 120, 101, 0.05)' : 'white',
-                  }}
-                >
+                <label className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-all ${
+                  transportationNeeded
+                    ? 'border-terra-500 bg-terra-50'
+                    : 'border-neutral-200 hover:border-neutral-300'
+                }`}>
                   <input
                     type="checkbox"
                     {...register('transportationNeeded')}
-                    className="mt-0.5 w-4 h-4 rounded border-2 border-neutral-300 text-[#A57865] focus:ring-[#A57865] cursor-pointer"
+                    className="mt-0.5 w-4 h-4 rounded border-neutral-300 text-terra-500 focus:ring-terra-500/20 cursor-pointer"
                   />
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 font-medium text-neutral-900 mb-1">
+                    <div className="flex items-center gap-2 font-medium text-neutral-800 mb-1">
                       <Car className="w-4 h-4" />
-                      <span className="text-sm">Airport Transportation</span>
+                      <span className="text-[13px]">Airport Transportation</span>
                     </div>
-                    <p className="text-xs text-neutral-600">
+                    <p className="text-[11px] text-neutral-500">
                       I need transportation from the airport to the hotel
                     </p>
                   </div>
@@ -280,22 +285,13 @@ export function TravelDetailsStep({ onNext, onPrevious }: TravelDetailsStepProps
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full py-2.5 text-white font-medium rounded-lg transition-all text-sm mt-6"
-                style={{
-                  backgroundColor: '#A57865',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#8E6554';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#A57865';
-                }}
+                className="w-full h-10 text-white font-semibold rounded-lg transition-all text-[13px] mt-6 bg-terra-500 hover:bg-terra-600 active:scale-[0.98]"
               >
                 Next
               </button>
             </form>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );

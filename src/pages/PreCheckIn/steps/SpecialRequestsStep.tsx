@@ -36,10 +36,12 @@ export function SpecialRequestsStep({ onNext, onPrevious }: SpecialRequestsStepP
     { number: 8, label: 'Confirmation', active: false },
   ];
 
+  const currentStepIndex = steps.findIndex(s => s.active);
+
   return (
     <div className="flex min-h-screen bg-white">
       {/* LEFT COLUMN - Vertical Stepper */}
-      <div className="w-[410px] min-h-screen px-12 py-12 border-r border-neutral-200 bg-white">
+      <div className="hidden lg:block w-[410px] min-h-screen px-12 py-12 border-r border-neutral-200 bg-white">
         <div className="sticky top-12">
           {/* Logo */}
           <motion.div
@@ -68,7 +70,7 @@ export function SpecialRequestsStep({ onNext, onPrevious }: SpecialRequestsStepP
                     transition={{ delay: index * 0.05 }}
                     className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
                       step.active
-                        ? 'bg-[#A57865] text-white'
+                        ? 'bg-terra-500 text-white'
                         : 'bg-transparent text-neutral-400 border border-neutral-300'
                     }`}
                   >
@@ -90,13 +92,13 @@ export function SpecialRequestsStep({ onNext, onPrevious }: SpecialRequestsStepP
                 >
                   <div
                     className={`text-sm font-medium mb-1 ${
-                      step.active ? 'text-neutral-900' : 'text-neutral-500'
+                      step.active ? 'text-neutral-800' : 'text-neutral-500'
                     }`}
                   >
                     {step.label}
                   </div>
                   {step.active && (
-                    <div className="text-xs text-neutral-500">
+                    <div className="text-[11px] text-neutral-400">
                       Let us know your special requests
                     </div>
                   )}
@@ -107,30 +109,52 @@ export function SpecialRequestsStep({ onNext, onPrevious }: SpecialRequestsStepP
         </div>
       </div>
 
-      {/* RIGHT COLUMN - Content Card */}
-      <div className="flex-1 flex items-start justify-center pt-16 px-16" style={{ backgroundColor: '#FAFAFA' }}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-lg"
-        >
+      {/* RIGHT COLUMN - Content Area */}
+      <div className="flex-1 min-h-screen bg-neutral-50">
+        {/* Mobile Header */}
+        <div className="lg:hidden bg-white border-b border-neutral-200 px-4 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <img
+              src={logo}
+              alt="Glimmora"
+              className="h-8 w-auto cursor-pointer"
+              onClick={handleLogoClick}
+            />
+            <span className="text-[13px] text-neutral-500">Step {currentStepIndex + 1} of {steps.length}</span>
+          </div>
+          {/* Mobile Progress Bar */}
+          <div className="w-full bg-neutral-200 rounded-full h-1">
+            <div
+              className="bg-terra-500 h-1 rounded-full transition-all duration-300"
+              style={{ width: `${((currentStepIndex + 1) / steps.length) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="px-4 py-6 lg:px-10 lg:py-8">
           {/* Previous Button */}
-          <button
+          <motion.button
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
             onClick={onPrevious}
-            className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors mb-6"
+            className="flex items-center gap-2 text-[13px] text-neutral-600 hover:text-neutral-800 transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Previous</span>
-          </button>
+          </motion.button>
 
           {/* Content Card */}
-          <div className="bg-white p-8 rounded-2xl border-2 border-neutral-200 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white p-6 lg:p-8 rounded-[10px] shadow-sm"
+          >
             {/* Header */}
-            <div className="mb-10">
-              <h1 className="text-2xl font-semibold text-neutral-900 mb-2">
+            <div className="mb-6 lg:mb-8">
+              <h1 className="text-lg font-semibold text-neutral-800 mb-2">
                 Special Requests
               </h1>
-              <p className="text-sm text-neutral-500">
+              <p className="text-[13px] text-neutral-500">
                 Let us know how we can make your stay perfect
               </p>
             </div>
@@ -138,8 +162,8 @@ export function SpecialRequestsStep({ onNext, onPrevious }: SpecialRequestsStepP
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Special Requests Textarea */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Additional Requests <span className="text-neutral-500 text-xs">(Optional)</span>
+                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                  Additional Requests <span className="text-neutral-300 normal-case">(Optional)</span>
                 </label>
                 <div className="relative">
                   <MessageSquare className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
@@ -150,43 +174,31 @@ export function SpecialRequestsStep({ onNext, onPrevious }: SpecialRequestsStepP
                     })}
                     rows={5}
                     placeholder="E.g., High floor, quiet location, extra towels..."
-                    className="w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none transition-all resize-none text-sm bg-white"
-                    style={{
-                      borderColor: '#E5E7EB',
-                    } as React.CSSProperties}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#A57865';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(165, 120, 101, 0.1)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#E5E7EB';
-                      e.target.style.boxShadow = 'none';
-                    }}
+                    className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all resize-none text-[13px] bg-white"
                   />
                 </div>
               </div>
 
               {/* Early Check-in */}
               <div>
-                <label className="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-neutral-300"
-                  style={{
-                    borderColor: preCheckInData.specialRequests.earlyCheckIn ? '#A57865' : '#E5E7EB',
-                    backgroundColor: preCheckInData.specialRequests.earlyCheckIn ? 'rgba(165, 120, 101, 0.05)' : 'white',
-                  }}
-                >
+                <label className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-all ${
+                  preCheckInData.specialRequests.earlyCheckIn
+                    ? 'border-terra-500 bg-terra-50'
+                    : 'border-neutral-200 hover:border-neutral-300'
+                }`}>
                   <input
                     type="checkbox"
                     checked={preCheckInData.specialRequests.earlyCheckIn}
                     onChange={(e) => updatePreCheckInData({
                       specialRequests: { ...preCheckInData.specialRequests, earlyCheckIn: e.target.checked }
                     })}
-                    className="mt-0.5 w-4 h-4 rounded border-2 border-neutral-300 text-[#A57865] focus:ring-[#A57865] cursor-pointer"
+                    className="mt-0.5 w-4 h-4 rounded border-neutral-300 text-terra-500 focus:ring-terra-500/20 cursor-pointer"
                   />
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-neutral-900 mb-1">
+                    <div className="text-[13px] font-medium text-neutral-800 mb-0.5">
                       Early Check-in Request
                     </div>
-                    <p className="text-xs text-neutral-600">
+                    <p className="text-[11px] text-neutral-500">
                       Standard check-in is 3:00 PM (subject to availability)
                     </p>
                   </div>
@@ -195,25 +207,24 @@ export function SpecialRequestsStep({ onNext, onPrevious }: SpecialRequestsStepP
 
               {/* Late Check-out */}
               <div>
-                <label className="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-neutral-300"
-                  style={{
-                    borderColor: preCheckInData.specialRequests.lateCheckOut ? '#A57865' : '#E5E7EB',
-                    backgroundColor: preCheckInData.specialRequests.lateCheckOut ? 'rgba(165, 120, 101, 0.05)' : 'white',
-                  }}
-                >
+                <label className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-all ${
+                  preCheckInData.specialRequests.lateCheckOut
+                    ? 'border-terra-500 bg-terra-50'
+                    : 'border-neutral-200 hover:border-neutral-300'
+                }`}>
                   <input
                     type="checkbox"
                     checked={preCheckInData.specialRequests.lateCheckOut}
                     onChange={(e) => updatePreCheckInData({
                       specialRequests: { ...preCheckInData.specialRequests, lateCheckOut: e.target.checked }
                     })}
-                    className="mt-0.5 w-4 h-4 rounded border-2 border-neutral-300 text-[#A57865] focus:ring-[#A57865] cursor-pointer"
+                    className="mt-0.5 w-4 h-4 rounded border-neutral-300 text-terra-500 focus:ring-terra-500/20 cursor-pointer"
                   />
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-neutral-900 mb-1">
+                    <div className="text-[13px] font-medium text-neutral-800 mb-0.5">
                       Late Check-out Request
                     </div>
-                    <p className="text-xs text-neutral-600">
+                    <p className="text-[11px] text-neutral-500">
                       Standard check-out is 11:00 AM (subject to availability)
                     </p>
                   </div>
@@ -223,22 +234,13 @@ export function SpecialRequestsStep({ onNext, onPrevious }: SpecialRequestsStepP
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full py-2.5 text-white font-medium rounded-lg transition-all text-sm mt-6"
-                style={{
-                  backgroundColor: '#A57865',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#8E6554';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#A57865';
-                }}
+                className="w-full h-10 text-white font-semibold rounded-lg transition-all text-[13px] mt-6 bg-terra-500 hover:bg-terra-600 active:scale-[0.98]"
               >
                 Next
               </button>
             </form>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );

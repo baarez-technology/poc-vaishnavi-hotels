@@ -114,10 +114,12 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
     { number: 8, label: 'Confirmation', active: false },
   ];
 
+  const currentStepIndex = steps.findIndex(s => s.active);
+
   return (
     <div className="flex min-h-screen bg-white">
-      {/* LEFT COLUMN - Vertical Stepper */}
-      <div className="w-[410px] min-h-screen px-12 py-12 border-r border-neutral-200 bg-white">
+      {/* LEFT COLUMN - Vertical Stepper (Hidden on mobile) */}
+      <div className="hidden lg:block w-[410px] min-h-screen px-12 py-12 border-r border-neutral-200 bg-white">
         <div className="sticky top-12">
           {/* Logo */}
           <motion.div
@@ -146,7 +148,7 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
                     transition={{ delay: index * 0.05 }}
                     className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
                       step.active
-                        ? 'bg-[#A57865] text-white'
+                        ? 'bg-terra-500 text-white'
                         : 'bg-transparent text-neutral-400 border border-neutral-300'
                     }`}
                   >
@@ -168,13 +170,13 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
                 >
                   <div
                     className={`text-sm font-medium mb-1 ${
-                      step.active ? 'text-neutral-900' : 'text-neutral-500'
+                      step.active ? 'text-neutral-800' : 'text-neutral-500'
                     }`}
                   >
                     {step.label}
                   </div>
                   {step.active && (
-                    <div className="text-xs text-neutral-500">
+                    <div className="text-[11px] text-neutral-400">
                       Complete your pre-check-in for a seamless arrival
                     </div>
                   )}
@@ -185,55 +187,81 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
         </div>
       </div>
 
-      {/* RIGHT COLUMN - Content Card */}
-      <div className="flex-1 flex items-start justify-center pt-16 px-16" style={{ backgroundColor: '#FAFAFA' }}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-lg"
-        >
+      {/* RIGHT COLUMN - Content Area */}
+      <div className="flex-1 min-h-screen bg-neutral-50">
+        {/* Mobile Header */}
+        <div className="lg:hidden bg-white border-b border-neutral-200 px-4 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <img
+              src={logo}
+              alt="Glimmora"
+              className="h-8 w-auto cursor-pointer"
+              onClick={handleLogoClick}
+            />
+            <span className="text-[13px] text-neutral-500">Step {currentStepIndex + 1} of {steps.length}</span>
+          </div>
+          {/* Mobile Progress Bar */}
+          <div className="w-full bg-neutral-200 rounded-full h-1">
+            <div
+              className="bg-terra-500 h-1 rounded-full transition-all duration-300"
+              style={{ width: `${((currentStepIndex + 1) / steps.length) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="px-4 py-6 lg:px-10 lg:py-8">
           {/* Back to Home Button */}
-          <button
+          <motion.button
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors mb-6"
+            className="flex items-center gap-2 text-[13px] text-neutral-600 hover:text-neutral-800 transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Home</span>
-          </button>
+          </motion.button>
 
           {/* Content Card */}
-          <div className="bg-white p-8 rounded-2xl border-2 border-neutral-200 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white p-6 lg:p-8 rounded-[10px] shadow-sm"
+          >
             {/* Header */}
-            <div className="mb-10">
-              <h1 className="text-2xl font-semibold text-neutral-900 mb-2">
-                Welcome to Precheck-in
+            <div className="mb-8">
+              <h1 className="text-lg font-semibold text-neutral-800 mb-2">
+                Welcome to Pre-Check-In
               </h1>
-              <p className="text-sm text-neutral-500">
+              <p className="text-[13px] text-neutral-500">
                 Provide your booking details to get started
               </p>
             </div>
 
             {/* Feature Cards Row */}
-            <div className="grid grid-cols-3 gap-3 mb-10">
+            <div className="grid grid-cols-3 gap-3 mb-8">
               {[
-                { icon: Zap, label: 'Skip the Line', color: '#5C9BA4' },
-                { icon: Key, label: 'Digital Key', color: '#CDB261' },
-                { icon: Sparkles, label: 'AI Match', color: '#A57865' },
+                { icon: Zap, label: 'Skip the Line', color: 'ocean' },
+                { icon: Key, label: 'Digital Key', color: 'gold' },
+                { icon: Sparkles, label: 'AI Match', color: 'terra' },
               ].map((feature, i) => {
                 const Icon = feature.icon;
+                const colorClasses = {
+                  ocean: 'bg-ocean-50 text-ocean-600',
+                  gold: 'bg-gold-50 text-gold-600',
+                  terra: 'bg-terra-50 text-terra-600',
+                };
                 return (
                   <motion.div
                     key={i}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.1 + 0.2 }}
-                    className="text-center p-3 rounded-lg border"
-                    style={{ borderColor: '#E5E7EB', backgroundColor: '#FAFAFA' }}
+                    className="text-center p-3 rounded-lg border border-neutral-200 bg-neutral-50"
                   >
-                    <div className="w-8 h-8 mx-auto mb-2 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${feature.color}15` }}>
-                      <Icon className="w-4 h-4" style={{ color: feature.color }} strokeWidth={2} />
+                    <div className={`w-8 h-8 mx-auto mb-2 rounded-lg flex items-center justify-center ${colorClasses[feature.color as keyof typeof colorClasses]}`}>
+                      <Icon className="w-4 h-4" strokeWidth={2} />
                     </div>
-                    <div className="text-xs font-medium text-neutral-700">{feature.label}</div>
+                    <div className="text-[11px] font-medium text-neutral-700">{feature.label}</div>
                   </motion.div>
                 );
               })}
@@ -243,7 +271,7 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               {/* Booking Number */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
                   Booking Number
                 </label>
                 <div className="relative">
@@ -252,28 +280,21 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
                     type="text"
                     placeholder="e.g., TRS-ABC123"
                     {...register('bookingNumber')}
-                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none transition-all text-sm bg-white"
-                    style={{
-                      borderColor: errors.bookingNumber ? '#ef4444' : '#E5E7EB',
-                    } as React.CSSProperties}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = errors.bookingNumber ? '#ef4444' : '#A57865';
-                      e.target.style.boxShadow = errors.bookingNumber ? '0 0 0 3px #fecaca' : '0 0 0 3px rgba(165, 120, 101, 0.1)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = errors.bookingNumber ? '#ef4444' : '#E5E7EB';
-                      e.target.style.boxShadow = 'none';
-                    }}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${
+                      errors.bookingNumber
+                        ? 'border-rose-500 focus:ring-rose-500/20'
+                        : 'border-neutral-200 focus:ring-terra-500/20'
+                    }`}
                   />
                 </div>
                 {errors.bookingNumber && (
-                  <p className="mt-1.5 text-xs text-red-600">{errors.bookingNumber.message}</p>
+                  <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.bookingNumber.message}</p>
                 )}
               </div>
 
               {/* Guest Name */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
                   Guest Name
                 </label>
                 <div className="relative">
@@ -282,22 +303,15 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
                     type="text"
                     placeholder="John Smith"
                     {...register('guestName')}
-                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none transition-all text-sm bg-white"
-                    style={{
-                      borderColor: errors.guestName ? '#ef4444' : '#E5E7EB',
-                    } as React.CSSProperties}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = errors.guestName ? '#ef4444' : '#A57865';
-                      e.target.style.boxShadow = errors.guestName ? '0 0 0 3px #fecaca' : '0 0 0 3px rgba(165, 120, 101, 0.1)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = errors.guestName ? '#ef4444' : '#E5E7EB';
-                      e.target.style.boxShadow = 'none';
-                    }}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${
+                      errors.guestName
+                        ? 'border-rose-500 focus:ring-rose-500/20'
+                        : 'border-neutral-200 focus:ring-terra-500/20'
+                    }`}
                   />
                 </div>
                 {errors.guestName && (
-                  <p className="mt-1.5 text-xs text-red-600">{errors.guestName.message}</p>
+                  <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.guestName.message}</p>
                 )}
               </div>
 
@@ -306,11 +320,10 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-3 rounded-lg flex items-start gap-2 mt-4"
-                  style={{ backgroundColor: '#FEE2E2' }}
+                  className="p-3 rounded-lg flex items-start gap-2 bg-rose-50 border border-rose-200"
                 >
-                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-red-700">{verificationError}</span>
+                  <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-[13px] text-rose-700">{verificationError}</span>
                 </motion.div>
               )}
 
@@ -319,11 +332,10 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-3 rounded-lg flex items-start gap-2 mt-4"
-                  style={{ backgroundColor: '#DCFCE7' }}
+                  className="p-3 rounded-lg flex items-start gap-2 bg-sage-50 border border-sage-200"
                 >
-                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-green-700">Booking verified! Proceeding to pre-check-in...</span>
+                  <CheckCircle className="w-4 h-4 text-sage-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-[13px] text-sage-700">Booking verified! Proceeding to pre-check-in...</span>
                 </motion.div>
               )}
 
@@ -331,20 +343,11 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
               <button
                 type="submit"
                 disabled={isVerifying || verificationSuccess}
-                className="w-full py-2.5 text-white font-medium rounded-lg transition-all text-sm mt-6 flex items-center justify-center gap-2 disabled:opacity-70"
-                style={{
-                  backgroundColor: verificationSuccess ? '#22C55E' : '#A57865',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isVerifying && !verificationSuccess) {
-                    e.currentTarget.style.backgroundColor = '#8E6554';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isVerifying && !verificationSuccess) {
-                    e.currentTarget.style.backgroundColor = '#A57865';
-                  }
-                }}
+                className={`w-full h-10 text-white font-semibold rounded-lg transition-all text-[13px] mt-6 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed ${
+                  verificationSuccess
+                    ? 'bg-sage-500'
+                    : 'bg-terra-500 hover:bg-terra-600 active:scale-[0.98]'
+                }`}
               >
                 {isVerifying ? (
                   <>
@@ -361,8 +364,8 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
                 )}
               </button>
             </form>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );

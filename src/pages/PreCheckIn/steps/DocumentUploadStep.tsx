@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, Check, Shield, ArrowLeft, AlertCircle, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Upload, Check, Shield, ArrowLeft, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePreCheckIn } from '@/contexts/PreCheckInContext';
 import { precheckinService } from '@/api/services/precheckin.service';
@@ -198,10 +198,12 @@ export function DocumentUploadStep({ onNext, onPrevious }: DocumentUploadStepPro
     { number: 8, label: 'Confirmation', active: false },
   ];
 
+  const currentStepIndex = steps.findIndex(s => s.active);
+
   return (
     <div className="flex min-h-screen bg-white">
       {/* LEFT COLUMN - Vertical Stepper */}
-      <div className="w-[410px] min-h-screen px-12 py-12 border-r border-neutral-200 bg-white">
+      <div className="hidden lg:block w-[410px] min-h-screen px-12 py-12 border-r border-neutral-200 bg-white">
         <div className="sticky top-12">
           {/* Logo */}
           <motion.div
@@ -230,7 +232,7 @@ export function DocumentUploadStep({ onNext, onPrevious }: DocumentUploadStepPro
                     transition={{ delay: index * 0.05 }}
                     className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
                       step.active
-                        ? 'bg-[#A57865] text-white'
+                        ? 'bg-terra-500 text-white'
                         : 'bg-transparent text-neutral-400 border border-neutral-300'
                     }`}
                   >
@@ -252,13 +254,13 @@ export function DocumentUploadStep({ onNext, onPrevious }: DocumentUploadStepPro
                 >
                   <div
                     className={`text-sm font-medium mb-1 ${
-                      step.active ? 'text-neutral-900' : 'text-neutral-500'
+                      step.active ? 'text-neutral-800' : 'text-neutral-500'
                     }`}
                   >
                     {step.label}
                   </div>
                   {step.active && (
-                    <div className="text-xs text-neutral-500">
+                    <div className="text-[11px] text-neutral-400">
                       Upload your ID document
                     </div>
                   )}
@@ -269,30 +271,52 @@ export function DocumentUploadStep({ onNext, onPrevious }: DocumentUploadStepPro
         </div>
       </div>
 
-      {/* RIGHT COLUMN - Content Card */}
-      <div className="flex-1 flex items-start justify-center pt-16 px-16" style={{ backgroundColor: '#FAFAFA' }}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-lg"
-        >
+      {/* RIGHT COLUMN - Content Area */}
+      <div className="flex-1 min-h-screen bg-neutral-50">
+        {/* Mobile Header */}
+        <div className="lg:hidden bg-white border-b border-neutral-200 px-4 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <img
+              src={logo}
+              alt="Glimmora"
+              className="h-8 w-auto cursor-pointer"
+              onClick={handleLogoClick}
+            />
+            <span className="text-[13px] text-neutral-500">Step {currentStepIndex + 1} of {steps.length}</span>
+          </div>
+          {/* Mobile Progress Bar */}
+          <div className="w-full bg-neutral-200 rounded-full h-1">
+            <div
+              className="bg-terra-500 h-1 rounded-full transition-all duration-300"
+              style={{ width: `${((currentStepIndex + 1) / steps.length) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="px-4 py-6 lg:px-10 lg:py-8">
           {/* Previous Button */}
-          <button
+          <motion.button
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
             onClick={onPrevious}
-            className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors mb-6"
+            className="flex items-center gap-2 text-[13px] text-neutral-600 hover:text-neutral-800 transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Previous</span>
-          </button>
+          </motion.button>
 
           {/* Content Card */}
-          <div className="bg-white p-8 rounded-2xl border-2 border-neutral-200 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white p-6 lg:p-8 rounded-[10px] shadow-sm"
+          >
             {/* Header */}
-            <div className="mb-10">
-              <h1 className="text-2xl font-semibold text-neutral-900 mb-2">
+            <div className="mb-6 lg:mb-8">
+              <h1 className="text-lg font-semibold text-neutral-800 mb-2">
                 Upload ID Document
               </h1>
-              <p className="text-sm text-neutral-500">
+              <p className="text-[13px] text-neutral-500">
                 For security and verification purposes
               </p>
             </div>
@@ -300,35 +324,35 @@ export function DocumentUploadStep({ onNext, onPrevious }: DocumentUploadStepPro
             <div className="space-y-5">
               {/* Front Side Upload */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
                   Front Side
                 </label>
                 <div
                   {...getFrontRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all ${
+                  className={`border border-dashed rounded-lg p-5 text-center cursor-pointer transition-all ${
                     frontUploaded
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-neutral-300 hover:border-[#A57865] hover:bg-neutral-50'
+                      ? 'border-sage-500 bg-sage-50'
+                      : 'border-neutral-300 hover:border-terra-500 hover:bg-neutral-50'
                   }`}
                 >
                   <input {...getFrontInputProps()} />
                   {frontUploaded ? (
                     <div className="flex flex-col items-center">
-                      <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mb-3">
-                        <Check className="w-6 h-6 text-white" strokeWidth={2.5} />
+                      <div className="w-10 h-10 bg-sage-500 rounded-full flex items-center justify-center mb-2">
+                        <Check className="w-5 h-5 text-white" strokeWidth={2.5} />
                       </div>
-                      <p className="text-sm font-medium text-green-900 mb-1">Front side uploaded!</p>
-                      <p className="text-xs text-green-700">Click to replace</p>
+                      <p className="text-[13px] font-medium text-sage-800 mb-0.5">Front side uploaded!</p>
+                      <p className="text-[11px] text-sage-600">Click to replace</p>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center">
-                      <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center mb-3">
-                        <Upload className="w-6 h-6 text-neutral-500" strokeWidth={2} />
+                      <div className="w-10 h-10 bg-neutral-100 rounded-full flex items-center justify-center mb-2">
+                        <Upload className="w-5 h-5 text-neutral-500" strokeWidth={2} />
                       </div>
-                      <p className="text-sm font-medium text-neutral-900 mb-1">
+                      <p className="text-[13px] font-medium text-neutral-800 mb-0.5">
                         Click to upload or drag and drop
                       </p>
-                      <p className="text-xs text-neutral-600">PNG, JPG up to 10MB</p>
+                      <p className="text-[11px] text-neutral-500">PNG, JPG up to 10MB</p>
                     </div>
                   )}
                 </div>
@@ -336,35 +360,35 @@ export function DocumentUploadStep({ onNext, onPrevious }: DocumentUploadStepPro
 
               {/* Back Side Upload */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
                   Back Side
                 </label>
                 <div
                   {...getBackRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all ${
+                  className={`border border-dashed rounded-lg p-5 text-center cursor-pointer transition-all ${
                     backUploaded
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-neutral-300 hover:border-[#A57865] hover:bg-neutral-50'
+                      ? 'border-sage-500 bg-sage-50'
+                      : 'border-neutral-300 hover:border-terra-500 hover:bg-neutral-50'
                   }`}
                 >
                   <input {...getBackInputProps()} />
                   {backUploaded ? (
                     <div className="flex flex-col items-center">
-                      <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mb-3">
-                        <Check className="w-6 h-6 text-white" strokeWidth={2.5} />
+                      <div className="w-10 h-10 bg-sage-500 rounded-full flex items-center justify-center mb-2">
+                        <Check className="w-5 h-5 text-white" strokeWidth={2.5} />
                       </div>
-                      <p className="text-sm font-medium text-green-900 mb-1">Back side uploaded!</p>
-                      <p className="text-xs text-green-700">Click to replace</p>
+                      <p className="text-[13px] font-medium text-sage-800 mb-0.5">Back side uploaded!</p>
+                      <p className="text-[11px] text-sage-600">Click to replace</p>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center">
-                      <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center mb-3">
-                        <Upload className="w-6 h-6 text-neutral-500" strokeWidth={2} />
+                      <div className="w-10 h-10 bg-neutral-100 rounded-full flex items-center justify-center mb-2">
+                        <Upload className="w-5 h-5 text-neutral-500" strokeWidth={2} />
                       </div>
-                      <p className="text-sm font-medium text-neutral-900 mb-1">
+                      <p className="text-[13px] font-medium text-neutral-800 mb-0.5">
                         Click to upload or drag and drop
                       </p>
-                      <p className="text-xs text-neutral-600">PNG, JPG up to 10MB</p>
+                      <p className="text-[11px] text-neutral-500">PNG, JPG up to 10MB</p>
                     </div>
                   )}
                 </div>
@@ -372,13 +396,13 @@ export function DocumentUploadStep({ onNext, onPrevious }: DocumentUploadStepPro
 
               {/* ID Type Selector */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
                   ID Document Type
                 </label>
                 <select
                   value={idType}
                   onChange={(e) => setIdType(e.target.value)}
-                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent"
+                  className="w-full px-4 py-3 border border-neutral-200 rounded-[10px] text-[13px] focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all"
                 >
                   <option value="passport">Passport</option>
                   <option value="drivers_license">Driver's License</option>
@@ -391,41 +415,41 @@ export function DocumentUploadStep({ onNext, onPrevious }: DocumentUploadStepPro
               {verificationResult && (
                 <div className={`flex items-start gap-3 p-4 rounded-lg border ${
                   verificationResult.verified
-                    ? 'bg-green-50 border-green-200'
-                    : 'bg-red-50 border-red-200'
+                    ? 'bg-sage-50 border-sage-200'
+                    : 'bg-rose-50 border-rose-200'
                 }`}>
                   {verificationResult.verified ? (
-                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <CheckCircle className="w-4 h-4 text-sage-600 flex-shrink-0 mt-0.5" />
                   ) : (
-                    <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <XCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
                   )}
                   <div className="flex-1">
-                    <p className={`text-sm font-semibold mb-1 ${
-                      verificationResult.verified ? 'text-green-900' : 'text-red-900'
+                    <p className={`text-[13px] font-semibold mb-1 ${
+                      verificationResult.verified ? 'text-sage-800' : 'text-rose-800'
                     }`}>
                       {verificationResult.verified ? 'ID Verified Successfully' : 'Verification Failed'}
                     </p>
-                    <p className={`text-xs ${
-                      verificationResult.verified ? 'text-green-700' : 'text-red-700'
+                    <p className={`text-[11px] ${
+                      verificationResult.verified ? 'text-sage-600' : 'text-rose-600'
                     }`}>
                       {verificationResult.message}
                     </p>
                     <div className="mt-2 space-y-1">
-                      <p className="text-xs text-neutral-600">
+                      <p className="text-[11px] text-neutral-600">
                         <span className="font-medium">Booking Name:</span> {preCheckInData?.guestName || 'N/A'}
                       </p>
                       {verificationResult.extractedName && (
-                        <p className="text-xs text-neutral-600">
+                        <p className="text-[11px] text-neutral-600">
                           <span className="font-medium">Name on ID:</span> {verificationResult.extractedName}
                         </p>
                       )}
                       {verificationResult.idType && (
-                        <p className="text-xs text-neutral-600">
+                        <p className="text-[11px] text-neutral-600">
                           <span className="font-medium">Document Type:</span> {verificationResult.idType}
                         </p>
                       )}
                       {verificationResult.confidence > 0 && (
-                        <p className="text-xs text-neutral-600">
+                        <p className="text-[11px] text-neutral-600">
                           <span className="font-medium">Confidence:</span> {Math.round(verificationResult.confidence * 100)}%
                         </p>
                       )}
@@ -435,10 +459,10 @@ export function DocumentUploadStep({ onNext, onPrevious }: DocumentUploadStepPro
               )}
 
               {/* Security Notice */}
-              <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <Shield className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="text-xs text-blue-900">
-                  <p className="font-semibold mb-1">Your Privacy & Security</p>
+              <div className="flex items-start gap-3 p-4 bg-ocean-50 border border-ocean-200 rounded-lg">
+                <Shield className="w-4 h-4 text-ocean-600 flex-shrink-0 mt-0.5" />
+                <div className="text-[11px] text-ocean-800">
+                  <p className="font-semibold mb-0.5">Your Privacy & Security</p>
                   <p>Documents are encrypted and used only for verification. AI-powered verification ensures the name on your ID matches your booking.</p>
                 </div>
               </div>
@@ -450,10 +474,10 @@ export function DocumentUploadStep({ onNext, onPrevious }: DocumentUploadStepPro
                   <button
                     onClick={verifyIdDocument}
                     disabled={isVerifying}
-                    className={`w-full py-2.5 text-white font-medium rounded-lg transition-all text-sm flex items-center justify-center gap-2 ${
+                    className={`w-full h-10 text-white font-semibold rounded-lg transition-all text-[13px] flex items-center justify-center gap-2 ${
                       isVerifying
                         ? 'bg-neutral-400 cursor-not-allowed'
-                        : 'bg-blue-600 hover:bg-blue-700'
+                        : 'bg-ocean-500 hover:bg-ocean-600 active:scale-[0.98]'
                     }`}
                   >
                     {isVerifying ? (
@@ -474,9 +498,9 @@ export function DocumentUploadStep({ onNext, onPrevious }: DocumentUploadStepPro
                 <button
                   onClick={handleContinue}
                   disabled={!frontUploaded || !backUploaded || !verificationResult?.verified}
-                  className={`w-full py-2.5 text-white font-medium rounded-lg transition-all text-sm ${
+                  className={`w-full h-10 text-white font-semibold rounded-lg transition-all text-[13px] ${
                     frontUploaded && backUploaded && verificationResult?.verified
-                      ? 'bg-[#A57865] hover:bg-[#8E6554]'
+                      ? 'bg-terra-500 hover:bg-terra-600 active:scale-[0.98]'
                       : 'bg-neutral-300 cursor-not-allowed'
                   }`}
                 >
@@ -484,8 +508,8 @@ export function DocumentUploadStep({ onNext, onPrevious }: DocumentUploadStepPro
                 </button>
               </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );

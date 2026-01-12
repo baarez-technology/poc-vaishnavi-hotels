@@ -187,7 +187,7 @@ export const RoomDetailPage = () => {
       <div className="relative bg-white mt-[52px] -mb-[52px]">
         {/* Enhanced Grid Image Gallery */}
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl pt-4 pb-6">
-          <div className="grid grid-cols-4 grid-rows-2 gap-3 h-[500px] sm:h-[600px]">
+          <div className="grid grid-cols-4 grid-rows-2 gap-2 sm:gap-3 h-[300px] sm:h-[500px] lg:h-[600px]">
             {/* Main Featured Image - Takes up 2x2 grid space */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -226,10 +226,10 @@ export const RoomDetailPage = () => {
                   e.stopPropagation();
                   openLightbox(0);
                 }}
-                className="absolute bottom-4 left-4 flex items-center gap-2 px-5 py-3 bg-white/95 backdrop-blur-sm rounded-full shadow-xl hover:shadow-2xl hover:bg-white transition-all group/btn"
+                className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-3 bg-white/95 backdrop-blur-sm rounded-full shadow-xl hover:shadow-2xl hover:bg-white transition-all group/btn"
               >
-                <Eye size={18} className="text-neutral-900 group-hover/btn:scale-110 transition-transform" />
-                <span className="text-sm font-bold text-neutral-900">View All {(room.images?.length || 0)} Photos</span>
+                <Eye size={16} className="text-neutral-900 group-hover/btn:scale-110 transition-transform sm:w-[18px] sm:h-[18px]" />
+                <span className="text-xs sm:text-sm font-bold text-neutral-900">View All {(room.images?.length || 0)} Photos</span>
               </motion.button>
             </motion.div>
 
@@ -347,10 +347,10 @@ export const RoomDetailPage = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl py-12 mt-16">
-        <div className="grid lg:grid-cols-3 gap-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl py-8 sm:py-12 mt-12 sm:mt-16">
+        <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Left Column - Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-6 sm:space-y-8">
             {/* Header Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -368,7 +368,7 @@ export const RoomDetailPage = () => {
                     </div>
                   )}
 
-                  <h1 className="text-4xl font-bold text-neutral-900 mb-4 leading-tight">
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900 mb-3 sm:mb-4 leading-tight">
                     {room.name}
                   </h1>
 
@@ -427,30 +427,22 @@ export const RoomDetailPage = () => {
               </div>
 
               {/* Key Stats - Horizontal Pills */}
-              <div className="flex flex-wrap gap-3">
-                <div className="flex items-center gap-2 px-4 py-3 bg-white rounded-xl border border-neutral-200">
-                  <Users size={20} className="text-primary-600" />
-                  <div>
-                    <div className="text-sm font-bold text-neutral-900">{room.maxGuests} Guests</div>
-                  </div>
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3">
+                <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-white rounded-xl border border-neutral-200">
+                  <Users size={18} className="text-primary-600 sm:w-5 sm:h-5" />
+                  <div className="text-xs sm:text-sm font-bold text-neutral-900">{room.maxGuests} Guests</div>
                 </div>
-                <div className="flex items-center gap-2 px-4 py-3 bg-white rounded-xl border border-neutral-200">
-                  <Maximize2 size={20} className="text-primary-600" />
-                  <div>
-                    <div className="text-sm font-bold text-neutral-900">{room.size} sq ft</div>
-                  </div>
+                <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-white rounded-xl border border-neutral-200">
+                  <Maximize2 size={18} className="text-primary-600 sm:w-5 sm:h-5" />
+                  <div className="text-xs sm:text-sm font-bold text-neutral-900">{room.size} sq ft</div>
                 </div>
-                <div className="flex items-center gap-2 px-4 py-3 bg-white rounded-xl border border-neutral-200">
-                  <Eye size={20} className="text-primary-600" />
-                  <div>
-                    <div className="text-sm font-bold text-neutral-900 capitalize">{room.view} View</div>
-                  </div>
+                <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-white rounded-xl border border-neutral-200">
+                  <Eye size={18} className="text-primary-600 sm:w-5 sm:h-5" />
+                  <div className="text-xs sm:text-sm font-bold text-neutral-900 capitalize">{room.view} View</div>
                 </div>
-                <div className="flex items-center gap-2 px-4 py-3 bg-white rounded-xl border border-neutral-200">
-                  <Bed size={20} className="text-primary-600" />
-                  <div>
-                    <div className="text-sm font-bold text-neutral-900">{room.bedType} Bed</div>
-                  </div>
+                <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-white rounded-xl border border-neutral-200">
+                  <Bed size={18} className="text-primary-600 sm:w-5 sm:h-5" />
+                  <div className="text-xs sm:text-sm font-bold text-neutral-900">{room.bedType} Bed</div>
                 </div>
               </div>
             </motion.div>
@@ -460,9 +452,9 @@ export const RoomDetailPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-white rounded-2xl p-8 border border-neutral-200"
+              className="bg-white rounded-2xl p-5 sm:p-8 border border-neutral-200"
             >
-              <h2 className="text-2xl font-bold text-neutral-900 mb-6">About This Suite</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-4 sm:mb-6">About This Suite</h2>
 
               {room.shortDescription && (
                 <div className="mb-6 p-5 bg-primary-50 rounded-xl border border-primary-100">
@@ -483,19 +475,19 @@ export const RoomDetailPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="bg-white rounded-2xl p-8 border border-neutral-200"
+                className="bg-white rounded-2xl p-5 sm:p-8 border border-neutral-200"
               >
-                <h2 className="text-2xl font-bold text-neutral-900 mb-6">Suite Highlights</h2>
-                <div className="grid sm:grid-cols-2 gap-4">
+                <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-4 sm:mb-6">Suite Highlights</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {room.features.map((feature) => (
                     <div
                       key={feature}
-                      className="flex items-start gap-3 p-4 bg-neutral-50 rounded-xl"
+                      className="flex items-start gap-3 p-3 sm:p-4 bg-neutral-50 rounded-xl"
                     >
                       <div className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                         <Sparkles size={14} className="text-primary-600" />
                       </div>
-                      <span className="text-sm font-medium text-neutral-900 leading-relaxed">{feature}</span>
+                      <span className="text-xs sm:text-sm font-medium text-neutral-900 leading-relaxed">{feature}</span>
                     </div>
                   ))}
                 </div>
@@ -507,19 +499,19 @@ export const RoomDetailPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="bg-white rounded-2xl p-8 border border-neutral-200"
+              className="bg-white rounded-2xl p-5 sm:p-8 border border-neutral-200"
             >
-              <h2 className="text-2xl font-bold text-neutral-900 mb-6">Amenities & Services</h2>
-              <div className="grid sm:grid-cols-2 gap-3">
+              <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-4 sm:mb-6">Amenities & Services</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                 {room.amenities.map((amenity) => (
                   <div
                     key={amenity}
-                    className="flex items-center gap-3 p-3 rounded-xl hover:bg-neutral-50 transition-colors"
+                    className="flex items-center gap-3 p-2.5 sm:p-3 rounded-xl hover:bg-neutral-50 transition-colors"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
-                      <Check size={18} className="text-green-600" />
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+                      <Check size={16} className="text-green-600 sm:w-[18px] sm:h-[18px]" />
                     </div>
-                    <span className="text-sm font-medium text-neutral-900">{amenity}</span>
+                    <span className="text-xs sm:text-sm font-medium text-neutral-900">{amenity}</span>
                   </div>
                 ))}
               </div>
@@ -530,47 +522,47 @@ export const RoomDetailPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="bg-white rounded-2xl p-8 border border-neutral-200"
+              className="bg-white rounded-2xl p-5 sm:p-8 border border-neutral-200"
             >
-              <h2 className="text-2xl font-bold text-neutral-900 mb-6">House Rules & Policies</h2>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="flex items-start gap-4 p-5 bg-blue-50 rounded-xl border border-blue-100">
-                  <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <Calendar size={20} className="text-blue-600" />
+              <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 mb-4 sm:mb-6">House Rules & Policies</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="flex items-start gap-3 sm:gap-4 p-4 sm:p-5 bg-blue-50 rounded-xl border border-blue-100">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <Calendar size={18} className="text-blue-600 sm:w-5 sm:h-5" />
                   </div>
                   <div>
-                    <div className="font-bold text-neutral-900 mb-1">Check-in</div>
-                    <div className="text-sm text-neutral-700">After 3:00 PM</div>
+                    <div className="font-bold text-neutral-900 text-sm sm:text-base mb-0.5 sm:mb-1">Check-in</div>
+                    <div className="text-xs sm:text-sm text-neutral-700">After 3:00 PM</div>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-5 bg-orange-50 rounded-xl border border-orange-100">
-                  <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
-                    <Clock size={20} className="text-orange-600" />
+                <div className="flex items-start gap-3 sm:gap-4 p-4 sm:p-5 bg-orange-50 rounded-xl border border-orange-100">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+                    <Clock size={18} className="text-orange-600 sm:w-5 sm:h-5" />
                   </div>
                   <div>
-                    <div className="font-bold text-neutral-900 mb-1">Check-out</div>
-                    <div className="text-sm text-neutral-700">Before 11:00 AM</div>
+                    <div className="font-bold text-neutral-900 text-sm sm:text-base mb-0.5 sm:mb-1">Check-out</div>
+                    <div className="text-xs sm:text-sm text-neutral-700">Before 11:00 AM</div>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-5 bg-green-50 rounded-xl border border-green-100">
-                  <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
-                    <Check size={20} className="text-green-600" />
+                <div className="flex items-start gap-3 sm:gap-4 p-4 sm:p-5 bg-green-50 rounded-xl border border-green-100">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                    <Check size={18} className="text-green-600 sm:w-5 sm:h-5" />
                   </div>
                   <div>
-                    <div className="font-bold text-neutral-900 mb-1">Cancellation</div>
-                    <div className="text-sm text-neutral-700">Free up to 24h before check-in</div>
+                    <div className="font-bold text-neutral-900 text-sm sm:text-base mb-0.5 sm:mb-1">Cancellation</div>
+                    <div className="text-xs sm:text-sm text-neutral-700">Free up to 24h before check-in</div>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-5 bg-red-50 rounded-xl border border-red-100">
-                  <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-                    <X size={20} className="text-red-600" />
+                <div className="flex items-start gap-3 sm:gap-4 p-4 sm:p-5 bg-red-50 rounded-xl border border-red-100">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <X size={18} className="text-red-600 sm:w-5 sm:h-5" />
                   </div>
                   <div>
-                    <div className="font-bold text-neutral-900 mb-1">No Smoking</div>
-                    <div className="text-sm text-neutral-700">Smoke-free environment</div>
+                    <div className="font-bold text-neutral-900 text-sm sm:text-base mb-0.5 sm:mb-1">No Smoking</div>
+                    <div className="text-xs sm:text-sm text-neutral-700">Smoke-free environment</div>
                   </div>
                 </div>
               </div>
@@ -583,22 +575,22 @@ export const RoomDetailPage = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className="sticky top-28"
+              className="lg:sticky lg:top-28"
             >
               {/* Booking Card */}
               <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-lg">
                 {/* Price Header */}
-                <div className="p-6 border-b border-neutral-200">
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-4xl font-bold text-neutral-900">
+                <div className="p-4 sm:p-6 border-b border-neutral-200">
+                  <div className="flex items-baseline gap-2 mb-1 sm:mb-2">
+                    <span className="text-3xl sm:text-4xl font-bold text-neutral-900">
                       {formatCurrency(room.price)}
                     </span>
-                    <span className="text-lg font-semibold text-neutral-500">/night</span>
+                    <span className="text-base sm:text-lg font-semibold text-neutral-500">/night</span>
                   </div>
-                  <p className="text-sm text-neutral-600">Best available rate</p>
+                  <p className="text-xs sm:text-sm text-neutral-600">Best available rate</p>
                 </div>
 
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   {/* CTA Button */}
                   <Button
                     variant="primary"

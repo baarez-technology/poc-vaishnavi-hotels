@@ -174,5 +174,6 @@ export default function RoomCard({ room, onClick }) {
         View Details
       </button>
     </div>
+    </div>
   );
 }

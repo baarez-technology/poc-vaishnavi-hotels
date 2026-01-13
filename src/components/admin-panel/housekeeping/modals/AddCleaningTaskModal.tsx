@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Plus, Clock } from 'lucide-react';
+import { X, Plus, Clock, AlertTriangle } from 'lucide-react';
 import { calculateCleaningTime } from '@/utils/admin/housekeeping';
 
 export default function AddCleaningTaskModal({
@@ -18,6 +18,8 @@ export default function AddCleaningTaskModal({
     estimatedTimeOverride: ''
   });
   const [errors, setErrors] = useState({});
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+  const [duplicateInfo, setDuplicateInfo] = useState<{ staffName: string; roomNumber: string } | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -68,6 +70,8 @@ export default function AddCleaningTaskModal({
         estimatedTimeOverride: ''
       });
       setErrors({});
+      setShowDuplicateWarning(false);
+      setDuplicateInfo(null);
     }
   }, [isOpen]);
 
@@ -100,9 +104,50 @@ export default function AddCleaningTaskModal({
     return Object.keys(newErrors).length === 0;
   };
 
+  // Check if the selected staff member already has tasks assigned today
+  const checkForExistingAssignment = (): { hasExisting: boolean; staffName: string; taskCount: number } => {
+    if (!formData.staffId) return { hasExisting: false, staffName: '', taskCount: 0 };
+
+    const selectedStaff = staff?.find(s => s.id?.toString() === formData.staffId?.toString());
+    if (!selectedStaff) return { hasExisting: false, staffName: '', taskCount: 0 };
+
+    // Check if this staff member already has tasks assigned
+    const tasksAssigned = selectedStaff.tasksAssigned || 0;
+
+    // Also check if this specific room is already being cleaned by this staff member
+    // (by looking at all rooms assigned to this staff)
+    const roomsAssignedToStaff = rooms?.filter(r =>
+      r.assignedTo?.toString() === formData.staffId?.toString()
+    ) || [];
+
+    if (roomsAssignedToStaff.length > 0) {
+      return {
+        hasExisting: true,
+        staffName: selectedStaff.name,
+        taskCount: roomsAssignedToStaff.length
+      };
+    }
+
+    return { hasExisting: false, staffName: selectedStaff.name, taskCount: 0 };
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
+
+    // Check for existing assignments (unless user already confirmed)
+    if (!showDuplicateWarning) {
+      const { hasExisting, staffName, taskCount } = checkForExistingAssignment();
+      if (hasExisting) {
+        const selectedRoom = rooms?.find(r => r.id?.toString() === formData.roomId?.toString());
+        setDuplicateInfo({
+          staffName,
+          roomNumber: selectedRoom?.roomNumber || 'Unknown'
+        });
+        setShowDuplicateWarning(true);
+        return;
+      }
+    }
 
     const taskData = {
       roomId: formData.roomId,
@@ -116,6 +161,11 @@ export default function AddCleaningTaskModal({
 
     onAddTask(taskData);
     onClose();
+  };
+
+  const handleCancelDuplicate = () => {
+    setShowDuplicateWarning(false);
+    setDuplicateInfo(null);
   };
 
   const modalContent = (
@@ -151,6 +201,42 @@ export default function AddCleaningTaskModal({
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            {/* Duplicate Warning */}
+            {showDuplicateWarning && duplicateInfo && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-amber-900">Staff Already Has Tasks Assigned</h4>
+                    <p className="text-sm text-amber-700 mt-1">
+                      <span className="font-medium">{duplicateInfo.staffName}</span> already has cleaning tasks assigned today.
+                    </p>
+                    <p className="text-sm text-amber-700 mt-2">
+                      Do you still want to assign Room {duplicateInfo.roomNumber} to this staff member?
+                    </p>
+                    <div className="flex gap-2 mt-4">
+                      <button
+                        type="button"
+                        onClick={handleCancelDuplicate}
+                        className="px-4 py-2 bg-white border border-amber-300 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSubmit}
+                        className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
+                      >
+                        Assign Anyway
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Room Selection */}
             <div>
               <label className="block text-sm font-semibold text-neutral-700 mb-2">

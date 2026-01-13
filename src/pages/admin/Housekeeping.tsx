@@ -35,6 +35,8 @@ export default function Housekeeping() {
   const {
     rooms,
     staff,
+    staffLoading,
+    refreshData,
     assignStaffToRoom,
     bulkAssignRooms,
     unassignStaff,
@@ -315,8 +317,13 @@ export default function Housekeeping() {
   };
 
   // Refresh
-  const handleRefresh = () => {
-    showToast('Data refreshed', 'info');
+  const handleRefresh = async () => {
+    try {
+      await refreshData();
+      showToast('Data refreshed', 'success');
+    } catch (err) {
+      showToast('Failed to refresh data', 'error');
+    }
   };
 
   // Render view based on active tab
@@ -449,8 +456,8 @@ export default function Housekeeping() {
           )}
         </div>
 
-        {/* Staff Performance Panel */}
-        <HKStaffPerformance staff={staff} rooms={rooms} />
+        {/* Staff Performance Panel - Hidden temporarily (no backend support yet) */}
+        {/* <HKStaffPerformance staff={staff} rooms={rooms} /> */}
       </div>
 
       {/* Room Drawer */}
@@ -492,6 +499,7 @@ export default function Housekeeping() {
         onClose={() => setIsBulkAssignModalOpen(false)}
         onBulkAssign={handleBulkAssign}
         housekeepers={staff}
+        isLoading={staffLoading}
       />
 
       {/* Edit Checklist Modal */}

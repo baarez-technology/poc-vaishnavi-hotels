@@ -13,6 +13,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLocation, Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { NotificationsDrawer } from './notifications/NotificationsDrawer';
+import { useAuth } from '@/hooks/useAuth';
 
 /**
  * Glimmora Design System v4.0 - Header
@@ -26,6 +27,12 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed }) => {
   const { theme, toggleTheme, isDark } = useTheme();
   const location = useLocation();
   const profileMenuRef = useRef(null);
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    setIsProfileMenuOpen(false);
+    logout();
+  };
 
   // Close menus on click outside
   useEffect(() => {
@@ -428,12 +435,15 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed }) => {
                     'border-t p-2',
                     isDark ? 'border-neutral-800' : 'border-neutral-100'
                   )}>
-                    <button className={cn(
-                      'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200',
-                      isDark
-                        ? 'text-neutral-400 hover:bg-rose-500/10 hover:text-rose-400'
-                        : 'text-neutral-500 hover:bg-rose-50 hover:text-rose-600'
-                    )}>
+                    <button
+                      onClick={handleLogout}
+                      className={cn(
+                        'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200',
+                        isDark
+                          ? 'text-neutral-400 hover:bg-rose-500/10 hover:text-rose-400'
+                          : 'text-neutral-500 hover:bg-rose-50 hover:text-rose-600'
+                      )}
+                    >
                       <LogOut className="w-5 h-5" strokeWidth={1.75} />
                       <span className="text-sm font-medium">Sign Out</span>
                     </button>

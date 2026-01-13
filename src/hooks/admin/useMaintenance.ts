@@ -98,6 +98,8 @@ export function useMaintenance() {
             actualDuration: wo.actual_hours ? wo.actual_hours * 60 : null,
             isOOO: false,
             notes: wo.notes || wo.resolution_notes || '',
+            scheduledDate: wo.scheduled_date || null,
+            estimatedCompletion: wo.scheduled_date || null,
             createdAt: wo.reported_at || new Date().toISOString(),
             updatedAt: wo.updated_at || new Date().toISOString(),
             completedAt: wo.completed_at,
@@ -176,7 +178,8 @@ export function useMaintenance() {
         room_number: data.roomNumber,
         issue_type: data.category || 'general',
         priority: data.priority || 'medium',
-        notes: data.notes
+        notes: data.notes,
+        scheduled_date: data.estimatedCompletion || null
       });
 
       // Transform API response to local format
@@ -199,6 +202,8 @@ export function useMaintenance() {
         actualDuration: null,
         isOOO: data.isOOO || false,
         notes: apiResponse.notes || '',
+        scheduledDate: apiResponse.scheduled_date || data.estimatedCompletion || null,
+        estimatedCompletion: apiResponse.scheduled_date || data.estimatedCompletion || null,
         createdAt: apiResponse.reported_at || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         completedAt: null,
@@ -230,6 +235,7 @@ export function useMaintenance() {
       if (updates.assignedTo !== undefined) apiPayload.assigned_to = updates.assignedTo;
       if (updates.notes) apiPayload.notes = updates.notes;
       if (updates.resolutionNotes) apiPayload.resolution_notes = updates.resolutionNotes;
+      if (updates.estimatedCompletion !== undefined) apiPayload.scheduled_date = updates.estimatedCompletion || null;
 
       // Call backend API
       await maintenanceService.updateWorkOrder(woId, apiPayload);
@@ -244,9 +250,16 @@ export function useMaintenance() {
             updatedLog = addActivityLog(wo.activityLog, actionLog);
           }
 
+          // Sync scheduledDate and estimatedCompletion fields
+          const dateValue = updates.estimatedCompletion !== undefined
+            ? updates.estimatedCompletion
+            : wo.estimatedCompletion;
+
           return {
             ...wo,
             ...updates,
+            scheduledDate: dateValue,
+            estimatedCompletion: dateValue,
             activityLog: updatedLog,
             updatedAt: now
           };

@@ -304,6 +304,32 @@ export function exportGuestsToCSV(guests, filename = 'guests_export.csv') {
     'Notes',
   ];
 
+  // Helper function to safely format notes
+  const formatNotes = (notes) => {
+    if (!notes || !Array.isArray(notes) || notes.length === 0) return '';
+    return notes.map(n => {
+      if (typeof n === 'string') return n;
+      if (n && typeof n === 'object') {
+        const date = n.date || n.created_at || '';
+        const text = n.text || n.content || n.note || '';
+        return date ? `${date}: ${text}` : text;
+      }
+      return '';
+    }).filter(Boolean).join(' | ');
+  };
+
+  // Helper function to safely format preferences
+  const formatPreferences = (preferences) => {
+    if (!preferences) return '';
+    if (Array.isArray(preferences)) return preferences.join('; ');
+    if (typeof preferences === 'object') {
+      return Object.entries(preferences)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join('; ');
+    }
+    return String(preferences);
+  };
+
   // Convert guests to CSV rows
   const rows = guests.map(guest => [
     guest.id || '',
@@ -312,13 +338,13 @@ export function exportGuestsToCSV(guests, filename = 'guests_export.csv') {
     guest.phone || '',
     guest.country || '',
     guest.status || '',
-    calculateLoyaltyTier(guest.totalStays, guest.totalSpent),
+    guest.loyaltyTier || calculateLoyaltyTier(guest.totalStays, guest.totalSpent),
     guest.totalStays || 0,
     guest.totalSpent || 0,
-    guest.lastStay || '',
+    guest.lastStay || guest.lastVisit || '',
     (guest.tags || []).join('; '),
-    (guest.preferences || []).join('; '),
-    (guest.notes || []).map(n => `${n.date}: ${n.text}`).join(' | '),
+    formatPreferences(guest.preferences),
+    formatNotes(guest.notes),
   ]);
 
   // Combine headers and rows

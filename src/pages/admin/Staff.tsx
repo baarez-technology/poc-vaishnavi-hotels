@@ -24,6 +24,7 @@ export default function Staff() {
     activeDepartment,
     setActiveDepartment,
     departmentCounts,
+    availableRoles,
     searchQuery,
     setSearchQuery,
     filters,
@@ -270,6 +271,7 @@ export default function Staff() {
             onFilterChange={handleFilterChange}
             onClearFilters={clearFilters}
             hasActiveFilters={hasActiveFilters}
+            availableRoles={availableRoles}
           />
         </div>
 
@@ -289,12 +291,11 @@ export default function Staff() {
               startIndex={pagination.startIndex}
               endIndex={pagination.endIndex}
               totalItems={pagination.totalItems}
-              rowsPerPage={pagination.rowsPerPage}
               canGoPrev={pagination.canGoPrev}
               canGoNext={pagination.canGoNext}
               onPrevPage={pagination.prevPage}
               onNextPage={pagination.nextPage}
-              onRowsPerPageChange={pagination.setRowsPerPage}
+              onGoToPage={pagination.goToPage}
             />
           </div>
         )}

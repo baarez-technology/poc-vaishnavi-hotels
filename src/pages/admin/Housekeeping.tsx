@@ -84,6 +84,7 @@ export default function Housekeeping() {
     totalItems,
     nextPage,
     prevPage,
+    goToPage,
     setRowsPerPage
   } = usePagination(sortedRooms, 10);
 
@@ -438,12 +439,11 @@ export default function Housekeeping() {
                 startIndex={startIndex}
                 endIndex={endIndex}
                 totalItems={totalItems}
-                rowsPerPage={rowsPerPage}
                 canGoPrev={canGoPrev}
                 canGoNext={canGoNext}
                 onPrevPage={prevPage}
                 onNextPage={nextPage}
-                onRowsPerPageChange={setRowsPerPage}
+                onGoToPage={goToPage}
               />
             </div>
           )}

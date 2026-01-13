@@ -32,15 +32,15 @@ export default function HKRoomTable({
   }, []);
 
   const columns = [
-    { key: 'roomNumber', label: 'Room', sortable: true, width: '280px' },
-    { key: 'type', label: 'Type', sortable: true, width: '160px' },
-    { key: 'status', label: 'Status', sortable: true, width: '160px' },
-    { key: 'priority', label: 'Priority', sortable: true, width: '130px' },
-    { key: 'assignedTo', label: 'Assigned Staff', sortable: true, width: '220px' },
-    { key: 'cleaningStartedAt', label: 'Start Time', sortable: true, width: '140px' },
-    { key: 'estimatedFinish', label: 'Est. Finish', sortable: false, width: '140px' },
-    { key: 'lastCleaned', label: 'Last Updated', sortable: true, width: '160px' },
-    { key: 'actions', label: '', sortable: false, width: '150px' }
+    { key: 'roomNumber', label: 'Room', sortable: true, width: 'auto', minWidth: '180px' },
+    { key: 'type', label: 'Type', sortable: true, width: 'auto', minWidth: '120px' },
+    { key: 'status', label: 'Status', sortable: true, width: 'auto', minWidth: '110px' },
+    { key: 'priority', label: 'Priority', sortable: true, width: 'auto', minWidth: '100px' },
+    { key: 'assignedTo', label: 'Assigned Staff', sortable: true, width: 'auto', minWidth: '140px' },
+    { key: 'cleaningStartedAt', label: 'Start Time', sortable: true, width: 'auto', minWidth: '100px' },
+    { key: 'estimatedFinish', label: 'Est. Finish', sortable: false, width: 'auto', minWidth: '100px' },
+    { key: 'lastCleaned', label: 'Last Updated', sortable: true, width: 'auto', minWidth: '120px' },
+    { key: 'actions', label: '', sortable: false, width: '60px' }
   ];
 
   const getStaffName = (staffId) => {
@@ -119,7 +119,7 @@ export default function HKRoomTable({
                 sortable={col.sortable}
                 sorted={sortField === col.key ? sortDirection : null}
                 onSort={() => col.sortable && onSort && onSort(col.key)}
-                width={col.width}
+                style={{ width: col.width, minWidth: col.minWidth }}
               >
                 {col.label}
               </TableHead>

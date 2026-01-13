@@ -79,7 +79,7 @@ export default function HousekeepingFilters({
 
   // Options for filters
   const floorOptions = [
-    { value: 'All', label: 'All Floors' },
+    { value: 'all', label: 'All Floors' },
     { value: '1', label: 'Floor 1' },
     { value: '2', label: 'Floor 2' },
     { value: '3', label: 'Floor 3' },
@@ -88,15 +88,16 @@ export default function HousekeepingFilters({
   ];
 
   const statusOptions = [
-    { value: 'All', label: 'All Statuses' },
-    { value: 'Clean', label: 'Clean' },
-    { value: 'Dirty', label: 'Dirty' },
-    { value: 'In Progress', label: 'In Progress' },
-    { value: 'Out of Service', label: 'Out of Service' }
+    { value: 'all', label: 'All Statuses' },
+    { value: 'clean', label: 'Clean' },
+    { value: 'dirty', label: 'Dirty' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'inspected', label: 'Inspected' },
+    { value: 'out_of_service', label: 'Out of Service' }
   ];
 
   const roomTypeOptions = [
-    { value: 'All', label: 'All Types' },
+    { value: 'all', label: 'All Types' },
     { value: 'Minimalist Studio', label: 'Minimalist Studio' },
     { value: 'Coastal Retreat', label: 'Coastal Retreat' },
     { value: 'Urban Oasis', label: 'Urban Oasis' },
@@ -108,7 +109,8 @@ export default function HousekeepingFilters({
   ];
 
   const staffOptions = [
-    { value: 'All', label: 'All Staff' },
+    { value: 'all', label: 'All Staff' },
+    { value: 'unassigned', label: 'Unassigned' },
     ...housekeepers.map(staff => ({ value: staff.id, label: staff.name }))
   ];
 
@@ -178,35 +180,35 @@ export default function HousekeepingFilters({
         maxWidth="max-w-sm"
       >
         <div className="space-y-5">
-          {/* Floor Filter */}
-          <DrawerFilterSelect
-            label="Floor"
-            value={filters.floor || 'All'}
-            onChange={(value) => onFilterChange('floor', value)}
-            options={floorOptions}
-          />
-
           {/* Status Filter */}
           <DrawerFilterSelect
             label="Status"
-            value={filters.status || 'All'}
+            value={filters.status || 'all'}
             onChange={(value) => onFilterChange('status', value)}
             options={statusOptions}
+          />
+
+          {/* Floor Filter */}
+          <DrawerFilterSelect
+            label="Floor"
+            value={filters.floor || 'all'}
+            onChange={(value) => onFilterChange('floor', value)}
+            options={floorOptions}
           />
 
           {/* Room Type Filter */}
           <DrawerFilterSelect
             label="Room Type"
-            value={filters.roomType || 'All'}
-            onChange={(value) => onFilterChange('roomType', value)}
+            value={filters.type || 'all'}
+            onChange={(value) => onFilterChange('type', value)}
             options={roomTypeOptions}
           />
 
           {/* Assigned Staff Filter */}
           <DrawerFilterSelect
             label="Assigned Staff"
-            value={filters.assignedStaff || 'All'}
-            onChange={(value) => onFilterChange('assignedStaff', value)}
+            value={filters.staff || 'all'}
+            onChange={(value) => onFilterChange('staff', value)}
             options={staffOptions}
           />
         </div>

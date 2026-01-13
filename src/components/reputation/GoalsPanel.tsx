@@ -290,7 +290,7 @@ export default function GoalsPanel() {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200">
+    <div className="bg-white rounded-[10px] border border-neutral-200">
       {/* Header */}
       <div className="px-6 py-5 border-b border-neutral-100">
         <div className="flex items-center justify-between">
@@ -312,14 +312,14 @@ export default function GoalsPanel() {
       {/* Goals List */}
       <div className="p-6">
         {goals.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="space-y-4">
             {goals.map((goal) => {
               const daysRemaining = getDaysRemaining(goal.end_date);
 
               return (
                 <div
                   key={goal.id}
-                  className="bg-neutral-50 rounded-xl p-5 border border-neutral-100 hover:border-neutral-200 transition-colors"
+                  className="bg-neutral-50 rounded-[8px] p-5 border border-neutral-100 hover:border-neutral-200 transition-colors"
                 >
                   {/* Goal Header */}
                   <div className="flex items-start justify-between mb-4">
@@ -363,22 +363,22 @@ export default function GoalsPanel() {
                   </div>
 
                   {/* Values Grid */}
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    <div className="text-center p-2.5 bg-white rounded-lg border border-neutral-100">
-                      <p className="text-[10px] text-neutral-400 uppercase tracking-wider mb-0.5">Baseline</p>
-                      <p className="text-[14px] font-bold text-neutral-600">
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    <div className="text-center p-2.5 bg-white rounded-[6px] border border-neutral-100">
+                      <p className="text-[10px] text-neutral-400 uppercase tracking-wider mb-0.5">Base</p>
+                      <p className="text-[13px] font-bold text-neutral-600">
                         {formatValue(goal.metric_type, goal.baseline_value)}
                       </p>
                     </div>
-                    <div className="text-center p-2.5 bg-white rounded-lg border border-neutral-100">
-                      <p className="text-[10px] text-neutral-400 uppercase tracking-wider mb-0.5">Current</p>
-                      <p className="text-[14px] font-bold text-[#5C9BA4]">
+                    <div className="text-center p-2.5 bg-white rounded-[6px] border border-neutral-100">
+                      <p className="text-[10px] text-neutral-400 uppercase tracking-wider mb-0.5">Curf</p>
+                      <p className="text-[13px] font-bold text-[#5C9BA4]">
                         {formatValue(goal.metric_type, goal.current_value)}
                       </p>
                     </div>
-                    <div className="text-center p-2.5 bg-white rounded-lg border border-neutral-100">
+                    <div className="text-center p-2.5 bg-white rounded-[6px] border border-neutral-100">
                       <p className="text-[10px] text-neutral-400 uppercase tracking-wider mb-0.5">Target</p>
-                      <p className="text-[14px] font-bold text-[#4E5840]">
+                      <p className="text-[13px] font-bold text-[#4E5840]">
                         {formatValue(goal.metric_type, goal.target_value)}
                       </p>
                     </div>
@@ -388,9 +388,8 @@ export default function GoalsPanel() {
                   <div className="mb-3">
                     <div className="w-full bg-neutral-200 rounded-full h-1.5">
                       <div
-                        className={`h-1.5 rounded-full transition-all duration-500 ${
-                          goal.progress_percentage >= 100 ? 'bg-[#4E5840]' : 'bg-[#A57865]'
-                        }`}
+                        className={`h-1.5 rounded-full transition-all duration-500 ${goal.progress_percentage >= 100 ? 'bg-[#4E5840]' : 'bg-[#A57865]'
+                          }`}
                         style={{ width: `${Math.min(100, goal.progress_percentage || 0)}%` }}
                       />
                     </div>

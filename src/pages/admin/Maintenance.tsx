@@ -35,6 +35,7 @@ import InventoryTable from '../../components/maintenance/InventoryTable';
 import CreateWOModal from '../../components/maintenance/modals/CreateWOModal';
 import EditWOModal from '../../components/maintenance/modals/EditWOModal';
 import PreventiveModal from '../../components/maintenance/modals/PreventiveModal';
+import AddInventoryModal from '../../components/admin-panel/maintenance/modals/AddInventoryModal';
 
 export default function Maintenance() {
   const { showToast } = useToast();
@@ -89,6 +90,8 @@ export default function Maintenance() {
   const [showEditWOModal, setShowEditWOModal] = useState(false);
   const [showPMModal, setShowPMModal] = useState(false);
   const [pmModalMode, setPMModalMode] = useState('create');
+  const [showInventoryModal, setShowInventoryModal] = useState(false);
+  const [editingInventoryItem, setEditingInventoryItem] = useState(null);
 
   // Drawer
   const [selectedWO, setSelectedWO] = useState(null);
@@ -268,19 +271,27 @@ export default function Maintenance() {
 
   // Inventory handlers
   const handleAddInventoryItem = () => {
-    const name = window.prompt('Enter item name:');
-    if (name) {
-      addInventoryItem({ name, category: 'general', stockLevel: 0, minStock: 10 });
-      showToast('Item added', 'success');
-    }
+    setEditingInventoryItem(null);
+    setShowInventoryModal(true);
   };
 
   const handleEditInventoryItem = (item) => {
-    const newName = window.prompt('Enter new name:', item.name);
-    if (newName && newName !== item.name) {
-      updateInventoryItem(item.id, { name: newName });
+    setEditingInventoryItem(item);
+    setShowInventoryModal(true);
+  };
+
+  const handleInventorySubmit = (data) => {
+    if (editingInventoryItem) {
+      // Edit mode
+      updateInventoryItem(data.id, data);
       showToast('Item updated', 'success');
+    } else {
+      // Add mode
+      addInventoryItem(data);
+      showToast('Item added', 'success');
     }
+    setShowInventoryModal(false);
+    setEditingInventoryItem(null);
   };
 
   const handleDeleteInventoryItem = (itemId) => {
@@ -662,6 +673,16 @@ export default function Maintenance() {
         technicians={technicians}
         rooms={rooms}
         mode={pmModalMode}
+      />
+
+      <AddInventoryModal
+        isOpen={showInventoryModal}
+        onClose={() => {
+          setShowInventoryModal(false);
+          setEditingInventoryItem(null);
+        }}
+        onSubmit={handleInventorySubmit}
+        editItem={editingInventoryItem}
       />
 
       {/* Delete Work Order Confirmation */}

@@ -6,15 +6,69 @@ import {
   User,
   MapPin,
   MessageSquare,
-  AlertTriangle,
-  Loader2
+  Loader2,
+  Search,
+  ChevronRight,
+  ChevronDown,
+  X
 } from 'lucide-react';
 import PageHeader from '../../../layouts/staff-portal/PageHeader';
-import Card from '../../../components/staff-portal/ui/Card';
+import { StatCard } from '../../../components/staff-portal/ui/Card';
 import { StatusBadge, PriorityBadge } from '../../../components/staff-portal/ui/Badge';
-import Button, { ButtonGroup, ButtonGroupItem } from '../../../components/staff-portal/ui/Button';
-import { SearchInput } from '../../../components/staff-portal/ui/Input';
+import Button from '../../../components/staff-portal/ui/Button';
 import { usePickupRequests, useRunnerActions } from '@/hooks/staff-portal/useStaffApi';
+
+/**
+ * Glimmora Design System v5.0 - Runner Pickup Requests
+ * Matching admin dashboard styling patterns
+ */
+
+// Section Card matching admin LuxurySectionCard
+function SectionCard({
+  title,
+  subtitle,
+  action,
+  actionLabel,
+  children,
+  className = '',
+  noPadding = false
+}: {
+  title?: string;
+  subtitle?: string;
+  action?: () => void;
+  actionLabel?: string;
+  children: React.ReactNode;
+  className?: string;
+  noPadding?: boolean;
+}) {
+  return (
+    <div className={`rounded-[10px] bg-white overflow-hidden ${className}`}>
+      {(title || action) && (
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-neutral-100 flex-shrink-0">
+          <div>
+            {title && (
+              <h3 className="text-sm font-semibold text-neutral-800">
+                {title}
+              </h3>
+            )}
+            {subtitle && (
+              <p className="text-[11px] text-neutral-400 font-medium mt-0.5">{subtitle}</p>
+            )}
+          </div>
+          {action && (
+            <button
+              onClick={action}
+              className="flex items-center gap-1 text-[11px] font-semibold text-terra-600 px-3 py-1.5 rounded-lg hover:bg-terra-50 transition-colors"
+            >
+              {actionLabel} <ChevronRight className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      )}
+      <div className={noPadding ? '' : 'px-4 sm:px-6 pb-4 sm:pb-6'}>{children}</div>
+    </div>
+  );
+}
 
 const PickupRequests = () => {
   // API hooks for real data
@@ -25,6 +79,7 @@ const PickupRequests = () => {
 
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Combine all pickups
   const allPickups = useMemo(() => {
@@ -33,10 +88,11 @@ const PickupRequests = () => {
 
   // Stats
   const stats = useMemo(() => ({
-    pendingPickups: pendingPickups?.length || 0,
-    inProgressPickups: inProgressPickups?.length || 0,
-    completedPickups: completedPickups?.length || 0
-  }), [pendingPickups, inProgressPickups, completedPickups]);
+    all: allPickups.length,
+    pending: pendingPickups?.length || 0,
+    in_progress: inProgressPickups?.length || 0,
+    completed: completedPickups?.length || 0
+  }), [allPickups, pendingPickups, inProgressPickups, completedPickups]);
 
   const filteredPickups = useMemo(() => {
     return allPickups.filter(pickup => {
@@ -88,7 +144,7 @@ const PickupRequests = () => {
     const labels: Record<string, string> = {
       luggage: 'Luggage',
       laundry: 'Laundry',
-      amenity_request: 'Amenity Request',
+      amenity_request: 'Amenity',
       package: 'Package',
       other: 'Other'
     };
@@ -96,35 +152,43 @@ const PickupRequests = () => {
   };
 
   const getTypeIcon = (type: string) => {
+    return <Package className="w-4.5 h-4.5" />;
+  };
+
+  const getTypeBgClass = (type: string) => {
     switch (type) {
       case 'luggage':
-        return '🧳';
+        return 'bg-terra-50 text-terra-600';
       case 'laundry':
-        return '👔';
+        return 'bg-ocean-50 text-ocean-600';
       case 'amenity_request':
-        return '🎁';
+        return 'bg-gold-50 text-gold-600';
       case 'package':
-        return '📦';
+        return 'bg-sage-50 text-sage-600';
       default:
-        return '📋';
+        return 'bg-neutral-100 text-neutral-600';
     }
   };
 
-  const handleAccept = async (pickup: any) => {
+  const handleAccept = async (pickup: any, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     const success = await acceptPickup(pickup.id);
     if (success) refetchAll();
   };
 
-  const handleComplete = async (pickup: any) => {
+  const handleComplete = async (pickup: any, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     const success = await completePickup(pickup.id);
     if (success) refetchAll();
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <span className="ml-2 text-text-light">Loading pickup requests...</span>
+      <div className="flex flex-col items-center justify-center h-64 gap-4">
+        <div className="w-14 h-14 rounded-2xl bg-terra-50 flex items-center justify-center">
+          <Loader2 className="w-7 h-7 animate-spin text-terra-600" />
+        </div>
+        <span className="text-[13px] text-neutral-500 font-medium">Loading pickup requests...</span>
       </div>
     );
   }
@@ -133,192 +197,285 @@ const PickupRequests = () => {
     <div>
       <PageHeader
         title="Pickup Requests"
-        subtitle={`${stats.pendingPickups + stats.inProgressPickups} active requests`}
+        subtitle={`${stats.pending + stats.in_progress} active requests`}
       />
 
-      {/* Status Summary */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div
-          className={`p-4 rounded-[14px] cursor-pointer transition-all ${
-            statusFilter === 'pending' ? 'bg-warning-light ring-2 ring-warning' : 'bg-white border border-border hover:border-warning'
-          }`}
-          onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
-        >
-          <div className="flex items-center gap-2">
-            <Clock className="w-5 h-5 text-warning" />
-            <span className="text-2xl font-bold text-text">{stats.pendingPickups}</span>
-          </div>
-          <p className="text-sm text-text-light mt-1">Pending</p>
+      {/* KPI Cards - 12 Column Grid matching admin dashboard */}
+      <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
+        <div className="col-span-12 sm:col-span-6 lg:col-span-4">
+          <StatCard
+            title="Pending"
+            value={stats.pending}
+            subtitle="Awaiting pickup"
+            icon={Clock}
+            color="gold"
+            onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
+          />
         </div>
-
-        <div
-          className={`p-4 rounded-[14px] cursor-pointer transition-all ${
-            statusFilter === 'in_progress' ? 'bg-primary/10 ring-2 ring-primary' : 'bg-white border border-border hover:border-primary'
-          }`}
-          onClick={() => setStatusFilter(statusFilter === 'in_progress' ? 'all' : 'in_progress')}
-        >
-          <div className="flex items-center gap-2">
-            <Package className="w-5 h-5 text-primary" />
-            <span className="text-2xl font-bold text-text">{stats.inProgressPickups}</span>
-          </div>
-          <p className="text-sm text-text-light mt-1">In Progress</p>
+        <div className="col-span-12 sm:col-span-6 lg:col-span-4">
+          <StatCard
+            title="In Progress"
+            value={stats.in_progress}
+            subtitle="Currently handling"
+            icon={Package}
+            color="terra"
+            onClick={() => setStatusFilter(statusFilter === 'in_progress' ? 'all' : 'in_progress')}
+          />
         </div>
-
-        <div
-          className={`p-4 rounded-[14px] cursor-pointer transition-all ${
-            statusFilter === 'completed' ? 'bg-success-light ring-2 ring-success' : 'bg-white border border-border hover:border-success'
-          }`}
-          onClick={() => setStatusFilter(statusFilter === 'completed' ? 'all' : 'completed')}
-        >
-          <div className="flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-success" />
-            <span className="text-2xl font-bold text-text">{stats.completedPickups}</span>
-          </div>
-          <p className="text-sm text-text-light mt-1">Completed</p>
+        <div className="col-span-12 sm:col-span-6 lg:col-span-4">
+          <StatCard
+            title="Completed"
+            value={stats.completed}
+            subtitle="Successfully delivered"
+            icon={CheckCircle}
+            color="sage"
+            onClick={() => setStatusFilter(statusFilter === 'completed' ? 'all' : 'completed')}
+          />
         </div>
       </div>
 
-      {/* Search */}
-      <div className="mb-6">
-        <SearchInput
-          placeholder="Search pickup requests..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onClear={() => setSearchQuery('')}
-        />
+      {/* Search & Filters - matching admin OTA Connections style */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+        {/* Search */}
+        <div className="flex-1 relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+          <input
+            type="text"
+            placeholder="Search by room, guest, or items..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full h-11 pl-11 pr-10 rounded-lg text-[13px] bg-white border border-neutral-200 text-neutral-700 placeholder:text-neutral-400 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Filter Dropdown */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className="h-11 w-full sm:w-[180px] px-4 pr-10 rounded-lg text-[13px] bg-white border border-neutral-200 text-neutral-600 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all flex items-center justify-between"
+          >
+            <span>
+              {statusFilter === 'all' && `All (${stats.all})`}
+              {statusFilter === 'pending' && `Pending (${stats.pending})`}
+              {statusFilter === 'in_progress' && `In Progress (${stats.in_progress})`}
+              {statusFilter === 'completed' && `Completed (${stats.completed})`}
+            </span>
+            <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {isFilterOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setIsFilterOpen(false)} />
+              <div className="absolute right-0 mt-2 w-[180px] bg-white rounded-lg border border-neutral-200 shadow-lg z-20 py-1 overflow-hidden">
+                {[
+                  { value: 'all', label: 'All', count: stats.all },
+                  { value: 'pending', label: 'Pending', count: stats.pending },
+                  { value: 'in_progress', label: 'In Progress', count: stats.in_progress },
+                  { value: 'completed', label: 'Completed', count: stats.completed }
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      setStatusFilter(option.value);
+                      setIsFilterOpen(false);
+                    }}
+                    className={`w-full px-4 py-2.5 text-[13px] text-left transition-colors flex items-center justify-between ${
+                      statusFilter === option.value
+                        ? 'bg-terra-50 text-terra-600 font-medium'
+                        : 'text-neutral-600 hover:bg-neutral-50'
+                    }`}
+                  >
+                    <span>{option.label}</span>
+                    <span className={`text-[11px] tabular-nums ${
+                      statusFilter === option.value ? 'text-terra-500' : 'text-neutral-400'
+                    }`}>
+                      {option.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Pickup Requests List */}
-      {filteredPickups.length === 0 ? (
-        <Card className="text-center py-12">
-          <Package className="w-16 h-16 text-text-muted mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-text mb-2">No pickup requests found</h3>
-          <p className="text-text-light">New requests will appear here</p>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {filteredPickups.map((pickup) => (
-            <Card key={pickup.id} className="relative overflow-hidden">
-              {/* Priority indicator */}
-              {pickup.priority === 'urgent' && (
-                <div className="absolute top-0 left-0 w-full h-1 bg-danger" />
-              )}
-
-              <div className="flex items-start gap-4">
-                {/* Type Icon */}
-                <div className="text-3xl flex-shrink-0">{getTypeIcon(pickup.pickup_type)}</div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-lg font-semibold text-text">Room {pickup.room_number}</span>
-                        <span className="text-sm text-primary font-medium">{getTypeLabel(pickup.pickup_type)}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <StatusBadge status={pickup.status} />
-                        {pickup.priority !== 'normal' && <PriorityBadge priority={pickup.priority} />}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      {pickup.status === 'pending' && (
-                        <Button onClick={() => handleAccept(pickup)}>
-                          Accept
-                        </Button>
-                      )}
-                      {pickup.status === 'in_progress' && (
-                        <Button variant="success" onClick={() => handleComplete(pickup)}>
-                          Mark Complete
-                        </Button>
-                      )}
-                      {pickup.status === 'completed' && (
-                        <div className="flex items-center gap-2 text-success">
-                          <CheckCircle className="w-5 h-5" />
-                          <span className="font-medium">Completed</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Items */}
-                  <div className="mt-3 p-3 bg-neutral rounded-[10px]">
-                    <p className="text-sm font-medium text-text">Items:</p>
-                    <p className="text-sm text-text-light">{pickup.items_description}</p>
-                  </div>
-
-                  {/* Details Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-text-muted" />
-                      <div>
-                        <p className="text-text-muted text-xs">Guest</p>
-                        <p className="text-text font-medium">{pickup.guest_name}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-text-muted" />
-                      <div>
-                        <p className="text-text-muted text-xs">Pickup Location</p>
-                        <p className="text-text font-medium">{pickup.pickup_location}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-text-muted" />
-                      <div>
-                        <p className="text-text-muted text-xs">Destination</p>
-                        <p className="text-text font-medium">{pickup.destination}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-text-muted" />
-                      <div>
-                        <p className="text-text-muted text-xs">Scheduled</p>
-                        <p className="text-text font-medium">{formatTime(pickup.scheduled_time)}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Notes */}
-                  {pickup.notes && (
-                    <div className="mt-4 p-3 bg-gold/10 rounded-[10px] border border-gold/20">
-                      <div className="flex items-center gap-2 mb-1">
-                        <MessageSquare className="w-4 h-4 text-gold" />
-                        <span className="text-xs font-medium text-gold">Notes</span>
-                      </div>
-                      <p className="text-sm text-text-light">{pickup.notes}</p>
-                    </div>
-                  )}
-
-                  {/* Assigned To & Timestamps */}
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-border text-xs text-text-muted">
-                    <div className="flex items-center gap-4">
-                      <span>Requested: {formatDate(pickup.requested_at)}</span>
-                      {pickup.assigned_to_name && (
-                        <span>Assigned to: <span className="text-text font-medium">{pickup.assigned_to_name}</span></span>
-                      )}
-                    </div>
-                    {pickup.completed_at && (
-                      <span className="text-success">Completed: {formatDate(pickup.completed_at)}</span>
-                    )}
-                  </div>
+      <div className="grid grid-cols-12 gap-4 sm:gap-6">
+        <div className="col-span-12">
+          <SectionCard
+            title="All Pickup Requests"
+            subtitle={`${filteredPickups.length} request${filteredPickups.length !== 1 ? 's' : ''}`}
+            noPadding
+          >
+            {filteredPickups.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-4 sm:px-6">
+                <div className="w-16 h-16 rounded-2xl bg-neutral-100 flex items-center justify-center mb-4">
+                  <Package className="w-8 h-8 text-neutral-400" />
                 </div>
+                <h3 className="text-[13px] font-semibold text-neutral-800 mb-1">No pickup requests found</h3>
+                <p className="text-[11px] text-neutral-500 text-center max-w-xs">
+                  {searchQuery ? `No requests match "${searchQuery}".` : 'New requests will appear here.'}
+                </p>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="mt-4 px-4 py-2 text-[13px] font-medium text-terra-600 bg-terra-50 hover:bg-terra-100 rounded-lg transition-colors"
+                  >
+                    Clear search
+                  </button>
+                )}
               </div>
-            </Card>
-          ))}
+            ) : (
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-3">
+                {filteredPickups.map((pickup) => (
+                  <div
+                    key={pickup.id}
+                    className={`
+                      relative p-3 sm:p-4 rounded-lg transition-colors
+                      ${pickup.priority === 'urgent' ? 'bg-rose-50/50 border-l-4 border-l-rose-500' :
+                        pickup.status === 'in_progress' ? 'bg-terra-50/30' :
+                        pickup.status === 'completed' ? 'bg-sage-50/30' :
+                        'bg-neutral-50/50 hover:bg-neutral-50'}
+                    `}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+                      {/* Type Icon - hidden on mobile, shows inline badge instead */}
+                      <div className={`hidden sm:flex w-10 h-10 rounded-lg items-center justify-center flex-shrink-0 ${getTypeBgClass(pickup.pickup_type)}`}>
+                        {getTypeIcon(pickup.pickup_type)}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
+                          <div>
+                            <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                              <span className="text-[13px] font-semibold text-neutral-800">Room {pickup.room_number}</span>
+                              <span className={`text-[11px] font-medium px-2 py-0.5 rounded ${getTypeBgClass(pickup.pickup_type)}`}>
+                                {getTypeLabel(pickup.pickup_type)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <StatusBadge status={pickup.status} />
+                              {pickup.priority !== 'normal' && <PriorityBadge priority={pickup.priority} />}
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2 flex-shrink-0 mt-2 sm:mt-0">
+                            {pickup.status === 'pending' && (
+                              <Button
+                                size="sm"
+                                onClick={(e) => handleAccept(pickup, e)}
+                                disabled={actionLoading}
+                                className="flex-1 sm:flex-none"
+                              >
+                                Accept
+                              </Button>
+                            )}
+                            {pickup.status === 'in_progress' && (
+                              <Button
+                                size="sm"
+                                variant="success"
+                                onClick={(e) => handleComplete(pickup, e)}
+                                disabled={actionLoading}
+                                className="flex-1 sm:flex-none"
+                              >
+                                Complete
+                              </Button>
+                            )}
+                            {pickup.status === 'completed' && (
+                              <div className="flex items-center gap-1.5 text-sage-600">
+                                <CheckCircle className="w-4 h-4" />
+                                <span className="text-[12px] font-semibold">Completed</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Items Description */}
+                        <div className="mt-3 p-2.5 sm:p-3 bg-white rounded-lg border border-neutral-100">
+                          <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wide mb-1">Items</p>
+                          <p className="text-[12px] sm:text-[13px] text-neutral-700">{pickup.items_description}</p>
+                        </div>
+
+                        {/* Details Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-3 sm:mt-4">
+                          <div>
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <User className="w-3 h-3 text-neutral-400" />
+                              <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-wide">Guest</span>
+                            </div>
+                            <p className="text-[11px] sm:text-[12px] font-semibold text-neutral-700 truncate">{pickup.guest_name}</p>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <MapPin className="w-3 h-3 text-neutral-400" />
+                              <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-wide">Pickup</span>
+                            </div>
+                            <p className="text-[11px] sm:text-[12px] font-semibold text-neutral-700 truncate">{pickup.pickup_location || 'Room'}</p>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <MapPin className="w-3 h-3 text-neutral-400" />
+                              <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-wide">Destination</span>
+                            </div>
+                            <p className="text-[11px] sm:text-[12px] font-semibold text-neutral-700 truncate">{pickup.destination || 'N/A'}</p>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <Clock className="w-3 h-3 text-neutral-400" />
+                              <span className="text-[10px] font-medium text-neutral-400 uppercase tracking-wide">Scheduled</span>
+                            </div>
+                            <p className="text-[11px] sm:text-[12px] font-semibold text-neutral-700">{formatTime(pickup.scheduled_time || '')}</p>
+                          </div>
+                        </div>
+
+                        {/* Notes */}
+                        {pickup.notes && (
+                          <div className="mt-3 sm:mt-4 p-2.5 sm:p-3 bg-gold-50/50 rounded-lg border border-gold-100">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <MessageSquare className="w-3 h-3 text-gold-600" />
+                              <span className="text-[10px] font-semibold text-gold-600 uppercase tracking-wide">Notes</span>
+                            </div>
+                            <p className="text-[11px] sm:text-[12px] text-neutral-700">{pickup.notes}</p>
+                          </div>
+                        )}
+
+                        {/* Footer */}
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-neutral-100 text-[10px] sm:text-[11px] text-neutral-500">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                            <span>Requested: {formatDate(pickup.requested_at || '')}</span>
+                            {pickup.assigned_to_name && (
+                              <span>Assigned to: <span className="font-semibold text-neutral-700">{pickup.assigned_to_name}</span></span>
+                            )}
+                          </div>
+                          {pickup.completed_at && (
+                            <span className="text-sage-600 font-medium">Completed: {formatDate(pickup.completed_at)}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </SectionCard>
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
 export default PickupRequests;
-
-
-
-
-

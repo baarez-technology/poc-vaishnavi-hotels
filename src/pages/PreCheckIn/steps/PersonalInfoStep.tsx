@@ -2,14 +2,14 @@ import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useEffect, useState, useMemo } from 'react';
-import { Mail, Phone, MapPin, Globe, Building2, ArrowLeft, Search } from 'lucide-react';
+import { useEffect } from 'react';
+import { Mail, Phone, MapPin, Globe, Building2, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePreCheckIn } from '@/contexts/PreCheckInContext';
 import { useAuth } from '@/hooks/useAuth';
 import { userService } from '@/api/services/user.service';
 import { guestsService } from '@/api/services/guests.service';
-import { COUNTRIES, searchCountries } from '@/utils/countries';
+import { COUNTRIES } from '@/utils/countries';
 import logo from '@/assets/logo.png';
 
 const personalInfoSchema = z.object({
@@ -129,10 +129,12 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
     { number: 8, label: 'Confirmation', active: false },
   ];
 
+  const currentStepIndex = steps.findIndex(s => s.active);
+
   return (
     <div className="flex min-h-screen bg-white">
-      {/* LEFT COLUMN - Vertical Stepper */}
-      <div className="w-[410px] min-h-screen px-12 py-12 border-r border-neutral-200 bg-white">
+      {/* LEFT COLUMN - Vertical Stepper (Hidden on mobile) */}
+      <div className="hidden lg:block w-[410px] min-h-screen px-12 py-12 border-r border-neutral-200 bg-white">
         <div className="sticky top-12">
           {/* Logo */}
           <motion.div
@@ -161,7 +163,7 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
                     transition={{ delay: index * 0.05 }}
                     className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
                       step.active
-                        ? 'bg-[#A57865] text-white'
+                        ? 'bg-terra-500 text-white'
                         : 'bg-transparent text-neutral-400 border border-neutral-300'
                     }`}
                   >
@@ -183,13 +185,13 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
                 >
                   <div
                     className={`text-sm font-medium mb-1 ${
-                      step.active ? 'text-neutral-900' : 'text-neutral-500'
+                      step.active ? 'text-neutral-800' : 'text-neutral-500'
                     }`}
                   >
                     {step.label}
                   </div>
                   {step.active && (
-                    <div className="text-xs text-neutral-500">
+                    <div className="text-[11px] text-neutral-400">
                       Provide your contact information
                     </div>
                   )}
@@ -200,30 +202,52 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
         </div>
       </div>
 
-      {/* RIGHT COLUMN - Content Card */}
-      <div className="flex-1 flex items-start justify-center pt-16 px-16" style={{ backgroundColor: '#FAFAFA' }}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-lg"
-        >
+      {/* RIGHT COLUMN - Content Area */}
+      <div className="flex-1 min-h-screen bg-neutral-50">
+        {/* Mobile Header */}
+        <div className="lg:hidden bg-white border-b border-neutral-200 px-4 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <img
+              src={logo}
+              alt="Glimmora"
+              className="h-8 w-auto cursor-pointer"
+              onClick={handleLogoClick}
+            />
+            <span className="text-[13px] text-neutral-500">Step {currentStepIndex + 1} of {steps.length}</span>
+          </div>
+          {/* Mobile Progress Bar */}
+          <div className="w-full bg-neutral-200 rounded-full h-1">
+            <div
+              className="bg-terra-500 h-1 rounded-full transition-all duration-300"
+              style={{ width: `${((currentStepIndex + 1) / steps.length) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="px-4 py-6 lg:px-10 lg:py-8">
           {/* Previous Button */}
-          <button
+          <motion.button
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
             onClick={onPrevious}
-            className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors mb-6"
+            className="flex items-center gap-2 text-[13px] text-neutral-600 hover:text-neutral-800 transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Previous</span>
-          </button>
+          </motion.button>
 
           {/* Content Card */}
-          <div className="bg-white p-8 rounded-2xl border-2 border-neutral-200 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white p-6 lg:p-8 rounded-[10px] shadow-sm"
+          >
             {/* Header */}
-            <div className="mb-10">
-              <h1 className="text-2xl font-semibold text-neutral-900 mb-2">
+            <div className="mb-6 lg:mb-8">
+              <h1 className="text-lg font-semibold text-neutral-800 mb-2">
                 Personal Information
               </h1>
-              <p className="text-sm text-neutral-500">
+              <p className="text-[13px] text-neutral-500">
                 Please confirm your contact and address details
               </p>
             </div>
@@ -232,7 +256,7 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               {/* Email */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
                   Email Address
                 </label>
                 <div className="relative">
@@ -241,28 +265,21 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
                     type="email"
                     placeholder="your.email@example.com"
                     {...register('email')}
-                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none transition-all text-sm bg-white"
-                    style={{
-                      borderColor: errors.email ? '#ef4444' : '#E5E7EB',
-                    } as React.CSSProperties}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = errors.email ? '#ef4444' : '#A57865';
-                      e.target.style.boxShadow = errors.email ? '0 0 0 3px #fecaca' : '0 0 0 3px rgba(165, 120, 101, 0.1)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = errors.email ? '#ef4444' : '#E5E7EB';
-                      e.target.style.boxShadow = 'none';
-                    }}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${
+                      errors.email
+                        ? 'border-rose-500 focus:ring-rose-500/20'
+                        : 'border-neutral-200 focus:ring-terra-500/20'
+                    }`}
                   />
                 </div>
                 {errors.email && (
-                  <p className="mt-1.5 text-xs text-red-600">{errors.email.message}</p>
+                  <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.email.message}</p>
                 )}
               </div>
 
               {/* Phone */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
                   Phone Number
                 </label>
                 <div className="relative">
@@ -271,28 +288,21 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
                     type="tel"
                     placeholder="+1 (555) 123-4567"
                     {...register('phone')}
-                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none transition-all text-sm bg-white"
-                    style={{
-                      borderColor: errors.phone ? '#ef4444' : '#E5E7EB',
-                    } as React.CSSProperties}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = errors.phone ? '#ef4444' : '#A57865';
-                      e.target.style.boxShadow = errors.phone ? '0 0 0 3px #fecaca' : '0 0 0 3px rgba(165, 120, 101, 0.1)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = errors.phone ? '#ef4444' : '#E5E7EB';
-                      e.target.style.boxShadow = 'none';
-                    }}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${
+                      errors.phone
+                        ? 'border-rose-500 focus:ring-rose-500/20'
+                        : 'border-neutral-200 focus:ring-terra-500/20'
+                    }`}
                   />
                 </div>
                 {errors.phone && (
-                  <p className="mt-1.5 text-xs text-red-600">{errors.phone.message}</p>
+                  <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.phone.message}</p>
                 )}
               </div>
 
               {/* Address */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
                   Street Address
                 </label>
                 <div className="relative">
@@ -301,105 +311,77 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
                     type="text"
                     placeholder="123 Main Street, Apt 4B"
                     {...register('address')}
-                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none transition-all text-sm bg-white"
-                    style={{
-                      borderColor: errors.address ? '#ef4444' : '#E5E7EB',
-                    } as React.CSSProperties}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = errors.address ? '#ef4444' : '#A57865';
-                      e.target.style.boxShadow = errors.address ? '0 0 0 3px #fecaca' : '0 0 0 3px rgba(165, 120, 101, 0.1)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = errors.address ? '#ef4444' : '#E5E7EB';
-                      e.target.style.boxShadow = 'none';
-                    }}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${
+                      errors.address
+                        ? 'border-rose-500 focus:ring-rose-500/20'
+                        : 'border-neutral-200 focus:ring-terra-500/20'
+                    }`}
                   />
                 </div>
                 {errors.address && (
-                  <p className="mt-1.5 text-xs text-red-600">{errors.address.message}</p>
+                  <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.address.message}</p>
                 )}
               </div>
 
               {/* City, ZIP, Country Grid */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {/* City */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
                     City
                   </label>
                   <div className="relative">
-                    <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                     <input
                       type="text"
                       placeholder="New York"
                       {...register('city')}
-                      className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none transition-all text-sm bg-white"
-                      style={{
-                        borderColor: errors.city ? '#ef4444' : '#E5E7EB',
-                      } as React.CSSProperties}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = errors.city ? '#ef4444' : '#A57865';
-                        e.target.style.boxShadow = errors.city ? '0 0 0 3px #fecaca' : '0 0 0 3px rgba(165, 120, 101, 0.1)';
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = errors.city ? '#ef4444' : '#E5E7EB';
-                        e.target.style.boxShadow = 'none';
-                      }}
+                      className={`w-full pl-9 pr-2 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${
+                        errors.city
+                          ? 'border-rose-500 focus:ring-rose-500/20'
+                          : 'border-neutral-200 focus:ring-terra-500/20'
+                      }`}
                     />
                   </div>
                   {errors.city && (
-                    <p className="mt-1.5 text-xs text-red-600">{errors.city.message}</p>
+                    <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.city.message}</p>
                   )}
                 </div>
 
                 {/* ZIP Code */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
                     ZIP Code
                   </label>
                   <input
                     type="text"
                     placeholder="10001"
                     {...register('zipCode')}
-                    className="w-full px-4 py-2.5 border rounded-lg focus:outline-none transition-all text-sm bg-white"
-                    style={{
-                      borderColor: errors.zipCode ? '#ef4444' : '#E5E7EB',
-                    } as React.CSSProperties}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = errors.zipCode ? '#ef4444' : '#A57865';
-                      e.target.style.boxShadow = errors.zipCode ? '0 0 0 3px #fecaca' : '0 0 0 3px rgba(165, 120, 101, 0.1)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = errors.zipCode ? '#ef4444' : '#E5E7EB';
-                      e.target.style.boxShadow = 'none';
-                    }}
+                    className={`w-full px-3 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${
+                      errors.zipCode
+                        ? 'border-rose-500 focus:ring-rose-500/20'
+                        : 'border-neutral-200 focus:ring-terra-500/20'
+                    }`}
                   />
                   {errors.zipCode && (
-                    <p className="mt-1.5 text-xs text-red-600">{errors.zipCode.message}</p>
+                    <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.zipCode.message}</p>
                   )}
                 </div>
 
                 {/* Country */}
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
                     Country
                   </label>
                   <div className="relative">
-                    <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 z-10" />
+                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 z-10" />
                     <select
                       {...register('country')}
-                      className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none transition-all appearance-none bg-white text-sm"
-                      style={{
-                        borderColor: errors.country ? '#ef4444' : '#E5E7EB',
-                      } as React.CSSProperties}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = errors.country ? '#ef4444' : '#A57865';
-                        e.target.style.boxShadow = errors.country ? '0 0 0 3px #fecaca' : '0 0 0 3px rgba(165, 120, 101, 0.1)';
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = errors.country ? '#ef4444' : '#E5E7EB';
-                        e.target.style.boxShadow = 'none';
-                      }}
+                      className={`w-full pl-9 pr-2 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all appearance-none bg-white text-[13px] ${
+                        errors.country
+                          ? 'border-rose-500 focus:ring-rose-500/20'
+                          : 'border-neutral-200 focus:ring-terra-500/20'
+                      }`}
                     >
                       <option value="">Select</option>
                       {COUNTRIES.map((country) => (
@@ -410,7 +392,7 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
                     </select>
                   </div>
                   {errors.country && (
-                    <p className="mt-1.5 text-xs text-red-600">{errors.country.message}</p>
+                    <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.country.message}</p>
                   )}
                 </div>
               </div>
@@ -418,22 +400,13 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full py-2.5 text-white font-medium rounded-lg transition-all text-sm mt-6"
-                style={{
-                  backgroundColor: '#A57865',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#8E6554';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#A57865';
-                }}
+                className="w-full h-10 text-white font-semibold rounded-lg transition-all text-[13px] mt-6 bg-terra-500 hover:bg-terra-600 active:scale-[0.98]"
               >
                 Next
               </button>
             </form>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );

@@ -248,6 +248,81 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
+  const loadAlerts = useCallback(async (status?: string, type?: string) => {
+    try {
+      const data = await reputationService.getAlerts(status, type);
+      setAlerts(data || []);
+    } catch (err: any) {
+      console.error('Error fetching alerts:', err);
+    }
+  }, []);
+
+  const loadCategories = useCallback(async () => {
+    try {
+      const data = await reputationService.getCategories();
+      setCategories(data || []);
+    } catch (err: any) {
+      console.error('Error fetching categories:', err);
+    }
+  }, []);
+
+  const loadGoals = useCallback(async () => {
+    try {
+      const data = await reputationService.getGoals();
+      setGoals(data || []);
+    } catch (err: any) {
+      console.error('Error fetching goals:', err);
+    }
+  }, []);
+
+  const loadAutomationConfig = useCallback(async () => {
+    try {
+      const data = await reputationService.getAutomationConfig();
+      setAutomationConfig(data);
+      // Sync with legacy settings
+      if (data) {
+        setSettings(prev => ({
+          ...prev,
+          autoReply: {
+            enabled: data.global_enabled,
+            delay: `${data.response_delay_hours}h`,
+            language: 'en',
+            templates: data.templates
+          }
+        }));
+      }
+    } catch (err: any) {
+      console.error('Error fetching automation config:', err);
+    }
+  }, []);
+
+  const loadPendingApprovals = useCallback(async () => {
+    try {
+      const data = await reputationService.getPendingApprovals();
+      setPendingApprovals(data || []);
+    } catch (err: any) {
+      console.error('Error fetching pending approvals:', err);
+    }
+  }, []);
+
+  const loadEngineStats = useCallback(async () => {
+    try {
+      const data = await reputationService.getEngineStats();
+      setEngineStats(data);
+    } catch (err: any) {
+      console.error('Error fetching engine stats:', err);
+    }
+  }, []);
+
+  const loadUserSettings = useCallback(async () => {
+    try {
+      const data = await reputationService.getSettings();
+      setUserSettings(data);
+    } catch (err: any) {
+      console.error('Error fetching user settings:', err);
+    }
+  }, []);
+
   const loadReputation = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -256,14 +331,33 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
         refreshDashboard(),
         refreshAnalytics(),
         refreshTrends(),
-        loadPendingReviews()
+        loadPendingReviews(),
+        loadAlerts(),
+        loadCategories(),
+        loadGoals(),
+        loadAutomationConfig(),
+        loadPendingApprovals(),
+        loadEngineStats(),
+        loadUserSettings()
       ]);
     } catch (err: any) {
       setError(err.message || 'Failed to load reputation data');
     } finally {
       setIsLoading(false);
     }
-  }, [refreshDashboard, refreshAnalytics, refreshTrends, loadPendingReviews]);
+  }, [
+    refreshDashboard,
+    refreshAnalytics,
+    refreshTrends,
+    loadPendingReviews,
+    loadAlerts,
+    loadCategories,
+    loadGoals,
+    loadAutomationConfig,
+    loadPendingApprovals,
+    loadEngineStats,
+    loadUserSettings
+  ]);
 
   // Load on mount
   useEffect(() => {
@@ -274,14 +368,6 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   // ALERTS
   // ========================
 
-  const loadAlerts = useCallback(async (status?: string, type?: string) => {
-    try {
-      const data = await reputationService.getAlerts(status, type);
-      setAlerts(data || []);
-    } catch (err: any) {
-      console.error('Error fetching alerts:', err);
-    }
-  }, []);
 
   const acknowledgeAlert = useCallback(async (id: number) => {
     try {
@@ -344,14 +430,6 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   // CATEGORIES
   // ========================
 
-  const loadCategories = useCallback(async () => {
-    try {
-      const data = await reputationService.getCategories();
-      setCategories(data || []);
-    } catch (err: any) {
-      console.error('Error fetching categories:', err);
-    }
-  }, []);
 
   const createCategory = useCallback(async (data: {
     name: string;
@@ -404,14 +482,6 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   // GOALS
   // ========================
 
-  const loadGoals = useCallback(async () => {
-    try {
-      const data = await reputationService.getGoals();
-      setGoals(data || []);
-    } catch (err: any) {
-      console.error('Error fetching goals:', err);
-    }
-  }, []);
 
   const createGoal = useCallback(async (metricType: string, targetValue: number, startDate: string, endDate: string) => {
     try {
@@ -462,26 +532,6 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   // AUTOMATION
   // ========================
 
-  const loadAutomationConfig = useCallback(async () => {
-    try {
-      const data = await reputationService.getAutomationConfig();
-      setAutomationConfig(data);
-      // Sync with legacy settings
-      if (data) {
-        setSettings(prev => ({
-          ...prev,
-          autoReply: {
-            enabled: data.global_enabled,
-            delay: `${data.response_delay_hours}h`,
-            language: 'en',
-            templates: data.templates
-          }
-        }));
-      }
-    } catch (err: any) {
-      console.error('Error fetching automation config:', err);
-    }
-  }, []);
 
   const updateAutomationConfig = useCallback(async (config: Partial<AutomationConfig>) => {
     try {
@@ -518,14 +568,6 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   // APPROVAL WORKFLOW
   // ========================
 
-  const loadPendingApprovals = useCallback(async () => {
-    try {
-      const data = await reputationService.getPendingApprovals();
-      setPendingApprovals(data || []);
-    } catch (err: any) {
-      console.error('Error fetching pending approvals:', err);
-    }
-  }, []);
 
   const submitForReview = useCallback(async (draftId: number) => {
     try {
@@ -570,27 +612,11 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   // ENGINE STATS
   // ========================
 
-  const loadEngineStats = useCallback(async () => {
-    try {
-      const data = await reputationService.getEngineStats();
-      setEngineStats(data);
-    } catch (err: any) {
-      console.error('Error fetching engine stats:', err);
-    }
-  }, []);
 
   // ========================
   // USER SETTINGS
   // ========================
 
-  const loadUserSettings = useCallback(async () => {
-    try {
-      const data = await reputationService.getSettings();
-      setUserSettings(data);
-    } catch (err: any) {
-      console.error('Error fetching user settings:', err);
-    }
-  }, []);
 
   const saveUserSettings = useCallback(async (settings: Partial<ReputationSettings>) => {
     try {
@@ -631,26 +657,26 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
       // Derive sentiment from rating when sentiment data is missing
       const ratingBasedSentiment = r.rating != null ? (
         r.rating >= 4.5 ? 92 :
-        r.rating >= 4 ? 78 :
-        r.rating >= 3 ? 55 :
-        r.rating >= 2 ? 32 : 15
+          r.rating >= 4 ? 78 :
+            r.rating >= 3 ? 55 :
+              r.rating >= 2 ? 32 : 15
       ) : 55;
 
       const ratingBasedLabel = r.rating != null ? (
         r.rating >= 4 ? 'positive' :
-        r.rating >= 3 ? 'neutral' : 'negative'
+          r.rating >= 3 ? 'neutral' : 'negative'
       ) : 'neutral';
 
       const sentiment = r.sentiment_score ?? (
         r.sentiment_label === 'positive' ? 85 :
-        r.sentiment_label === 'negative' ? 25 :
-        r.sentiment_label === 'neutral' ? 55 :
-        ratingBasedSentiment
+          r.sentiment_label === 'negative' ? 25 :
+            r.sentiment_label === 'neutral' ? 55 :
+              ratingBasedSentiment
       );
 
       const sentimentLabel = r.sentiment_label || (
         sentiment >= 70 ? 'positive' :
-        sentiment < 40 ? 'negative' : 'neutral'
+          sentiment < 40 ? 'negative' : 'neutral'
       );
 
       return {

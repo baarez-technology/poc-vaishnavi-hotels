@@ -27,14 +27,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className={wrapperClassName}>
         {label && (
-          <label className="block text-sm font-medium text-neutral-900 mb-1.5">
+          <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
             {label}
-            {props.required && <span className="text-red-600 ml-1">*</span>}
+            {props.required && <span className="text-rose-600 ml-1">*</span>}
           </label>
         )}
         <div className="relative">
           {hasIcon && iconPosition === 'left' && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">
               <Icon className="w-4 h-4" />
             </div>
           )}
@@ -42,28 +42,28 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             type={type}
             className={`
-              w-full px-3 py-2.5 rounded-[10px] border transition-all duration-200
-              text-neutral-900 placeholder:text-neutral-500
-              focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500
-              disabled:bg-neutral-100 disabled:cursor-not-allowed
-              ${error ? 'border-red-600 focus:ring-red-600/20 focus:border-red-600' : 'border-neutral-300'}
-              ${hasIcon && iconPosition === 'left' ? 'pl-10' : ''}
-              ${hasIcon && iconPosition === 'right' ? 'pr-10' : ''}
+              w-full px-4 py-3 rounded-[10px] border transition-all duration-200
+              text-[13px] text-neutral-800 placeholder:text-neutral-400
+              focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500
+              disabled:bg-neutral-50 disabled:cursor-not-allowed
+              ${error ? 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-500' : 'border-neutral-200'}
+              ${hasIcon && iconPosition === 'left' ? 'pl-11' : ''}
+              ${hasIcon && iconPosition === 'right' ? 'pr-11' : ''}
               ${className}
             `}
             {...props}
           />
           {hasIcon && iconPosition === 'right' && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500">
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400">
               <Icon className="w-4 h-4" />
             </div>
           )}
         </div>
         {error && (
-          <p className="text-xs text-red-600 mt-1">{error}</p>
+          <p className="text-[11px] text-rose-600 mt-1.5 font-medium">{error}</p>
         )}
         {hint && !error && (
-          <p className="text-xs text-neutral-500 mt-1">{hint}</p>
+          <p className="text-[11px] text-neutral-400 mt-1.5">{hint}</p>
         )}
       </div>
     );
@@ -92,29 +92,29 @@ export const Textarea = forwardRef<HTMLTextAreaElement, {
     return (
       <div className={wrapperClassName}>
         {label && (
-          <label className="block text-sm font-medium text-neutral-900 mb-1.5">
+          <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
             {label}
-            {props.required && <span className="text-red-600 ml-1">*</span>}
+            {props.required && <span className="text-rose-600 ml-1">*</span>}
           </label>
         )}
         <textarea
           ref={ref}
           rows={rows}
           className={`
-            w-full px-3 py-2.5 rounded-[10px] border transition-all duration-200
-            text-neutral-900 placeholder:text-neutral-500 resize-none
-            focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500
-            disabled:bg-neutral-100 disabled:cursor-not-allowed
-            ${error ? 'border-red-600 focus:ring-red-600/20 focus:border-red-600' : 'border-neutral-300'}
+            w-full px-4 py-3 rounded-[10px] border transition-all duration-200
+            text-[13px] text-neutral-800 placeholder:text-neutral-400 resize-none
+            focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500
+            disabled:bg-neutral-50 disabled:cursor-not-allowed
+            ${error ? 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-500' : 'border-neutral-200'}
             ${className}
           `}
           {...props}
         />
         {error && (
-          <p className="text-xs text-red-600 mt-1">{error}</p>
+          <p className="text-[11px] text-rose-600 mt-1.5 font-medium">{error}</p>
         )}
         {hint && !error && (
-          <p className="text-xs text-neutral-500 mt-1">{hint}</p>
+          <p className="text-[11px] text-neutral-400 mt-1.5">{hint}</p>
         )}
       </div>
     );
@@ -150,19 +150,19 @@ export const Select = forwardRef<HTMLSelectElement, {
     return (
       <div className={wrapperClassName}>
         {label && (
-          <label className="block text-sm font-medium text-neutral-900 mb-1.5">
+          <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
             {label}
-            {props.required && <span className="text-red-600 ml-1">*</span>}
+            {props.required && <span className="text-rose-600 ml-1">*</span>}
           </label>
         )}
         <select
           ref={ref}
           className={`
-            w-full px-3 py-2.5 rounded-[10px] border transition-all duration-200
-            text-neutral-900 bg-white
-            focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500
-            disabled:bg-neutral-100 disabled:cursor-not-allowed
-            ${error ? 'border-red-600 focus:ring-red-600/20 focus:border-red-600' : 'border-neutral-300'}
+            w-full px-4 py-3 rounded-[10px] border transition-all duration-200
+            text-[13px] text-neutral-800 bg-white
+            focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500
+            disabled:bg-neutral-50 disabled:cursor-not-allowed
+            ${error ? 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-500' : 'border-neutral-200'}
             ${className}
           `}
           {...props}
@@ -177,10 +177,10 @@ export const Select = forwardRef<HTMLSelectElement, {
           ))}
         </select>
         {error && (
-          <p className="text-xs text-red-600 mt-1">{error}</p>
+          <p className="text-[11px] text-rose-600 mt-1.5 font-medium">{error}</p>
         )}
         {hint && !error && (
-          <p className="text-xs text-neutral-500 mt-1">{hint}</p>
+          <p className="text-[11px] text-neutral-400 mt-1.5">{hint}</p>
         )}
       </div>
     );
@@ -210,8 +210,8 @@ export const Checkbox = forwardRef<HTMLInputElement, {
           ref={ref}
           type="checkbox"
           className={`
-            w-4 h-4 mt-0.5 rounded border-neutral-300 text-primary-600
-            focus:ring-2 focus:ring-primary-500/20 focus:ring-offset-0
+            w-4 h-4 mt-0.5 rounded border-neutral-200 text-terra-600
+            focus:ring-2 focus:ring-terra-500/20 focus:ring-offset-0
             disabled:opacity-50 disabled:cursor-not-allowed
             ${className}
           `}
@@ -219,15 +219,15 @@ export const Checkbox = forwardRef<HTMLInputElement, {
         />
         <div className="flex-1">
           {label && (
-            <label className="text-sm font-medium text-neutral-900 cursor-pointer">
+            <label className="text-[13px] font-medium text-neutral-800 cursor-pointer">
               {label}
             </label>
           )}
           {description && (
-            <p className="text-xs text-neutral-500 mt-0.5">{description}</p>
+            <p className="text-[11px] text-neutral-400 mt-0.5">{description}</p>
           )}
           {error && (
-            <p className="text-xs text-red-600 mt-1">{error}</p>
+            <p className="text-[11px] text-rose-600 mt-1 font-medium">{error}</p>
           )}
         </div>
       </div>
@@ -240,20 +240,22 @@ Checkbox.displayName = 'Checkbox';
 export const SearchInput = forwardRef<HTMLInputElement, {
   placeholder?: string;
   className?: string;
+  wrapperClassName?: string;
   onClear?: () => void;
   value?: string;
 } & React.InputHTMLAttributes<HTMLInputElement>>(
   ({
     placeholder = 'Search...',
     className = '',
+    wrapperClassName = '',
     onClear,
     value,
     ...props
   }, ref) => {
     return (
-      <div className="relative">
+      <div className={`relative ${wrapperClassName}`}>
         <svg
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500"
+          className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -271,9 +273,10 @@ export const SearchInput = forwardRef<HTMLInputElement, {
           placeholder={placeholder}
           value={value}
           className={`
-            w-full pl-10 pr-10 py-2.5 rounded-[10px] border border-neutral-300
-            text-neutral-900 placeholder:text-neutral-500
-            focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500
+            w-full pl-11 pr-10 py-3 rounded-[10px] border border-neutral-200
+            text-[13px] text-neutral-800 placeholder:text-neutral-400
+            focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500
+            transition-all duration-200
             ${className}
           `}
           {...props}
@@ -282,7 +285,7 @@ export const SearchInput = forwardRef<HTMLInputElement, {
           <button
             type="button"
             onClick={onClear}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-900"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

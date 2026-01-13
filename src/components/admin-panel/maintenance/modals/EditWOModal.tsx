@@ -104,8 +104,8 @@ export default function EditWOModal({ isOpen, onClose, onSubmit, workOrder, tech
         assignedTo: workOrder.assignedTo || '',
         technicianName: workOrder.technicianName || '',
         isOOO: workOrder.isOOO || false,
-        estimatedCompletion: workOrder.estimatedCompletion ?
-          new Date(workOrder.estimatedCompletion).toISOString().split('T')[0] : '',
+        estimatedCompletion: (workOrder.scheduledDate || workOrder.estimatedCompletion) ?
+          new Date(workOrder.scheduledDate || workOrder.estimatedCompletion).toISOString().split('T')[0] : '',
         notes: workOrder.notes || ''
       });
       setErrors({});

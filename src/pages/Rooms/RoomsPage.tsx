@@ -368,15 +368,33 @@ export const RoomsPage = () => {
       <div className="pt-24 pb-20 sm:pb-24">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-[1400px]">
 
+        {/* Mobile Filter Toggle Button */}
+        <div className="lg:hidden mb-4">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white rounded-xl border-2 border-neutral-200 hover:border-primary-300 transition-all"
+          >
+            <SlidersHorizontal size={20} className="text-primary-600" />
+            <span className="font-semibold text-neutral-900">
+              {showFilters ? 'Hide Filters' : 'Show Filters'}
+            </span>
+            {(selectedCategories.length + selectedAmenities.length > 0) && (
+              <span className="px-2 py-0.5 bg-primary-600 text-white text-xs rounded-full font-bold">
+                {selectedCategories.length + selectedAmenities.length}
+              </span>
+            )}
+          </button>
+        </div>
+
         {/* Two Column Layout */}
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
 
           {/* LEFT SIDEBAR - Filters & Search (Desktop: Sticky, Mobile: Collapsible) */}
-          <aside className="w-full lg:w-[360px] flex-shrink-0">
+          <aside className={`w-full lg:w-[360px] flex-shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
             <div className="lg:sticky lg:top-32 space-y-6">
 
               {/* Search Widget Card */}
-              <div className="bg-gradient-to-br from-white to-neutral-50 rounded-2xl border-2 border-primary-200 p-6 shadow-lg overflow-visible">
+              <div className="bg-gradient-to-br from-white to-neutral-50 rounded-2xl border-2 border-primary-200 p-5 sm:p-6 shadow-lg overflow-visible">
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
                     <SlidersHorizontal size={20} className="text-white" strokeWidth={2} />
@@ -520,40 +538,49 @@ export const RoomsPage = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    className="px-3 py-2 border border-neutral-200 rounded-lg bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer"
-                  >
-                    <option value="popularity">Popular</option>
-                    <option value="rating">Top Rated</option>
-                    <option value="price-low">Price: Low</option>
-                    <option value="price-high">Price: High</option>
-                  </select>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  {/* Sort Dropdown - Custom Styled */}
+                  <div className="relative">
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as SortOption)}
+                      className="appearance-none px-4 py-2.5 pr-10 border-2 border-neutral-200 rounded-xl bg-white text-sm font-semibold text-neutral-900 focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all cursor-pointer hover:border-primary-300"
+                    >
+                      <option value="popularity">Popular</option>
+                      <option value="rating">Top Rated</option>
+                      <option value="price-low">Price: Low</option>
+                      <option value="price-high">Price: High</option>
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <svg className="w-4 h-4 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
 
-                  <div className="flex items-center gap-1 bg-neutral-100 rounded-lg p-1">
+                  {/* View Mode Toggle */}
+                  <div className="hidden sm:flex items-center gap-1 bg-neutral-100 rounded-xl p-1">
                     <button
                       onClick={() => setViewMode('grid')}
-                      className={`p-2 rounded-md transition-all ${
+                      className={`p-2.5 rounded-lg transition-all ${
                         viewMode === 'grid'
                           ? 'bg-white text-neutral-900 shadow-sm'
                           : 'text-neutral-500 hover:text-neutral-900'
                       }`}
                       title="Grid view"
                     >
-                      <Grid3x3 size={16} strokeWidth={1.5} />
+                      <Grid3x3 size={18} strokeWidth={1.5} />
                     </button>
                     <button
                       onClick={() => setViewMode('list')}
-                      className={`p-2 rounded-md transition-all ${
+                      className={`p-2.5 rounded-lg transition-all ${
                         viewMode === 'list'
                           ? 'bg-white text-neutral-900 shadow-sm'
                           : 'text-neutral-500 hover:text-neutral-900'
                       }`}
                       title="List view"
                     >
-                      <List size={16} strokeWidth={1.5} />
+                      <List size={18} strokeWidth={1.5} />
                     </button>
                   </div>
                 </div>
@@ -596,7 +623,7 @@ export const RoomsPage = () => {
         )}
 
         {/* Room Grid/List */}
-        <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 gap-6' : 'space-y-6'}>
+        <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6' : 'space-y-4 sm:space-y-6'}>
           {paginatedRooms.map((room) => (
             <RoomCard
               key={room.id}

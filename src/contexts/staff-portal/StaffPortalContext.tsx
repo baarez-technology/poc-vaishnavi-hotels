@@ -780,7 +780,7 @@ export function StaffPortalProvider({ children }: StaffPortalProviderProps) {
     try {
       const { housekeepingService } = await import('../../api/services/housekeeping.service');
       const [rooms, tasks] = await Promise.all([
-        housekeepingService.getMyRooms(),
+        housekeepingService.getRooms(),
         housekeepingService.getMyTasks()
       ]);
 

@@ -6,7 +6,6 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { getRoles } from '../../data/staffData';
 
 // Custom Filter Select Component
 function FilterSelect({ value, onChange, options, placeholder, icon: Icon }) {
@@ -82,8 +81,45 @@ function FilterSelect({ value, onChange, options, placeholder, icon: Icon }) {
   );
 }
 
-export default function StaffFilters({ filters, onFilterChange, onClearFilters, hasActiveFilters }) {
-  const roles = getRoles();
+// Default roles organized by department
+const DEFAULT_ROLES = [
+  // Front Desk
+  'Front Desk Agent',
+  'Receptionist',
+  'Night Auditor',
+  'Concierge',
+  // Housekeeping
+  'Housekeeper',
+  'Room Attendant',
+  'Laundry Attendant',
+  'Housekeeping Supervisor',
+  // Management
+  'General Manager',
+  'Assistant Manager',
+  'Duty Manager',
+  'HR Manager',
+  // Maintenance
+  'Maintenance Technician',
+  'Engineer',
+  'Groundskeeper',
+  // Runner
+  'Bellhop',
+  'Porter',
+  'Valet',
+  'Room Service Attendant'
+];
+
+// Department names that should not be used as roles
+const DEPARTMENT_NAMES = ['frontdesk', 'front_desk', 'housekeeping', 'management', 'maintenance', 'runner', 'general'];
+
+export default function StaffFilters({ filters, onFilterChange, onClearFilters, hasActiveFilters, availableRoles = [] }) {
+  // Filter out department names from availableRoles and use defaults if only departments are present
+  const validRoles = availableRoles.filter(role =>
+    !DEPARTMENT_NAMES.includes(role.toLowerCase())
+  );
+
+  // Use valid roles from API if available, otherwise use default roles
+  const roles = validRoles.length > 0 ? validRoles : DEFAULT_ROLES;
 
   // Options for filters
   const roleOptions = [

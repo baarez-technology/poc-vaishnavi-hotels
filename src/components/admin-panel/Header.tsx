@@ -1,5 +1,7 @@
 import { Search, Bell, User, Sparkles, ChevronDown, LogOut, UserCircle } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 interface HeaderProps {
   onAIPanelToggle: () => void;
@@ -8,6 +10,15 @@ interface HeaderProps {
 
 const Header = ({ onAIPanelToggle, onAIVoiceClick }: HeaderProps) => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleLogout = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setIsProfileMenuOpen(false);
+    logout();
+  };
 
   return (
     <header className="bg-gradient-to-r from-white via-[#FAF8F6]/30 to-white border-b border-[#A57865]/20 z-40 shadow-sm backdrop-blur-sm">
@@ -99,8 +110,10 @@ const Header = ({ onAIPanelToggle, onAIVoiceClick }: HeaderProps) => {
                   <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl border border-neutral-200 shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                     {/* User Info Header */}
                     <div className="px-4 py-3 border-b border-neutral-200 bg-gradient-to-br from-[#A57865]/5 to-transparent">
-                      <p className="text-sm font-semibold text-neutral-800">Sarah Admin</p>
-                      <p className="text-xs text-neutral-500">sarah.admin@glimmora.com</p>
+                      <p className="text-sm font-semibold text-neutral-800">
+                        {user?.first_name} {user?.last_name}
+                      </p>
+                      <p className="text-xs text-neutral-500">{user?.email}</p>
                     </div>
 
                     {/* Menu Items */}
@@ -113,7 +126,10 @@ const Header = ({ onAIPanelToggle, onAIVoiceClick }: HeaderProps) => {
 
                     {/* Logout */}
                     <div className="border-t border-neutral-200 py-2">
-                      <button className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-red-50 transition-colors duration-200 group">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-red-50 transition-colors duration-200 group"
+                      >
                         <LogOut className="w-4 h-4 text-neutral-600 group-hover:text-red-600 transition-colors" />
                         <span className="text-sm text-neutral-700 group-hover:text-red-600 font-medium">Log Out</span>
                       </button>

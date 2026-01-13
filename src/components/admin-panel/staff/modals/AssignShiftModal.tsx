@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Calendar, Clock, CheckCircle2, Loader2 } from 'lucide-react';
+import { X, Calendar, Clock, CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
 import { staffService } from '../../../../api/services/staff.service';
 
 export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
@@ -14,6 +14,8 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+  const [existingShiftDates, setExistingShiftDates] = useState<string[]>([]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -50,6 +52,8 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
       multipleDays: false
     });
     setError(null);
+    setShowDuplicateWarning(false);
+    setExistingShiftDates([]);
 
     document.addEventListener('keydown', handleEsc);
 
@@ -107,8 +111,46 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
     }
   };
 
+  // Check if any of the selected dates already have shifts assigned
+  const checkForExistingShifts = (): string[] => {
+    if (!staff?.schedule) return [];
+
+    const existingDates: string[] = [];
+
+    if (formData.multipleDays) {
+      const startDate = new Date(formData.date);
+      const endDate = new Date(formData.endDate);
+
+      for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+        const dateStr = date.toISOString().split('T')[0];
+        const hasExisting = staff.schedule.some(s => s.date === dateStr);
+        if (hasExisting) {
+          existingDates.push(dateStr);
+        }
+      }
+    } else {
+      const hasExisting = staff.schedule.some(s => s.date === formData.date);
+      if (hasExisting) {
+        existingDates.push(formData.date);
+      }
+    }
+
+    return existingDates;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Check for existing shifts first (unless user already confirmed)
+    if (!showDuplicateWarning) {
+      const duplicates = checkForExistingShifts();
+      if (duplicates.length > 0) {
+        setExistingShiftDates(duplicates);
+        setShowDuplicateWarning(true);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -154,7 +196,14 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
       setError(err.response?.data?.detail || err.message || 'Failed to assign shift. Please try again.');
     } finally {
       setIsSubmitting(false);
+      setShowDuplicateWarning(false);
+      setExistingShiftDates([]);
     }
+  };
+
+  const handleCancelDuplicate = () => {
+    setShowDuplicateWarning(false);
+    setExistingShiftDates([]);
   };
 
   // Get min date (today)
@@ -194,6 +243,48 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
               {error && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
                   {error}
+                </div>
+              )}
+
+              {showDuplicateWarning && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                      <AlertTriangle className="w-4 h-4 text-amber-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold text-amber-900">Shift Already Assigned</h4>
+                      <p className="text-sm text-amber-700 mt-1">
+                        {staff.name} already has a shift assigned for the following date{existingShiftDates.length > 1 ? 's' : ''}:
+                      </p>
+                      <ul className="mt-2 space-y-1">
+                        {existingShiftDates.map(date => (
+                          <li key={date} className="text-sm font-medium text-amber-800">
+                            • {new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="text-sm text-amber-700 mt-3">
+                        Do you want to replace the existing shift{existingShiftDates.length > 1 ? 's' : ''} with the new assignment?
+                      </p>
+                      <div className="flex gap-2 mt-4">
+                        <button
+                          type="button"
+                          onClick={handleCancelDuplicate}
+                          className="px-4 py-2 bg-white border border-amber-300 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSubmit}
+                          className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
+                        >
+                          Replace Shift{existingShiftDates.length > 1 ? 's' : ''}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 

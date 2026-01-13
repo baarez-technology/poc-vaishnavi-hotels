@@ -89,9 +89,14 @@ function DateRangeFilter({ dateFrom, dateTo, onDateFromChange, onDateToChange })
     return `To ${to}`;
   };
 
-  // Close on outside click
+  // Close on outside click - but ignore clicks on Radix popovers (DatePicker calendar)
   useEffect(() => {
     function handleClickOutside(event) {
+      // Check if click is inside a Radix popover portal (DatePicker calendar)
+      const radixPopover = document.querySelector('[data-radix-popper-content-wrapper]');
+      if (radixPopover && radixPopover.contains(event.target)) {
+        return; // Don't close if clicking inside DatePicker calendar
+      }
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
@@ -140,9 +145,9 @@ function DateRangeFilter({ dateFrom, dateTo, onDateFromChange, onDateToChange })
       </button>
 
       {isOpen && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 z-50 mt-1 bg-white rounded-xl border border-neutral-200 shadow-lg overflow-hidden w-[320px]">
+        <div
+          className="absolute right-0 z-50 mt-1 bg-white rounded-xl border border-neutral-200 shadow-lg overflow-hidden w-[320px]"
+        >
             <div className="p-4 space-y-4">
               <div className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
                 Check-in Date Range
@@ -220,8 +225,7 @@ function DateRangeFilter({ dateFrom, dateTo, onDateFromChange, onDateToChange })
                 Done
               </button>
             </div>
-          </div>
-        </>
+        </div>
       )}
     </div>
   );

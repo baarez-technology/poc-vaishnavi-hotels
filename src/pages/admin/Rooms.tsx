@@ -323,12 +323,11 @@ export default function Rooms() {
                   startIndex={pagination.startIndex}
                   endIndex={pagination.endIndex}
                   totalItems={pagination.totalItems}
-                  rowsPerPage={pagination.rowsPerPage}
                   canGoPrev={pagination.canGoPrev}
                   canGoNext={pagination.canGoNext}
                   onPrevPage={pagination.prevPage}
                   onNextPage={pagination.nextPage}
-                  onRowsPerPageChange={pagination.setRowsPerPage}
+                  onGoToPage={pagination.goToPage}
                 />
               </div>
             )}

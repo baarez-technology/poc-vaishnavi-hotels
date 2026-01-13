@@ -65,6 +65,7 @@ export function useHousekeeping() {
   const [staff, setStaff] = useState<HousekeepingStaff[]>([]);
   const [tasks, setTasks] = useState<HousekeepingTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [staffLoading, setStaffLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   /**
@@ -120,6 +121,12 @@ export function useHousekeeping() {
           priority: task?.priority || 'medium',
           assignedTo: task?.assigned_to || null,
           assignedStaffName: task?.assigned_staff_name,
+          // Build assignedStaff object for StaffView and RoomCard components
+          assignedStaff: task?.assigned_to ? {
+            id: task.assigned_to,
+            name: task.assigned_staff_name || 'Unknown',
+            avatar: task.assigned_staff_name?.charAt(0) || 'U'
+          } : null,
           lastCleaned: room.last_cleaned,
           cleaningStartedAt: task?.started_at,
           cleaningCompletedAt: task?.completed_at,
@@ -146,6 +153,7 @@ export function useHousekeeping() {
    * Fetch housekeeping staff from API
    */
   const fetchStaff = useCallback(async () => {
+    setStaffLoading(true);
     try {
       let staffData = await staffService.list({ department: 'housekeeping' });
 
@@ -186,21 +194,25 @@ export function useHousekeeping() {
       setStaff(transformedStaff);
     } catch (err: any) {
       console.error('Error fetching housekeeping staff:', err);
-      // Don't show error toast for staff - rooms are more important
+      toast.error('Failed to load housekeeping staff');
+      setStaff([]);
+    } finally {
+      setStaffLoading(false);
     }
   }, [tasks]);
 
-  // Initial data fetch
+  // Initial data fetch - fetch rooms and staff on mount
   useEffect(() => {
     fetchRooms();
-  }, [fetchRooms]);
+    fetchStaff();
+  }, []);
 
-  // Fetch staff after tasks are loaded
+  // Re-fetch staff when tasks change to update task counts
   useEffect(() => {
-    if (tasks.length >= 0) {
+    if (tasks.length > 0) {
       fetchStaff();
     }
-  }, [tasks, fetchStaff]);
+  }, [tasks]);
 
   /**
    * STAFF ASSIGNMENT SYSTEM
@@ -239,6 +251,11 @@ export function useHousekeeping() {
             ...r,
             assignedTo: staffId,
             assignedStaffName: staffMember?.name,
+            assignedStaff: staffMember ? {
+              id: staffId,
+              name: staffMember.name,
+              avatar: staffMember.avatar || staffMember.name?.charAt(0) || 'U'
+            } : null,
             taskId,
           };
         }
@@ -864,7 +881,7 @@ export function useHousekeeping() {
 
       setRooms(prev => prev.map(r => {
         if (r.id === roomId) {
-          return { ...r, assignedTo: null, assignedStaffName: undefined };
+          return { ...r, assignedTo: null, assignedStaffName: undefined, assignedStaff: null };
         }
         return r;
       }));
@@ -889,6 +906,7 @@ export function useHousekeeping() {
     staff,
     setStaff,
     isLoading,
+    staffLoading,
     error,
     // Data fetching
     refreshData,

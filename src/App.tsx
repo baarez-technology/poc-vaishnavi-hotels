@@ -239,7 +239,7 @@ function App() {
                       <Route
                         path="/admin/*"
                         element={
-                          // <ProtectedRoute>
+                          <ProtectedRoute>
                           <ToastProvider>
                             <SettingsProvider>
                               <AdminProvider>
@@ -326,7 +326,7 @@ function App() {
                               </AdminProvider>
                             </SettingsProvider>
                           </ToastProvider>
-                          // </ProtectedRoute>
+                        </ProtectedRoute>
                         }
                       />
 

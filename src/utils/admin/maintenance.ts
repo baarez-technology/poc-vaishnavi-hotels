@@ -454,17 +454,20 @@ export function calculateNextDueDate(lastDate, frequency) {
 export function getCalendarEvents(workOrders, pmTasks, startDate, endDate) {
   const events = [];
 
-  // Add work orders
+  // Add work orders - use scheduledDate if available, otherwise fall back to createdAt
   workOrders.forEach(wo => {
-    const createdDate = new Date(wo.createdAt).toISOString().split('T')[0];
+    const eventDate = wo.scheduledDate
+      ? new Date(wo.scheduledDate).toISOString().split('T')[0]
+      : new Date(wo.createdAt).toISOString().split('T')[0];
     events.push({
       id: wo.id,
-      date: createdDate,
+      date: eventDate,
       type: 'workorder',
       status: wo.status,
       title: wo.issue,
       room: wo.roomNumber,
-      priority: wo.priority
+      priority: wo.priority,
+      isScheduled: !!wo.scheduledDate
     });
   });
 

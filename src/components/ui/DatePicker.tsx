@@ -4,6 +4,16 @@ import { cn } from '@/lib/utils';
 import { Popover, PopoverTrigger, PopoverContent } from './Popover';
 import { Calendar } from './Calendar';
 
+interface DatePickerProps {
+  value?: string;
+  onChange?: (value: string) => void;
+  placeholder?: string;
+  minDate?: string;
+  maxDate?: string;
+  disabled?: boolean;
+  className?: string;
+}
+
 /**
  * DatePicker Component - Glimmora Design System
  * Premium enterprise date picker with warm luxury aesthetics,
@@ -17,7 +27,7 @@ const DatePicker = ({
   maxDate,
   disabled = false,
   className = '',
-}) => {
+}: DatePickerProps) => {
   const [open, setOpen] = useState(false);
 
   const parseISODate = (dateStr) => {

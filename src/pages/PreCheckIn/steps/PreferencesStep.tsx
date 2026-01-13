@@ -41,7 +41,7 @@ export function PreferencesStep({ onNext, onPrevious }: PreferencesStepProps) {
               bedTypePreference: saved.bedType || preCheckInData.preferences?.bedTypePreference || '',
               quietnessPreference: saved.quietness || preCheckInData.preferences?.quietnessPreference || '',
             };
-            
+
             updatePreCheckInData({ preferences: autofilledPreferences });
           }
         } catch (error) {
@@ -84,10 +84,12 @@ export function PreferencesStep({ onNext, onPrevious }: PreferencesStepProps) {
     { number: 8, label: 'Confirmation', active: false },
   ];
 
+  const currentStepIndex = steps.findIndex(s => s.active);
+
   return (
     <div className="flex min-h-screen bg-white">
       {/* LEFT COLUMN - Vertical Stepper */}
-      <div className="w-[410px] min-h-screen px-12 py-12 border-r border-neutral-200 bg-white">
+      <div className="hidden lg:block w-[410px] min-h-screen px-12 py-12 border-r border-neutral-200 bg-white">
         <div className="sticky top-12">
           {/* Logo */}
           <motion.div
@@ -116,7 +118,7 @@ export function PreferencesStep({ onNext, onPrevious }: PreferencesStepProps) {
                     transition={{ delay: index * 0.05 }}
                     className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
                       step.active
-                        ? 'bg-[#A57865] text-white'
+                        ? 'bg-terra-500 text-white'
                         : 'bg-transparent text-neutral-400 border border-neutral-300'
                     }`}
                   >
@@ -138,13 +140,13 @@ export function PreferencesStep({ onNext, onPrevious }: PreferencesStepProps) {
                 >
                   <div
                     className={`text-sm font-medium mb-1 ${
-                      step.active ? 'text-neutral-900' : 'text-neutral-500'
+                      step.active ? 'text-neutral-800' : 'text-neutral-500'
                     }`}
                   >
                     {step.label}
                   </div>
                   {step.active && (
-                    <div className="text-xs text-neutral-500">
+                    <div className="text-[11px] text-neutral-400">
                       Customize your stay experience
                     </div>
                   )}
@@ -155,30 +157,52 @@ export function PreferencesStep({ onNext, onPrevious }: PreferencesStepProps) {
         </div>
       </div>
 
-      {/* RIGHT COLUMN - Content Card */}
-      <div className="flex-1 flex items-start justify-center pt-16 px-16" style={{ backgroundColor: '#FAFAFA' }}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-lg"
-        >
+      {/* RIGHT COLUMN - Content Area */}
+      <div className="flex-1 min-h-screen bg-neutral-50">
+        {/* Mobile Header */}
+        <div className="lg:hidden bg-white border-b border-neutral-200 px-4 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <img
+              src={logo}
+              alt="Glimmora"
+              className="h-8 w-auto cursor-pointer"
+              onClick={handleLogoClick}
+            />
+            <span className="text-[13px] text-neutral-500">Step {currentStepIndex + 1} of {steps.length}</span>
+          </div>
+          {/* Mobile Progress Bar */}
+          <div className="w-full bg-neutral-200 rounded-full h-1">
+            <div
+              className="bg-terra-500 h-1 rounded-full transition-all duration-300"
+              style={{ width: `${((currentStepIndex + 1) / steps.length) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="px-4 py-6 lg:px-10 lg:py-8">
           {/* Previous Button */}
-          <button
+          <motion.button
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
             onClick={onPrevious}
-            className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors mb-6"
+            className="flex items-center gap-2 text-[13px] text-neutral-600 hover:text-neutral-800 transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Previous</span>
-          </button>
+          </motion.button>
 
           {/* Content Card */}
-          <div className="bg-white p-8 rounded-2xl border-2 border-neutral-200 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white p-6 lg:p-8 rounded-[10px] shadow-sm"
+          >
             {/* Header */}
-            <div className="mb-10">
-              <h1 className="text-2xl font-semibold text-neutral-900 mb-2">
+            <div className="mb-6 lg:mb-8">
+              <h1 className="text-lg font-semibold text-neutral-800 mb-2">
                 Room Preferences
               </h1>
-              <p className="text-sm text-neutral-500">
+              <p className="text-[13px] text-neutral-500">
                 Customize your stay experience
               </p>
             </div>
@@ -187,36 +211,36 @@ export function PreferencesStep({ onNext, onPrevious }: PreferencesStepProps) {
               {/* Temperature */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <Thermometer className="w-4 h-4 text-[#A57865]" />
-                  <label className="block text-sm font-medium text-neutral-700">
+                  <Thermometer className="w-4 h-4 text-terra-500" />
+                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
                     Preferred Room Temperature
                   </label>
                 </div>
-                <div className="flex items-center justify-center gap-6 p-6 bg-neutral-50 rounded-lg border border-neutral-200">
+                <div className="flex items-center justify-center gap-6 p-5 bg-neutral-50 rounded-lg border border-neutral-200">
                   <button
                     onClick={() => updateTemperature(-1)}
-                    className="w-10 h-10 rounded-full bg-white border-2 border-neutral-300 flex items-center justify-center hover:border-[#A57865] transition-all"
+                    className="w-9 h-9 rounded-full bg-white border border-neutral-200 flex items-center justify-center hover:border-terra-500 transition-all"
                   >
-                    <Minus className="w-4 h-4 text-neutral-700" />
+                    <Minus className="w-4 h-4 text-neutral-600" />
                   </button>
                   <div className="text-center">
-                    <div className="text-4xl font-semibold text-neutral-900">
+                    <div className="text-3xl font-semibold text-neutral-800">
                       {preCheckInData.preferences.temperature}°
                     </div>
-                    <div className="text-xs text-neutral-600 mt-1">Fahrenheit</div>
+                    <div className="text-[11px] text-neutral-500 mt-0.5">Fahrenheit</div>
                   </div>
                   <button
                     onClick={() => updateTemperature(1)}
-                    className="w-10 h-10 rounded-full bg-white border-2 border-neutral-300 flex items-center justify-center hover:border-[#A57865] transition-all"
+                    className="w-9 h-9 rounded-full bg-white border border-neutral-200 flex items-center justify-center hover:border-terra-500 transition-all"
                   >
-                    <Plus className="w-4 h-4 text-neutral-700" />
+                    <Plus className="w-4 h-4 text-neutral-600" />
                   </button>
                 </div>
               </div>
 
               {/* Pillow Type */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-3">
+                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3">
                   Pillow Preferences
                 </label>
                 <div className="grid grid-cols-2 gap-3">
@@ -226,10 +250,10 @@ export function PreferencesStep({ onNext, onPrevious }: PreferencesStepProps) {
                       <button
                         key={option}
                         onClick={() => toggleOption('pillowType', option)}
-                        className={`p-4 border-2 rounded-lg transition-all text-sm font-medium ${
+                        className={`p-4 border rounded-lg transition-all text-[13px] font-medium ${
                           isSelected
-                            ? 'border-[#A57865] bg-[#A57865]/5 text-neutral-900'
-                            : 'border-neutral-200 hover:border-neutral-300 text-neutral-700'
+                            ? 'border-terra-500 bg-terra-50 text-neutral-800'
+                            : 'border-neutral-200 hover:border-neutral-300 text-neutral-600'
                         }`}
                       >
                         {option}
@@ -242,22 +266,13 @@ export function PreferencesStep({ onNext, onPrevious }: PreferencesStepProps) {
               {/* Submit Button */}
               <button
                 onClick={onNext}
-                className="w-full py-2.5 text-white font-medium rounded-lg transition-all text-sm mt-6"
-                style={{
-                  backgroundColor: '#A57865',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#8E6554';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#A57865';
-                }}
+                className="w-full h-10 text-white font-semibold rounded-lg transition-all text-[13px] mt-6 bg-terra-500 hover:bg-terra-600 active:scale-[0.98]"
               >
                 Next
               </button>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );

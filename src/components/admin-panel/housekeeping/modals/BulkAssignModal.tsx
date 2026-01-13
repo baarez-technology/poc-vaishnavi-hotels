@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { X, Users, CheckSquare, MapPin } from 'lucide-react';
+import { X, Users, CheckSquare, MapPin, Loader2 } from 'lucide-react';
 
 export default function BulkAssignModal({
   rooms,
   isOpen,
   onClose,
   onBulkAssign,
-  housekeepers
+  housekeepers,
+  isLoading = false
 }) {
   const [selectedRooms, setSelectedRooms] = useState([]);
   const [selectedHousekeeper, setSelectedHousekeeper] = useState('');
@@ -124,18 +125,29 @@ export default function BulkAssignModal({
             <label className="block text-sm font-semibold text-neutral-700 mb-3">
               Select Housekeeper
             </label>
-            <select
-              value={selectedHousekeeper}
-              onChange={(e) => setSelectedHousekeeper(e.target.value)}
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200"
-            >
-              <option value="">Choose a housekeeper...</option>
-              {housekeepers.map(hk => (
-                <option key={hk.id} value={hk.id}>
-                  {hk.name} {hk.efficiency ? `(${hk.efficiency}% efficiency)` : ''}
-                </option>
-              ))}
-            </select>
+            {isLoading ? (
+              <div className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-500 flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading staff...
+              </div>
+            ) : housekeepers.length === 0 ? (
+              <div className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-500 text-center">
+                No housekeeping staff available
+              </div>
+            ) : (
+              <select
+                value={selectedHousekeeper}
+                onChange={(e) => setSelectedHousekeeper(e.target.value)}
+                className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200"
+              >
+                <option value="">Choose a housekeeper...</option>
+                {housekeepers.map(hk => (
+                  <option key={hk.id} value={hk.id}>
+                    {hk.name} {hk.efficiency ? `(${hk.efficiency}% efficiency)` : ''}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Room Selection */}

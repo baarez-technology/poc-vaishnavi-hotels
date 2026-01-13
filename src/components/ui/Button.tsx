@@ -1,7 +1,17 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
-const Button = React.forwardRef(({
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  children?: React.ReactNode;
+  variant?: 'primary' | 'luxuryPrimary' | 'secondary' | 'tertiary' | 'ghost' | 'ghostNeutral' | 'success' | 'warning' | 'danger' | 'info' | 'outline' | 'outlineTerra' | 'link';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  fullWidth?: boolean;
+  loading?: boolean;
+  icon?: React.ReactNode;
+  iconPosition?: 'left' | 'right';
+}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   children,
   variant = 'primary',
   size = 'md',

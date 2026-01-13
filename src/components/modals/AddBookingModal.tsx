@@ -15,6 +15,7 @@ import {
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 import { Input, FormField, Textarea } from '../ui2/Input';
+import DatePicker from '../ui2/DatePicker';
 
 const SOURCE_OPTIONS = [
   { value: 'Website', label: 'Website' },
@@ -307,17 +308,17 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
                   Check-in Date
                   <span className="text-rose-500 ml-0.5">*</span>
                 </label>
-                <input
-                  type="date"
-                  name="checkIn"
+                <DatePicker
                   value={formData.checkIn}
-                  onChange={handleChange}
-                  min={new Date().toISOString().split('T')[0]}
-                  className={`w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border transition-all duration-150 focus:outline-none ${
-                    errors.checkIn
-                      ? 'border-rose-400 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/10'
-                      : 'border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10'
-                  }`}
+                  onChange={(value) => {
+                    setFormData(prev => ({ ...prev, checkIn: value }));
+                    if (errors.checkIn) {
+                      setErrors(prev => ({ ...prev, checkIn: null }));
+                    }
+                  }}
+                  placeholder="Select check-in date"
+                  minDate={new Date().toISOString().split('T')[0]}
+                  className="w-full"
                 />
                 {errors.checkIn && (
                   <p className="text-[11px] text-rose-500">{errors.checkIn}</p>
@@ -329,17 +330,17 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
                   Check-out Date
                   <span className="text-rose-500 ml-0.5">*</span>
                 </label>
-                <input
-                  type="date"
-                  name="checkOut"
+                <DatePicker
                   value={formData.checkOut}
-                  onChange={handleChange}
-                  min={formData.checkIn || new Date().toISOString().split('T')[0]}
-                  className={`w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border transition-all duration-150 focus:outline-none ${
-                    errors.checkOut
-                      ? 'border-rose-400 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/10'
-                      : 'border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10'
-                  }`}
+                  onChange={(value) => {
+                    setFormData(prev => ({ ...prev, checkOut: value }));
+                    if (errors.checkOut) {
+                      setErrors(prev => ({ ...prev, checkOut: null }));
+                    }
+                  }}
+                  placeholder="Select check-out date"
+                  minDate={formData.checkIn || new Date().toISOString().split('T')[0]}
+                  className="w-full"
                 />
                 {errors.checkOut && (
                   <p className="text-[11px] text-rose-500">{errors.checkOut}</p>

@@ -152,11 +152,11 @@ export default function NewRatePlanModal({ isOpen, onClose, onSubmit, roomTypes 
       newErrors.name = 'Rate plan name is required';
     }
 
-    if (formData.restrictions.minLos < 1) {
+    if (Number(formData.restrictions.minLos) < 1) {
       newErrors.minLos = 'Minimum LOS must be at least 1';
     }
 
-    if (formData.restrictions.maxLos < formData.restrictions.minLos) {
+    if (Number(formData.restrictions.maxLos) < Number(formData.restrictions.minLos)) {
       newErrors.maxLos = 'Maximum LOS must be greater than minimum';
     }
 

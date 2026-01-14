@@ -57,7 +57,9 @@ export default function InventoryTable({
   };
 
   const handleStockUpdate = (itemId, isAddition) => {
-    const quantity = parseInt(stockInput[itemId] || 0, 10);
+    // Default to 1 if no quantity entered - allows direct +/- button clicks
+    const inputValue = stockInput[itemId];
+    const quantity = inputValue ? parseInt(inputValue, 10) : 1;
     if (quantity > 0) {
       onUpdateStock(itemId, quantity, isAddition);
       setStockInput(prev => ({ ...prev, [itemId]: '' }));

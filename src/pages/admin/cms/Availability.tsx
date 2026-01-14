@@ -1224,7 +1224,7 @@ function AvailabilityEditPanel({
 // ============================================
 export default function CMSAvailability() {
   const { isDark } = useTheme();
-  const { success, info } = useToast();
+  const { success, info, error: showError } = useToast();
   const cmsAvailability = useCMSAvailability();
   const scrollContainerRef = useRef(null);
 
@@ -1277,6 +1277,7 @@ export default function CMSAvailability() {
   const [bulkSelections, setBulkSelections] = useState([]);
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
   const [blockToEdit, setBlockToEdit] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Initialize selected room types when room config loads
   useEffect(() => {
@@ -1459,6 +1460,83 @@ export default function CMSAvailability() {
     return () => clearTimeout(timer);
   }, [scrollToToday]);
 
+  // Export availability data to CSV
+  const handleExport = useCallback(() => {
+    setIsExporting(true);
+    info('Exporting availability data...');
+
+    // Use setTimeout to allow UI to update before processing
+    setTimeout(() => {
+      try {
+        // Check if we have data to export
+        if (!dates.length || !selectedRoomTypes.length) {
+          showError('No data available to export');
+          setIsExporting(false);
+          return;
+        }
+
+        // Build CSV header
+        const headers = ['Date', 'Room Type', 'Total Rooms', 'Sold', 'Reserved', 'Blocked', 'Remaining', 'Status', 'Base Rate', 'Min Stay', 'Max Stay', 'CTA', 'CTD'];
+
+        // Build CSV rows using local availabilityData
+        const rows = [];
+        dates.forEach(dateObj => {
+          selectedRoomTypes.forEach(roomType => {
+            const avail = availabilityData[dateObj.date]?.[roomType];
+            if (avail) {
+              rows.push([
+                dateObj.date,
+                roomType,
+                avail.totalRooms ?? 0,
+                avail.sold ?? 0,
+                avail.reserved ?? 0,
+                avail.blocked ?? 0,
+                avail.remaining ?? 0,
+                avail.isClosed ? 'Closed' : 'Open',
+                avail.baseRate ?? '',
+                avail.restrictions?.minStay ?? '',
+                avail.restrictions?.maxStay ?? '',
+                avail.restrictions?.CTA ? 'Yes' : 'No',
+                avail.restrictions?.CTD ? 'Yes' : 'No'
+              ]);
+            }
+          });
+        });
+
+        if (rows.length === 0) {
+          showError('No availability data found to export');
+          setIsExporting(false);
+          return;
+        }
+
+        // Generate CSV content
+        const csvContent = [
+          headers.join(','),
+          ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+        ].join('\n');
+
+        // Create and trigger download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `availability-export-${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        success('Availability data exported successfully');
+      } catch (err) {
+        console.error('Export failed:', err);
+        showError('Failed to export availability data');
+      } finally {
+        setIsExporting(false);
+      }
+    }, 100);
+  }, [dates, selectedRoomTypes, availabilityData, info, success, showError]);
+
   // Handlers
   const handleCellClick = (date, roomType) => {
     if (bulkEditMode) {
@@ -1572,14 +1650,23 @@ export default function CMSAvailability() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button className={cn(
-              'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
-              isDark
-                ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-                : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50'
-            )}>
-              <Download className="w-4 h-4" />
-              Export
+            <button
+              onClick={handleExport}
+              disabled={isExporting}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
+                isDark
+                  ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+                  : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50',
+                isExporting && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              {isExporting ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              {isExporting ? 'Exporting...' : 'Export'}
             </button>
             <button className={cn(
               'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',

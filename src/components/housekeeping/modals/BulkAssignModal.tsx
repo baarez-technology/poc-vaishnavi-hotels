@@ -4,15 +4,18 @@
  * Pattern matching Staff/Channel Manager drawers
  */
 
-import { useState, useEffect } from 'react';
-import { Users, Check, MapPin, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Users, Check, MapPin, ChevronDown, AlertTriangle, Loader2 } from 'lucide-react';
 import { Drawer } from '../../ui2/Drawer';
 import { Button } from '../../ui2/Button';
 
 // Custom Select for Drawer
-function DrawerSelect({ label, value, onChange, options, placeholder }) {
+function DrawerSelect({ label, value, onChange, options, placeholder, isLoading, emptyMessage }) {
   const [isOpen, setIsOpen] = useState(false);
   const selectedOption = options.find(opt => opt.value === value);
+
+  // Show loading or empty state
+  const showEmptyState = !isLoading && options.length === 0;
 
   return (
     <div>
@@ -22,20 +25,34 @@ function DrawerSelect({ label, value, onChange, options, placeholder }) {
       <div className="relative">
         <button
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => !isLoading && options.length > 0 && setIsOpen(!isOpen)}
+          disabled={isLoading || options.length === 0}
           className={`w-full h-10 px-4 rounded-lg text-[13px] bg-white border transition-all flex items-center justify-between ${
-            isOpen
-              ? 'border-terra-400 ring-2 ring-terra-500/10'
-              : 'border-neutral-200 hover:border-neutral-300'
+            isLoading || options.length === 0
+              ? 'border-neutral-200 bg-neutral-50 cursor-not-allowed'
+              : isOpen
+                ? 'border-terra-400 ring-2 ring-terra-500/10'
+                : 'border-neutral-200 hover:border-neutral-300'
           }`}
         >
           <span className={selectedOption ? 'text-neutral-900 font-medium' : 'text-neutral-400'}>
-            {selectedOption?.label || placeholder}
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading staff...
+              </span>
+            ) : showEmptyState ? (
+              emptyMessage || 'No options available'
+            ) : (
+              selectedOption?.label || placeholder
+            )}
           </span>
-          <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          {!isLoading && options.length > 0 && (
+            <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          )}
         </button>
 
-        {isOpen && (
+        {isOpen && options.length > 0 && (
           <>
             <div className="fixed inset-0 z-[60]" onClick={() => setIsOpen(false)} />
             <div className="absolute z-[70] w-full mt-1.5 bg-white rounded-lg border border-neutral-200 shadow-lg overflow-hidden max-h-48 overflow-y-auto">
@@ -68,7 +85,9 @@ export default function BulkAssignModal({
   isOpen,
   onClose,
   onBulkAssign,
-  housekeepers
+  housekeepers = [],
+  isLoading = false,
+  onRefreshStaff
 }) {
   const [selectedRooms, setSelectedRooms] = useState([]);
   const [selectedHousekeeper, setSelectedHousekeeper] = useState('');
@@ -77,8 +96,14 @@ export default function BulkAssignModal({
     if (isOpen) {
       setSelectedRooms([]);
       setSelectedHousekeeper('');
+
+      // Request staff refresh if housekeepers list is empty when modal opens
+      if (housekeepers.length === 0 && !isLoading && onRefreshStaff) {
+        console.log('BulkAssignModal: Staff list empty, requesting refresh...');
+        onRefreshStaff();
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, housekeepers.length, isLoading, onRefreshStaff]);
 
   const handleToggleRoom = (roomId) => {
     setSelectedRooms(prev =>
@@ -90,10 +115,41 @@ export default function BulkAssignModal({
     setSelectedRooms(selectedRooms.length === rooms.length ? [] : rooms.map(room => room.id));
   };
 
+  // Check for rooms already assigned to the selected housekeeper
+  // Normalize to numbers to handle type mismatches (string vs number)
+  const alreadyAssignedRooms = useMemo(() => {
+    if (!selectedHousekeeper) return [];
+    const selectedId = Number(selectedHousekeeper);
+    return rooms.filter(room =>
+      selectedRooms.includes(room.id) &&
+      room.assignedTo !== null &&
+      room.assignedTo !== undefined &&
+      Number(room.assignedTo) === selectedId
+    );
+  }, [rooms, selectedRooms, selectedHousekeeper]);
+
+  // Get rooms that will actually be newly assigned
+  // Exclude rooms already assigned to the selected housekeeper
+  const newlyAssignedRooms = useMemo(() => {
+    if (!selectedHousekeeper) return selectedRooms;
+    const selectedId = Number(selectedHousekeeper);
+    return selectedRooms.filter(roomId => {
+      const room = rooms.find(r => r.id === roomId);
+      // Include room if: unassigned OR assigned to someone else
+      return !room?.assignedTo || Number(room.assignedTo) !== selectedId;
+    });
+  }, [rooms, selectedRooms, selectedHousekeeper]);
+
   const handleAssign = () => {
     if (selectedRooms.length > 0 && selectedHousekeeper && onBulkAssign) {
-      onBulkAssign(selectedRooms, selectedHousekeeper);
-      onClose();
+      // Only assign rooms that aren't already assigned to this housekeeper
+      if (newlyAssignedRooms.length > 0) {
+        onBulkAssign(newlyAssignedRooms, selectedHousekeeper);
+        onClose();
+      } else if (alreadyAssignedRooms.length > 0) {
+        // All selected rooms are already assigned to this person
+        alert(`All ${alreadyAssignedRooms.length} selected room(s) are already assigned to this housekeeper.`);
+      }
     }
   };
 
@@ -123,13 +179,27 @@ export default function BulkAssignModal({
   // Footer
   const renderFooter = () => (
     <div className="space-y-3">
-      {selectedRooms.length > 0 && selectedHousekeeper && (
+      {/* Warning for already assigned rooms */}
+      {alreadyAssignedRooms.length > 0 && selectedHousekeeper && (
+        <div className="p-3 rounded-lg bg-gold-50 border border-gold-200">
+          <div className="flex items-center gap-2 text-[13px]">
+            <AlertTriangle className="w-4 h-4 text-gold-600" />
+            <span className="text-gold-800">
+              <span className="font-semibold">{alreadyAssignedRooms.length}</span> room(s) already assigned to this housekeeper
+              {newlyAssignedRooms.length > 0 && ' (will be skipped)'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Summary of rooms to be assigned */}
+      {newlyAssignedRooms.length > 0 && selectedHousekeeper && (
         <div className="p-3 rounded-lg bg-sage-50 border border-sage-100">
           <div className="flex items-center gap-2 text-[13px]">
             <Check className="w-4 h-4 text-sage-600" />
             <span className="text-neutral-900">
-              <span className="font-semibold">{selectedRooms.length}</span> {selectedRooms.length === 1 ? 'room' : 'rooms'} will be assigned to{' '}
-              <span className="font-semibold">{housekeepers.find(hk => hk.id === selectedHousekeeper)?.name}</span>
+              <span className="font-semibold">{newlyAssignedRooms.length}</span> {newlyAssignedRooms.length === 1 ? 'room' : 'rooms'} will be assigned to{' '}
+              <span className="font-semibold">{(housekeepers || []).find(hk => Number(hk.id) === Number(selectedHousekeeper))?.name}</span>
             </span>
           </div>
         </div>
@@ -142,9 +212,9 @@ export default function BulkAssignModal({
           variant="primary"
           size="md"
           onClick={handleAssign}
-          disabled={selectedRooms.length === 0 || !selectedHousekeeper}
+          disabled={newlyAssignedRooms.length === 0 || !selectedHousekeeper}
         >
-          Assign ({selectedRooms.length})
+          Assign ({newlyAssignedRooms.length})
         </Button>
       </div>
     </div>
@@ -165,7 +235,9 @@ export default function BulkAssignModal({
           value={selectedHousekeeper}
           onChange={setSelectedHousekeeper}
           placeholder="Choose a housekeeper..."
-          options={housekeepers.map(hk => ({
+          isLoading={isLoading}
+          emptyMessage="No housekeepers available"
+          options={(housekeepers || []).map(hk => ({
             value: hk.id,
             label: `${hk.name}${hk.efficiency ? ` (${hk.efficiency}% efficiency)` : ''}`
           }))}

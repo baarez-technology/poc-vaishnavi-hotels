@@ -272,7 +272,7 @@ export function useBookings() {
       const roomTypeSlug = (bookingData.roomType || 'standard').toLowerCase().replace(/\s+/g, '-');
 
       // Transform frontend data to API format matching CreateBookingRequest schema
-      const apiData = {
+      const apiData: any = {
         roomId: roomTypeSlug,
         checkIn: bookingData.checkIn,
         checkOut: bookingData.checkOut,
@@ -290,6 +290,11 @@ export function useBookings() {
           specialRequests: bookingData.specialRequests || '',
         },
       };
+
+      // Include booking source if provided
+      if (bookingData.source) {
+        apiData.source = bookingData.source;
+      }
 
       const result = await bookingService.createBooking(apiData);
       const newBooking = transformBooking(result);
@@ -364,6 +369,9 @@ export function useBookings() {
 
       // Handle status
       if (updates.status) apiUpdates.status = mapFrontendStatus(updates.status);
+
+      // Handle booking source
+      if (updates.source) apiUpdates.source = updates.source;
 
       const result = await bookingService.updateBooking(bookingId, apiUpdates);
       const updatedBooking = transformBooking(result);

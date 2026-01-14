@@ -48,8 +48,8 @@ export function AdminProvider({ children }) {
     rating: 4.8,
   });
 
-  // Notifications
-  const [notifications, setNotifications] = useState(loadState('notifications', [
+  // Notifications - with persistent deletion tracking
+  const defaultNotifications = [
     {
       id: 'notif_001',
       type: 'booking',
@@ -77,7 +77,30 @@ export function AdminProvider({ children }) {
       read: true,
       link: '/admin/revenue-ai',
     },
-  ]));
+  ];
+
+  // Track deleted notification IDs to prevent them from reappearing
+  const [deletedNotificationIds, setDeletedNotificationIds] = useState(() => {
+    try {
+      const stored = localStorage.getItem('glimmora_deletedNotifications');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Filter out deleted notifications from defaults when loading
+  const getInitialNotifications = () => {
+    const stored = loadState('notifications', null);
+    if (stored !== null && Array.isArray(stored)) {
+      // Use stored notifications, filtering out any that have been deleted
+      return stored.filter(n => !deletedNotificationIds.includes(n.id));
+    }
+    // Use defaults but filter out any that have been deleted previously
+    return defaultNotifications.filter(n => !deletedNotificationIds.includes(n.id));
+  };
+
+  const [notifications, setNotifications] = useState(getInitialNotifications);
 
   // AI Insights
   const [aiInsights, setAiInsights] = useState(loadState('aiInsights', [
@@ -142,6 +165,11 @@ export function AdminProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('glimmora_notifications', JSON.stringify(notifications));
   }, [notifications]);
+
+  // Persist deleted notification IDs
+  useEffect(() => {
+    localStorage.setItem('glimmora_deletedNotifications', JSON.stringify(deletedNotificationIds));
+  }, [deletedNotificationIds]);
 
   useEffect(() => {
     localStorage.setItem('glimmora_aiInsights', JSON.stringify(aiInsights));
@@ -240,6 +268,13 @@ export function AdminProvider({ children }) {
 
   const deleteNotification = (id) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
+    // Track deleted ID to prevent it from reappearing on refresh
+    setDeletedNotificationIds(prev => {
+      if (!prev.includes(id)) {
+        return [...prev, id];
+      }
+      return prev;
+    });
   };
 
   const updateBookingStatus = (bookingId, status) => {

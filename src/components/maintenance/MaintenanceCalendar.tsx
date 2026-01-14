@@ -4,9 +4,10 @@ import {
   ChevronRight,
   Wrench,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  Info
 } from 'lucide-react';
-import { getCalendarEvents, PRIORITY_CONFIG, PM_FREQUENCY } from '../../utils/maintenance';
+import { getCalendarEvents, getWorkOrdersOutsideRange, PRIORITY_CONFIG, PM_FREQUENCY } from '../../utils/maintenance';
 
 export default function MaintenanceCalendar({ workOrders, pmTasks, onEventClick }) {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -37,10 +38,40 @@ export default function MaintenanceCalendar({ workOrders, pmTasks, onEventClick 
     return days;
   }, [currentDate]);
 
+  // Get visible date range for the calendar
+  const visibleDateRange = useMemo(() => {
+    if (calendarDays.length === 0) return { start: null, end: null };
+    return {
+      start: calendarDays[0].toISOString().split('T')[0],
+      end: calendarDays[calendarDays.length - 1].toISOString().split('T')[0]
+    };
+  }, [calendarDays]);
+
   // Get events for calendar
   const events = useMemo(() => {
     return getCalendarEvents(workOrders, pmTasks);
   }, [workOrders, pmTasks]);
+
+  // Get work orders outside visible range
+  const workOrdersOutsideRange = useMemo(() => {
+    if (!visibleDateRange.start || !visibleDateRange.end) {
+      return { total: 0, open: 0, inProgress: 0, onHold: 0 };
+    }
+    return getWorkOrdersOutsideRange(workOrders, visibleDateRange.start, visibleDateRange.end);
+  }, [workOrders, visibleDateRange]);
+
+  // Count visible work orders in current calendar view
+  const visibleWorkOrderCount = useMemo(() => {
+    if (!visibleDateRange.start || !visibleDateRange.end) return 0;
+    const start = new Date(visibleDateRange.start);
+    const end = new Date(visibleDateRange.end);
+
+    return events.filter(e => {
+      if (e.type !== 'workorder') return false;
+      const eventDate = new Date(e.date);
+      return eventDate >= start && eventDate <= end;
+    }).length;
+  }, [events, visibleDateRange]);
 
   // Group events by date
   const eventsByDate = useMemo(() => {
@@ -125,6 +156,28 @@ export default function MaintenanceCalendar({ workOrders, pmTasks, onEventClick 
         </div>
       </div>
 
+      {/* Work Orders Outside View Indicator */}
+      {workOrdersOutsideRange.total > 0 && (
+        <div className="mx-4 mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-start gap-2">
+            <Info className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-xs font-medium text-amber-800">
+                {workOrdersOutsideRange.total} active work order{workOrdersOutsideRange.total !== 1 ? 's' : ''} not shown in this view
+              </p>
+              <p className="text-[11px] text-amber-600 mt-0.5">
+                {workOrdersOutsideRange.open > 0 && `${workOrdersOutsideRange.open} Open`}
+                {workOrdersOutsideRange.open > 0 && workOrdersOutsideRange.inProgress > 0 && ' · '}
+                {workOrdersOutsideRange.inProgress > 0 && `${workOrdersOutsideRange.inProgress} In Progress`}
+                {(workOrdersOutsideRange.open > 0 || workOrdersOutsideRange.inProgress > 0) && workOrdersOutsideRange.onHold > 0 && ' · '}
+                {workOrdersOutsideRange.onHold > 0 && `${workOrdersOutsideRange.onHold} On Hold`}
+                {' — '}These work orders are scheduled for dates outside the current calendar view.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Calendar Grid */}
       <div className="p-4">
         {/* Week Day Headers */}
@@ -202,28 +255,34 @@ export default function MaintenanceCalendar({ workOrders, pmTasks, onEventClick 
         </div>
       </div>
 
-      {/* Legend */}
+      {/* Legend & Summary */}
       <div className="px-4 pb-4">
-        <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-neutral-100">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-[#CDB261]" />
-            <span className="text-xs text-neutral-600">Open WO</span>
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-neutral-100">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-[#CDB261]" />
+              <span className="text-xs text-neutral-600">Open WO</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-[#5C9BA4]" />
+              <span className="text-xs text-neutral-600">In Progress</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-[#4E5840]" />
+              <span className="text-xs text-neutral-600">Completed</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-rose-500" />
+              <span className="text-xs text-neutral-600">High Priority</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-[#A57865]" />
+              <span className="text-xs text-neutral-600">Preventive Maintenance</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-[#5C9BA4]" />
-            <span className="text-xs text-neutral-600">In Progress</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-[#4E5840]" />
-            <span className="text-xs text-neutral-600">Completed</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-rose-500" />
-            <span className="text-xs text-neutral-600">High Priority</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-[#A57865]" />
-            <span className="text-xs text-neutral-600">Preventive Maintenance</span>
+          <div className="text-xs text-neutral-500">
+            Showing <span className="font-medium text-neutral-700">{visibleWorkOrderCount}</span> of{' '}
+            <span className="font-medium text-neutral-700">{workOrders.length}</span> work orders in this view
           </div>
         </div>
       </div>

@@ -68,11 +68,14 @@ export const PM_FREQUENCY = [
 
 // Inventory categories
 export const INVENTORY_CATEGORIES = [
+  { value: 'general', label: 'General' },
   { value: 'electrical', label: 'Electrical' },
   { value: 'plumbing', label: 'Plumbing' },
   { value: 'hvac', label: 'HVAC' },
   { value: 'hardware', label: 'Hardware' },
   { value: 'cleaning', label: 'Cleaning' },
+  { value: 'linens', label: 'Linens & Bedding' },
+  { value: 'amenities', label: 'Guest Amenities' },
   { value: 'other', label: 'Other' }
 ];
 
@@ -136,9 +139,11 @@ export function formatDate(dateString) {
  * Format datetime for display
  */
 export function formatDateTime(dateString) {
-  if (!dateString) return '-';
+  if (!dateString || dateString === 'null' || dateString === 'undefined') return '-';
   try {
-    return new Date(dateString).toLocaleString('en-US', {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '-';
+    return date.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',

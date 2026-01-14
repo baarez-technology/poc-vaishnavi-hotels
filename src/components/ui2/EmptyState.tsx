@@ -129,18 +129,22 @@ export function EmptyState({
       )}
 
       {/* Actions */}
-      {(action || onAction) && (
+      {(action || onAction || secondaryAction || onSecondaryAction) && (
         <div className="flex items-center gap-3 mt-2">
-          {(action || onAction) && (
+          {action ? (
+            action
+          ) : onAction ? (
             <Button variant="primary" size="sm" onClick={onAction}>
               {actionLabel || 'Add New'}
             </Button>
-          )}
-          {(secondaryAction || onSecondaryAction) && (
+          ) : null}
+          {secondaryAction ? (
+            secondaryAction
+          ) : onSecondaryAction ? (
             <Button variant="ghost" size="sm" onClick={onSecondaryAction}>
               {secondaryActionLabel || 'Learn More'}
             </Button>
-          )}
+          ) : null}
         </div>
       )}
     </div>

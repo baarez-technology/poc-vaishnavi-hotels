@@ -35,8 +35,9 @@ export default function AssignHousekeeperModal({
       mainContent.style.overflow = 'hidden';
     }
 
-    // Pre-select current housekeeper if assigned
-    setSelectedHousekeeper(room?.assignedTo || null);
+    // Pre-select current housekeeper if assigned - handle both assignedTo and assignedStaff
+    const currentAssigned = room?.assignedTo ?? room?.assignedStaff?.id ?? null;
+    setSelectedHousekeeper(currentAssigned);
 
     document.addEventListener('keydown', handleEsc);
 
@@ -130,7 +131,10 @@ export default function AssignHousekeeperModal({
           <div className="space-y-3">
             {housekeepers.map(housekeeper => {
               const taskCount = housekeeper.tasksAssigned || 0;
-              const isSelected = selectedHousekeeper === housekeeper.id;
+              // Normalize ID comparison to handle string/number mismatch
+              const isSelected = selectedHousekeeper !== null &&
+                (selectedHousekeeper === housekeeper.id ||
+                 String(selectedHousekeeper) === String(housekeeper.id));
               const isHighLoad = taskCount > 8;
 
               return (

@@ -20,15 +20,21 @@ export function filterByCleaningStatus(rooms, cleaningStatus) {
 
 export function filterByType(rooms, type) {
   if (!type || type === 'all') return rooms;
-  return rooms.filter(room => room.type === type);
+  // Check both type and roomType fields for consistency
+  return rooms.filter(room => room.type === type || room.roomType === type);
 }
 
 export function filterByStaff(rooms, staffId) {
   if (!staffId || staffId === 'all') return rooms;
   if (staffId === 'unassigned') {
-    return rooms.filter(room => !room.assignedTo);
+    return rooms.filter(room => !room.assignedTo && !room.assignedStaff?.id);
   }
-  return rooms.filter(room => room.assignedTo === staffId);
+  // Handle both string and number comparison for staff ID
+  const numericStaffId = typeof staffId === 'string' ? parseInt(staffId, 10) : staffId;
+  return rooms.filter(room => {
+    const roomStaffId = room.assignedStaff?.id ?? room.assignedTo;
+    return roomStaffId === numericStaffId || roomStaffId === staffId || String(roomStaffId) === String(staffId);
+  });
 }
 
 export function filterByPriority(rooms, priority) {

@@ -4,8 +4,12 @@ import Header from '../components/Header';
 import AIAssistantPanel from '../components/ai/AIAssistantPanel';
 import { useAIAssistant } from '../hooks/useAIAssistant';
 import { Outlet } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function AdminLayout() {
+  // Theme
+  const { isDark } = useTheme();
+
   // Sidebar collapse state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -45,9 +49,17 @@ export default function AdminLayout() {
 
   return (
     // Full screen wrapper - centers the frame
-    <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100 overflow-hidden">
+    <div className={`w-screen h-screen flex items-center justify-center overflow-hidden transition-colors ${
+      isDark
+        ? 'bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-800'
+        : 'bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100'
+    }`}>
       {/* Fixed Frame Container: 1440px × 1024px (responsive) */}
-      <div className="relative w-full max-w-[1440px] h-full max-h-[1024px] bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100 overflow-hidden flex flex-col rounded-xl">
+      <div className={`relative w-full max-w-[1440px] h-full max-h-[1024px] overflow-hidden flex flex-col rounded-xl transition-colors ${
+        isDark
+          ? 'bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-800'
+          : 'bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100'
+      }`}>
         {/* Top Row: Sidebar Brand + Header with shared border */}
         <div className="flex flex-shrink-0">
           {/* Sidebar Brand Section - Dynamic Width */}
@@ -86,7 +98,11 @@ export default function AdminLayout() {
           </aside>
 
           {/* Main Content - Scrollable */}
-          <main className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100">
+          <main className={`flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar transition-colors ${
+            isDark
+              ? 'bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-800'
+              : 'bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100'
+          }`}>
             <Outlet />
           </main>
         </div>

@@ -79,7 +79,7 @@ export const adminNavCategories: NavCategory[] = [
     shortName: 'CMS',
     icon: Layers,
     items: [
-      { name: 'Bookings', icon: BookOpen, to: '/admin/cms/bookings' },
+      // { name: 'Bookings', icon: BookOpen, to: '/admin/cms/bookings' }, // Commented out - using Operations > Bookings instead
       { name: 'Availability', icon: Calendar, to: '/admin/cms/availability' },
       { name: 'Rate Plans', icon: Tag, to: '/admin/cms/rate-plans' },
       { name: 'Promotions', icon: Gift, to: '/admin/cms/promotions' },

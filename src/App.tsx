@@ -97,7 +97,7 @@ const Profile = lazy(() => import('./pages/admin/Profile'));
 
 
 //Modified CMS pages as its in UI codebase
-const CMSBookings= lazy(() => import('./pages/admin/cbs/Bookings'));
+// const CMSBookings= lazy(() => import('./pages/admin/cbs/Bookings')); // Commented out - using Operations > Bookings instead
 const CMSAvailability= lazy(() => import('./pages/admin/cbs/Calendar'));
 const CMSRatePlans= lazy(() => import('./pages/admin/cbs/RatePlans'));
 const CMSPromotions= lazy(() => import('./pages/admin/cbs/Promotions'));
@@ -287,7 +287,7 @@ function App() {
                                           {/* RMS Routes */}
                                           <Route path="rms" element={<Navigate to="/admin/revenue" replace />} />
                                           {/* CMS Routes */}
-                                          <Route path="cms/bookings" element={<CMSBookings />} />
+                                          {/* <Route path="cms/bookings" element={<CMSBookings />} /> */}{/* Commented out - using Operations > Bookings instead */}
                                           <Route path="cms/rate-plans" element={<CMSRatePlans />} />
                                           <Route path="cms/promotions" element={<CMSPromotions />} />
                                           {/* Channel Manager Routes */}

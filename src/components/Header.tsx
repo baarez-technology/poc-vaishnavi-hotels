@@ -21,13 +21,47 @@ import { useAuth } from '@/hooks/useAuth';
  * "Warm Enterprise" aesthetic - clean borders, no shadows
  */
 
+// Storage key must match NotificationsDrawer
+const NOTIFICATIONS_STORAGE_KEY = 'glimmora_notifications_data';
+
+// Helper to get unread count from localStorage
+const getUnreadCountFromStorage = (): number => {
+  try {
+    const stored = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+    if (stored) {
+      const notifications = JSON.parse(stored);
+      return notifications.filter((n: { read: boolean }) => !n.read).length;
+    }
+  } catch (error) {
+    console.error('Failed to get notification count:', error);
+  }
+  return 3; // Default count for first load
+};
+
 const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed }) => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(getUnreadCountFromStorage);
   const { theme, toggleTheme, isDark } = useTheme();
   const location = useLocation();
   const profileMenuRef = useRef(null);
   const { user, logout } = useAuth();
+
+  // Update notification count when drawer closes or on storage change
+  useEffect(() => {
+    const updateCount = () => {
+      setUnreadNotificationCount(getUnreadCountFromStorage());
+    };
+
+    // Update count when notifications drawer closes
+    if (!isNotificationsOpen) {
+      updateCount();
+    }
+
+    // Listen for storage changes (in case another tab updates)
+    window.addEventListener('storage', updateCount);
+    return () => window.removeEventListener('storage', updateCount);
+  }, [isNotificationsOpen]);
 
   const handleLogout = () => {
     setIsProfileMenuOpen(false);
@@ -285,12 +319,12 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed }) => {
               'flex items-center gap-1 p-1 rounded-xl',
               isDark ? 'bg-neutral-900/50' : 'bg-neutral-50/80'
             )}>
-              {/* Theme Toggle */}
-              <ActionButton
+              {/* Theme Toggle - Hidden until dark mode is fully implemented */}
+              {/* <ActionButton
                 icon={isDark ? Sun : Moon}
                 label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                 onClick={toggleTheme}
-              />
+              /> */}
 
               {/* AI Assistant */}
               <ActionButton
@@ -307,7 +341,7 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed }) => {
                 icon={Bell}
                 label="Notifications"
                 onClick={() => setIsNotificationsOpen(true)}
-                badge="3"
+                badge={unreadNotificationCount > 0 ? String(unreadNotificationCount) : undefined}
               />
             </div>
 

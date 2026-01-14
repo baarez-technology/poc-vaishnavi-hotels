@@ -14,6 +14,16 @@ import {
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 
+// Helper function to get default hours based on shift type
+const getDefaultHours = (shift) => {
+  const hours = {
+    morning: '08:00 - 16:00',
+    evening: '16:00 - 00:00',
+    night: '00:00 - 08:00'
+  };
+  return hours[shift] || '08:00 - 16:00';
+};
+
 export default function StaffDrawer({
   staff,
   isOpen,
@@ -204,23 +214,33 @@ export default function StaffDrawer({
         {staff.schedule && staff.schedule.length > 0 && (
           <div>
             <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
-              Schedule
+              Schedule ({staff.schedule.length} shifts)
             </h4>
-            <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100 space-y-2">
-              {staff.schedule.map((item, index) => (
-                <div key={index} className="flex items-center justify-between py-2 border-b border-neutral-200 last:border-0">
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-lg bg-white border border-neutral-200 flex items-center justify-center flex-shrink-0">
-                      <Clock className="w-3.5 h-3.5 text-terra-500" />
+            <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100 space-y-2 max-h-64 overflow-y-auto">
+              {staff.schedule.map((item, index) => {
+                // Support both old format (date only) and new format (day, hours)
+                const displayDay = item.day || (item.date ? new Date(item.date).toLocaleDateString('en-US', { weekday: 'long' }) : 'Unknown');
+                const displayDate = item.date ? new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+                const displayHours = item.hours || (item.startTime && item.endTime ? `${item.startTime} - ${item.endTime}` : getDefaultHours(item.shift));
+
+                return (
+                  <div key={index} className="flex items-center justify-between py-2 border-b border-neutral-200 last:border-0">
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-white border border-neutral-200 flex items-center justify-center flex-shrink-0">
+                        <Clock className="w-3.5 h-3.5 text-terra-500" />
+                      </div>
+                      <div>
+                        <span className="text-[13px] font-semibold text-neutral-900">{displayDay}</span>
+                        {displayDate && <p className="text-[10px] text-neutral-500">{displayDate}</p>}
+                      </div>
                     </div>
-                    <span className="text-[13px] font-semibold text-neutral-900">{item.day}</span>
+                    <div className="text-right">
+                      <p className="text-[11px] font-medium text-neutral-700 capitalize">{item.shift} Shift</p>
+                      <p className="text-[11px] text-neutral-500">{displayHours}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[11px] font-medium text-neutral-700 capitalize">{item.shift}</p>
-                    <p className="text-[11px] text-neutral-500">{item.hours}</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

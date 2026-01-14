@@ -25,14 +25,14 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('glimmora_dashboard_theme', theme);
 
-    // Update document root class for global CSS variables
+    // Update document root class for Tailwind dark mode
     const root = document.documentElement;
     if (theme === 'dark') {
-      root.classList.add('dark-theme');
-      root.classList.remove('light-theme');
+      root.classList.add('dark');
+      root.classList.remove('light');
     } else {
-      root.classList.add('light-theme');
-      root.classList.remove('dark-theme');
+      root.classList.add('light');
+      root.classList.remove('dark');
     }
   }, [theme]);
 

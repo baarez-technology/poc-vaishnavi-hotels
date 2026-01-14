@@ -14,8 +14,8 @@ export default function HousekeepingTabs({ activeTab, onTabChange, counts }) {
     { id: 'clean', label: 'Clean', icon: CheckCircle, count: counts.clean },
     { id: 'inspected', label: 'Inspected', icon: CheckCircle, count: counts.inspected },
     { id: 'out_of_service', label: 'Out of Service', icon: XCircle, count: counts.out_of_service },
-    // { id: 'by-staff', label: 'By Staff', icon: Users, count: null },
-    // { id: 'by-floor', label: 'By Floor', icon: Building, count: null }
+    { id: 'by-staff', label: 'By Staff', icon: Users, count: null },
+    { id: 'by-floor', label: 'By Floor', icon: Building, count: null }
   ];
 
   return (

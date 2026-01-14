@@ -5,6 +5,7 @@ import { usePagination } from '../../hooks/usePagination';
 import { useDrawer } from '../../hooks/useDrawer';
 import { useModal } from '../../hooks/useModal';
 import { useAdminSafe } from '../../contexts/AdminContext';
+import { useToast } from '../../hooks/useToast';
 import GuestsTabs from '../../components/guests/GuestsTabs';
 import GuestsSearch from '../../components/guests/GuestsSearch';
 import GuestsFilters from '../../components/guests/GuestsFilters';
@@ -23,6 +24,7 @@ import {
   removeNoteFromGuest,
   calculateLoyaltyTier,
 } from '../../utils/guests';
+import Toast from '../../components/common/Toast';
 
 export default function Guests() {
   const navigate = useNavigate();
@@ -59,6 +61,9 @@ export default function Guests() {
   const editModal = useModal();
   const messageModal = useModal();
   const deleteModal = useModal();
+
+  // Toast notifications
+  const { toast, showToast, hideToast } = useToast();
 
   // Loading states
   const [isAdding, setIsAdding] = useState(false);
@@ -103,9 +108,13 @@ export default function Guests() {
     setIsDeleting(true);
     try {
       if (deleteGuest) {
-        deleteGuest(guestId);
+        await deleteGuest(guestId);
       }
       deleteModal.closeModal();
+      showToast('Guest deleted successfully', 'success');
+    } catch (error) {
+      console.error('Failed to delete guest:', error);
+      showToast('Failed to delete guest. Please try again.', 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -114,8 +123,12 @@ export default function Guests() {
   const handleSaveGuestEdit = async (guestId, updates) => {
     setIsSaving(true);
     try {
-      updateGuest(guestId, updates);
+      await updateGuest(guestId, updates);
       editModal.closeModal();
+      showToast('Guest updated successfully', 'success');
+    } catch (error) {
+      console.error('Failed to update guest:', error);
+      showToast('Failed to update guest. Please try again.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -135,16 +148,30 @@ export default function Guests() {
     setIsAdding(true);
     try {
       if (addGuest) {
-        addGuest(guestData);
+        await addGuest(guestData);
       }
       addModal.closeModal();
+      showToast('Guest added successfully', 'success');
+    } catch (error) {
+      console.error('Failed to add guest:', error);
+      showToast('Failed to add guest. Please try again.', 'error');
     } finally {
       setIsAdding(false);
     }
   };
 
   const handleExportGuests = () => {
-    exportGuestsToCSV(guests, `guests_export_${new Date().toISOString().split('T')[0]}.csv`);
+    try {
+      if (!guests || guests.length === 0) {
+        showToast('No guests to export', 'error');
+        return;
+      }
+      exportGuestsToCSV(guests, `guests_export_${new Date().toISOString().split('T')[0]}.csv`);
+      showToast(`Exported ${guests.length} guests successfully`, 'success');
+    } catch (error) {
+      console.error('Failed to export guests:', error);
+      showToast('Failed to export guests. Please try again.', 'error');
+    }
   };
 
   const handleViewProfile = (guest) => {
@@ -314,6 +341,15 @@ export default function Guests() {
           confirmText="Blacklist"
           cancelText="Cancel"
         />
+
+        {/* Toast Notifications */}
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={hideToast}
+          />
+        )}
       </div>
     </div>
   );

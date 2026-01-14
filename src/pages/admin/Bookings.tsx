@@ -15,6 +15,8 @@ import { useSort } from '../../hooks/useSort';
 import { usePagination } from '../../hooks/usePagination';
 import { CANCELLATION_REASONS } from '../../utils/bookings';
 import { Button } from '../../components/ui2/Button';
+import { useTheme } from '../../contexts/ThemeContext';
+import { cn } from '../../lib/utils';
 
 // Local filter functions
 function filterByStatus(bookings: any[], status: string) {
@@ -55,6 +57,8 @@ function QuickActions({ onNewBooking }) {
 }
 
 export default function Bookings() {
+  const { isDark } = useTheme();
+
   // Use admin bookings hook for API integration
   const {
     bookings: bookingsData,
@@ -345,7 +349,10 @@ export default function Bookings() {
   } = usePagination(sortedData, 10);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
+    <div className={cn(
+      "min-h-screen transition-colors",
+      isDark ? "bg-neutral-900" : "bg-[#F9F7F7]"
+    )}>
       <div className="px-10 py-6 space-y-6">
       {/* Page Header */}
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">

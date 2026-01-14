@@ -62,6 +62,10 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
     [formState.checkIn, formState.checkOut]
   );
 
+  // Check if booking is confirmed or beyond - sensitive fields should be read-only
+  const isBookingConfirmed = booking &&
+    ['confirmed', 'checked_in', 'checked_out', 'completed', 'in_house', 'CONFIRMED', 'CHECKED_IN', 'CHECKED_OUT', 'COMPLETED', 'IN_HOUSE'].includes(booking.status);
+
   const isFormValid =
     formState.guest.trim() &&
     formState.email.trim() &&
@@ -149,6 +153,21 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
         {/* Scrollable Form Content */}
         <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
           <form id="edit-booking-form" onSubmit={handleSubmit} className="p-6 space-y-5">
+            {/* Notice for confirmed bookings */}
+            {isBookingConfirmed && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+                <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-amber-800">Booking Confirmed</p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    Guest contact information (email, phone) and special requests cannot be modified after booking confirmation for security and audit purposes.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <label className="flex flex-col text-sm text-neutral-600 gap-2">
                 Guest Name
@@ -160,26 +179,36 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
                 />
               </label>
               <label className="flex flex-col text-sm text-neutral-600 gap-2">
-                Email
+                Email {isBookingConfirmed && <span className="text-xs text-amber-600">(Read-only after confirmation)</span>}
                 <input
                   name="email"
                   type="email"
                   value={formState.email}
                   onChange={handleChange}
-                  className="bg-neutral-100 border border-neutral-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]"
+                  readOnly={isBookingConfirmed}
+                  className={`border border-neutral-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865] ${
+                    isBookingConfirmed
+                      ? 'bg-neutral-200 text-neutral-500 cursor-not-allowed'
+                      : 'bg-neutral-100'
+                  }`}
                 />
               </label>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <label className="flex flex-col text-sm text-neutral-600 gap-2">
-                Phone
+                Phone {isBookingConfirmed && <span className="text-xs text-amber-600">(Read-only after confirmation)</span>}
                 <input
                   name="phone"
                   type="tel"
                   value={formState.phone}
                   onChange={handleChange}
-                  className="bg-neutral-100 border border-neutral-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]"
+                  readOnly={isBookingConfirmed}
+                  className={`border border-neutral-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865] ${
+                    isBookingConfirmed
+                      ? 'bg-neutral-200 text-neutral-500 cursor-not-allowed'
+                      : 'bg-neutral-100'
+                  }`}
                 />
               </label>
               <label className="flex flex-col text-sm text-neutral-600 gap-2">
@@ -236,13 +265,18 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
             </div>
 
             <label className="flex flex-col text-sm text-neutral-600 gap-2">
-              Notes
+              Special Requests / Notes {isBookingConfirmed && <span className="text-xs text-amber-600">(Read-only after confirmation)</span>}
               <textarea
                 name="notes"
                 value={formState.notes}
                 onChange={handleChange}
+                readOnly={isBookingConfirmed}
                 rows={3}
-                className="bg-neutral-100 border border-neutral-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]"
+                className={`border border-neutral-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865] ${
+                  isBookingConfirmed
+                    ? 'bg-neutral-200 text-neutral-500 cursor-not-allowed'
+                    : 'bg-neutral-100'
+                }`}
               />
             </label>
           </form>

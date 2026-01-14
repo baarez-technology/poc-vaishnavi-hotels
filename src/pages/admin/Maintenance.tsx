@@ -160,9 +160,14 @@ export default function Maintenance() {
     setSearchQuery('');
   };
 
-  const handleCreateWO = (data) => {
-    const newWO = addWorkOrder(data);
-    showToast(`Work Order ${newWO.id} created successfully`, 'success');
+  const handleCreateWO = async (data) => {
+    try {
+      await addWorkOrder(data);
+      // Toast is already shown by the hook
+    } catch (err) {
+      // Error toast is already shown by the hook
+      console.error('Failed to create work order:', err);
+    }
   };
 
   const handleUpdateWO = (woId, data) => {
@@ -226,30 +231,46 @@ export default function Maintenance() {
   };
 
   // PM Handlers
-  const handleCreatePM = (data) => {
-    const newPM = addPMTask(data);
-    showToast(`PM Task ${newPM.id} created`, 'success');
+  const handleCreatePM = async (data) => {
+    try {
+      await addPMTask(data);
+      // Toast is shown by the hook
+    } catch (err) {
+      // Error toast is shown by the hook
+    }
   };
 
-  const handleUpdatePM = (pmId, data) => {
-    updatePMTask(pmId, data);
-    showToast('PM Task updated', 'success');
-    setSelectedPM(null);
+  const handleUpdatePM = async (pmId, data) => {
+    try {
+      await updatePMTask(pmId, data);
+      setSelectedPM(null);
+      // Toast is shown by the hook
+    } catch (err) {
+      // Error toast is shown by the hook
+    }
   };
 
-  const handleCompletePM = (pmId) => {
-    completePMTask(pmId);
-    showToast('PM Task completed, next scheduled', 'success');
+  const handleCompletePM = async (pmId) => {
+    try {
+      await completePMTask(pmId);
+      // Toast is shown by the hook
+    } catch (err) {
+      // Error toast is shown by the hook
+    }
   };
 
   const handleDeletePM = (pmId) => {
     setDeletePMConfirm({ isOpen: true, pmId });
   };
 
-  const confirmDeletePM = () => {
+  const confirmDeletePM = async () => {
     if (deletePMConfirm.pmId) {
-      deletePMTask(deletePMConfirm.pmId);
-      showToast('PM Task deleted', 'success');
+      try {
+        await deletePMTask(deletePMConfirm.pmId);
+        // Toast is shown by the hook
+      } catch (err) {
+        // Error toast is shown by the hook
+      }
     }
     setDeletePMConfirm({ isOpen: false, pmId: null });
   };
@@ -504,6 +525,20 @@ export default function Maintenance() {
                     icon={Calendar}
                     title="No preventive maintenance tasks"
                     description="Create one to get started"
+                    action={
+                      <Button
+                        variant="primary"
+                        icon={Plus}
+                        onClick={() => {
+                          setPMModalMode('create');
+                          setSelectedPM(null);
+                          setShowPMModal(true);
+                        }}
+                        className="mt-4"
+                      >
+                        Add PM Task
+                      </Button>
+                    }
                   />
                 ) : (
                   pmTasks.map(pm => {

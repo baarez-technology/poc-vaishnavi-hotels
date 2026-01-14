@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import {
   createWorkOrder,
@@ -133,20 +133,63 @@ export function useMaintenance() {
           setTechnicians([]);
         }
 
-        // Fetch linen inventory as general inventory
-        const linenData = await housekeepingService.getLinenInventory();
-        if (Array.isArray(linenData)) {
-          const transformedInv = linenData.map((item: any, idx: number) => ({
-            id: `INV-${item.id || idx}`,
-            name: item.item_type || item.name,
-            category: 'linen',
-            stockLevel: item.quantity || 0,
-            minStock: item.min_stock || 10,
-            unitCost: 0,
-            location: item.location || 'Storage',
-            lastRestocked: item.last_updated?.split('T')[0] || new Date().toISOString().split('T')[0]
-          }));
-          setInventory(transformedInv);
+        // Fetch preventive maintenance schedules from API
+        try {
+          const pmData = await maintenanceService.getPreventiveSchedules({ active_only: false });
+          if (pmData && Array.isArray(pmData.schedules)) {
+            const transformedPM = pmData.schedules.map((pm: any) => ({
+              id: pm.id,
+              name: pm.name,
+              equipment: pm.name, // For UI compatibility
+              description: pm.description || '',
+              location: pm.location,
+              roomNumber: pm.location?.startsWith('Room ') ? pm.location.replace('Room ', '') : '',
+              category: pm.maintenance_type || 'general',
+              frequency: pm.frequency || 'monthly',
+              estimatedDuration: pm.estimated_duration || 60,
+              assignedTo: pm.assigned_to,
+              technicianName: pm.assigned_to_name || null,
+              checklist: pm.checklist || [],
+              priority: pm.priority || 'medium',
+              isActive: pm.active !== false,
+              lastCompleted: pm.last_performed || null,
+              nextDueDate: pm.next_due || null,
+              isOverdue: pm.is_overdue || false,
+              createdAt: pm.created_at || new Date().toISOString()
+            }));
+            setPMTasks(transformedPM);
+          }
+        } catch (pmErr) {
+          console.warn('Failed to fetch PM schedules:', pmErr);
+          // PM schedules are optional, don't fail the whole fetch
+        }
+
+        // Fetch maintenance inventory from API
+        try {
+          const inventoryData = await maintenanceService.getInventoryItems();
+          if (Array.isArray(inventoryData)) {
+            const transformedInv = inventoryData.map((item: any) => ({
+              id: item.id,
+              name: item.name,
+              category: item.category || 'general',
+              stockLevel: item.stock_level || 0,
+              minStock: item.min_stock || 10,
+              unitCost: item.unit_cost || 0,
+              location: item.location || '',
+              partNumber: item.part_number,
+              supplierId: item.supplier_id,
+              reorderQuantity: item.reorder_quantity,
+              lastRestocked: item.last_restocked || null,
+              notes: item.notes,
+              isActive: item.is_active !== false,
+              createdAt: item.created_at,
+              updatedAt: item.updated_at
+            }));
+            setInventory(transformedInv);
+          }
+        } catch (invErr) {
+          console.warn('Failed to fetch maintenance inventory:', invErr);
+          // Inventory is optional, don't fail the whole fetch
         }
 
       } catch (err) {
@@ -169,6 +212,15 @@ export function useMaintenance() {
    */
   const addWorkOrder = useCallback(async (data: any) => {
     try {
+      // Convert assignedTo to number for backend (handles string IDs from dropdown)
+      let assignedToId: number | null = null;
+      if (data.assignedTo) {
+        const parsed = parseInt(data.assignedTo.toString(), 10);
+        if (!isNaN(parsed)) {
+          assignedToId = parsed;
+        }
+      }
+
       // Call backend API to create work order
       const apiResponse = await maintenanceService.createWorkOrder({
         title: data.issue || data.title || 'Maintenance Required',
@@ -179,7 +231,8 @@ export function useMaintenance() {
         issue_type: data.category || 'general',
         priority: data.priority || 'medium',
         notes: data.notes,
-        scheduled_date: data.estimatedCompletion || null
+        scheduled_date: data.estimatedCompletion || null,
+        assigned_to: assignedToId
       });
 
       // Transform API response to local format
@@ -194,8 +247,8 @@ export function useMaintenance() {
         status: apiResponse.status || 'pending',
         issue: apiResponse.title,
         description: apiResponse.description || '',
-        assignedTo: apiResponse.assigned_to,
-        technicianName: apiResponse.assigned_to_name,
+        assignedTo: apiResponse.assigned_to || data.assignedTo || null,
+        technicianName: apiResponse.assigned_to_name || data.technicianName || null,
         estimatedCost: null,
         actualCost: null,
         estimatedDuration: 60,
@@ -212,11 +265,24 @@ export function useMaintenance() {
 
       // Update local state
       setWorkOrders(prev => [newWO, ...prev]);
-      toast.success('Work order created successfully');
+      toast.success(`Work Order ${newWO.displayId} created successfully`);
       return newWO;
     } catch (err: any) {
       console.error('Error creating work order:', err);
-      toast.error(err.response?.data?.detail || 'Failed to create work order');
+      // Handle FastAPI validation errors which can be arrays
+      const detail = err.response?.data?.detail;
+      let errorMessage = 'Failed to create work order';
+      if (detail) {
+        if (Array.isArray(detail)) {
+          // FastAPI validation errors return array of {loc, msg, type}
+          errorMessage = detail.map((e: any) => e.msg || e.message || String(e)).join(', ');
+        } else if (typeof detail === 'string') {
+          errorMessage = detail;
+        } else if (typeof detail === 'object' && detail.msg) {
+          errorMessage = detail.msg;
+        }
+      }
+      toast.error(errorMessage);
       throw err;
     }
   }, []);
@@ -270,7 +336,19 @@ export function useMaintenance() {
       toast.success('Work order updated');
     } catch (err: any) {
       console.error('Error updating work order:', err);
-      toast.error(err.response?.data?.detail || 'Failed to update work order');
+      // Handle FastAPI validation errors which can be arrays
+      const detail = err.response?.data?.detail;
+      let errorMessage = 'Failed to update work order';
+      if (detail) {
+        if (Array.isArray(detail)) {
+          errorMessage = detail.map((e: any) => e.msg || e.message || String(e)).join(', ');
+        } else if (typeof detail === 'string') {
+          errorMessage = detail;
+        } else if (typeof detail === 'object' && detail.msg) {
+          errorMessage = detail.msg;
+        }
+      }
+      toast.error(errorMessage);
     }
   }, []);
 
@@ -530,7 +608,16 @@ export function useMaintenance() {
    */
   const markRoomOOO = useCallback(async (roomData: any, issueData: any, user = 'System') => {
     try {
-      // Create work order via API
+      // Convert assignedTo to number for backend
+      let assignedToId: number | null = null;
+      if (issueData.assignedTo) {
+        const parsed = parseInt(issueData.assignedTo.toString(), 10);
+        if (!isNaN(parsed)) {
+          assignedToId = parsed;
+        }
+      }
+
+      // Create work order via API with technician assignment
       const apiResponse = await maintenanceService.createWorkOrder({
         title: issueData.issue || 'Room Out of Order',
         description: issueData.description || '',
@@ -539,7 +626,8 @@ export function useMaintenance() {
         room_number: roomData.roomNumber,
         issue_type: issueData.category || 'general',
         priority: issueData.priority || 'high',
-        notes: issueData.notes
+        notes: issueData.notes,
+        assigned_to: assignedToId
       });
 
       const newWO = {
@@ -553,8 +641,8 @@ export function useMaintenance() {
         status: apiResponse.status || 'pending',
         issue: apiResponse.title,
         description: apiResponse.description || '',
-        assignedTo: issueData.assignedTo || null,
-        technicianName: issueData.technicianName || null,
+        assignedTo: apiResponse.assigned_to || assignedToId,
+        technicianName: apiResponse.assigned_to_name || issueData.technicianName || null,
         isOOO: true,
         notes: apiResponse.notes || '',
         createdAt: apiResponse.reported_at || new Date().toISOString(),
@@ -563,11 +651,11 @@ export function useMaintenance() {
         activityLog: [{ action: 'Room marked as Out of Order', by: user, at: new Date().toISOString() }]
       };
 
-      // If technician assigned, update via API
-      if (issueData.assignedTo) {
-        await maintenanceService.updateWorkOrder(apiResponse.id, { assigned_to: issueData.assignedTo });
+      // Update technician task count if assigned
+      if (assignedToId) {
         setTechnicians(prev => prev.map(t => {
-          if (t.id === issueData.assignedTo || t.id === issueData.assignedTo.toString()) {
+          const tId = typeof t.id === 'number' ? t.id : parseInt(t.id);
+          if (tId === assignedToId) {
             return { ...t, assignedTasks: t.assignedTasks + 1 };
           }
           return t;
@@ -646,71 +734,205 @@ export function useMaintenance() {
   // =========================================
 
   /**
-   * Add new PM task
+   * Add new PM task - calls backend API
    */
-  const addPMTask = useCallback((data) => {
-    const newPM = createPreventiveTask(data);
-    setPMTasks(prev => [newPM, ...prev]);
-    return newPM;
-  }, []);
-
-  /**
-   * Update PM task
-   */
-  const updatePMTask = useCallback((pmId, updates) => {
-    setPMTasks(prev => prev.map(pm => {
-      if (pm.id === pmId) {
-        return {
-          ...pm,
-          ...updates,
-          updatedAt: new Date().toISOString()
-        };
+  const addPMTask = useCallback(async (data: any) => {
+    try {
+      // Derive location from room number or use default
+      let location = data.location;
+      if (!location) {
+        if (data.roomNumber) {
+          location = `Room ${data.roomNumber}`;
+        } else {
+          location = 'Main Building';
+        }
       }
-      return pm;
-    }));
-  }, []);
 
-  /**
-   * Delete PM task
-   */
-  const deletePMTask = useCallback((pmId) => {
-    setPMTasks(prev => prev.filter(pm => pm.id !== pmId));
-  }, []);
+      // Call backend API to create PM schedule
+      const apiResponse = await maintenanceService.createPreventiveSchedule({
+        name: data.name || data.equipment || data.title,
+        description: data.description || data.notes || '',
+        location: location,
+        maintenance_type: data.category || 'general',
+        frequency: data.frequency || 'monthly',
+        estimated_duration: data.estimatedDuration || 60,
+        assigned_to: data.assignedTo || undefined,
+        checklist: data.checklist || [],
+        priority: data.priority || 'medium',
+        active: data.isActive !== false
+      });
 
-  /**
-   * Complete PM task and schedule next
-   */
-  const completePMTask = useCallback((pmId) => {
-    setPMTasks(prev => prev.map(pm => {
-      if (pm.id === pmId) {
-        const now = new Date().toISOString().split('T')[0];
-        const nextDue = calculateNextDueDate(now, pm.frequency);
-        return {
-          ...pm,
-          lastCompleted: now,
-          nextDueDate: nextDue,
-          updatedAt: new Date().toISOString()
-        };
+      // Transform API response to local format
+      const newPM = {
+        id: apiResponse.id,
+        name: apiResponse.name,
+        equipment: apiResponse.name, // For UI compatibility
+        description: apiResponse.description || '',
+        location: apiResponse.location,
+        roomNumber: apiResponse.location?.replace('Room ', '') || '',
+        category: apiResponse.maintenance_type || 'general',
+        frequency: apiResponse.frequency || 'monthly',
+        estimatedDuration: apiResponse.estimated_duration || 60,
+        assignedTo: apiResponse.assigned_to,
+        technicianName: apiResponse.assigned_to_name || data.technicianName || null,
+        checklist: apiResponse.checklist || [],
+        priority: apiResponse.priority || 'medium',
+        isActive: apiResponse.active !== false,
+        lastCompleted: apiResponse.last_performed || null,
+        nextDueDate: apiResponse.next_due || data.nextDueDate || null,
+        isOverdue: false,
+        createdAt: apiResponse.created_at || new Date().toISOString()
+      };
+
+      // Update local state
+      setPMTasks(prev => [newPM, ...prev]);
+      toast.success(`PM Task created successfully`);
+      return newPM;
+    } catch (err: any) {
+      console.error('Error creating PM task:', err);
+      const detail = err.response?.data?.detail;
+      let errorMessage = 'Failed to create PM task';
+      if (detail) {
+        if (Array.isArray(detail)) {
+          errorMessage = detail.map((e: any) => e.msg || e.message || String(e)).join(', ');
+        } else if (typeof detail === 'string') {
+          errorMessage = detail;
+        }
       }
-      return pm;
-    }));
+      toast.error(errorMessage);
+      throw err;
+    }
   }, []);
 
   /**
-   * Toggle PM task active status
+   * Update PM task - calls backend API
    */
-  const togglePMActive = useCallback((pmId) => {
-    setPMTasks(prev => prev.map(pm => {
-      if (pm.id === pmId) {
-        return {
-          ...pm,
-          isActive: !pm.isActive,
-          updatedAt: new Date().toISOString()
-        };
+  const updatePMTask = useCallback(async (pmId: number, updates: any) => {
+    try {
+      // Prepare API payload
+      const apiPayload: any = {};
+      if (updates.name) apiPayload.name = updates.name;
+      if (updates.description !== undefined) apiPayload.description = updates.description;
+      if (updates.location) apiPayload.location = updates.location;
+      if (updates.category) apiPayload.maintenance_type = updates.category;
+      if (updates.frequency) apiPayload.frequency = updates.frequency;
+      if (updates.estimatedDuration !== undefined) apiPayload.estimated_duration = updates.estimatedDuration;
+      if (updates.assignedTo !== undefined) apiPayload.assigned_to = updates.assignedTo;
+      if (updates.checklist) apiPayload.checklist = updates.checklist;
+      if (updates.priority) apiPayload.priority = updates.priority;
+      if (updates.isActive !== undefined) apiPayload.active = updates.isActive;
+
+      // Call backend API
+      await maintenanceService.updatePreventiveSchedule(pmId, apiPayload);
+
+      // Update local state
+      setPMTasks(prev => prev.map(pm => {
+        if (pm.id === pmId) {
+          return {
+            ...pm,
+            ...updates,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return pm;
+      }));
+
+      toast.success('PM Task updated');
+    } catch (err: any) {
+      console.error('Error updating PM task:', err);
+      const detail = err.response?.data?.detail;
+      let errorMessage = 'Failed to update PM task';
+      if (detail) {
+        if (Array.isArray(detail)) {
+          errorMessage = detail.map((e: any) => e.msg || e.message || String(e)).join(', ');
+        } else if (typeof detail === 'string') {
+          errorMessage = detail;
+        }
       }
-      return pm;
-    }));
+      toast.error(errorMessage);
+    }
   }, []);
+
+  /**
+   * Delete PM task - calls backend API (deactivates)
+   */
+  const deletePMTask = useCallback(async (pmId: number) => {
+    try {
+      // Call backend API to deactivate (delete) the schedule
+      await maintenanceService.deletePreventiveSchedule(pmId);
+
+      // Remove from local state
+      setPMTasks(prev => prev.filter(pm => pm.id !== pmId));
+      toast.success('PM Task deleted');
+    } catch (err: any) {
+      console.error('Error deleting PM task:', err);
+      toast.error(err.response?.data?.detail || 'Failed to delete PM task');
+    }
+  }, []);
+
+  /**
+   * Complete PM task and schedule next - generates work order via API
+   */
+  const completePMTask = useCallback(async (pmId: number) => {
+    try {
+      // Generate work order from schedule via API (this also updates last_performed and next_due)
+      await maintenanceService.generateWorkOrderFromSchedule(pmId);
+
+      // Update local state with new dates
+      const now = new Date().toISOString().split('T')[0];
+      setPMTasks(prev => prev.map(pm => {
+        if (pm.id === pmId) {
+          const nextDue = calculateNextDueDate(now, pm.frequency);
+          return {
+            ...pm,
+            lastCompleted: now,
+            nextDueDate: nextDue,
+            isOverdue: false,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return pm;
+      }));
+
+      toast.success('PM Task completed, work order generated');
+    } catch (err: any) {
+      console.error('Error completing PM task:', err);
+      toast.error(err.response?.data?.detail || 'Failed to complete PM task');
+    }
+  }, []);
+
+  /**
+   * Toggle PM task active status - calls backend API
+   */
+  const togglePMActive = useCallback(async (pmId: number) => {
+    try {
+      // Find current PM task to get current active status
+      const currentPM = pmTasks.find(pm => pm.id === pmId);
+      if (!currentPM) return;
+
+      const newActiveStatus = !currentPM.isActive;
+
+      // Call backend API to update active status
+      await maintenanceService.updatePreventiveSchedule(pmId, { active: newActiveStatus });
+
+      // Update local state
+      setPMTasks(prev => prev.map(pm => {
+        if (pm.id === pmId) {
+          return {
+            ...pm,
+            isActive: newActiveStatus,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return pm;
+      }));
+
+      toast.success(newActiveStatus ? 'PM Task activated' : 'PM Task deactivated');
+    } catch (err: any) {
+      console.error('Error toggling PM task:', err);
+      toast.error(err.response?.data?.detail || 'Failed to toggle PM task status');
+    }
+  }, [pmTasks]);
 
   /**
    * Get overdue PM tasks
@@ -744,59 +966,170 @@ export function useMaintenance() {
   // =========================================
 
   /**
-   * Add inventory item
+   * Add inventory item - calls backend API
    */
-  const addInventoryItem = useCallback((data) => {
-    const newItem = {
-      id: generateInventoryId(),
-      name: data.name,
-      category: data.category,
-      stockLevel: data.stockLevel || 0,
-      minStock: data.minStock || 0,
-      unitCost: data.unitCost || 0,
-      location: data.location || '',
-      lastRestocked: data.lastRestocked || new Date().toISOString().split('T')[0]
-    };
-    setInventory(prev => [newItem, ...prev]);
-    return newItem;
-  }, []);
+  const addInventoryItem = useCallback(async (data: any) => {
+    try {
+      // Call backend API to create inventory item
+      const apiResponse = await maintenanceService.createInventoryItem({
+        name: data.name,
+        category: data.category || 'general',
+        stock_level: data.stockLevel || 0,
+        min_stock: data.minStock || 10,
+        unit_cost: data.unitCost || 0,
+        location: data.location || '',
+        part_number: data.partNumber,
+        supplier_id: data.supplierId,
+        reorder_quantity: data.reorderQuantity,
+        notes: data.notes
+      });
 
-  /**
-   * Update inventory item
-   */
-  const updateInventoryItem = useCallback((itemId, updates) => {
-    setInventory(prev => prev.map(item => {
-      if (item.id === itemId) {
-        return { ...item, ...updates };
+      // Transform API response to local format
+      const newItem = {
+        id: apiResponse.id,
+        name: apiResponse.name,
+        category: apiResponse.category || 'general',
+        stockLevel: apiResponse.stock_level || 0,
+        minStock: apiResponse.min_stock || 10,
+        unitCost: apiResponse.unit_cost || 0,
+        location: apiResponse.location || '',
+        partNumber: apiResponse.part_number,
+        supplierId: apiResponse.supplier_id,
+        reorderQuantity: apiResponse.reorder_quantity,
+        lastRestocked: apiResponse.last_restocked,
+        notes: apiResponse.notes,
+        isActive: apiResponse.is_active !== false,
+        createdAt: apiResponse.created_at,
+        updatedAt: apiResponse.updated_at
+      };
+
+      // Update local state
+      setInventory(prev => [newItem, ...prev]);
+      toast.success('Inventory item added successfully');
+      return newItem;
+    } catch (err: any) {
+      console.error('Error creating inventory item:', err);
+      const detail = err.response?.data?.detail;
+      let errorMessage = 'Failed to add inventory item';
+      if (detail) {
+        if (Array.isArray(detail)) {
+          errorMessage = detail.map((e: any) => e.msg || e.message || String(e)).join(', ');
+        } else if (typeof detail === 'string') {
+          errorMessage = detail;
+        }
       }
-      return item;
-    }));
+      toast.error(errorMessage);
+      throw err;
+    }
   }, []);
 
   /**
-   * Delete inventory item
+   * Update inventory item - calls backend API
    */
-  const deleteInventoryItem = useCallback((itemId) => {
-    setInventory(prev => prev.filter(item => item.id !== itemId));
-  }, []);
+  const updateInventoryItem = useCallback(async (itemId: number, updates: any) => {
+    try {
+      // Prepare API payload (convert camelCase to snake_case)
+      const apiPayload: any = {};
+      if (updates.name !== undefined) apiPayload.name = updates.name;
+      if (updates.category !== undefined) apiPayload.category = updates.category;
+      if (updates.stockLevel !== undefined) apiPayload.stock_level = updates.stockLevel;
+      if (updates.minStock !== undefined) apiPayload.min_stock = updates.minStock;
+      if (updates.unitCost !== undefined) apiPayload.unit_cost = updates.unitCost;
+      if (updates.location !== undefined) apiPayload.location = updates.location;
+      if (updates.partNumber !== undefined) apiPayload.part_number = updates.partNumber;
+      if (updates.supplierId !== undefined) apiPayload.supplier_id = updates.supplierId;
+      if (updates.reorderQuantity !== undefined) apiPayload.reorder_quantity = updates.reorderQuantity;
+      if (updates.notes !== undefined) apiPayload.notes = updates.notes;
+      if (updates.isActive !== undefined) apiPayload.is_active = updates.isActive;
 
-  /**
-   * Update stock level
-   */
-  const updateStock = useCallback((itemId, quantity, isAddition = true) => {
-    setInventory(prev => prev.map(item => {
-      if (item.id === itemId) {
-        const newLevel = isAddition
-          ? item.stockLevel + quantity
-          : Math.max(0, item.stockLevel - quantity);
-        return {
-          ...item,
-          stockLevel: newLevel,
-          lastRestocked: isAddition ? new Date().toISOString().split('T')[0] : item.lastRestocked
-        };
+      // Call backend API
+      const apiResponse = await maintenanceService.updateInventoryItem(itemId, apiPayload);
+
+      // Update local state
+      setInventory(prev => prev.map(item => {
+        if (item.id === itemId) {
+          return {
+            ...item,
+            name: apiResponse.name,
+            category: apiResponse.category,
+            stockLevel: apiResponse.stock_level,
+            minStock: apiResponse.min_stock,
+            unitCost: apiResponse.unit_cost,
+            location: apiResponse.location || '',
+            partNumber: apiResponse.part_number,
+            supplierId: apiResponse.supplier_id,
+            reorderQuantity: apiResponse.reorder_quantity,
+            lastRestocked: apiResponse.last_restocked,
+            notes: apiResponse.notes,
+            isActive: apiResponse.is_active,
+            updatedAt: apiResponse.updated_at
+          };
+        }
+        return item;
+      }));
+
+      toast.success('Inventory item updated');
+    } catch (err: any) {
+      console.error('Error updating inventory item:', err);
+      const detail = err.response?.data?.detail;
+      let errorMessage = 'Failed to update inventory item';
+      if (detail) {
+        if (Array.isArray(detail)) {
+          errorMessage = detail.map((e: any) => e.msg || e.message || String(e)).join(', ');
+        } else if (typeof detail === 'string') {
+          errorMessage = detail;
+        }
       }
-      return item;
-    }));
+      toast.error(errorMessage);
+    }
+  }, []);
+
+  /**
+   * Delete inventory item - calls backend API (deactivates)
+   */
+  const deleteInventoryItem = useCallback(async (itemId: number) => {
+    try {
+      // Call backend API to delete (deactivate) the item
+      await maintenanceService.deleteInventoryItem(itemId);
+
+      // Remove from local state
+      setInventory(prev => prev.filter(item => item.id !== itemId));
+      toast.success('Inventory item deleted');
+    } catch (err: any) {
+      console.error('Error deleting inventory item:', err);
+      toast.error(err.response?.data?.detail || 'Failed to delete inventory item');
+    }
+  }, []);
+
+  /**
+   * Update stock level - calls backend API
+   */
+  const updateStock = useCallback(async (itemId: number, quantity: number, isAddition = true) => {
+    try {
+      // Call backend API to adjust stock
+      const apiResponse = await maintenanceService.adjustInventoryStock(itemId, {
+        quantity,
+        is_addition: isAddition
+      });
+
+      // Update local state with response
+      setInventory(prev => prev.map(item => {
+        if (item.id === itemId) {
+          return {
+            ...item,
+            stockLevel: apiResponse.stock_level,
+            lastRestocked: isAddition ? apiResponse.last_restocked : item.lastRestocked,
+            updatedAt: apiResponse.updated_at
+          };
+        }
+        return item;
+      }));
+
+      toast.success(isAddition ? 'Stock added' : 'Stock removed');
+    } catch (err: any) {
+      console.error('Error adjusting stock:', err);
+      toast.error(err.response?.data?.detail || 'Failed to adjust stock');
+    }
   }, []);
 
   /**
@@ -873,6 +1206,8 @@ export function useMaintenance() {
   const refreshData = useCallback(async () => {
     try {
       setIsLoading(true);
+
+      // Refresh work orders
       const workOrdersData = await maintenanceService.getWorkOrders();
       if (Array.isArray(workOrdersData)) {
         const transformedWO = workOrdersData.map((wo: any) => ({
@@ -900,6 +1235,63 @@ export function useMaintenance() {
           activityLog: []
         }));
         setWorkOrders(transformedWO);
+      }
+
+      // Refresh PM tasks
+      try {
+        const pmData = await maintenanceService.getPreventiveSchedules({ active_only: false });
+        if (pmData && Array.isArray(pmData.schedules)) {
+          const transformedPM = pmData.schedules.map((pm: any) => ({
+            id: pm.id,
+            name: pm.name,
+            equipment: pm.name, // For UI compatibility
+            description: pm.description || '',
+            location: pm.location,
+            roomNumber: pm.location?.startsWith('Room ') ? pm.location.replace('Room ', '') : '',
+            category: pm.maintenance_type || 'general',
+            frequency: pm.frequency || 'monthly',
+            estimatedDuration: pm.estimated_duration || 60,
+            assignedTo: pm.assigned_to,
+            technicianName: pm.assigned_to_name || null,
+            checklist: pm.checklist || [],
+            priority: pm.priority || 'medium',
+            isActive: pm.active !== false,
+            lastCompleted: pm.last_performed || null,
+            nextDueDate: pm.next_due || null,
+            isOverdue: pm.is_overdue || false,
+            createdAt: pm.created_at || new Date().toISOString()
+          }));
+          setPMTasks(transformedPM);
+        }
+      } catch (pmErr) {
+        console.warn('Failed to refresh PM schedules:', pmErr);
+      }
+
+      // Refresh inventory
+      try {
+        const inventoryData = await maintenanceService.getInventoryItems();
+        if (Array.isArray(inventoryData)) {
+          const transformedInv = inventoryData.map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            category: item.category || 'general',
+            stockLevel: item.stock_level || 0,
+            minStock: item.min_stock || 10,
+            unitCost: item.unit_cost || 0,
+            location: item.location || '',
+            partNumber: item.part_number,
+            supplierId: item.supplier_id,
+            reorderQuantity: item.reorder_quantity,
+            lastRestocked: item.last_restocked || null,
+            notes: item.notes,
+            isActive: item.is_active !== false,
+            createdAt: item.created_at,
+            updatedAt: item.updated_at
+          }));
+          setInventory(transformedInv);
+        }
+      } catch (invErr) {
+        console.warn('Failed to refresh inventory:', invErr);
       }
     } catch (err) {
       console.error('Failed to refresh maintenance data:', err);

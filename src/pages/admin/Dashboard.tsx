@@ -128,11 +128,15 @@ function LuxuryKPICard({
   sparkData,
   delay = 0
 }) {
+  const { isDark } = useTheme();
   const isPositive = changeType === 'positive';
 
   return (
     <div
-      className="relative overflow-hidden rounded-[10px] bg-white p-6"
+      className={cn(
+        "relative overflow-hidden rounded-[10px] p-6 transition-colors",
+        isDark ? "bg-neutral-800/50" : "bg-white"
+      )}
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="relative">
@@ -153,19 +157,28 @@ function LuxuryKPICard({
               accentColorClass === 'ocean' && 'text-ocean-600'
             )} />
           </div>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+          <p className={cn(
+            "text-[11px] font-semibold uppercase tracking-widest",
+            isDark ? "text-neutral-500" : "text-neutral-400"
+          )}>
             {label}
           </p>
         </div>
 
         {/* Value */}
-        <p className="text-[28px] font-semibold tracking-tight text-neutral-900 mb-2">
+        <p className={cn(
+          "text-[28px] font-semibold tracking-tight mb-2",
+          isDark ? "text-neutral-100" : "text-neutral-900"
+        )}>
           <AnimatedNumber value={value} prefix={prefix} suffix={suffix} />
         </p>
 
         {/* Comparison */}
         <div className="flex items-center justify-between">
-          <p className="text-[11px] text-neutral-400 font-medium">vs Last Month</p>
+          <p className={cn(
+            "text-[11px] font-medium",
+            isDark ? "text-neutral-500" : "text-neutral-400"
+          )}>vs Last Month</p>
           {change && (
             <div className={cn(
               'flex items-center gap-1 text-[11px] font-semibold',
@@ -640,9 +653,14 @@ function LuxurySectionCard({ title, subtitle, action, actionLabel, children, cla
   icon?: React.ElementType;
   legend?: React.ReactNode;
 }) {
+  const { isDark } = useTheme();
   const hasFlex = className?.includes('flex');
   return (
-    <div className={cn('rounded-[10px] bg-white overflow-hidden', className)}>
+    <div className={cn(
+      'rounded-[10px] overflow-hidden transition-colors',
+      isDark ? 'bg-neutral-800/50' : 'bg-white',
+      className
+    )}>
       {(title || action || legend) && (
         <div className="flex items-center justify-between px-6 py-5 flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -653,12 +671,18 @@ function LuxurySectionCard({ title, subtitle, action, actionLabel, children, cla
             )}
             <div>
               {title && (
-                <h3 className="text-sm font-semibold text-neutral-800">
+                <h3 className={cn(
+                  "text-sm font-semibold",
+                  isDark ? "text-neutral-200" : "text-neutral-800"
+                )}>
                   {title}
                 </h3>
               )}
               {subtitle && (
-                <p className="text-[11px] text-neutral-400 font-medium mt-0.5">{subtitle}</p>
+                <p className={cn(
+                  "text-[11px] font-medium mt-0.5",
+                  isDark ? "text-neutral-500" : "text-neutral-400"
+                )}>{subtitle}</p>
               )}
             </div>
           </div>
@@ -863,13 +887,24 @@ export default function Dashboard() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-copper-50/30 to-neutral-50 flex items-center justify-center">
+      <div className={cn(
+        "min-h-screen flex items-center justify-center transition-colors",
+        isDark
+          ? "bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-800"
+          : "bg-gradient-to-br from-neutral-50 via-copper-50/30 to-neutral-50"
+      )}>
         <div className="text-center">
           <div className="relative w-20 h-20 mx-auto mb-8">
-            <div className="absolute inset-0 rounded-full border-2 border-neutral-200" />
+            <div className={cn(
+              "absolute inset-0 rounded-full border-2",
+              isDark ? "border-neutral-700" : "border-neutral-200"
+            )} />
             <div className="absolute inset-0 rounded-full border-2 border-terra-500 border-t-transparent animate-spin" />
           </div>
-          <p className="text-lg text-neutral-600 animate-pulse font-light">
+          <p className={cn(
+            "text-lg animate-pulse font-light",
+            isDark ? "text-neutral-400" : "text-neutral-600"
+          )}>
             Loading dashboard...
           </p>
         </div>
@@ -880,11 +915,22 @@ export default function Dashboard() {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-copper-50/30 to-neutral-50 flex items-center justify-center">
+      <div className={cn(
+        "min-h-screen flex items-center justify-center transition-colors",
+        isDark
+          ? "bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-800"
+          : "bg-gradient-to-br from-neutral-50 via-copper-50/30 to-neutral-50"
+      )}>
         <div className="text-center max-w-md">
           <AlertCircle className="w-16 h-16 text-rose-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-neutral-900 mb-2">Failed to Load Dashboard</h2>
-          <p className="text-neutral-600 mb-6">{error}</p>
+          <h2 className={cn(
+            "text-xl font-semibold mb-2",
+            isDark ? "text-neutral-100" : "text-neutral-900"
+          )}>Failed to Load Dashboard</h2>
+          <p className={cn(
+            "mb-6",
+            isDark ? "text-neutral-400" : "text-neutral-600"
+          )}>{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="px-6 py-2 bg-terra-600 text-white rounded-lg hover:bg-terra-700 transition-colors"
@@ -897,7 +943,10 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
+    <div className={cn(
+      "min-h-screen transition-colors",
+      isDark ? "bg-neutral-900" : "bg-[#F9F7F7]"
+    )}>
       {/* ═══════════════════════════════════════════════════════════════════════ */}
       {/* MAIN CONTENT - 12 Column Grid System */}
       {/* Grid: 12 columns, 24px gutters, 40px margins */}

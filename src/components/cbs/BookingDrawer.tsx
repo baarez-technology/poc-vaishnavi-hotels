@@ -133,6 +133,10 @@ export default function BookingDrawer({
     };
   }, [isOpen, onClose, statusDropdownOpen, editingField]);
 
+  // Check if booking is confirmed or beyond - sensitive fields should be read-only
+  const isBookingConfirmed = booking &&
+    ['CONFIRMED', 'CHECKED-IN', 'CHECKED-OUT', 'COMPLETED', 'IN_HOUSE'].includes(booking.status);
+
   if (!isOpen || !booking) return null;
 
   const formatDate = (dateString) => {
@@ -350,6 +354,19 @@ export default function BookingDrawer({
         {/* Details Tab */}
         {activeTab === 'details' && (
           <div className="space-y-6">
+              {/* Notice for confirmed bookings */}
+              {isBookingConfirmed && (
+                <div className="rounded-[10px] bg-amber-50 border border-amber-200 p-4 flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-[13px] font-semibold text-amber-800">Booking Confirmed</p>
+                    <p className="text-[11px] text-amber-700 mt-1">
+                      Guest contact information (email, phone) and special requests are locked after confirmation for security and audit purposes.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Stay Details Card */}
               <div className="rounded-[10px] border border-neutral-200 bg-white overflow-hidden">
                 <div className="grid grid-cols-3 divide-x divide-neutral-200">
@@ -432,14 +449,17 @@ export default function BookingDrawer({
                 <div className="rounded-[10px] border border-neutral-200 bg-white overflow-hidden divide-y divide-neutral-200">
                   {/* Email */}
                   <div className="flex items-center gap-3 p-4">
-                    <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
-                      <Mail className="w-4 h-4 text-neutral-500" />
+                    <div className={cn(
+                      "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
+                      isBookingConfirmed ? "bg-neutral-200" : "bg-neutral-100"
+                    )}>
+                      <Mail className={cn("w-4 h-4", isBookingConfirmed ? "text-neutral-400" : "text-neutral-500")} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <label className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 block mb-1">
-                        Email Address
+                        Email Address {isBookingConfirmed && <span className="text-amber-500 normal-case">(Locked)</span>}
                       </label>
-                      {editingField === 'email' ? (
+                      {editingField === 'email' && !isBookingConfirmed ? (
                         <div className="flex items-center gap-2">
                           <input
                             ref={inputRef}
@@ -465,7 +485,10 @@ export default function BookingDrawer({
                         </div>
                       ) : (
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[13px] font-medium text-neutral-900 truncate">{booking.guestEmail || "Not provided"}</span>
+                          <span className={cn(
+                            "text-[13px] font-medium truncate",
+                            isBookingConfirmed ? "text-neutral-500" : "text-neutral-900"
+                          )}>{booking.guestEmail || "Not provided"}</span>
                           <div className="flex items-center gap-0.5 flex-shrink-0">
                             <button
                               onClick={() => copyToClipboard(booking.guestEmail, 'email')}
@@ -473,12 +496,14 @@ export default function BookingDrawer({
                             >
                               {copiedField === 'email' ? <CheckCircle2 className="w-3.5 h-3.5 text-sage-500" /> : <Copy className="w-3.5 h-3.5" />}
                             </button>
-                            <button
-                              onClick={() => startEditing('email', booking.guestEmail)}
-                              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-terra-500 transition-all"
-                            >
-                              <PenLine className="w-3.5 h-3.5" />
-                            </button>
+                            {!isBookingConfirmed && (
+                              <button
+                                onClick={() => startEditing('email', booking.guestEmail)}
+                                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-terra-500 transition-all"
+                              >
+                                <PenLine className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
                         </div>
                       )}
@@ -486,14 +511,17 @@ export default function BookingDrawer({
                   </div>
                   {/* Phone */}
                   <div className="flex items-center gap-3 p-4">
-                    <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
-                      <Phone className="w-4 h-4 text-neutral-500" />
+                    <div className={cn(
+                      "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
+                      isBookingConfirmed ? "bg-neutral-200" : "bg-neutral-100"
+                    )}>
+                      <Phone className={cn("w-4 h-4", isBookingConfirmed ? "text-neutral-400" : "text-neutral-500")} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <label className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 block mb-1">
-                        Phone Number
+                        Phone Number {isBookingConfirmed && <span className="text-amber-500 normal-case">(Locked)</span>}
                       </label>
-                      {editingField === 'phone' ? (
+                      {editingField === 'phone' && !isBookingConfirmed ? (
                         <div className="flex items-center gap-2">
                           <input
                             ref={inputRef}
@@ -519,7 +547,10 @@ export default function BookingDrawer({
                         </div>
                       ) : (
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[13px] font-medium text-neutral-900 truncate">{booking.guestPhone || "Not provided"}</span>
+                          <span className={cn(
+                            "text-[13px] font-medium truncate",
+                            isBookingConfirmed ? "text-neutral-500" : "text-neutral-900"
+                          )}>{booking.guestPhone || "Not provided"}</span>
                           <div className="flex items-center gap-0.5 flex-shrink-0">
                             <button
                               onClick={() => copyToClipboard(booking.guestPhone, 'phone')}
@@ -527,12 +558,14 @@ export default function BookingDrawer({
                             >
                               {copiedField === 'phone' ? <CheckCircle2 className="w-3.5 h-3.5 text-sage-500" /> : <Copy className="w-3.5 h-3.5" />}
                             </button>
-                            <button
-                              onClick={() => startEditing('phone', booking.guestPhone)}
-                              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-terra-500 transition-all"
-                            >
-                              <PenLine className="w-3.5 h-3.5" />
-                            </button>
+                            {!isBookingConfirmed && (
+                              <button
+                                onClick={() => startEditing('phone', booking.guestPhone)}
+                                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-terra-500 transition-all"
+                              >
+                                <PenLine className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
                         </div>
                       )}
@@ -544,9 +577,9 @@ export default function BookingDrawer({
               {/* Special Requests */}
               <div className="space-y-3">
                 <h3 className="text-[13px] font-semibold text-neutral-800">
-                  Special Requests
+                  Special Requests {isBookingConfirmed && <span className="text-amber-500 text-[10px] font-normal">(Locked after confirmation)</span>}
                 </h3>
-                {editingField === 'requests' ? (
+                {editingField === 'requests' && !isBookingConfirmed ? (
                   <div className="space-y-3">
                     <textarea
                       ref={inputRef}
@@ -572,6 +605,18 @@ export default function BookingDrawer({
                       >
                         Save
                       </Button>
+                    </div>
+                  </div>
+                ) : isBookingConfirmed ? (
+                  <div className={cn(
+                    "p-3 rounded-[10px] border",
+                    booking.specialRequests ? "bg-neutral-100 border-neutral-200" : "bg-neutral-50 border-neutral-200"
+                  )}>
+                    <div className="flex items-start gap-2.5">
+                      <Sparkles className="w-3.5 h-3.5 text-neutral-400 mt-0.5 flex-shrink-0" />
+                      <p className="text-[13px] text-neutral-500">
+                        {booking.specialRequests || 'No special requests'}
+                      </p>
                     </div>
                   </div>
                 ) : (

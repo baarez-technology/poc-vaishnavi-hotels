@@ -68,11 +68,14 @@ export const PM_FREQUENCY = [
 
 // Inventory categories
 export const INVENTORY_CATEGORIES = [
+  { value: 'general', label: 'General' },
   { value: 'electrical', label: 'Electrical' },
   { value: 'plumbing', label: 'Plumbing' },
   { value: 'hvac', label: 'HVAC' },
   { value: 'hardware', label: 'Hardware' },
   { value: 'cleaning', label: 'Cleaning' },
+  { value: 'linens', label: 'Linens & Bedding' },
+  { value: 'amenities', label: 'Guest Amenities' },
   { value: 'other', label: 'Other' }
 ];
 
@@ -450,21 +453,40 @@ export function calculateNextDueDate(lastDate, frequency) {
 
 /**
  * Get calendar events from work orders and PM tasks
+ * Work orders are displayed based on:
+ * 1. scheduledDate if available
+ * 2. estimatedCompletion if available
+ * 3. createdAt as fallback
+ * Active work orders (open/in_progress) without future dates are shown on their creation date
  */
 export function getCalendarEvents(workOrders, pmTasks, startDate, endDate) {
   const events = [];
 
   // Add work orders
   workOrders.forEach(wo => {
-    const createdDate = new Date(wo.createdAt).toISOString().split('T')[0];
+    // Determine the best date to display the work order
+    let displayDate;
+
+    if (wo.scheduledDate) {
+      // Use scheduled date if available
+      displayDate = wo.scheduledDate;
+    } else if (wo.estimatedCompletion) {
+      // Use estimated completion date if available
+      displayDate = wo.estimatedCompletion;
+    } else {
+      // Fall back to created date
+      displayDate = new Date(wo.createdAt).toISOString().split('T')[0];
+    }
+
     events.push({
       id: wo.id,
-      date: createdDate,
+      date: displayDate,
       type: 'workorder',
       status: wo.status,
       title: wo.issue,
       room: wo.roomNumber,
-      priority: wo.priority
+      priority: wo.priority,
+      createdAt: wo.createdAt // Include for reference
     });
   });
 
@@ -483,4 +505,45 @@ export function getCalendarEvents(workOrders, pmTasks, startDate, endDate) {
   });
 
   return events;
+}
+
+/**
+ * Get work orders statistics for calendar view
+ * Returns count of work orders by status that are outside the visible date range
+ */
+export function getWorkOrdersOutsideRange(workOrders, visibleStartDate, visibleEndDate) {
+  const start = new Date(visibleStartDate);
+  const end = new Date(visibleEndDate);
+
+  const outsideRange = {
+    total: 0,
+    open: 0,
+    inProgress: 0,
+    onHold: 0
+  };
+
+  workOrders.forEach(wo => {
+    // Only count active (non-completed) work orders
+    if (wo.status === 'completed') return;
+
+    // Determine display date (same logic as getCalendarEvents)
+    let displayDate;
+    if (wo.scheduledDate) {
+      displayDate = new Date(wo.scheduledDate);
+    } else if (wo.estimatedCompletion) {
+      displayDate = new Date(wo.estimatedCompletion);
+    } else {
+      displayDate = new Date(wo.createdAt);
+    }
+
+    // Check if outside visible range
+    if (displayDate < start || displayDate > end) {
+      outsideRange.total++;
+      if (wo.status === 'open') outsideRange.open++;
+      else if (wo.status === 'in_progress') outsideRange.inProgress++;
+      else if (wo.status === 'on_hold') outsideRange.onHold++;
+    }
+  });
+
+  return outsideRange;
 }

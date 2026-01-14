@@ -121,17 +121,44 @@ export default function Staff() {
     }
   };
 
-  const handleAssignShift = (id, shiftData) => {
+  const handleAssignShift = async (id, shiftData) => {
     // Handle multiple days if it's an array
     if (Array.isArray(shiftData)) {
+      let newCount = 0;
+      let updateCount = 0;
+
       // Assign each day individually
-      shiftData.forEach(dayData => {
-        assignShift(id, dayData);
-      });
-      toast.success(`Shift assigned for ${shiftData.length} days`);
+      for (const dayData of shiftData) {
+        const result = await assignShift(id, dayData);
+        if (result.isUpdate) {
+          updateCount++;
+        } else {
+          newCount++;
+        }
+      }
+
+      // Show appropriate message based on results
+      if (updateCount > 0 && newCount > 0) {
+        toast.info(`${newCount} new shift(s) assigned, ${updateCount} existing shift(s) updated`);
+      } else if (updateCount > 0) {
+        toast.info(`${updateCount} existing shift(s) updated`);
+      } else {
+        toast.success(`Shift assigned for ${newCount} days`);
+      }
     } else {
-      assignShift(id, shiftData);
-      toast.success('Shift assigned successfully');
+      const result = await assignShift(id, shiftData);
+
+      if (result.isUpdate) {
+        // Format the date for display
+        const dateStr = new Date(shiftData.date).toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric'
+        });
+        toast.info(`Shift for ${dateStr} has been updated`);
+      } else {
+        toast.success('Shift assigned successfully');
+      }
     }
   };
 

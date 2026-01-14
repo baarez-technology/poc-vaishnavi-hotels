@@ -1,6 +1,6 @@
 import { AlertTriangle, Clock, CheckCircle, ShieldCheck, Users, Zap, Timer, ClipboardCheck, TrendingUp, TrendingDown } from 'lucide-react';
 
-export default function HKKPI({ rooms, staff }) {
+export default function HKKPI({ rooms, staff, onStatusClick }) {
   // Calculate KPIs
   const dirty = rooms.filter(r => r.status === 'dirty').length;
   const inProgress = rooms.filter(r => r.status === 'in_progress').length;
@@ -35,7 +35,9 @@ export default function HKKPI({ rooms, staff }) {
       iconColor: 'text-rose-600',
       trend: dirty > 10 ? 'up' : 'down',
       trendValue: dirty > 10 ? '+3' : '-2',
-      trendColor: dirty > 10 ? 'text-rose-600' : 'text-sage-600'
+      trendColor: dirty > 10 ? 'text-rose-600' : 'text-sage-600',
+      statusFilter: 'dirty',
+      clickable: true
     },
     {
       id: 'in_progress',
@@ -47,7 +49,9 @@ export default function HKKPI({ rooms, staff }) {
       iconColor: 'text-gold-700',
       trend: 'neutral',
       trendValue: '0',
-      trendColor: 'text-neutral-500'
+      trendColor: 'text-neutral-500',
+      statusFilter: 'in_progress',
+      clickable: true
     },
     {
       id: 'clean',
@@ -59,7 +63,9 @@ export default function HKKPI({ rooms, staff }) {
       iconColor: 'text-sage-600',
       trend: clean > 20 ? 'up' : 'down',
       trendValue: clean > 20 ? '+5' : '-1',
-      trendColor: clean > 20 ? 'text-sage-600' : 'text-rose-600'
+      trendColor: clean > 20 ? 'text-sage-600' : 'text-rose-600',
+      statusFilter: 'clean',
+      clickable: true
     },
     {
       id: 'inspected',
@@ -71,7 +77,9 @@ export default function HKKPI({ rooms, staff }) {
       iconColor: 'text-sage-600',
       trend: 'up',
       trendValue: '+2',
-      trendColor: 'text-sage-600'
+      trendColor: 'text-sage-600',
+      statusFilter: 'inspected',
+      clickable: true
     },
     {
       id: 'avg_time',
@@ -83,7 +91,8 @@ export default function HKKPI({ rooms, staff }) {
       iconColor: 'text-terra-600',
       trend: avgCleaningTime <= 25 ? 'down' : 'up',
       trendValue: avgCleaningTime <= 25 ? '-3m' : '+5m',
-      trendColor: avgCleaningTime <= 25 ? 'text-sage-600' : 'text-rose-600'
+      trendColor: avgCleaningTime <= 25 ? 'text-sage-600' : 'text-rose-600',
+      clickable: false
     },
     {
       id: 'staff',
@@ -95,7 +104,8 @@ export default function HKKPI({ rooms, staff }) {
       iconColor: 'text-sage-600',
       trend: 'neutral',
       trendValue: `/${staff?.length || 0}`,
-      trendColor: 'text-neutral-900'
+      trendColor: 'text-neutral-900',
+      clickable: false
     },
     {
       id: 'urgent',
@@ -107,7 +117,9 @@ export default function HKKPI({ rooms, staff }) {
       iconColor: urgent > 0 ? 'text-rose-600' : 'text-sage-600',
       trend: urgent > 3 ? 'up' : 'down',
       trendValue: urgent > 3 ? '+2' : '0',
-      trendColor: urgent > 3 ? 'text-rose-600' : 'text-sage-600'
+      trendColor: urgent > 3 ? 'text-rose-600' : 'text-sage-600',
+      priorityFilter: 'high',
+      clickable: true
     },
     {
       id: 'pending',
@@ -119,9 +131,21 @@ export default function HKKPI({ rooms, staff }) {
       iconColor: 'text-gold-700',
       trend: pendingInspection > 5 ? 'up' : 'neutral',
       trendValue: pendingInspection > 5 ? `${pendingInspection} waiting` : 'On track',
-      trendColor: pendingInspection > 5 ? 'text-gold-700' : 'text-sage-600'
+      trendColor: pendingInspection > 5 ? 'text-gold-700' : 'text-sage-600',
+      statusFilter: 'clean',
+      clickable: true
     }
   ];
+
+  const handleKPIClick = (kpi) => {
+    if (!kpi.clickable || !onStatusClick) return;
+
+    if (kpi.statusFilter) {
+      onStatusClick({ type: 'status', value: kpi.statusFilter });
+    } else if (kpi.priorityFilter) {
+      onStatusClick({ type: 'priority', value: kpi.priorityFilter });
+    }
+  };
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -132,7 +156,13 @@ export default function HKKPI({ rooms, staff }) {
         return (
           <div
             key={kpi.id}
-            className="bg-white rounded-[10px] p-6"
+            onClick={() => handleKPIClick(kpi)}
+            className={`bg-white rounded-[10px] p-6 transition-all ${
+              kpi.clickable && onStatusClick
+                ? 'cursor-pointer hover:shadow-md hover:border-terra-200 border border-transparent'
+                : ''
+            }`}
+            title={kpi.clickable ? `Click to filter by ${kpi.title.toLowerCase()}` : undefined}
           >
             {/* Header with Icon and Title */}
             <div className="flex items-center gap-3 mb-4">

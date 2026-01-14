@@ -2,9 +2,10 @@
  * NotificationsDrawer Component
  * Notifications panel - Glimmora Design System v5.0
  * Side drawer pattern matching other drawers in the system
+ * Persists notification state to localStorage
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Bell,
   Check,
@@ -24,6 +25,9 @@ import {
 import { Drawer } from '@/components/ui2/Drawer';
 import { cn } from '@/lib/utils';
 
+// Storage key for notifications persistence
+const NOTIFICATIONS_STORAGE_KEY = 'glimmora_notifications_data';
+
 interface Notification {
   id: string;
   type: 'booking' | 'guest' | 'housekeeping' | 'maintenance' | 'payment' | 'review' | 'system' | 'message';
@@ -39,8 +43,8 @@ interface NotificationsDrawerProps {
   onClose: () => void;
 }
 
-// Mock notifications data
-const mockNotifications: Notification[] = [
+// Default notifications (shown on first load before any user interaction)
+const defaultNotifications: Notification[] = [
   {
     id: '1',
     type: 'booking',
@@ -66,48 +70,29 @@ const mockNotifications: Notification[] = [
     description: 'AC repair in Room 304 has been completed',
     time: '1 hour ago',
     read: false
-  },
-  {
-    id: '4',
-    type: 'housekeeping',
-    title: 'Room Ready for Inspection',
-    description: 'Room 201 cleaning completed, pending inspection',
-    time: '2 hours ago',
-    read: true
-  },
-  {
-    id: '5',
-    type: 'payment',
-    title: 'Payment Received',
-    description: '$1,250.00 received for booking #BK-2024-0892',
-    time: '3 hours ago',
-    read: true
-  },
-  {
-    id: '6',
-    type: 'review',
-    title: 'New Review Posted',
-    description: 'Michael Brown left a 5-star review on Google',
-    time: '5 hours ago',
-    read: true
-  },
-  {
-    id: '7',
-    type: 'system',
-    title: 'System Update',
-    description: 'Channel Manager sync completed successfully',
-    time: 'Yesterday',
-    read: true
-  },
-  {
-    id: '8',
-    type: 'message',
-    title: 'New Message',
-    description: 'Guest in Room 405 requested late checkout',
-    time: 'Yesterday',
-    read: true
   }
 ];
+
+// Helper functions for localStorage persistence
+const loadNotificationsFromStorage = (): Notification[] | null => {
+  try {
+    const stored = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    console.error('Failed to load notifications from storage:', error);
+  }
+  return null;
+};
+
+const saveNotificationsToStorage = (notifications: Notification[]) => {
+  try {
+    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
+  } catch (error) {
+    console.error('Failed to save notifications to storage:', error);
+  }
+};
 
 const typeConfig = {
   booking: { icon: Calendar, color: 'text-neutral-600', bg: 'bg-neutral-100', border: 'border-neutral-200' },
@@ -121,31 +106,40 @@ const typeConfig = {
 };
 
 export function NotificationsDrawer({ isOpen, onClose }: NotificationsDrawerProps) {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  // Initialize state from localStorage or use defaults
+  const [notifications, setNotifications] = useState<Notification[]>(() => {
+    const stored = loadNotificationsFromStorage();
+    return stored !== null ? stored : defaultNotifications;
+  });
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+
+  // Persist notifications to localStorage whenever they change
+  useEffect(() => {
+    saveNotificationsToStorage(notifications);
+  }, [notifications]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
   const filteredNotifications = filter === 'unread'
     ? notifications.filter(n => !n.read)
     : notifications;
 
-  const markAsRead = (id: string) => {
+  const markAsRead = useCallback((id: string) => {
     setNotifications(prev =>
       prev.map(n => n.id === id ? { ...n, read: true } : n)
     );
-  };
+  }, []);
 
-  const markAllAsRead = () => {
+  const markAllAsRead = useCallback(() => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  };
+  }, []);
 
-  const deleteNotification = (id: string) => {
+  const deleteNotification = useCallback((id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
-  };
+  }, []);
 
-  const clearAll = () => {
+  const clearAll = useCallback(() => {
     setNotifications([]);
-  };
+  }, []);
 
   // Custom header
   const renderHeader = () => (

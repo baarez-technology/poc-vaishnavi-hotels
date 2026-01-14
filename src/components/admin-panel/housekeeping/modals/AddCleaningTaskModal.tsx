@@ -77,9 +77,11 @@ export default function AddCleaningTaskModal({
 
   if (!isOpen) return null;
 
-  // Get dirty/unassigned rooms
+  // Get dirty/unassigned rooms - check both assignedTo and assignedStaff
   const availableRooms = rooms?.filter(r =>
-    (r.status === 'dirty' || r.status === 'in_progress') && !r.assignedTo
+    (r.status === 'dirty' || r.status === 'in_progress') &&
+    (r.assignedTo === null || r.assignedTo === undefined) &&
+    !r.assignedStaff?.id
   ) || [];
 
   // Get selected room for time estimation
@@ -115,10 +117,11 @@ export default function AddCleaningTaskModal({
     const tasksAssigned = selectedStaff.tasksAssigned || 0;
 
     // Also check if this specific room is already being cleaned by this staff member
-    // (by looking at all rooms assigned to this staff)
-    const roomsAssignedToStaff = rooms?.filter(r =>
-      r.assignedTo?.toString() === formData.staffId?.toString()
-    ) || [];
+    // (by looking at all rooms assigned to this staff) - handle both assignedTo and assignedStaff
+    const roomsAssignedToStaff = rooms?.filter(r => {
+      const roomStaffId = r.assignedStaff?.id ?? r.assignedTo;
+      return roomStaffId?.toString() === formData.staffId?.toString();
+    }) || [];
 
     if (roomsAssignedToStaff.length > 0) {
       return {

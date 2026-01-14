@@ -247,11 +247,11 @@ export function exportHKToCSV(rooms, staff, filename = 'housekeeping_export.csv'
       : '-';
 
     return [
-      room.roomNumber,
-      room.type,
+      room.roomNumber || room.number,
+      room.type || room.roomType,
       room.floor,
       HK_STATUS_CONFIG[room.status]?.label || room.status,
-      getStaffName(room.assignedTo),
+      room.assignedStaffName || getStaffName(room.assignedTo),
       room.priority ? room.priority.charAt(0).toUpperCase() + room.priority.slice(1) : 'Low',
       startTime,
       estimatedFinish,
@@ -279,6 +279,149 @@ export function exportHKToCSV(rooms, staff, filename = 'housekeeping_export.csv'
   URL.revokeObjectURL(url);
 
   return { success: true, message: `Exported ${rooms.length} rooms to CSV` };
+}
+
+/**
+ * Export housekeeping data to PDF
+ * Creates a printable PDF report with room status summary
+ */
+export function exportHKToPDF(rooms, staff, filename = 'housekeeping_report') {
+  if (!rooms || rooms.length === 0) {
+    return { success: false, message: 'No data to export' };
+  }
+
+  const getStaffName = (staffId) => {
+    const staffMember = staff?.find(s => s.id === staffId);
+    return staffMember ? staffMember.name : 'Unassigned';
+  };
+
+  // Calculate summary statistics
+  const summary = {
+    total: rooms.length,
+    dirty: rooms.filter(r => r.status === 'dirty').length,
+    clean: rooms.filter(r => r.status === 'clean').length,
+    inProgress: rooms.filter(r => r.status === 'in_progress').length,
+    inspected: rooms.filter(r => r.status === 'inspected').length,
+    outOfService: rooms.filter(r => r.status === 'out_of_service').length,
+  };
+
+  // Create HTML content for PDF
+  const timestamp = new Date().toLocaleString();
+  const dateStr = new Date().toISOString().split('T')[0];
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Housekeeping Report - ${dateStr}</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #333; padding: 20px; }
+        .header { text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #A57865; }
+        .header h1 { font-size: 24px; color: #A57865; margin-bottom: 5px; }
+        .header p { color: #666; font-size: 12px; }
+        .summary { display: flex; justify-content: space-around; margin: 20px 0; padding: 15px; background: #f9f7f7; border-radius: 8px; }
+        .summary-item { text-align: center; }
+        .summary-item .value { font-size: 24px; font-weight: bold; color: #A57865; }
+        .summary-item .label { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: #A57865; color: white; padding: 10px 8px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { padding: 8px; border-bottom: 1px solid #eee; }
+        tr:nth-child(even) { background: #fafafa; }
+        .status { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; display: inline-block; }
+        .status-dirty { background: #fee2e2; color: #dc2626; }
+        .status-clean { background: #d1fae5; color: #059669; }
+        .status-in_progress { background: #fef3c7; color: #d97706; }
+        .status-inspected { background: #dbeafe; color: #2563eb; }
+        .status-out_of_service { background: #e5e7eb; color: #6b7280; }
+        .priority-high { color: #dc2626; font-weight: bold; }
+        .priority-medium { color: #d97706; }
+        .priority-low { color: #6b7280; }
+        .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #999; padding-top: 15px; border-top: 1px solid #eee; }
+        @media print { body { padding: 10px; } .summary { page-break-inside: avoid; } }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>Housekeeping Status Report</h1>
+        <p>Generated: ${timestamp}</p>
+      </div>
+
+      <div class="summary">
+        <div class="summary-item">
+          <div class="value">${summary.total}</div>
+          <div class="label">Total Rooms</div>
+        </div>
+        <div class="summary-item">
+          <div class="value" style="color: #dc2626;">${summary.dirty}</div>
+          <div class="label">Dirty</div>
+        </div>
+        <div class="summary-item">
+          <div class="value" style="color: #d97706;">${summary.inProgress}</div>
+          <div class="label">In Progress</div>
+        </div>
+        <div class="summary-item">
+          <div class="value" style="color: #059669;">${summary.clean}</div>
+          <div class="label">Clean</div>
+        </div>
+        <div class="summary-item">
+          <div class="value" style="color: #2563eb;">${summary.inspected}</div>
+          <div class="label">Inspected</div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Room</th>
+            <th>Floor</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Assigned To</th>
+            <th>Priority</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rooms.map(room => `
+            <tr>
+              <td><strong>${room.roomNumber || room.number}</strong></td>
+              <td>Floor ${room.floor}</td>
+              <td>${room.type || room.roomType || 'Standard'}</td>
+              <td><span class="status status-${room.status}">${HK_STATUS_CONFIG[room.status]?.label || room.status}</span></td>
+              <td>${room.assignedStaffName || getStaffName(room.assignedTo)}</td>
+              <td class="priority-${room.priority || 'low'}">${room.priority ? room.priority.charAt(0).toUpperCase() + room.priority.slice(1) : 'Low'}</td>
+              <td>${room.notes ? (room.notes.length > 30 ? room.notes.substring(0, 30) + '...' : room.notes) : '-'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <div class="footer">
+        <p>Glimmora Hotel Management System - Housekeeping Report</p>
+        <p>Page 1 of 1 | Confidential</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  // Open print dialog with the HTML content
+  const printWindow = window.open('', '_blank');
+  if (printWindow) {
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.focus();
+
+    // Wait for content to load then print
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
+
+    return { success: true, message: `PDF report generated for ${rooms.length} rooms` };
+  } else {
+    return { success: false, message: 'Please allow popups to generate PDF report' };
+  }
 }
 
 /**
@@ -314,7 +457,12 @@ export function parseNotes(notesString) {
  */
 export function getStaffPerformanceMetrics(staff, rooms) {
   return staff.map(s => {
-    const assignedRooms = rooms.filter(r => r.assignedTo === s.id);
+    // Handle ID type mismatch - compare as strings for consistency
+    const assignedRooms = rooms.filter(r => {
+      if (!r.assignedTo && !r.assignedStaff) return false;
+      const roomStaffId = r.assignedStaff?.id ?? r.assignedTo;
+      return roomStaffId === s.id || String(roomStaffId) === String(s.id);
+    });
     const completedRooms = assignedRooms.filter(r => r.status === 'clean' || r.status === 'inspected');
 
     // Calculate average cleaning time

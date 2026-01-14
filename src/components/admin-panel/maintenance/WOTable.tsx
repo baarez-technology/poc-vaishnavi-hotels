@@ -137,6 +137,15 @@ export default function WOTable({
                   <SortIcon field="createdAt" />
                 </div>
               </th>
+              <th
+                className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wider cursor-pointer hover:bg-neutral-100"
+                onClick={() => handleSort('estimatedCompletion')}
+              >
+                <div className="flex items-center gap-1">
+                  Est. Completion
+                  <SortIcon field="estimatedCompletion" />
+                </div>
+              </th>
               <th className="px-4 py-3 text-center text-xs font-semibold text-neutral-600 uppercase tracking-wider">
                 Actions
               </th>
@@ -214,6 +223,13 @@ export default function WOTable({
                 {/* Created */}
                 <td className="px-4 py-3">
                   <span className="text-sm text-neutral-600">{formatDateTime(wo.createdAt)}</span>
+                </td>
+
+                {/* Est. Completion */}
+                <td className="px-4 py-3">
+                  <span className={`text-sm ${wo.estimatedCompletion ? 'text-neutral-600' : 'text-neutral-400 italic'}`}>
+                    {wo.estimatedCompletion ? formatDateTime(wo.estimatedCompletion) : 'Not set'}
+                  </span>
                 </td>
 
                 {/* Actions */}

@@ -63,13 +63,37 @@ export default function RoomDrawer({
 
   if (!isOpen || !room) return null;
 
-  // Get housekeeper from room data (comes from API)
-  const housekeeper = room.assignedStaffName ? {
-    name: room.assignedStaffName,
-    avatar: room.assignedStaffName?.charAt(0).toUpperCase(),
-    tasksAssigned: '-',
-    efficiency: '-'
-  } : null;
+  // Get housekeeper from room data - check both assignedStaff object and assignedStaffName
+  const housekeeper = (() => {
+    // First check for assignedStaff object (from StaffView/RoomCard pattern)
+    if (room.assignedStaff?.name) {
+      return {
+        name: room.assignedStaff.name,
+        avatar: room.assignedStaff.avatar || room.assignedStaff.name.charAt(0).toUpperCase(),
+        tasksAssigned: room.assignedStaff.tasksAssigned || '-',
+        efficiency: room.assignedStaff.efficiency || '-'
+      };
+    }
+    // Fallback to assignedStaffName string (from API)
+    if (room.assignedStaffName) {
+      return {
+        name: room.assignedStaffName,
+        avatar: room.assignedStaffName.charAt(0).toUpperCase(),
+        tasksAssigned: '-',
+        efficiency: '-'
+      };
+    }
+    // Check if assignedTo exists but name isn't populated
+    if (room.assignedTo) {
+      return {
+        name: `Staff #${room.assignedTo}`,
+        avatar: 'S',
+        tasksAssigned: '-',
+        efficiency: '-'
+      };
+    }
+    return null;
+  })();
 
   // Calculate progress
   const totalTasks = room.checklist?.length || 0;

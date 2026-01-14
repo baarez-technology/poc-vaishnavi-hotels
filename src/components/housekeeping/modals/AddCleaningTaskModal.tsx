@@ -93,7 +93,12 @@ export default function AddCleaningTaskModal({
     }
   }, [isOpen]);
 
-  const availableRooms = rooms?.filter(r => (r.status === 'dirty' || r.status === 'in_progress') && !r.assignedTo) || [];
+  // Filter for unassigned dirty/in_progress rooms - check both assignedTo and assignedStaff
+  const availableRooms = rooms?.filter(r =>
+    (r.status === 'dirty' || r.status === 'in_progress') &&
+    (r.assignedTo === null || r.assignedTo === undefined) &&
+    !r.assignedStaff?.id
+  ) || [];
   const selectedRoom = rooms?.find(r => r.id === formData.roomId);
   const estimatedTime = selectedRoom ? calculateCleaningTime({ type: selectedRoom.type, priority: formData.priority }) : 0;
 

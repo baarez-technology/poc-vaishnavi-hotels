@@ -117,6 +117,8 @@ export interface GuestUpdate {
   status?: string;
   vip_status?: boolean;
   preferred_room_type?: string;
+  emotion?: string;
+  tags?: string[];
 }
 
 export interface PreferencesUpdate {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useGuests } from '../../hooks/admin/useGuests';
 import { usePagination } from '../../hooks/usePagination';
 import { useDrawer } from '../../hooks/useDrawer';
@@ -114,8 +115,12 @@ export default function Guests() {
   const handleSaveGuestEdit = async (guestId, updates) => {
     setIsSaving(true);
     try {
-      updateGuest(guestId, updates);
+      await updateGuest(guestId, updates);
+      toast.success('Guest updated successfully');
       editModal.closeModal();
+    } catch (error: any) {
+      console.error('Failed to update guest:', error);
+      toast.error(error?.response?.data?.detail || 'Failed to update guest. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -135,9 +140,13 @@ export default function Guests() {
     setIsAdding(true);
     try {
       if (addGuest) {
-        addGuest(guestData);
+        await addGuest(guestData);
+        toast.success(`Guest "${guestData.name}" added successfully`);
       }
       addModal.closeModal();
+    } catch (error: any) {
+      console.error('Failed to add guest:', error);
+      toast.error(error?.response?.data?.detail || 'Failed to add guest. Please try again.');
     } finally {
       setIsAdding(false);
     }

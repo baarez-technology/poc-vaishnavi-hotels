@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { filterByTab, filterRooms, searchRooms } from '@/utils/admin/roomFilters';
 import { roomsService } from '@/api/services/rooms.service';
 
@@ -9,10 +9,12 @@ function transformApiRoom(apiRoom: any): any {
   // Extract room number from API response
   const roomNumber = apiRoom.number || apiRoom.name?.split(' ').pop() || String(apiRoom.id);
 
-  // Extract room type from category or name
-  const roomType = apiRoom.category
-    ? apiRoom.category.split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
-    : apiRoom.room_type || apiRoom.name?.replace(/\s+\d+$/, '') || 'Standard Room';
+  // Extract room type - check room_type first (from API), then category, then fallback
+  const roomType = apiRoom.room_type
+    ? apiRoom.room_type.split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+    : apiRoom.category
+      ? apiRoom.category.split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+      : apiRoom.type || apiRoom.name?.replace(/\s+\d+$/, '') || 'Standard Room';
 
   return {
     id: apiRoom.id,
@@ -25,7 +27,7 @@ function transformApiRoom(apiRoom: any): any {
     viewType: apiRoom.view || apiRoom.view_type || apiRoom.viewType || 'Standard',
     capacity: apiRoom.maxGuests || apiRoom.capacity || 2,
     maxOccupancy: apiRoom.maxGuests || apiRoom.max_occupancy || apiRoom.maxOccupancy || 2,
-    price: apiRoom.price || 150,
+    price: apiRoom.price_per_night || apiRoom.price || 150,
     amenities: Array.isArray(apiRoom.amenities) ? apiRoom.amenities : [],
     images: Array.isArray(apiRoom.images) ? apiRoom.images : [],
     guests: null,
@@ -76,6 +78,15 @@ export function useRooms() {
         console.log('[useRooms] API response:', apiRooms);
         if (Array.isArray(apiRooms) && apiRooms.length > 0) {
           const transformedRooms = apiRooms.map(transformApiRoom);
+          // Sort rooms by room number
+          transformedRooms.sort((a, b) => {
+            const numA = parseInt(a.roomNumber, 10);
+            const numB = parseInt(b.roomNumber, 10);
+            if (!isNaN(numA) && !isNaN(numB)) {
+              return numA - numB;
+            }
+            return String(a.roomNumber).localeCompare(String(b.roomNumber), undefined, { numeric: true });
+          });
           console.log('[useRooms] Transformed rooms:', transformedRooms.length);
           setRooms(transformedRooms);
         } else {
@@ -309,9 +320,22 @@ export function useRooms() {
       const createdRoom = await roomsService.createRoom(apiData);
       console.log('[useRooms] Room created via API:', createdRoom);
 
-      // Transform and add to local state
+      // Transform and add to local state, then sort by room number
       const transformedRoom = transformApiRoom(createdRoom);
-      setRooms(prev => [transformedRoom, ...prev]);
+      setRooms(prev => {
+        const updated = [transformedRoom, ...prev];
+        // Sort rooms by room number (numerically if possible, otherwise alphabetically)
+        return updated.sort((a, b) => {
+          const numA = parseInt(a.roomNumber, 10);
+          const numB = parseInt(b.roomNumber, 10);
+          // If both are valid numbers, sort numerically
+          if (!isNaN(numA) && !isNaN(numB)) {
+            return numA - numB;
+          }
+          // Otherwise sort alphabetically
+          return String(a.roomNumber).localeCompare(String(b.roomNumber), undefined, { numeric: true });
+        });
+      });
 
       return createdRoom;
     } catch (err: any) {

@@ -8,12 +8,13 @@ import {
   ChevronRight,
   Home
 } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLocation, Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { NotificationsDrawer } from './notifications/NotificationsDrawer';
 import { useAuth } from '@/hooks/useAuth';
+import { notificationsService } from '@/api/services/notifications.service';
 
 /**
  * Glimmora Design System v4.0 - Header
@@ -24,6 +25,7 @@ import { useAuth } from '@/hooks/useAuth';
 const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed }) => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const { theme, toggleTheme, isDark } = useTheme();
   const location = useLocation();
   const profileMenuRef = useRef(null);
@@ -33,6 +35,26 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed }) => {
     setIsProfileMenuOpen(false);
     logout();
   };
+
+  // Fetch initial unread count
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const result = await notificationsService.getUnreadCount();
+      setUnreadCount(result.unread_count);
+    } catch (err) {
+      console.error('Failed to fetch unread count:', err);
+    }
+  }, []);
+
+  // Fetch unread count on mount
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
+
+  // Handle unread count updates from drawer
+  const handleUnreadCountChange = useCallback((count: number) => {
+    setUnreadCount(count);
+  }, []);
 
   // Close menus on click outside
   useEffect(() => {
@@ -307,7 +329,7 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed }) => {
                 icon={Bell}
                 label="Notifications"
                 onClick={() => setIsNotificationsOpen(true)}
-                badge="3"
+                badge={unreadCount > 0 ? String(unreadCount) : undefined}
               />
             </div>
 
@@ -459,6 +481,7 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed }) => {
       <NotificationsDrawer
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
+        onUnreadCountChange={handleUnreadCountChange}
       />
     </header>
   );

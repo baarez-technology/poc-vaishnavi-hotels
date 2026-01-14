@@ -179,7 +179,8 @@ export function useMaintenance() {
         issue_type: data.category || 'general',
         priority: data.priority || 'medium',
         notes: data.notes,
-        scheduled_date: data.estimatedCompletion || null
+        scheduled_date: data.estimatedCompletion || null,
+        assigned_to: data.assignedTo || null
       });
 
       // Transform API response to local format
@@ -194,8 +195,8 @@ export function useMaintenance() {
         status: apiResponse.status || 'pending',
         issue: apiResponse.title,
         description: apiResponse.description || '',
-        assignedTo: apiResponse.assigned_to,
-        technicianName: apiResponse.assigned_to_name,
+        assignedTo: apiResponse.assigned_to || data.assignedTo || null,
+        technicianName: apiResponse.assigned_to_name || data.technicianName || null,
         estimatedCost: null,
         actualCost: null,
         estimatedDuration: 60,

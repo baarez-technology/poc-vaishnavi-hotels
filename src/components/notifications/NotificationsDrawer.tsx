@@ -4,7 +4,7 @@
  * Side drawer pattern matching other drawers in the system
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Bell,
   Check,
@@ -19,10 +19,12 @@ import {
   Star,
   Clock,
   Trash2,
-  Settings
+  Settings,
+  Loader2
 } from 'lucide-react';
 import { Drawer } from '@/components/ui2/Drawer';
 import { cn } from '@/lib/utils';
+import { notificationsService, type StaffNotification } from '@/api/services/notifications.service';
 
 interface Notification {
   id: string;
@@ -37,77 +39,53 @@ interface Notification {
 interface NotificationsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  onUnreadCountChange?: (count: number) => void;
 }
 
-// Mock notifications data
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'booking',
-    title: 'New Booking Received',
-    description: 'John Smith booked Deluxe Suite for Dec 15-18',
-    time: '5 min ago',
-    read: false,
-    priority: 'high'
-  },
-  {
-    id: '2',
-    type: 'guest',
-    title: 'Guest Check-in Pending',
-    description: 'Sarah Johnson arriving today at 2:00 PM',
-    time: '15 min ago',
-    read: false,
-    priority: 'medium'
-  },
-  {
-    id: '3',
-    type: 'maintenance',
-    title: 'Work Order Completed',
-    description: 'AC repair in Room 304 has been completed',
-    time: '1 hour ago',
-    read: false
-  },
-  {
-    id: '4',
-    type: 'housekeeping',
-    title: 'Room Ready for Inspection',
-    description: 'Room 201 cleaning completed, pending inspection',
-    time: '2 hours ago',
-    read: true
-  },
-  {
-    id: '5',
-    type: 'payment',
-    title: 'Payment Received',
-    description: '$1,250.00 received for booking #BK-2024-0892',
-    time: '3 hours ago',
-    read: true
-  },
-  {
-    id: '6',
-    type: 'review',
-    title: 'New Review Posted',
-    description: 'Michael Brown left a 5-star review on Google',
-    time: '5 hours ago',
-    read: true
-  },
-  {
-    id: '7',
-    type: 'system',
-    title: 'System Update',
-    description: 'Channel Manager sync completed successfully',
-    time: 'Yesterday',
-    read: true
-  },
-  {
-    id: '8',
-    type: 'message',
-    title: 'New Message',
-    description: 'Guest in Room 405 requested late checkout',
-    time: 'Yesterday',
-    read: true
-  }
-];
+// Transform API notification to local format
+const transformNotification = (apiNotification: StaffNotification): Notification => {
+  // Map notification_type to our local types
+  const typeMap: Record<string, Notification['type']> = {
+    'booking': 'booking',
+    'guest': 'guest',
+    'housekeeping': 'housekeeping',
+    'maintenance': 'maintenance',
+    'payment': 'payment',
+    'review': 'review',
+    'system': 'system',
+    'message': 'message',
+    'task': 'system',
+    'alert': 'system'
+  };
+
+  // Format time ago
+  const formatTimeAgo = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays === 1) return 'Yesterday';
+    return `${diffDays} days ago`;
+  };
+
+  return {
+    id: String(apiNotification.id),
+    type: typeMap[apiNotification.notification_type] || 'system',
+    title: apiNotification.title,
+    description: apiNotification.message,
+    time: formatTimeAgo(apiNotification.created_at),
+    read: apiNotification.is_read,
+    priority: apiNotification.task?.priority === 'urgent' ? 'high' :
+              apiNotification.task?.priority === 'high' ? 'high' :
+              apiNotification.task?.priority === 'medium' ? 'medium' : 'low'
+  };
+};
 
 const typeConfig = {
   booking: { icon: Calendar, color: 'text-neutral-600', bg: 'bg-neutral-100', border: 'border-neutral-200' },
@@ -120,31 +98,90 @@ const typeConfig = {
   message: { icon: MessageSquare, color: 'text-neutral-600', bg: 'bg-neutral-100', border: 'border-neutral-200' }
 };
 
-export function NotificationsDrawer({ isOpen, onClose }: NotificationsDrawerProps) {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+export function NotificationsDrawer({ isOpen, onClose, onUnreadCountChange }: NotificationsDrawerProps) {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch notifications from API
+  const fetchNotifications = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const apiNotifications = await notificationsService.getNotifications({ limit: 50 });
+      const transformed = apiNotifications.map(transformNotification);
+      setNotifications(transformed);
+
+      // Notify parent of unread count
+      const unread = transformed.filter(n => !n.read).length;
+      onUnreadCountChange?.(unread);
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+      setError('Failed to load notifications');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [onUnreadCountChange]);
+
+  // Fetch notifications when drawer opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchNotifications();
+    }
+  }, [isOpen, fetchNotifications]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
   const filteredNotifications = filter === 'unread'
     ? notifications.filter(n => !n.read)
     : notifications;
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
-    );
+  const markAsRead = async (id: string) => {
+    try {
+      await notificationsService.markAsRead(Number(id));
+      setNotifications(prev =>
+        prev.map(n => n.id === id ? { ...n, read: true } : n)
+      );
+      // Update unread count
+      const newUnread = notifications.filter(n => n.id !== id && !n.read).length;
+      onUnreadCountChange?.(newUnread);
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  const markAllAsRead = async () => {
+    try {
+      await notificationsService.markAllAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      onUnreadCountChange?.(0);
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+    }
   };
 
-  const deleteNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+  const deleteNotification = async (id: string) => {
+    try {
+      await notificationsService.deleteNotification(Number(id));
+      const deletedNotification = notifications.find(n => n.id === id);
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      // Update unread count if the deleted notification was unread
+      if (deletedNotification && !deletedNotification.read) {
+        onUnreadCountChange?.(unreadCount - 1);
+      }
+    } catch (err) {
+      console.error('Failed to delete notification:', err);
+    }
   };
 
-  const clearAll = () => {
-    setNotifications([]);
+  const clearAll = async () => {
+    try {
+      await notificationsService.deleteAllNotifications();
+      setNotifications([]);
+      onUnreadCountChange?.(0);
+    } catch (err) {
+      console.error('Failed to clear notifications:', err);
+    }
   };
 
   // Custom header
@@ -229,8 +266,29 @@ export function NotificationsDrawer({ isOpen, onClose }: NotificationsDrawerProp
       maxWidth="max-w-xl"
       noPadding
     >
-      {/* Notifications List */}
-      {filteredNotifications.length === 0 ? (
+      {/* Loading State */}
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-16 px-6">
+          <Loader2 className="w-8 h-8 text-terra-500 animate-spin mb-4" />
+          <p className="text-[13px] text-neutral-500">Loading notifications...</p>
+        </div>
+      ) : error ? (
+        /* Error State */
+        <div className="flex flex-col items-center justify-center py-16 px-6">
+          <div className="w-14 h-14 rounded-xl bg-rose-100 flex items-center justify-center mb-4">
+            <AlertCircle className="w-7 h-7 text-rose-500" />
+          </div>
+          <p className="text-[13px] font-semibold text-neutral-900 mb-1">Failed to load</p>
+          <p className="text-[11px] text-neutral-500 text-center mb-4">{error}</p>
+          <button
+            onClick={fetchNotifications}
+            className="text-[12px] font-semibold text-terra-600 hover:text-terra-700"
+          >
+            Try again
+          </button>
+        </div>
+      ) : filteredNotifications.length === 0 ? (
+        /* Empty State */
         <div className="flex flex-col items-center justify-center py-16 px-6">
           <div className="w-14 h-14 rounded-xl bg-neutral-100 flex items-center justify-center mb-4">
             <Bell className="w-7 h-7 text-neutral-400" />

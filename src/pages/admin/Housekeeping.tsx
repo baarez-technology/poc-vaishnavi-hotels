@@ -8,7 +8,7 @@ import { useHKSorting } from '../../hooks/useHKSorting';
 import { useHKSearch } from '../../hooks/useHKSearch';
 import { useToast } from '../../hooks/useToast';
 import { usePagination } from '../../hooks/usePagination';
-import { exportHKToCSV } from '../../utils/housekeeping';
+import { exportHKToCSV, exportHKToPDF } from '../../utils/housekeeping';
 import HKKPI from '../../components/housekeeping/HKKPI';
 import HousekeepingTabs from '../../components/housekeeping/HousekeepingTabs';
 import HousekeepingSearch from '../../components/housekeeping/HousekeepingSearch';
@@ -26,6 +26,8 @@ import { ScanDigitalKeyModal } from '../../components/housekeeping/modals/ScanDi
 import { ForceAssignModal } from '../../components/common/ForceAssignModal';
 import { StaffAvailabilityAlert } from '../../components/common/StaffAvailabilityAlert';
 import Toast from '../../components/common/Toast';
+import AutoAssignResultsModal from '../../components/housekeeping/modals/AutoAssignResultsModal';
+import ExportOptionsModal from '../../components/housekeeping/modals/ExportOptionsModal';
 import Pagination from '../../components/bookings/Pagination';
 import { SORTABLE_FIELDS } from '../../utils/housekeepingSort';
 import { api } from '../../lib/api';
@@ -107,8 +109,16 @@ export default function Housekeeping() {
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
   const [isScanKeyModalOpen, setIsScanKeyModalOpen] = useState(false);
   const [isForceAssignModalOpen, setIsForceAssignModalOpen] = useState(false);
+  const [isAutoAssignResultsOpen, setIsAutoAssignResultsOpen] = useState(false);
+  const [autoAssignResults, setAutoAssignResults] = useState<{
+    assignments: Array<{ roomId: number; roomNumber?: string; staffId: number; staffName: string; score?: number }>;
+    summary: string;
+    totalAssigned: number;
+    failed?: number;
+  } | null>(null);
   const [taskForForceAssign, setTaskForForceAssign] = useState(null);
   const [roomForAction, setRoomForAction] = useState(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Staff availability state
   const [staffAvailability, setStaffAvailability] = useState({
@@ -200,6 +210,23 @@ export default function Housekeeping() {
     try {
       const result = await runAutoAssign();
       // Toast is already shown by runAutoAssign
+
+      // Show detailed results modal if there are assignments
+      if (result && result.assignments && result.assignments.length > 0) {
+        // Enrich assignments with room numbers
+        const enrichedAssignments = result.assignments.map((a: { roomId: number; staffId: number; staffName: string; score?: number }) => ({
+          ...a,
+          roomNumber: rooms.find(r => r.id === a.roomId)?.number
+        }));
+
+        setAutoAssignResults({
+          assignments: enrichedAssignments,
+          summary: result.summary || `${result.assignments.length} rooms assigned`,
+          totalAssigned: result.assignments.length,
+          failed: 0
+        });
+        setIsAutoAssignResultsOpen(true);
+      }
     } catch (err) {
       showToast('Failed to auto-assign tasks', 'error');
     } finally {
@@ -306,9 +333,18 @@ export default function Housekeeping() {
     }
   };
 
-  // CSV Export
-  const handleExport = () => {
+  // Export handlers
+  const handleExportCSV = () => {
     const result = exportHKToCSV(rooms, staff);
+    if (result.success) {
+      showToast(result.message, 'success');
+    } else {
+      showToast(result.message, 'error');
+    }
+  };
+
+  const handleExportPDF = () => {
+    const result = exportHKToPDF(rooms, staff);
     if (result.success) {
       showToast(result.message, 'success');
     } else {
@@ -380,7 +416,7 @@ export default function Housekeeping() {
 
           {/* Quick Actions */}
           <div className="flex items-center gap-3">
-            <Button variant="outline" icon={Download} onClick={handleExport}>
+            <Button variant="outline" icon={Download} onClick={() => setIsExportModalOpen(true)}>
               Export
             </Button>
             <Button variant="outline" icon={ArrowUpDown} onClick={() => setIsBulkAssignModalOpen(true)}>
@@ -561,6 +597,24 @@ export default function Housekeeping() {
         taskDescription={taskForForceAssign?.notes || 'Housekeeping Task'}
         busyStaff={staffAvailability.busyStaff}
         availableStaff={staffAvailability.availableStaff}
+      />
+
+      {/* Auto-Assign Results Modal */}
+      <AutoAssignResultsModal
+        isOpen={isAutoAssignResultsOpen}
+        onClose={() => {
+          setIsAutoAssignResultsOpen(false);
+          setAutoAssignResults(null);
+        }}
+        results={autoAssignResults}
+      />
+
+      {/* Export Options Modal */}
+      <ExportOptionsModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        onExportCSV={handleExportCSV}
+        onExportPDF={handleExportPDF}
       />
 
       {/* Toast Notifications */}

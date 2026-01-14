@@ -109,13 +109,23 @@ export function useHousekeeping() {
           cleaningStatus = 'in_progress';
         }
 
+        // Extract floor from room number if not provided by API
+        // Room numbers like "201", "305", "1102" - first digit(s) before last 2 digits is floor
+        const extractFloorFromNumber = (roomNum: string): number => {
+          if (!roomNum || roomNum.length < 2) return 1;
+          // For room numbers like "201" -> floor 2, "1102" -> floor 11
+          const floorPart = roomNum.slice(0, -2);
+          const parsed = parseInt(floorPart, 10);
+          return isNaN(parsed) || parsed < 1 ? 1 : parsed;
+        };
+
         return {
           id: room.id,
           number: room.number,
           roomNumber: room.number, // Add for consistency with components
           type: room.room_type || 'Standard',
           roomType: room.room_type || 'Standard',
-          floor: room.floor || 1,
+          floor: room.floor || extractFloorFromNumber(room.number),
           status: room.status || 'dirty',
           cleaningStatus,
           priority: task?.priority || 'medium',

@@ -1224,7 +1224,7 @@ function AvailabilityEditPanel({
 // ============================================
 export default function CMSAvailability() {
   const { isDark } = useTheme();
-  const { success, info } = useToast();
+  const { success, info, error: showError } = useToast();
   const cmsAvailability = useCMSAvailability();
   const scrollContainerRef = useRef(null);
 
@@ -1277,6 +1277,7 @@ export default function CMSAvailability() {
   const [bulkSelections, setBulkSelections] = useState([]);
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
   const [blockToEdit, setBlockToEdit] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Initialize selected room types when room config loads
   useEffect(() => {
@@ -1524,6 +1525,111 @@ export default function CMSAvailability() {
     );
   };
 
+  // Export availability data to CSV
+  const handleExport = useCallback(() => {
+    if (Object.keys(availabilityData).length === 0) {
+      info('No availability data to export');
+      return;
+    }
+
+    setIsExporting(true);
+    info('Exporting availability data...');
+
+    try {
+      // CSV headers
+      const headers = [
+        'Date',
+        'Room Type',
+        'Total Rooms',
+        'Sold',
+        'Reserved',
+        'Blocked',
+        'Available',
+        'Occupancy %',
+        'Base Rate',
+        'Min Stay',
+        'Max Stay',
+        'Closed',
+        'CTA',
+        'CTD'
+      ];
+
+      // Build CSV rows
+      const rows: string[][] = [];
+
+      dates.forEach(({ date }) => {
+        selectedRoomTypes.forEach(roomType => {
+          const data = availabilityData[date]?.[roomType];
+          if (data) {
+            const sold = data.sold || 0;
+            const reserved = data.reserved || 0;
+            const totalOccupied = sold + reserved;
+            const occupancy = data.totalRooms > 0
+              ? Math.round((totalOccupied / data.totalRooms) * 100)
+              : 0;
+
+            rows.push([
+              date,
+              roomType,
+              String(data.totalRooms || 0),
+              String(sold),
+              String(reserved),
+              String(data.blocked || 0),
+              String(data.remaining || 0),
+              `${occupancy}%`,
+              `$${data.baseRate || 0}`,
+              String(data.restrictions?.minStay || 1),
+              String(data.restrictions?.maxStay || 30),
+              data.isClosed ? 'Yes' : 'No',
+              data.restrictions?.CTA ? 'Yes' : 'No',
+              data.restrictions?.CTD ? 'Yes' : 'No'
+            ]);
+          }
+        });
+      });
+
+      if (rows.length === 0) {
+        info('No data available for selected room types');
+        setIsExporting(false);
+        return;
+      }
+
+      // Convert to CSV string
+      const escapeCSV = (value: string) => {
+        if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+      };
+
+      const csvContent = [
+        headers.map(escapeCSV).join(','),
+        ...rows.map(row => row.map(escapeCSV).join(','))
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+
+      const today = new Date().toISOString().split('T')[0];
+      link.setAttribute('href', url);
+      link.setAttribute('download', `availability_export_${today}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      success('Availability data exported successfully');
+    } catch (err) {
+      console.error('Export error:', err);
+      showError('Failed to export availability data');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [availabilityData, dates, selectedRoomTypes, info, success, showError]);
+
   return (
     <div className={cn(
       'min-h-screen transition-colors duration-500',
@@ -1572,14 +1678,18 @@ export default function CMSAvailability() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button className={cn(
-              'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
-              isDark
-                ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-                : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50'
-            )}>
-              <Download className="w-4 h-4" />
-              Export
+            <button
+              onClick={handleExport}
+              disabled={isExporting}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
+                isDark
+                  ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700 disabled:opacity-50'
+                  : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50 disabled:opacity-50'
+              )}
+            >
+              <Download className={cn('w-4 h-4', isExporting && 'animate-pulse')} />
+              {isExporting ? 'Exporting...' : 'Export'}
             </button>
             <button className={cn(
               'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',

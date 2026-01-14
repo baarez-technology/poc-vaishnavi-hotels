@@ -184,10 +184,13 @@ export function useStaff() {
         // Update the default shift
         const updatedMember = { ...member, shift: shiftData.shift };
 
-        // Add to schedule
+        // Add to schedule with full details
         const newScheduleEntry = {
           date: shiftData.date,
-          shift: shiftData.shift
+          shift: shiftData.shift,
+          startTime: shiftData.startTime || '08:00',
+          endTime: shiftData.endTime || '16:00',
+          hours: `${shiftData.startTime || '08:00'} - ${shiftData.endTime || '16:00'}`
         };
 
         // Check if date already exists in schedule

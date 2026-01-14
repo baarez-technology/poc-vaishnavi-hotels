@@ -1,7 +1,9 @@
 /**
  * Housekeeping Utility Functions
- * Auto-assign algorithm, cleaning time calculations, KPI calculations, CSV export
+ * Auto-assign algorithm, cleaning time calculations, KPI calculations, CSV/PDF export
  */
+
+import jsPDF from 'jspdf';
 
 // Cleaning time estimates by room type (in minutes)
 export const CLEANING_TIME_ESTIMATES = {
@@ -359,4 +361,158 @@ export function generateSparklineData(baseValue, days = 7) {
     data.push(Math.max(0, Math.min(100, baseValue + variance)));
   }
   return data;
+}
+
+/**
+ * Export housekeeping data to PDF
+ */
+export function exportHKToPDF(rooms: any[], staff: any[], filename = 'housekeeping_report.pdf') {
+  if (!rooms || rooms.length === 0) {
+    return { success: false, message: 'No data to export' };
+  }
+
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 20;
+  let yPos = margin;
+
+  // Helper function
+  const addText = (text: string, x: number, y: number, fontSize: number = 10, fontStyle: 'normal' | 'bold' = 'normal') => {
+    doc.setFontSize(fontSize);
+    doc.setFont('helvetica', fontStyle);
+    doc.text(text, x, y);
+    return y + (fontSize * 0.5);
+  };
+
+  // Header
+  doc.setFillColor(165, 120, 101); // Terra color
+  doc.rect(0, 0, pageWidth, 35, 'F');
+
+  doc.setTextColor('#FFFFFF');
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('GLIMMORA', margin, 22);
+
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Housekeeping Report', pageWidth - margin, 22, { align: 'right' });
+
+  yPos = 45;
+
+  // Report date
+  doc.setTextColor('#666666');
+  doc.setFontSize(10);
+  const reportDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  yPos = addText(`Generated: ${reportDate}`, margin, yPos, 10) + 10;
+
+  // Summary Section
+  doc.setTextColor('#000000');
+  yPos = addText('Summary', margin, yPos, 14, 'bold') + 5;
+
+  const dirty = rooms.filter((r: any) => r.status === 'dirty').length;
+  const inProgress = rooms.filter((r: any) => r.status === 'in_progress').length;
+  const clean = rooms.filter((r: any) => r.status === 'clean').length;
+  const inspected = rooms.filter((r: any) => r.status === 'inspected').length;
+  const outOfService = rooms.filter((r: any) => r.status === 'out_of_service').length;
+
+  yPos = addText(`Total Rooms: ${rooms.length}`, margin, yPos, 10) + 3;
+  yPos = addText(`Dirty: ${dirty}  |  In Progress: ${inProgress}  |  Clean: ${clean}  |  Inspected: ${inspected}  |  Out of Service: ${outOfService}`, margin, yPos, 10) + 10;
+
+  // Room Details Section
+  yPos = addText('Room Details', margin, yPos, 14, 'bold') + 5;
+
+  // Table headers
+  const colWidths = [25, 35, 20, 35, 55];
+  const headers = ['Room', 'Type', 'Floor', 'Status', 'Assigned To'];
+  let xPos = margin;
+
+  doc.setFillColor(245, 245, 245);
+  doc.rect(margin, yPos - 4, pageWidth - 2 * margin, 8, 'F');
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor('#333333');
+  headers.forEach((header, i) => {
+    doc.text(header, xPos, yPos);
+    xPos += colWidths[i];
+  });
+  yPos += 8;
+
+  // Table rows
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor('#000000');
+
+  const getStaffName = (staffId: any) => {
+    const staffMember = staff?.find((s: any) => s.id === staffId);
+    return staffMember ? staffMember.name : 'Unassigned';
+  };
+
+  const statusLabels: Record<string, string> = {
+    dirty: 'Dirty',
+    in_progress: 'In Progress',
+    clean: 'Clean',
+    inspected: 'Inspected',
+    out_of_service: 'Out of Service'
+  };
+
+  rooms.slice(0, 40).forEach((room: any, index: number) => {
+    // Check if we need a new page
+    if (yPos > 270) {
+      doc.addPage();
+      yPos = margin;
+    }
+
+    // Alternate row background
+    if (index % 2 === 0) {
+      doc.setFillColor(252, 252, 252);
+      doc.rect(margin, yPos - 4, pageWidth - 2 * margin, 7, 'F');
+    }
+
+    xPos = margin;
+    doc.setFontSize(9);
+
+    const rowData = [
+      room.roomNumber || room.number || '-',
+      room.type || '-',
+      String(room.floor || '-'),
+      statusLabels[room.status] || room.status || '-',
+      getStaffName(room.assignedTo)
+    ];
+
+    rowData.forEach((cell, i) => {
+      const text = String(cell).substring(0, colWidths[i] / 2);
+      doc.text(text, xPos, yPos);
+      xPos += colWidths[i];
+    });
+
+    yPos += 7;
+  });
+
+  if (rooms.length > 40) {
+    yPos += 5;
+    doc.setFontSize(9);
+    doc.setTextColor('#666666');
+    doc.text(`... and ${rooms.length - 40} more rooms. Export to CSV for complete data.`, margin, yPos);
+  }
+
+  // Footer
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor('#999999');
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, 290, { align: 'center' });
+    doc.text('Glimmora Hotel Management', margin, 290);
+  }
+
+  // Save
+  const timestamp = new Date().toISOString().split('T')[0];
+  doc.save(`${filename.replace('.pdf', '')}_${timestamp}.pdf`);
+
+  return { success: true, message: `Exported ${rooms.length} rooms to PDF` };
 }

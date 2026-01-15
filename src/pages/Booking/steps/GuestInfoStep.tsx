@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { User, Mail, Phone, MessageSquare, Shield, CheckCircle, ArrowRight } from 'lucide-react';
 import { useBooking } from '@/contexts/BookingContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,6 +23,7 @@ interface GuestInfoStepProps {
 export function GuestInfoStep({ onNext }: GuestInfoStepProps) {
   const { bookingData, updateBookingData } = useBooking();
   const { user } = useAuth();
+  const hasAutoProceeded = useRef(false);
 
   const {
     register,
@@ -35,8 +36,28 @@ export function GuestInfoStep({ onNext }: GuestInfoStepProps) {
     defaultValues: bookingData.guestInfo,
   });
 
-  // Autofill from user profile when logged in
+  // Auto-proceed in modify mode if guest info is complete
   useEffect(() => {
+    if (
+      bookingData.isModifyMode &&
+      !hasAutoProceeded.current &&
+      bookingData.guestInfo?.firstName &&
+      bookingData.guestInfo?.lastName &&
+      bookingData.guestInfo?.email &&
+      bookingData.guestInfo?.phone
+    ) {
+      hasAutoProceeded.current = true;
+      // Update booking data and proceed to next step
+      updateBookingData({ guestInfo: bookingData.guestInfo });
+      onNext();
+    }
+  }, [bookingData.isModifyMode, bookingData.guestInfo, onNext, updateBookingData]);
+
+  // Autofill from user profile when logged in (skip in modify mode - already pre-filled)
+  useEffect(() => {
+    // Skip autofill in modify mode since guest info is already populated
+    if (bookingData.isModifyMode) return;
+
     const autofillUserInfo = async () => {
       if (user && (!bookingData.guestInfo?.firstName || !bookingData.guestInfo?.email)) {
         try {
@@ -44,7 +65,7 @@ export function GuestInfoStep({ onNext }: GuestInfoStepProps) {
           const nameParts = (profile.fullName || '').split(' ');
           const firstName = nameParts[0] || '';
           const lastName = nameParts.slice(1).join(' ') || '';
-          
+
           const autofilledData = {
             firstName: firstName || bookingData.guestInfo?.firstName || '',
             lastName: lastName || bookingData.guestInfo?.lastName || '',
@@ -52,7 +73,7 @@ export function GuestInfoStep({ onNext }: GuestInfoStepProps) {
             phone: profile.phone || bookingData.guestInfo?.phone || '',
             specialRequests: bookingData.guestInfo?.specialRequests || '',
           };
-          
+
           reset(autofilledData);
           updateBookingData({ guestInfo: autofilledData });
         } catch (error) {
@@ -62,7 +83,7 @@ export function GuestInfoStep({ onNext }: GuestInfoStepProps) {
     };
 
     autofillUserInfo();
-  }, [user]);
+  }, [user, bookingData.isModifyMode]);
 
   const onSubmit = (data: any) => {
     updateBookingData({ guestInfo: data });

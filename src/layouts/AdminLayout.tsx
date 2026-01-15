@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
-import AIAssistantPanel from '../components/ai/AIAssistantPanel';
-import { useAIAssistant } from '../hooks/useAIAssistant';
+import AIAssistantPanel from '../components/admin-panel/ai/AIAssistantPanel';
+import { useAIAssistant } from '../hooks/admin/useAIAssistant';
 import { Outlet } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -13,29 +13,23 @@ export default function AdminLayout() {
   // Sidebar collapse state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  // AI Assistant hook
+  // AI Assistant hook - admin version with backend AI and real-time voice
   const {
     messages,
     isPanelOpen,
-    isListening,
     isTyping,
-    voiceModalOpen,
     conversationEndRef,
     addUserMessage,
     togglePanel,
     closePanel,
-    toggleListening,
-    handleVoiceInput,
     clearConversation,
     sendQuickAction,
     sendSuggestion,
-    hasMessages
+    hasMessages,
+    confirmAction,
+    cancelAction,
+    hasPendingAction,
   } = useAIAssistant();
-
-  // Handle AI voice button click - toggles voice recording
-  const handleAIVoiceClick = () => {
-    toggleListening();
-  };
 
   // Handle AI panel toggle
   const handleAIPanelToggle = () => {
@@ -76,7 +70,6 @@ export default function AdminLayout() {
           {/* Header - Takes remaining width */}
           <div className="flex-1">
             <Header
-              onAIVoiceClick={handleAIVoiceClick}
               onAIPanelToggle={handleAIPanelToggle}
               onSidebarToggle={handleSidebarToggle}
               isSidebarCollapsed={isSidebarCollapsed}
@@ -107,22 +100,20 @@ export default function AdminLayout() {
           </main>
         </div>
 
-        {/* AI Assistant Panel */}
+        {/* AI Assistant Panel - Admin version with real-time voice */}
         <AIAssistantPanel
           isOpen={isPanelOpen}
           onClose={closePanel}
           messages={messages}
           isTyping={isTyping}
-          isListening={isListening}
-          voiceModalOpen={voiceModalOpen}
           conversationEndRef={conversationEndRef}
           onSendMessage={addUserMessage}
           onSuggestionClick={sendSuggestion}
           onQuickActionClick={sendQuickAction}
-          onVoiceClick={toggleListening}
-          onVoiceTranscriptReady={handleVoiceInput}
           onClearConversation={clearConversation}
           hasMessages={hasMessages}
+          onConfirmAction={confirmAction}
+          onCancelAction={cancelAction}
         />
       </div>
     </div>

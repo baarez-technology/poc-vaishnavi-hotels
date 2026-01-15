@@ -251,7 +251,7 @@ export function useHousekeeping() {
       }
 
       // Assign staff to the task
-      await housekeepingService.assignTask(taskId, {
+      const assignResult = await housekeepingService.assignTask(taskId, {
         staff_id: staffId,
         priority: room.priority,
       });
@@ -283,10 +283,22 @@ export function useHousekeeping() {
         return s;
       }));
 
-      toast.success(`Room ${room.number} assigned to ${staffMember?.name || 'staff'}`);
+      // Show warning if task was reassigned from another staff
+      if (assignResult?.warning) {
+        toast.success(`Room ${room.number} assigned to ${staffMember?.name || 'staff'}`, { duration: 3000 });
+        toast(assignResult.warning, { icon: '⚠️', duration: 5000 });
+      } else {
+        toast.success(`Room ${room.number} assigned to ${staffMember?.name || 'staff'}`);
+      }
     } catch (err: any) {
       console.error('Error assigning staff:', err);
-      toast.error(err.response?.data?.detail || 'Failed to assign staff');
+      // Show specific error message for duplicate assignment
+      const errorDetail = err.response?.data?.detail;
+      if (errorDetail && errorDetail.includes('already assigned')) {
+        toast.error(errorDetail, { duration: 5000, icon: '⚠️' });
+      } else {
+        toast.error(errorDetail || 'Failed to assign staff');
+      }
     }
   }, [rooms, staff]);
 

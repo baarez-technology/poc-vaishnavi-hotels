@@ -27,8 +27,10 @@ export default function GuestRow({ guest, onClick, onEdit, onMessage, onDelete }
     blacklisted: { color: 'bg-rose-50 text-rose-700 border-rose-200', label: '🚫 Blocked' }
   };
 
-  const emotion = emotionConfig[guest.emotion] || emotionConfig.neutral;
-  const status = statusConfig[guest.status] || statusConfig.normal;
+  // Use displayEmotion and displayStatus for UI display (mapped values like 'positive', 'vip')
+  // The original 'emotion' and 'status' fields contain API values for editing
+  const emotion = emotionConfig[guest.displayEmotion] || emotionConfig.neutral;
+  const status = statusConfig[guest.displayStatus] || statusConfig.normal;
 
   const handleActionClick = (e, action) => {
     e.stopPropagation();
@@ -45,8 +47,7 @@ export default function GuestRow({ guest, onClick, onEdit, onMessage, onDelete }
 
   return (
     <tr
-      onClick={() => onClick && onClick(guest)}
-      className="group bg-white hover:bg-neutral-50/30 transition-colors duration-100 cursor-pointer"
+      className="group bg-white hover:bg-neutral-50/30 transition-colors duration-100"
     >
       {/* Name */}
       <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">

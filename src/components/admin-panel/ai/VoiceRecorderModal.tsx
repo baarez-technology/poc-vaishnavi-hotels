@@ -345,8 +345,11 @@ export default function VoiceRecorderModal({
   const handleDone = () => {
     if (transcript) {
       onTranscriptReady(transcript);
+      // Don't call onClose() here - handleVoiceInput already closes the modal
+      // Calling onClose would trigger toggleListening which would reopen the modal
+    } else {
+      onClose();
     }
-    onClose();
   };
 
   const handleRetry = () => {

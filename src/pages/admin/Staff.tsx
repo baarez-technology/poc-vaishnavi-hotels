@@ -126,27 +126,47 @@ export default function Staff() {
     if (Array.isArray(shiftData)) {
       let newCount = 0;
       let updateCount = 0;
+      let duplicateCount = 0;
+      let warnings: string[] = [];
 
       // Assign each day individually
       for (const dayData of shiftData) {
         const result = await assignShift(id, dayData);
-        if (result.isUpdate) {
+        if (result.isDuplicate) {
+          duplicateCount++;
+        } else if (result.isUpdate) {
           updateCount++;
-        } else {
+          if (result.warning) warnings.push(result.warning);
+        } else if (result.success) {
           newCount++;
+          if (result.warning) warnings.push(result.warning);
         }
       }
 
       // Show appropriate message based on results
+      if (duplicateCount > 0) {
+        toast.error(`${duplicateCount} shift(s) skipped - already assigned with same details`, { duration: 5000, icon: '⚠️' });
+      }
       if (updateCount > 0 && newCount > 0) {
         toast.info(`${newCount} new shift(s) assigned, ${updateCount} existing shift(s) updated`);
       } else if (updateCount > 0) {
         toast.info(`${updateCount} existing shift(s) updated`);
-      } else {
+      } else if (newCount > 0) {
         toast.success(`Shift assigned for ${newCount} days`);
       }
     } else {
       const result = await assignShift(id, shiftData);
+
+      // Handle duplicate/error
+      if (result.isDuplicate) {
+        toast.error(result.error || 'This exact shift is already assigned', { duration: 5000, icon: '⚠️' });
+        return;
+      }
+
+      if (!result.success && result.error) {
+        toast.error(result.error);
+        return;
+      }
 
       if (result.isUpdate) {
         // Format the date for display
@@ -156,6 +176,10 @@ export default function Staff() {
           day: 'numeric'
         });
         toast.info(`Shift for ${dateStr} has been updated`);
+        // Show warning if there was a previous shift
+        if (result.warning) {
+          toast(result.warning, { icon: '⚠️', duration: 5000 });
+        }
       } else {
         toast.success('Shift assigned successfully');
       }
@@ -178,9 +202,25 @@ export default function Staff() {
     toast.success('Staff member added successfully');
   };
 
-  const handleEditStaff = (id, updates) => {
-    editStaff(id, updates);
+  const handleEditStaff = async (id, updates) => {
+    const result = await editStaff(id, updates);
+
+    if (result?.success === false) {
+      toast.error(result.error || 'Failed to update staff');
+      return;
+    }
+
     toast.success('Staff details updated');
+
+    // Show warning if there are floor assignment conflicts
+    if (result?.warning) {
+      toast(result.warning, {
+        icon: '⚠️',
+        duration: 6000,
+        style: { background: '#FEF3C7', border: '1px solid #F59E0B' }
+      });
+    }
+
     // Update drawer if currently viewing this staff
     if (selectedStaff && selectedStaff.id === id) {
       setSelectedStaff(prev => ({ ...prev, ...updates }));

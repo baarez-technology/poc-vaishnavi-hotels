@@ -97,6 +97,9 @@ export default function PreventiveModal({
 
   useEffect(() => {
     if (pmTask && mode === 'edit') {
+      // FIX: Convert assignedTo to string for dropdown comparison
+      // Technician IDs are strings in the dropdown options, but API returns numbers
+      const assignedToStr = pmTask.assignedTo ? String(pmTask.assignedTo) : '';
       setFormData({
         equipment: pmTask.equipment || '',
         roomNumber: pmTask.roomNumber || '',
@@ -104,7 +107,7 @@ export default function PreventiveModal({
         category: pmTask.category || 'general',
         frequency: pmTask.frequency || 'monthly',
         nextDueDate: pmTask.nextDueDate || '',
-        assignedTo: pmTask.assignedTo || '',
+        assignedTo: assignedToStr,
         technicianName: pmTask.technicianName || '',
         notes: pmTask.notes || '',
         isActive: pmTask.isActive !== false

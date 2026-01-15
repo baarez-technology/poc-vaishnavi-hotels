@@ -373,7 +373,7 @@ export default function FrequencyCapWarningModal({
                 </button>
 
                 {showChannelDropdown && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1">
+                  <div className="absolute z-[100] w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1">
                     {availableChannels.map((status) => {
                       const Icon = CHANNEL_ICONS[status.channel] || Mail;
                       return (

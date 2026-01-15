@@ -218,10 +218,31 @@ export function ConfirmationStep() {
               </div>
               <div>
                 <div className="text-xs font-semibold text-neutral-500 uppercase mb-1">Payment Method</div>
-                <div className="font-bold text-neutral-900 text-base">
-                  •••• {bookingData.payment.cardNumber.slice(-4)}
-                </div>
-                <div className="text-sm text-neutral-600 mt-0.5">{bookingData.payment.cardName}</div>
+                {bookingData.payment?.cardNumber ? (
+                  <>
+                    <div className="font-bold text-neutral-900 text-base">
+                      •••• {bookingData.payment.cardNumber.slice(-4)}
+                    </div>
+                    <div className="text-sm text-neutral-600 mt-0.5">{bookingData.payment.cardName}</div>
+                  </>
+                ) : bookingData.payment?.paymentMethod === 'pay_at_hotel' ? (
+                  <div className="font-bold text-neutral-900 text-base">
+                    Pay at Hotel
+                  </div>
+                ) : bookingData.payment?.paymentMethod === 'modification_no_payment' ? (
+                  <>
+                    <div className="font-bold text-neutral-900 text-base">
+                      Original Payment Method
+                    </div>
+                    <div className="text-sm text-neutral-600 mt-0.5">
+                      {isModification ? 'Refund will be processed to original payment' : 'No additional payment required'}
+                    </div>
+                  </>
+                ) : (
+                  <div className="font-bold text-neutral-900 text-base">
+                    Payment Confirmed
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -245,8 +266,16 @@ export function ConfirmationStep() {
                 <span className="font-semibold text-neutral-900 text-sm">Taxes & Fees</span>
                 <span className="font-bold text-neutral-900">${tax.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between items-center p-4 bg-green-500 text-white rounded-lg mt-2">
-                <span className="font-bold">Total Paid</span>
+              <div className={`flex justify-between items-center p-4 text-white rounded-lg mt-2 ${
+                bookingData.payment?.paymentMethod === 'pay_at_hotel' ? 'bg-amber-500' : 'bg-green-500'
+              }`}>
+                <span className="font-bold">
+                  {bookingData.payment?.paymentMethod === 'pay_at_hotel'
+                    ? 'Total Due at Check-in'
+                    : bookingData.payment?.paymentMethod === 'modification_no_payment'
+                      ? 'New Total'
+                      : 'Total Paid'}
+                </span>
                 <span className="font-bold text-xl">${total.toFixed(2)}</span>
               </div>
             </div>

@@ -4,10 +4,22 @@ import { ChevronDown, X } from 'lucide-react';
 export default function FiltersBar({ filters, onFilterChange, onClearFilters }) {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const dropdownRef = useRef(null);
+  const dateInputFocusedRef = useRef(false);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
+      // Don't close if a date input is focused (user is interacting with native date picker)
+      if (dateInputFocusedRef.current) {
+        return;
+      }
+
+      // Don't close if clicking on a date input element
+      const target = event.target;
+      if (target?.tagName === 'INPUT' && target?.type === 'date') {
+        return;
+      }
+
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setActiveDropdown(null);
       }
@@ -161,7 +173,11 @@ export default function FiltersBar({ filters, onFilterChange, onClearFilters }) 
                   type="date"
                   value={filters.dateFrom || ''}
                   onChange={(e) => onFilterChange('dateFrom', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#FAF8F6] border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865]"
+                  onFocus={() => { dateInputFocusedRef.current = true; }}
+                  onBlur={() => {
+                    setTimeout(() => { dateInputFocusedRef.current = false; }, 200);
+                  }}
+                  className="w-full px-3 py-2 bg-[#FAF8F6] border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] cursor-pointer"
                 />
               </div>
               <div>
@@ -170,15 +186,30 @@ export default function FiltersBar({ filters, onFilterChange, onClearFilters }) 
                   type="date"
                   value={filters.dateTo || ''}
                   onChange={(e) => onFilterChange('dateTo', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#FAF8F6] border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865]"
+                  onFocus={() => { dateInputFocusedRef.current = true; }}
+                  onBlur={() => {
+                    setTimeout(() => { dateInputFocusedRef.current = false; }, 200);
+                  }}
+                  className="w-full px-3 py-2 bg-[#FAF8F6] border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] cursor-pointer"
                 />
               </div>
-              <button
-                onClick={() => setActiveDropdown(null)}
-                className="w-full px-4 py-2 bg-[#A57865] hover:bg-[#8E6554] text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
-              >
-                Apply
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    onFilterChange('dateFrom', '');
+                    onFilterChange('dateTo', '');
+                  }}
+                  className="flex-1 px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={() => setActiveDropdown(null)}
+                  className="flex-1 px-4 py-2 bg-[#A57865] hover:bg-[#8E6554] text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+                >
+                  Apply
+                </button>
+              </div>
             </div>
           </div>
         )}

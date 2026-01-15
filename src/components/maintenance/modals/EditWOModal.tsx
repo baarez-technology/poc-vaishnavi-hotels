@@ -92,6 +92,9 @@ export default function EditWOModal({ isOpen, onClose, onSubmit, workOrder, tech
 
   useEffect(() => {
     if (workOrder) {
+      // FIX: Convert assignedTo to string for dropdown comparison
+      // Technician IDs are strings in the dropdown options, but API returns numbers
+      const assignedToStr = workOrder.assignedTo ? String(workOrder.assignedTo) : '';
       setFormData({
         roomNumber: workOrder.roomNumber || '',
         roomId: workOrder.roomId || '',
@@ -101,7 +104,7 @@ export default function EditWOModal({ isOpen, onClose, onSubmit, workOrder, tech
         issue: workOrder.issue || '',
         description: workOrder.description || '',
         status: workOrder.status || 'open',
-        assignedTo: workOrder.assignedTo || '',
+        assignedTo: assignedToStr,
         technicianName: workOrder.technicianName || '',
         isOOO: workOrder.isOOO || false,
         estimatedCompletion: workOrder.estimatedCompletion ?

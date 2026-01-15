@@ -399,7 +399,7 @@ export default function OTAConversionOfferModal({
                   <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${showTypeDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 {showTypeDropdown && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1">
+                  <div className="absolute z-[100] w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1">
                     {OFFER_TYPES.map((type) => {
                       const Icon = type.icon;
                       return (
@@ -466,7 +466,7 @@ export default function OTAConversionOfferModal({
                 <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${showChannelDropdown ? 'rotate-180' : ''}`} />
               </button>
               {showChannelDropdown && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1">
+                <div className="absolute z-[100] w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1">
                   {SEND_CHANNELS.map((channel) => {
                     const Icon = channel.icon;
                     return (

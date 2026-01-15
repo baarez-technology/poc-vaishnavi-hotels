@@ -3,7 +3,6 @@ import { X, Sparkles, Trash2 } from 'lucide-react';
 import AIConversation from './AIConversation';
 import AIPromptBar from './AIPromptBar';
 import AIQuickActions from './AIQuickActions';
-import VoiceRecorderModal from './VoiceRecorderModal';
 
 interface PendingAction {
   action_id: string;
@@ -30,13 +29,9 @@ interface AIAssistantPanelProps {
     suggestions?: string[];
   }>;
   isTyping: boolean;
-  isListening: boolean;
-  voiceModalOpen: boolean;
   conversationEndRef: React.RefObject<HTMLDivElement>;
   onSendMessage: (message: string) => void;
   onQuickActionClick: (action: string) => void;
-  onVoiceClick: () => void;
-  onVoiceTranscriptReady: (transcript: string) => void;
   onClearConversation: () => void;
   hasMessages: boolean;
   onConfirmAction?: () => void;
@@ -54,13 +49,9 @@ export default function AIAssistantPanel({
   onClose,
   messages,
   isTyping,
-  isListening,
-  voiceModalOpen,
   conversationEndRef,
   onSendMessage,
   onQuickActionClick,
-  onVoiceClick,
-  onVoiceTranscriptReady,
   onClearConversation,
   hasMessages,
   onConfirmAction,
@@ -123,19 +114,6 @@ export default function AIAssistantPanel({
           </div>
         </div>
 
-        {/* Status bar */}
-        {isListening && (
-          <div className="flex-shrink-0 px-6 py-3 bg-gradient-to-r from-rose-50 via-orange-50 to-rose-50 border-b border-rose-200">
-            <div className="flex items-center justify-center gap-3">
-              <div className="relative">
-                <div className="w-3 h-3 bg-rose-500 rounded-full animate-pulse"></div>
-                <div className="absolute inset-0 w-3 h-3 bg-rose-400 rounded-full animate-ping"></div>
-              </div>
-              <span className="text-sm font-semibold text-rose-700">🎤 Recording voice input...</span>
-            </div>
-          </div>
-        )}
-
         {/* Conversation area */}
         <AIConversation
           messages={messages}
@@ -153,21 +131,13 @@ export default function AIAssistantPanel({
           <AIQuickActions onActionClick={onQuickActionClick} />
         )}
 
-        {/* Prompt bar */}
+        {/* Prompt bar with inline real-time voice */}
         <AIPromptBar
           onSendMessage={onSendMessage}
-          onVoiceClick={onVoiceClick}
-          isListening={isListening}
+          isDisabled={isTyping || isExecutingAction}
           hasMessages={hasMessages}
         />
       </div>
-
-      {/* Voice recorder modal */}
-      <VoiceRecorderModal
-        isOpen={voiceModalOpen}
-        onClose={onVoiceClick}
-        onTranscriptReady={onVoiceTranscriptReady}
-      />
     </>
   );
 }

@@ -1023,7 +1023,7 @@ function TemplateModal({ isOpen, onClose, onSave, template, mode }) {
 
                     {/* AI Assist Dropdown */}
                     {showAIAssist && (
-                      <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-neutral-200 rounded-xl shadow-lg z-10 py-1 animate-in slide-in-from-top-2 duration-200">
+                      <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-neutral-200 rounded-xl shadow-lg z-[100] py-1 animate-in slide-in-from-top-2 duration-200">
                         {AI_ASSIST_OPTIONS.map(({ value, label, icon: Icon }) => (
                           <button
                             key={value}

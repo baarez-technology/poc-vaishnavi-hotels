@@ -488,7 +488,13 @@ export default function Housekeeping() {
             <div className="px-6 pt-4">
               <HousekeepingTabs
                 activeTab={activeTab}
-                onTabChange={setActiveTab}
+                onTabChange={(tabId) => {
+                  setActiveTab(tabId);
+                  // Reset filters when clicking "All Rooms" tab
+                  if (tabId === 'all') {
+                    clearFilters();
+                  }
+                }}
                 counts={counts}
               />
             </div>
@@ -535,7 +541,18 @@ export default function Housekeeping() {
 
         {/* Staff Performance Panel */}
         {staff.length > 0 && (
-          <HKStaffPerformance staff={staff} rooms={rooms} />
+          <HKStaffPerformance
+            staff={staff}
+            rooms={rooms}
+            onStaffClick={(staffMember) => {
+              // Filter rooms by this staff member
+              setActiveTab('all');
+              updateFilter('staff', staffMember.id);
+              showToast(`Showing rooms assigned to ${staffMember.name}`, 'info');
+              // Scroll to the rooms table
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
         )}
       </div>
 

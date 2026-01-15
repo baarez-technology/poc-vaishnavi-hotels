@@ -272,45 +272,32 @@ export function useAIAssistant() {
     setIsPanelOpen(false);
   }, []);
 
-  // Toggle voice listening (using AI Agent's voice engine)
+  // Toggle voice listening - opens VoiceRecorderModal which uses Whisper API
   const toggleListening = useCallback(() => {
-    if (isListening) {
-      aiAgent.voice.stopListening();
+    if (voiceModalOpen) {
+      // Close the modal
       setIsListening(false);
       setVoiceModalOpen(false);
     } else {
+      // Open the modal - VoiceRecorderModal handles recording with Whisper
       setIsListening(true);
       setVoiceModalOpen(true);
       setIsPanelOpen(true);
-
-      aiAgent.voice.startListening((transcript) => {
-        // When transcription is ready, add as user message
-        addUserMessage(transcript);
-        setIsListening(false);
-        setVoiceModalOpen(false);
-      });
     }
-  }, [isListening, aiAgent, addUserMessage]);
+  }, [voiceModalOpen]);
 
-  // Start listening
+  // Start listening - opens VoiceRecorderModal with Whisper
   const startListening = useCallback(() => {
     setIsListening(true);
     setVoiceModalOpen(true);
     setIsPanelOpen(true);
+  }, []);
 
-    aiAgent.voice.startListening((transcript) => {
-      addUserMessage(transcript);
-      setIsListening(false);
-      setVoiceModalOpen(false);
-    });
-  }, [aiAgent, addUserMessage]);
-
-  // Stop listening
+  // Stop listening - closes VoiceRecorderModal
   const stopListening = useCallback(() => {
-    aiAgent.voice.stopListening();
     setIsListening(false);
     setVoiceModalOpen(false);
-  }, [aiAgent]);
+  }, []);
 
   // Handle voice input (simulated or real)
   const handleVoiceInput = useCallback((transcript) => {

@@ -262,8 +262,15 @@ export const guestsService = {
 
   // Create guest
   create: async (data: GuestCreate): Promise<Guest> => {
+    console.log('[GuestsService.create] Sending:', data);
     const response = await apiClient.post<Guest>('/api/v1/guests', data);
-    return response.data;
+    console.log('[GuestsService.create] Raw response:', response);
+    console.log('[GuestsService.create] Response data:', response.data);
+    // Handle both wrapped { success: true, data: guest } and unwrapped guest responses
+    const responseData = response.data as any;
+    const result = responseData?.data || responseData;
+    console.log('[GuestsService.create] Returning:', result);
+    return result;
   },
 
   // Alias for backwards compatibility
@@ -273,8 +280,12 @@ export const guestsService = {
 
   // Update guest
   update: async (guestId: number | string, data: GuestUpdate): Promise<Guest> => {
+    console.log('[GuestsService.update] Sending data:', JSON.stringify(data, null, 2));
     const response = await apiClient.patch<Guest>(`/api/v1/guests/${guestId}`, data);
-    return response.data;
+    console.log('[GuestsService.update] Response:', response.data);
+    // Handle both wrapped { success: true, data: guest } and unwrapped guest responses
+    const responseData = response.data as any;
+    return responseData?.data || responseData;
   },
 
   // Alias for backwards compatibility

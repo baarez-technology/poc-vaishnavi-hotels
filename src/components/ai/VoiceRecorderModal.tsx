@@ -1,71 +1,347 @@
-import React, { useState, useEffect } from 'react';
-import { X, Mic } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { X, Mic, Square, AlertCircle } from 'lucide-react';
+import { agiAssistantService } from '../../api/services/agi-assistant.service';
+
+interface VoiceRecorderModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onTranscriptReady: (transcript: string) => void;
+}
 
 /**
  * Voice Recorder Modal Component
- * Modal for voice recording with visual feedback
+ * Records audio and transcribes it using Whisper API
  */
-export default function VoiceRecorderModal({ isOpen, onClose, onTranscriptReady }) {
+export default function VoiceRecorderModal({
+  isOpen,
+  onClose,
+  onTranscriptReady
+}: VoiceRecorderModalProps) {
   const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [duration, setDuration] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [hasSpoken, setHasSpoken] = useState(false);
+  const [peakAudioLevel, setPeakAudioLevel] = useState(0);
 
-  // Start recording when modal opens
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const durationRef = useRef(0);
+  const hasSpokenRef = useRef(false);
+
+  // Constants for voice detection
+  const MIN_RECORDING_DURATION = 1;
+  const MIN_AUDIO_LEVEL_THRESHOLD = 0.15;
+  const MAX_RECORDING_DURATION = 60;
+  const SILENCE_TIMEOUT = 10;
+
+  // Refs for silence detection
+  const lastSpeechTimeRef = useRef<number>(Date.now());
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const maxDurationTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopRecording();
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (silenceTimerRef.current) {
+        clearInterval(silenceTimerRef.current);
+      }
+      if (maxDurationTimerRef.current) {
+        clearTimeout(maxDurationTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      setIsRecording(true);
       setTranscript('');
       setDuration(0);
+      setError(null);
+      setIsTranscribing(false);
+      setHasSpoken(false);
+      setPeakAudioLevel(0);
     } else {
-      setIsRecording(false);
-      setDuration(0);
+      stopRecording();
     }
   }, [isOpen]);
 
   // Duration timer
   useEffect(() => {
-    let interval;
+    let interval: NodeJS.Timeout;
     if (isRecording) {
       interval = setInterval(() => {
-        setDuration(prev => prev + 1);
+        setDuration(prev => {
+          const newDuration = prev + 1;
+          durationRef.current = newDuration;
+          return newDuration;
+        });
       }, 1000);
     }
     return () => clearInterval(interval);
   }, [isRecording]);
 
-  // Simulated voice recognition (in production, use Web Speech API)
+  // Sync hasSpoken state with ref
   useEffect(() => {
-    if (isRecording) {
-      // Simulate transcription after 2-4 seconds
-      const delay = 2000 + Math.random() * 2000;
-      const timer = setTimeout(() => {
-        const sampleTranscripts = [
-          "Show me today's revenue breakdown",
-          "What's our current occupancy rate?",
-          "How are our recent guest reviews?",
-          "Generate a performance report for this week",
-          "Which rooms need attention today?",
-          "Tell me about our VIP guests",
-          "What are the key insights for today?"
-        ];
-        const randomTranscript = sampleTranscripts[Math.floor(Math.random() * sampleTranscripts.length)];
-        setTranscript(randomTranscript);
-      }, delay);
+    hasSpokenRef.current = hasSpoken;
+  }, [hasSpoken]);
 
-      return () => clearTimeout(timer);
+  // Audio level visualization and speech detection
+  const updateAudioLevel = useCallback(() => {
+    if (analyserRef.current && isRecording) {
+      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+      analyserRef.current.getByteFrequencyData(dataArray);
+
+      const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+      const normalizedLevel = average / 255;
+      setAudioLevel(normalizedLevel);
+
+      if (normalizedLevel > MIN_AUDIO_LEVEL_THRESHOLD) {
+        setHasSpoken(true);
+        setPeakAudioLevel(prev => Math.max(prev, normalizedLevel));
+        lastSpeechTimeRef.current = Date.now();
+      }
+
+      animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
     }
   }, [isRecording]);
 
-  // Handle done (send transcript)
+  // Auto-stop after silence or max duration
+  const checkAutoStop = useCallback(() => {
+    if (!isRecording) return;
+
+    const now = Date.now();
+    const silenceDuration = (now - lastSpeechTimeRef.current) / 1000;
+
+    if (hasSpokenRef.current && silenceDuration >= SILENCE_TIMEOUT) {
+      console.log('Auto-stopping due to silence');
+      setError(`Recording stopped after ${SILENCE_TIMEOUT} seconds of silence.`);
+      handleStopAndTranscribe();
+    }
+  }, [isRecording]);
+
+  // Set up silence detection interval when recording starts
+  useEffect(() => {
+    if (isRecording) {
+      lastSpeechTimeRef.current = Date.now();
+
+      silenceTimerRef.current = setInterval(checkAutoStop, 1000);
+
+      maxDurationTimerRef.current = setTimeout(() => {
+        if (isRecording) {
+          console.log('Auto-stopping due to max duration');
+          setError(`Maximum recording time of ${MAX_RECORDING_DURATION} seconds reached.`);
+          handleStopAndTranscribe();
+        }
+      }, MAX_RECORDING_DURATION * 1000);
+    } else {
+      if (silenceTimerRef.current) {
+        clearInterval(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+      if (maxDurationTimerRef.current) {
+        clearTimeout(maxDurationTimerRef.current);
+        maxDurationTimerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (silenceTimerRef.current) {
+        clearInterval(silenceTimerRef.current);
+      }
+      if (maxDurationTimerRef.current) {
+        clearTimeout(maxDurationTimerRef.current);
+      }
+    };
+  }, [isRecording, checkAutoStop]);
+
+  const startRecording = async () => {
+    try {
+      setError(null);
+      audioChunksRef.current = [];
+      setHasSpoken(false);
+      hasSpokenRef.current = false;
+      setPeakAudioLevel(0);
+      setDuration(0);
+      durationRef.current = 0;
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100
+        }
+      });
+      streamRef.current = stream;
+
+      const audioContext = new AudioContext();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      let mimeType = 'audio/webm;codecs=opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'audio/mp4';
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = '';
+          }
+        }
+      }
+
+      const options: MediaRecorderOptions = mimeType ? { mimeType } : {};
+      const mediaRecorder = new MediaRecorder(stream, options);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: mimeType || 'audio/webm'
+        });
+        await transcribeAudio(audioBlob);
+      };
+
+      mediaRecorder.start(100);
+      setIsRecording(true);
+
+      updateAudioLevel();
+
+    } catch (err: any) {
+      console.error('Error starting recording:', err);
+      if (err.name === 'NotAllowedError') {
+        setError('Microphone access denied. Please allow microphone access in your browser settings.');
+      } else if (err.name === 'NotFoundError') {
+        setError('No microphone found. Please connect a microphone and try again.');
+      } else {
+        setError('Failed to start recording. Please try again.');
+      }
+    }
+  };
+
+  const stopRecording = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+
+    setIsRecording(false);
+    setAudioLevel(0);
+  };
+
+  const transcribeAudio = async (audioBlob: Blob) => {
+    setIsTranscribing(true);
+    setError(null);
+
+    try {
+      const base64Audio = await agiAssistantService.blobToBase64(audioBlob);
+
+      let audioFormat = 'webm';
+      if (audioBlob.type.includes('mp4')) {
+        audioFormat = 'mp4';
+      } else if (audioBlob.type.includes('ogg')) {
+        audioFormat = 'ogg';
+      }
+
+      const result = await agiAssistantService.transcribeAudio({
+        audio_base64: base64Audio,
+        audio_format: audioFormat
+      });
+
+      if (result.success && result.text) {
+        setTranscript(result.text);
+      } else {
+        setError(result.error || 'Transcription failed. Please try again.');
+      }
+    } catch (err: any) {
+      console.error('Transcription error:', err);
+      setError('Failed to transcribe audio. Please try again.');
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
+  const handleStopAndTranscribe = () => {
+    if (isRecording) {
+      if (durationRef.current < MIN_RECORDING_DURATION) {
+        setError('Recording too short. Please speak for at least 1 second.');
+        stopRecordingWithoutTranscribe();
+        return;
+      }
+
+      if (!hasSpokenRef.current && peakAudioLevel < MIN_AUDIO_LEVEL_THRESHOLD) {
+        setError('No speech detected. Please speak clearly into your microphone.');
+        stopRecordingWithoutTranscribe();
+        return;
+      }
+
+      stopRecording();
+    }
+  };
+
+  const stopRecordingWithoutTranscribe = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.onstop = null;
+      mediaRecorderRef.current.stop();
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+
+    setIsRecording(false);
+    setAudioLevel(0);
+    audioChunksRef.current = [];
+  };
+
   const handleDone = () => {
     if (transcript) {
       onTranscriptReady(transcript);
+      // Don't call onClose() here - parent will handle closing
+    } else {
+      onClose();
     }
-    onClose();
   };
 
-  // Format duration as MM:SS
-  const formatDuration = (seconds) => {
+  const handleRetry = () => {
+    setTranscript('');
+    setError(null);
+    setDuration(0);
+    startRecording();
+  };
+
+  const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -102,44 +378,89 @@ export default function VoiceRecorderModal({ isOpen, onClose, onTranscriptReady 
             {/* Animated microphone */}
             <div className="flex flex-col items-center mb-6">
               <div className="relative">
-                {/* Pulse rings */}
+                {/* Pulse rings based on audio level */}
                 {isRecording && (
                   <>
-                    <div className="absolute inset-0 rounded-full bg-rose-500 opacity-20 animate-ping" style={{ animationDuration: '1.5s' }}></div>
-                    <div className="absolute inset-0 rounded-full bg-rose-500 opacity-10 animate-ping" style={{ animationDuration: '2s' }}></div>
+                    <div
+                      className="absolute inset-0 rounded-full bg-red-500 opacity-20 animate-ping"
+                      style={{
+                        animationDuration: '1.5s',
+                        transform: `scale(${1 + audioLevel * 0.5})`
+                      }}
+                    />
+                    <div
+                      className="absolute inset-0 rounded-full bg-red-500 opacity-10 animate-ping"
+                      style={{
+                        animationDuration: '2s',
+                        transform: `scale(${1 + audioLevel * 0.3})`
+                      }}
+                    />
                   </>
                 )}
 
                 {/* Microphone icon */}
-                <div className={`relative w-20 h-20 rounded-full flex items-center justify-center ${
-                  isRecording
-                    ? 'bg-gradient-to-br from-rose-500 to-rose-600 shadow-xl'
-                    : 'bg-gradient-to-br from-neutral-400 to-neutral-500'
-                }`}>
-                  <Mic className="w-10 h-10 text-white" />
-                </div>
+                <button
+                  onClick={isRecording ? handleStopAndTranscribe : startRecording}
+                  disabled={isTranscribing}
+                  className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-all ${
+                    isRecording
+                      ? 'bg-gradient-to-br from-red-500 to-red-600 shadow-xl hover:from-red-600 hover:to-red-700'
+                      : isTranscribing
+                      ? 'bg-gradient-to-br from-amber-400 to-amber-500 cursor-wait'
+                      : 'bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700'
+                  }`}
+                >
+                  {isRecording ? (
+                    <Square className="w-8 h-8 text-white" />
+                  ) : (
+                    <Mic className="w-10 h-10 text-white" />
+                  )}
+                </button>
               </div>
 
               {/* Status text */}
               <p className="mt-4 text-sm font-medium text-neutral-700">
-                {isRecording ? 'Listening...' : 'Ready to listen'}
+                {isRecording
+                  ? 'Recording... Click to stop'
+                  : isTranscribing
+                  ? 'Transcribing with Whisper AI...'
+                  : transcript
+                  ? 'Transcription complete'
+                  : 'Click to start recording'}
               </p>
 
               {/* Duration */}
-              <p className="mt-1 text-2xl font-bold text-rose-600 tabular-nums">
+              <p className={`mt-1 text-2xl font-bold tabular-nums ${
+                isRecording ? 'text-red-600' : 'text-neutral-400'
+              }`}>
                 {formatDuration(duration)}
               </p>
             </div>
 
+            {/* Error message */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
+
             {/* Transcript */}
-            <div className="min-h-[100px] p-4 bg-[#FAF8F6] border border-neutral-200 rounded-xl">
-              {transcript ? (
+            <div className="min-h-[100px] p-4 bg-neutral-50 border border-neutral-200 rounded-xl">
+              {isTranscribing ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm text-neutral-600">Processing audio...</p>
+                </div>
+              ) : transcript ? (
                 <p className="text-sm text-neutral-800 leading-relaxed">
                   {transcript}
                 </p>
               ) : (
                 <p className="text-sm text-neutral-400 italic">
-                  Start speaking... Your voice will be transcribed here
+                  {error
+                    ? 'Click the microphone to try again'
+                    : 'Click the microphone to start recording. Your voice will be transcribed using Whisper AI.'}
                 </p>
               )}
             </div>
@@ -147,14 +468,14 @@ export default function VoiceRecorderModal({ isOpen, onClose, onTranscriptReady 
             {/* Wave animation */}
             {isRecording && (
               <div className="flex items-center justify-center gap-1 mt-4 h-8">
-                {[...Array(5)].map((_, i) => (
+                {[...Array(7)].map((_, i) => (
                   <div
                     key={i}
-                    className="w-1 bg-gradient-to-t from-rose-500 to-rose-400 rounded-full animate-pulse"
+                    className="w-1 bg-gradient-to-t from-red-500 to-red-400 rounded-full transition-all duration-100"
                     style={{
-                      height: '20px',
-                      animationDelay: `${i * 100}ms`,
-                      animationDuration: '0.8s'
+                      height: `${8 + audioLevel * 20 * Math.sin((Date.now() / 100) + i)}px`,
+                      minHeight: '8px',
+                      maxHeight: '28px'
                     }}
                   />
                 ))}
@@ -163,18 +484,26 @@ export default function VoiceRecorderModal({ isOpen, onClose, onTranscriptReady 
           </div>
 
           {/* Footer */}
-          <div className="flex items-center gap-2 p-4 bg-[#FAF8F6] border-t border-neutral-200">
+          <div className="flex items-center gap-2 p-4 bg-neutral-50 border-t border-neutral-200">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-white border border-neutral-300 rounded-xl text-sm font-medium text-neutral-700 hover:bg-[#FAF8F6] transition-colors"
+              className="flex-1 px-4 py-2.5 bg-white border border-neutral-300 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
             >
               Cancel
             </button>
+            {transcript && !isRecording && !isTranscribing && (
+              <button
+                onClick={handleRetry}
+                className="px-4 py-2.5 bg-white border border-neutral-300 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+              >
+                Re-record
+              </button>
+            )}
             <button
               onClick={handleDone}
-              disabled={!transcript}
+              disabled={!transcript || isRecording || isTranscribing}
               className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                transcript
+                transcript && !isRecording && !isTranscribing
                   ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white hover:shadow'
                   : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
               }`}

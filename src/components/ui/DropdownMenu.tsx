@@ -38,7 +38,7 @@ const DropdownMenuSubContent = React.forwardRef(
       ref={ref}
       className={cn(
         // Glassmorphism container
-        "z-50 min-w-[max(11rem,var(--radix-popper-anchor-width))] overflow-hidden",
+        "z-[100] min-w-[max(11rem,var(--radix-popper-anchor-width))] overflow-hidden",
         "rounded-xl border border-white/60 bg-white/95 backdrop-blur-xl backdrop-saturate-150",
         "p-1.5 text-neutral-900",
         // Premium shadow stack
@@ -65,7 +65,7 @@ const DropdownMenuContent = React.forwardRef(
         sideOffset={sideOffset}
         className={cn(
           // Glassmorphism container
-          "z-50 min-w-[max(11rem,var(--radix-popper-anchor-width))] overflow-hidden",
+          "z-[100] min-w-[max(11rem,var(--radix-popper-anchor-width))] overflow-hidden",
           "rounded-xl border border-white/60 bg-white/95 backdrop-blur-xl backdrop-saturate-150",
           "p-1.5 text-neutral-900",
           // Premium shadow stack with warm terra undertones

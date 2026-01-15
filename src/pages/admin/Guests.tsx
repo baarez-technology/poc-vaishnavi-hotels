@@ -112,9 +112,21 @@ export default function Guests() {
       }
       deleteModal.closeModal();
       showToast('Guest deleted successfully', 'success');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete guest:', error);
-      showToast('Failed to delete guest. Please try again.', 'error');
+      // Extract specific error message from API response
+      // Handle both string detail and Pydantic validation error array format
+      const detail = error?.response?.data?.detail;
+      let errorMessage = 'Failed to delete guest. Please try again.';
+      if (typeof detail === 'string') {
+        errorMessage = detail;
+      } else if (Array.isArray(detail) && detail.length > 0) {
+        // Pydantic validation errors: [{type, loc, msg, input}]
+        errorMessage = detail.map(e => e.msg || e.message).join(', ');
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      showToast(errorMessage, 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -126,9 +138,27 @@ export default function Guests() {
       await updateGuest(guestId, updates);
       editModal.closeModal();
       showToast('Guest updated successfully', 'success');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update guest:', error);
-      showToast('Failed to update guest. Please try again.', 'error');
+      console.error('Error response data:', error?.response?.data);
+      // Extract specific error message from API response
+      // Handle both string detail and Pydantic validation error array format
+      const detail = error?.response?.data?.detail;
+      let errorMessage = 'Failed to update guest. Please try again.';
+      if (typeof detail === 'string') {
+        errorMessage = detail;
+      } else if (Array.isArray(detail) && detail.length > 0) {
+        // Pydantic validation errors: [{type, loc, msg, input}]
+        // Include field location for better debugging
+        errorMessage = detail.map(e => {
+          const field = e.loc ? e.loc.join('.') : '';
+          const msg = e.msg || e.message || 'Unknown error';
+          return field ? `${field}: ${msg}` : msg;
+        }).join(', ');
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      showToast(errorMessage, 'error');
     } finally {
       setIsSaving(false);
     }
@@ -152,9 +182,21 @@ export default function Guests() {
       }
       addModal.closeModal();
       showToast('Guest added successfully', 'success');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to add guest:', error);
-      showToast('Failed to add guest. Please try again.', 'error');
+      // Extract specific error message from API response
+      // Handle both string detail and Pydantic validation error array format
+      const detail = error?.response?.data?.detail;
+      let errorMessage = 'Failed to add guest. Please try again.';
+      if (typeof detail === 'string') {
+        errorMessage = detail;
+      } else if (Array.isArray(detail) && detail.length > 0) {
+        // Pydantic validation errors: [{type, loc, msg, input}]
+        errorMessage = detail.map(e => e.msg || e.message).join(', ');
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      showToast(errorMessage, 'error');
     } finally {
       setIsAdding(false);
     }

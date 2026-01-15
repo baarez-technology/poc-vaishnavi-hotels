@@ -325,7 +325,7 @@ export default function MemberEnrollModal({
                 </div>
 
                 {showGuestDropdown && searchQuery && filteredGuests.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1 max-h-48 overflow-y-auto">
+                  <div className="absolute z-[100] w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1 max-h-48 overflow-y-auto">
                     {filteredGuests.map((guest) => (
                       <button
                         key={guest.id}
@@ -345,7 +345,7 @@ export default function MemberEnrollModal({
                 )}
 
                 {showGuestDropdown && searchQuery && filteredGuests.length === 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-4 text-center text-sm text-neutral-500">
+                  <div className="absolute z-[100] w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-4 text-center text-sm text-neutral-500">
                     No guests found
                   </div>
                 )}
@@ -395,7 +395,7 @@ export default function MemberEnrollModal({
               </button>
 
               {showTierDropdown && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1 max-h-64 overflow-y-auto">
+                <div className="absolute z-[100] w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1 max-h-64 overflow-y-auto">
                   {TIERS.map((tier) => {
                     const Icon = tier.icon;
                     return (

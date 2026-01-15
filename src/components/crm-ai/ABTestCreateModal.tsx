@@ -330,7 +330,7 @@ export default function ABTestCreateModal({
                   <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${showTypeDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 {showTypeDropdown && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1">
+                  <div className="absolute z-[100] w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1">
                     {TEST_TYPES.map((type) => (
                       <button
                         key={type.value}
@@ -365,7 +365,7 @@ export default function ABTestCreateModal({
                   <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${showCampaignDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 {showCampaignDropdown && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1 max-h-48 overflow-y-auto">
+                  <div className="absolute z-[100] w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1 max-h-48 overflow-y-auto">
                     <button
                       onClick={() => {
                         setFormData(prev => ({ ...prev, campaignId: '' }));
@@ -507,7 +507,7 @@ export default function ABTestCreateModal({
                   <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${showSplitDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 {showSplitDropdown && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1">
+                  <div className="absolute z-[100] w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1">
                     {TRAFFIC_SPLITS.map((split) => (
                       <button
                         key={split.label}
@@ -540,7 +540,7 @@ export default function ABTestCreateModal({
                   <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${showThresholdDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 {showThresholdDropdown && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1">
+                  <div className="absolute z-[100] w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1">
                     {SIGNIFICANCE_THRESHOLDS.map((threshold) => (
                       <button
                         key={threshold.value}

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Users, MapPin, CreditCard, Download, Edit, Trash2 } from 'lucide-react';
+import { X, Calendar, Users, MapPin, CreditCard, Download, Edit, Trash2, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { bookingService } from '@/api/services/booking.service';
@@ -23,6 +23,8 @@ export function BookingDetailsPanel({
   const [loading, setLoading] = useState(false);
   const [booking, setBooking] = useState<any>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
 
   useEffect(() => {
     if (isOpen && bookingId) {
@@ -60,17 +62,19 @@ export function BookingDetailsPanel({
     }
   };
 
-  const handleCancel = async () => {
+  const handleCancelClick = () => {
+    setShowCancelModal(true);
+  };
+
+  const handleCancelConfirm = async () => {
     if (!bookingId || !onCancel) return;
-    
-    if (!confirm('Are you sure you want to cancel this booking?')) {
-      return;
-    }
 
     setCancelling(true);
     try {
-      await bookingService.cancelBooking(bookingId);
+      await bookingService.cancelBooking(bookingId, cancelReason || 'Guest requested cancellation');
       toast.success('Booking cancelled successfully');
+      setShowCancelModal(false);
+      setCancelReason('');
       onCancel(bookingId);
       onClose();
     } catch (error: any) {
@@ -84,6 +88,50 @@ export function BookingDetailsPanel({
   const handleModify = () => {
     if (bookingId && onModify) {
       onModify(bookingId);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!bookingId) return;
+
+    try {
+      // Get token from localStorage with correct key
+      const token = localStorage.getItem('glimmora_access_token');
+      if (!token) {
+        toast.error('Please log in to download');
+        return;
+      }
+
+      const response = await fetch(`/api/v1/bookings/${bookingId}/download`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Download error:', response.status, errorText);
+        throw new Error('Failed to download');
+      }
+
+      const blob = await response.blob();
+      if (blob.size === 0) {
+        throw new Error('Empty PDF received');
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `booking_confirmation_${booking?.bookingNumber || bookingId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('Booking confirmation downloaded');
+    } catch (error) {
+      console.error('Download failed:', error);
+      toast.error('Failed to download booking confirmation');
     }
   };
 
@@ -276,16 +324,18 @@ export function BookingDetailsPanel({
                       Modify
                     </button>
                     <button
-                      onClick={handleCancel}
-                      disabled={cancelling}
-                      className="px-4 py-2.5 bg-red-50 hover:bg-red-100 disabled:bg-neutral-100 text-red-600 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
+                      onClick={handleCancelClick}
+                      className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
                     >
                       <Trash2 className="w-4 h-4" />
-                      {cancelling ? 'Cancelling...' : 'Cancel'}
+                      Cancel
                     </button>
                   </>
                 )}
-                <button className="px-4 py-2.5 bg-white border border-neutral-300 hover:border-neutral-400 text-neutral-900 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
+                <button
+                  onClick={handleDownload}
+                  className="px-4 py-2.5 bg-white border border-neutral-300 hover:border-neutral-400 text-neutral-900 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
+                >
                   <Download className="w-4 h-4" />
                   Download
                 </button>
@@ -293,6 +343,73 @@ export function BookingDetailsPanel({
             )}
           </motion.div>
         </>
+      )}
+
+      {/* Cancellation Reason Modal */}
+      {showCancelModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4"
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            className="bg-white rounded-xl p-6 max-w-md w-full shadow-xl"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-neutral-900">Cancel Booking</h3>
+                <p className="text-sm text-neutral-500">This action cannot be undone</p>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
+                Reason for cancellation (optional)
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Please let us know why you're cancelling..."
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                rows={3}
+              />
+            </div>
+
+            {booking?.paymentStatus === 'paid' && (
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800">
+                  <strong>Refund Policy:</strong> Cancellations made within 48 hours of check-in may be subject to a cancellation fee. Refunds will be processed within 5-7 business days.
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setCancelReason('');
+                }}
+                className="flex-1 px-4 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-medium rounded-lg transition-colors text-sm"
+              >
+                Keep Booking
+              </button>
+              <button
+                onClick={handleCancelConfirm}
+                disabled={cancelling}
+                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-medium rounded-lg transition-colors text-sm"
+              >
+                {cancelling ? 'Cancelling...' : 'Yes, Cancel Booking'}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
       )}
     </AnimatePresence>
   );

@@ -176,24 +176,38 @@ export function useStaff() {
    * Assign shift to staff member
    * @param {string} id - Staff ID
    * @param {object} shiftData - { date, shift, startTime, endTime }
-   * @returns {object} - { success: boolean, isUpdate: boolean, existingShift?: object }
+   * @returns {object} - { success: boolean, isUpdate: boolean, existingShift?: object, warning?: string }
    */
   const assignShift = async (id, shiftData) => {
     // Check for existing shift
     const member = staff.find(m => m.id?.toString() === id?.toString());
     const existingShift = member?.schedule?.find(s => s.date === shiftData.date);
-    const isUpdate = !!existingShift;
+    let isUpdate = !!existingShift;
+    let warning = null;
 
     try {
       // Call API to assign shift
-      await staffService.assignShift(id, {
+      const result = await staffService.assignShift(id, {
         schedule_date: shiftData.date,
         shift_type: shiftData.shift,
         start_time: shiftData.startTime || '08:00',
         end_time: shiftData.endTime || '16:00',
       });
-    } catch (err) {
+
+      // Check for warning or duplicate from API
+      if (result?.warning) {
+        warning = result.warning;
+        isUpdate = result.is_update || isUpdate;
+      }
+    } catch (err: any) {
       console.error('Failed to assign shift via API:', err);
+      // Check if it's a duplicate error
+      const errorDetail = err.response?.data?.detail;
+      if (errorDetail && errorDetail.includes('already assigned')) {
+        return { success: false, isUpdate: false, error: errorDetail, isDuplicate: true };
+      }
+      // For other errors, continue with local update but flag the error
+      return { success: false, isUpdate, error: errorDetail || 'Failed to assign shift' };
     }
 
     // Update local state regardless
@@ -236,7 +250,7 @@ export function useStaff() {
       return member;
     }));
 
-    return { success: true, isUpdate, existingShift };
+    return { success: true, isUpdate, existingShift, warning };
   };
 
   /**
@@ -357,28 +371,43 @@ export function useStaff() {
 
   /**
    * Edit staff member details
+   * @returns {object} - { success: boolean, warning?: string, floor_conflicts?: boolean }
    */
   const editStaff = async (id, updates) => {
+    let warning = null;
+    let floorConflicts = false;
+
     try {
       // Call API to update staff
-      await staffService.update(id, {
+      const result = await staffService.update(id, {
         full_name: updates.name,
         role: updates.role,
         department: updates.department,
         phone: updates.phone,
         status: updates.status,
         shift: updates.shift,
-        avatar: updates.avatar
+        avatar: updates.avatar,
+        floor_assignment: updates.floorAssignment || updates.floor_assignment
       });
+
+      // Check for floor assignment warning
+      if (result?.warning) {
+        warning = result.warning;
+        floorConflicts = result.floor_conflicts || false;
+      }
     } catch (err) {
       console.error('Failed to update staff via API:', err);
+      return { success: false, error: 'Failed to update staff' };
     }
-    // Update local state regardless
+
+    // Update local state
     setStaff(prev => prev.map(member =>
       member.id?.toString() === id?.toString()
         ? { ...member, ...updates }
         : member
     ));
+
+    return { success: true, warning, floor_conflicts: floorConflicts };
   };
 
   /**

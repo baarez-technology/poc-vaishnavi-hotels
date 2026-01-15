@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
+import { useReputation } from '../../context/ReputationContext';
+import { Loader2 } from 'lucide-react';
 
 const SOURCE_COLORS: Record<string, string> = {
   'Booking.com': '#003580',
@@ -37,13 +39,12 @@ const StarRating = ({ rating }: { rating: number }) => {
       {[...Array(5)].map((_, i) => (
         <Star
           key={i}
-          className={`w-4 h-4 ${
-            i < fullStars
-              ? 'text-gold-500 fill-gold-500'
-              : i === fullStars && hasHalf
+          className={`w-4 h-4 ${i < fullStars
+            ? 'text-gold-500 fill-gold-500'
+            : i === fullStars && hasHalf
               ? 'text-gold-500 fill-gold-500/50'
               : 'text-neutral-300'
-          }`}
+            }`}
         />
       ))}
     </div>
@@ -75,7 +76,6 @@ interface ReviewDetailDrawerProps {
   review: Review | null;
   onClose: () => void;
   onRespond?: (reviewId: string, responseText: string) => void;
-  generateAutoReply?: (review: Review) => string;
   guestCRMData?: GuestCRMData;
 }
 
@@ -83,30 +83,50 @@ export default function ReviewDetailDrawer({
   review,
   onClose,
   onRespond,
-  generateAutoReply,
   guestCRMData
 }: ReviewDetailDrawerProps) {
+  const { generateDraft } = useReputation();
   const [responseText, setResponseText] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiDraft, setAiDraft] = useState<string>('');
 
-  const suggestedReply = useMemo(() => {
-    if (!review || !generateAutoReply) return '';
-    return generateAutoReply(review);
-  }, [review, generateAutoReply]);
+  // Clear state when review changes
+  useMemo(() => {
+    setAiDraft('');
+    setIsGenerating(false);
+    setIsEditing(false);
+    setResponseText('');
+  }, [review?.id]);
 
   if (!review) return null;
 
   const sentimentStyle = getSentimentStyle(review.sentiment);
   const sourceColor = SOURCE_COLORS[review.source] || '#A57865';
 
+  const handleGenerateAI = async () => {
+    if (!review) return;
+    setIsGenerating(true);
+    try {
+      const draft = await generateDraft(parseInt(review.id));
+      setAiDraft(draft.draft_text);
+      setResponseText(draft.draft_text);
+      setIsEditing(true);
+    } catch (error) {
+      console.error("Failed to generate draft:", error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleUseSuggested = () => {
-    setResponseText(suggestedReply);
+    setResponseText(aiDraft);
     setIsEditing(true);
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(suggestedReply);
+    navigator.clipboard.writeText(aiDraft);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -174,6 +194,9 @@ export default function ReviewDetailDrawer({
       header={header}
       maxWidth="max-w-xl"
       footer={footer}
+      title=""
+      subtitle=""
+      className=""
     >
       <div className="space-y-5">
         {/* Rating & Sentiment */}
@@ -298,29 +321,52 @@ export default function ReviewDetailDrawer({
               AI Suggested Response
             </p>
 
-            <div className="bg-terra-50 rounded-[10px] p-4 border border-terra-100 mb-3">
-              <p className="text-[13px] text-neutral-700 whitespace-pre-wrap leading-relaxed">
-                {suggestedReply}
-              </p>
-              <div className="flex items-center gap-2 mt-3">
-                <Button
-                  variant="outline"
-                  size="xs"
-                  icon={copied ? Check : Copy}
-                  onClick={handleCopy}
-                >
-                  {copied ? 'Copied' : 'Copy'}
-                </Button>
-                <Button
-                  variant="primary"
-                  size="xs"
-                  icon={Edit3}
-                  onClick={handleUseSuggested}
-                >
-                  Use & Edit
-                </Button>
+            {/* AI Response Section */}
+            {!aiDraft && !isGenerating && (
+              <Button
+                variant="secondary"
+                onClick={handleGenerateAI}
+                className="w-full justify-center py-8 border-dashed border-2 bg-terra-50 hover:bg-terra-100 border-terra-200"
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-terra-600" />
+                  <span className="text-terra-700 font-medium">Generate AI Response</span>
+                </div>
+              </Button>
+            )}
+
+            {isGenerating && (
+              <div className="w-full py-8 border-2 border-dashed border-neutral-200 rounded-[10px] flex flex-col items-center justify-center gap-3 bg-neutral-50">
+                <Loader2 className="w-6 h-6 text-terra-500 animate-spin" />
+                <p className="text-[13px] text-neutral-500 font-medium">Crafting response...</p>
               </div>
-            </div>
+            )}
+
+            {aiDraft && (
+              <div className="bg-terra-50 rounded-[10px] p-4 border border-terra-100 mb-3 animate-in fade-in zoom-in-95 duration-200">
+                <p className="text-[13px] text-neutral-700 whitespace-pre-wrap leading-relaxed">
+                  {aiDraft}
+                </p>
+                <div className="flex items-center gap-2 mt-3">
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    icon={copied ? Check : Copy}
+                    onClick={handleCopy}
+                  >
+                    {copied ? 'Copied' : 'Copy'}
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="xs"
+                    icon={Edit3}
+                    onClick={handleUseSuggested}
+                  >
+                    Use & Edit
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {isEditing && (
               <div>

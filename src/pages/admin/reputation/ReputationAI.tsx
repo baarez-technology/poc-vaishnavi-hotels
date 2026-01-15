@@ -60,7 +60,6 @@ function ReputationAIContent() {
     updateFilters,
     updateSettings,
     addReviewResponse,
-    generateAutoReply,
     influenceChurnProbability,
     influenceLTVCurve,
     affectRateRecommendations,
@@ -225,9 +224,8 @@ function ReputationAIContent() {
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className={`flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors ${
-                isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors ${isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               Refresh AI Analysis
@@ -248,24 +246,22 @@ function ReputationAIContent() {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             const badgeCount = tab.id === 'alerts' ? activeAlertCount :
-                              tab.id === 'approvals' ? pendingApprovalCount : 0;
+              tab.id === 'approvals' ? pendingApprovalCount : 0;
 
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${
-                  isActive
-                    ? 'bg-[#A57865] text-white'
-                    : 'text-neutral-600 hover:bg-neutral-50'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${isActive
+                  ? 'bg-[#A57865] text-white'
+                  : 'text-neutral-600 hover:bg-neutral-50'
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 {tab.label}
                 {badgeCount > 0 && (
-                  <span className={`ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-full ${
-                    isActive ? 'bg-white text-[#A57865]' : 'bg-red-500 text-white'
-                  }`}>
+                  <span className={`ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-full ${isActive ? 'bg-white text-[#A57865]' : 'bg-red-500 text-white'
+                    }`}>
                     {badgeCount}
                   </span>
                 )}
@@ -351,7 +347,6 @@ function ReputationAIContent() {
           review={selectedReview}
           onClose={handleCloseDrawer}
           onRespond={handleRespondToReview}
-          generateAutoReply={generateAutoReply}
           guestCRMData={{
             totalStays: selectedReview.guest_stays || 1,
             ltv: selectedReview.guest_ltv || 50000,

@@ -16,8 +16,10 @@ import {
   User,
   ExternalLink,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  Loader2
 } from 'lucide-react';
+import { useReputation } from '../../../context/ReputationContext';
 
 const SOURCE_COLORS = {
   'Booking.com': '#003580',
@@ -42,13 +44,12 @@ const StarRating = ({ rating }) => {
       {[...Array(5)].map((_, i) => (
         <Star
           key={i}
-          className={`w-4 h-4 ${
-            i < fullStars
+          className={`w-4 h-4 ${i < fullStars
               ? 'text-[#CDB261] fill-[#CDB261]'
               : i === fullStars && hasHalf
-              ? 'text-[#CDB261] fill-[#CDB261]/50'
-              : 'text-neutral-300'
-          }`}
+                ? 'text-[#CDB261] fill-[#CDB261]/50'
+                : 'text-neutral-300'
+            }`}
         />
       ))}
     </div>
@@ -59,30 +60,50 @@ export default function ReviewDetailDrawer({
   review,
   onClose,
   onRespond,
-  generateAutoReply,
   guestCRMData
 }) {
+  const { generateDraft } = useReputation();
   const [responseText, setResponseText] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiDraft, setAiDraft] = useState('');
 
-  const suggestedReply = useMemo(() => {
-    if (!review || !generateAutoReply) return '';
-    return generateAutoReply(review);
-  }, [review, generateAutoReply]);
+  // Clear state when review changes
+  useMemo(() => {
+    setAiDraft('');
+    setIsGenerating(false);
+    setIsEditing(false);
+    setResponseText('');
+  }, [review?.id]);
 
   if (!review) return null;
 
   const sentimentStyle = getSentimentStyle(review.sentiment);
   const sourceColor = SOURCE_COLORS[review.source] || '#A57865';
 
+  const handleGenerateAI = async () => {
+    if (!review) return;
+    setIsGenerating(true);
+    try {
+      const draft = await generateDraft(parseInt(review.id));
+      setAiDraft(draft.draft_text);
+      setResponseText(draft.draft_text);
+      setIsEditing(true);
+    } catch (error) {
+      console.error("Failed to generate draft:", error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleUseSuggested = () => {
-    setResponseText(suggestedReply);
+    setResponseText(aiDraft);
     setIsEditing(true);
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(suggestedReply);
+    navigator.clipboard.writeText(aiDraft);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -277,37 +298,55 @@ export default function ReviewDetailDrawer({
                 AI Suggested Response
               </h3>
 
-              {/* Suggested Response */}
-              <div className="bg-[#A57865]/5 rounded-xl p-4 border border-[#A57865]/20 mb-3">
-                <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed">
-                  {suggestedReply}
-                </p>
-                <div className="flex items-center gap-2 mt-3">
-                  <button
-                    onClick={handleCopy}
-                    className="flex items-center gap-1 px-3 py-1.5 border border-neutral-200 rounded-lg text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-3 h-3 text-[#4E5840]" />
-                        Copied
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3 h-3" />
-                        Copy
-                      </>
-                    )}
-                  </button>
-                  <button
-                    onClick={handleUseSuggested}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-[#A57865] text-white rounded-lg text-xs font-medium hover:bg-[#A57865]/90 transition-colors"
-                  >
-                    <Edit3 className="w-3 h-3" />
-                    Use & Edit
-                  </button>
+              {!aiDraft && !isGenerating && (
+                <button
+                  onClick={handleGenerateAI}
+                  className="w-full flex flex-col items-center gap-2 py-8 border-2 border-dashed border-[#A57865]/20 rounded-xl bg-[#A57865]/5 hover:bg-[#A57865]/10 transition-colors group mb-3"
+                >
+                  <Sparkles className="w-5 h-5 text-[#A57865] group-hover:scale-110 transition-transform" />
+                  <span className="text-sm font-medium text-[#A57865]">Generate AI Response</span>
+                </button>
+              )}
+
+              {isGenerating && (
+                <div className="w-full py-8 border-2 border-dashed border-neutral-200 rounded-xl flex flex-col items-center justify-center gap-3 bg-neutral-50 mb-3">
+                  <Loader2 className="w-6 h-6 text-[#A57865] animate-spin" />
+                  <p className="text-xs text-neutral-500 font-medium">Crafting response...</p>
                 </div>
-              </div>
+              )}
+
+              {aiDraft && (
+                <div className="bg-[#A57865]/5 rounded-xl p-4 border border-[#A57865]/20 mb-3 animate-slide-in-right">
+                  <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed">
+                    {aiDraft}
+                  </p>
+                  <div className="flex items-center gap-2 mt-3">
+                    <button
+                      onClick={handleCopy}
+                      className="flex items-center gap-1 px-3 py-1.5 border border-neutral-200 rounded-lg text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-3 h-3 text-[#4E5840]" />
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          Copy
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleUseSuggested}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-[#A57865] text-white rounded-lg text-xs font-medium hover:bg-[#A57865]/90 transition-colors"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      Use & Edit
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Custom Response Editor */}
               {isEditing && (
@@ -341,11 +380,10 @@ export default function ReviewDetailDrawer({
               <button
                 onClick={handleSend}
                 disabled={!responseText.trim()}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                  responseText.trim()
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${responseText.trim()
                     ? 'bg-[#4E5840] text-white hover:bg-[#4E5840]/90'
                     : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 <Send className="w-4 h-4" />
                 Send Response

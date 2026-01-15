@@ -11,7 +11,8 @@ import reputationService, {
   AutomationConfig,
   EngineStats,
   ReputationSettings,
-  RoutingRule
+  RoutingRule,
+  ResponseTemplate
 } from '../api/services/reputation.service';
 
 interface ReputationContextType {
@@ -20,7 +21,9 @@ interface ReputationContextType {
   analytics: ReviewAnalytics | null;
   trends: TrendData | null;
   pendingReviews: Review[];
+  templates: ResponseTemplate[];
   isLoading: boolean;
+
   error: string | null;
   filters: {
     source: string;
@@ -140,6 +143,12 @@ interface ReputationContextType {
   affectDemandWeighting: { modifier: number; reason: string };
   affectRateRecommendations: Array<{ type: string; suggestion: string; reason: string; confidence: string }>;
 
+  // Template Management
+  loadTemplates: () => Promise<ResponseTemplate[]>;
+  createTemplate: (data: Partial<ResponseTemplate>) => Promise<ResponseTemplate>;
+  updateTemplate: (id: number, data: Partial<ResponseTemplate>) => Promise<ResponseTemplate>;
+  deleteTemplate: (id: number) => Promise<void>;
+
   // Legacy compatibility
   addReviewResponse: (reviewId: number, responseText: string) => void;
   settings: {
@@ -170,6 +179,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   const [analytics, setAnalytics] = useState<ReviewAnalytics | null>(null);
   const [trends, setTrends] = useState<TrendData | null>(null);
   const [pendingReviews, setPendingReviews] = useState<Review[]>([]);
+  const [templates, setTemplates] = useState<ResponseTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -274,6 +284,17 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
+  const loadTemplates = useCallback(async () => {
+    try {
+      const data = await reputationService.getResponseTemplates();
+      setTemplates(data || []);
+      return data;
+    } catch (err: any) {
+      console.error('Error fetching templates:', err);
+      throw err;
+    }
+  }, []);
+
   const loadAutomationConfig = useCallback(async () => {
     try {
       const data = await reputationService.getAutomationConfig();
@@ -336,8 +357,10 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
         loadGoals(),
         loadAutomationConfig(),
         loadPendingApprovals(),
+        loadPendingApprovals(),
         loadEngineStats(),
-        loadUserSettings()
+        loadUserSettings(),
+        loadTemplates()
       ]);
     } catch (err: any) {
       setError(err.message || 'Failed to load reputation data');
@@ -355,7 +378,8 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     loadAutomationConfig,
     loadPendingApprovals,
     loadEngineStats,
-    loadUserSettings
+    loadUserSettings,
+    loadTemplates
   ]);
 
   // Load on mount
@@ -628,6 +652,45 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   // ========================
+  // TEMPLATE MANAGEMENT
+  // ========================
+
+
+
+  const createTemplate = useCallback(async (data: Partial<ResponseTemplate>) => {
+    try {
+      // @ts-ignore - Ignoring partial match for creation
+      const result = await reputationService.createResponseTemplate(data);
+      await loadTemplates();
+      return result;
+    } catch (err: any) {
+      console.error('Error creating template:', err);
+      throw err;
+    }
+  }, [loadTemplates]);
+
+  const updateTemplate = useCallback(async (id: number, data: Partial<ResponseTemplate>) => {
+    try {
+      const result = await reputationService.updateResponseTemplate(id, data);
+      await loadTemplates();
+      return result;
+    } catch (err: any) {
+      console.error('Error updating template:', err);
+      throw err;
+    }
+  }, [loadTemplates]);
+
+  const deleteTemplate = useCallback(async (id: number) => {
+    try {
+      await reputationService.deleteResponseTemplate(id);
+      await loadTemplates();
+    } catch (err: any) {
+      console.error('Error deleting template:', err);
+      throw err;
+    }
+  }, [loadTemplates]);
+
+  // ========================
   // RESPONSE GENERATION
   // ========================
 
@@ -661,10 +724,6 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
               r.rating >= 2 ? 32 : 15
       ) : 55;
 
-      const ratingBasedLabel = r.rating != null ? (
-        r.rating >= 4 ? 'positive' :
-          r.rating >= 3 ? 'neutral' : 'negative'
-      ) : 'neutral';
 
       const sentiment = r.sentiment_score ?? (
         r.sentiment_label === 'positive' ? 85 :
@@ -761,7 +820,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     dashboard.source_breakdown.forEach(source => {
       ratings[source.source.toLowerCase()] = {
         // Backend returns avg_rating, not average_rating
-        rating: source.avg_rating ?? source.average_rating ?? 0,
+        rating: source.average_rating ?? 0,
         reviews: source.count,
         trend: 0
       };
@@ -922,6 +981,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   // ========================
 
   const addReviewResponse = useCallback((reviewId: number, responseText: string) => {
+    console.log('Adding response locally:', responseText);
     setPendingReviews(prev => prev.filter(r => r.id !== reviewId));
   }, []);
 
@@ -1007,8 +1067,10 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     analytics,
     trends,
     pendingReviews,
+    templates,
     isLoading,
     error,
+
     filters,
 
     // New State
@@ -1093,6 +1155,12 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     // Revenue AI Integration
     affectDemandWeighting,
     affectRateRecommendations,
+
+    // Template Management
+    loadTemplates,
+    createTemplate,
+    updateTemplate,
+    deleteTemplate,
 
     // Legacy compatibility
     addReviewResponse,

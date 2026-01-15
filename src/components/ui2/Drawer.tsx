@@ -3,11 +3,28 @@
  * Reusable drawer/modal component following luxury design principles
  */
 
-import { useEffect } from 'react';
+import { useEffect, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X, AlertTriangle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { IconButton, Button } from './Button';
+
+interface DrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title?: string;
+  subtitle?: string;
+  children: ReactNode;
+  header?: ReactNode;
+  footer?: ReactNode;
+  maxWidth?: string;
+  className?: string;
+  showCloseButton?: boolean;
+  closeOnBackdropClick?: boolean;
+  closeOnEscape?: boolean;
+  noPadding?: boolean;
+  hideBackdrop?: boolean;
+}
 
 export function Drawer({
   isOpen,
@@ -24,7 +41,7 @@ export function Drawer({
   closeOnEscape = true,
   noPadding = false,
   hideBackdrop = false
-}) {
+}: DrawerProps) {
   // Handle escape key
   useEffect(() => {
     if (!isOpen || !closeOnEscape) return;

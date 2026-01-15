@@ -841,6 +841,12 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
 
   const generateAutoReply = useCallback((review: { sentiment: number; guest: string }) => {
     const { sentiment: score, guest } = review;
+
+    // Safety check for templates
+    if (!settings?.autoReply?.templates) {
+      return "";
+    }
+
     let template;
 
     if (score < 40) {
@@ -851,8 +857,10 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
       template = settings.autoReply.templates.positive;
     }
 
-    return template.replace('{guest}', guest.split(' ')[0]);
-  }, [settings.autoReply.templates]);
+    if (!template) return "";
+
+    return template.replace('{guest}', guest && guest.split ? guest.split(' ')[0] : 'Guest');
+  }, [settings.autoReply?.templates]);
 
   // ========================
   // CRM INTEGRATION

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
-import { defaultSettings } from '../../utils/settings';
+import { defaultSettings, deepMerge } from '../../utils/settings';
 import { Button } from '../ui2/Button';
 import { SelectDropdown } from '../ui2/Input';
 
@@ -13,7 +13,12 @@ export default function StaffPortalSettingsTab() {
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      setStaffPortal(JSON.parse(stored));
+      try {
+        const parsed = JSON.parse(stored);
+        setStaffPortal(deepMerge(defaultSettings.staffPortal, parsed));
+      } catch (e) {
+        console.error('Error parsing staff portal settings from localStorage:', e);
+      }
     }
   }, []);
 

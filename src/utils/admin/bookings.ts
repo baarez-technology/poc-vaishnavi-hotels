@@ -130,11 +130,11 @@ export function calculateBookingAmount(roomType, nights, taxRate = 0.12) {
   };
 }
 
-// Format currency
-export function formatCurrency(amount) {
+// Format currency - prefer using useCurrency hook in components for dynamic currency
+export function formatCurrency(amount, currency = 'USD') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: currency,
     minimumFractionDigits: 0,
   }).format(amount);
 }

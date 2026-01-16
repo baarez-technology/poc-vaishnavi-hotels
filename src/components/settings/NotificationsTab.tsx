@@ -89,7 +89,9 @@ export default function NotificationsTab() {
   };
 
   const toggleTriggerChannel = (triggerKey: string, channel: string) => {
-    const currentChannels = notifications.triggers[triggerKey].channels || [];
+    // Ensure channels is always an array
+    const triggerData = notifications.triggers[triggerKey] || { enabled: false, channels: [] };
+    const currentChannels = Array.isArray(triggerData.channels) ? triggerData.channels : [];
     const newChannels = currentChannels.includes(channel)
       ? currentChannels.filter((c: string) => c !== channel)
       : [...currentChannels, channel];
@@ -221,7 +223,11 @@ export default function NotificationsTab() {
 
             <div className="p-6">
               {categoryTriggers.map((trigger, index) => {
-                const config = notifications.triggers[trigger.key] || { enabled: false, channels: [] };
+                const triggerData = notifications.triggers[trigger.key] || { enabled: false, channels: [] };
+                const config = {
+                  enabled: triggerData.enabled || false,
+                  channels: Array.isArray(triggerData.channels) ? triggerData.channels : []
+                };
 
                 return (
                   <div
@@ -244,7 +250,7 @@ export default function NotificationsTab() {
                         <span className="text-xs text-neutral-500">Send via:</span>
                         <div className="flex items-center gap-2">
                           {CHANNEL_CONFIG.map((channel) => {
-                            const isActive = config.channels?.includes(channel.key);
+                            const isActive = config.channels.includes(channel.key);
                             const isChannelEnabled = notifications.channels[channel.key]?.enabled;
 
                             return (

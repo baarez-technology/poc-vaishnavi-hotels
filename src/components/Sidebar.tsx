@@ -40,6 +40,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useSettingsContext } from '../contexts/SettingsContext';
 import GlimmoraLogo from '../assets/G white logo.svg';
 
 /**
@@ -138,10 +139,16 @@ const navCategories = [
 
 const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly }) => {
   const { isDark } = useTheme();
+  const settingsContext = useSettingsContext() as any;
+  const generalSettings = settingsContext?.generalSettings;
   const location = useLocation();
   const [expandedSections, setExpandedSections] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  // Get hotel name from settings, with fallback
+  const hotelName = generalSettings?.hotelName || 'Glimmora';
+  const customLogo = generalSettings?.branding?.logo;
 
   useEffect(() => {
     const activeCategory = navCategories.find(cat =>
@@ -178,15 +185,21 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
         }`}>
           <div className="flex items-center gap-3">
             <div className={`flex-shrink-0 ${isCollapsed ? 'w-8 h-8' : 'w-9 h-9'}`}>
-              <div className="w-full h-full rounded-xl flex items-center justify-center p-1.5 bg-gradient-to-br from-terra-500 to-terra-600">
-                <img src={GlimmoraLogo} alt="Glimmora" className="w-full h-full object-contain" />
-              </div>
+              {customLogo ? (
+                <div className="w-full h-full rounded-xl flex items-center justify-center overflow-hidden bg-white border border-neutral-200">
+                  <img src={customLogo} alt={hotelName} className="w-full h-full object-contain" />
+                </div>
+              ) : (
+                <div className="w-full h-full rounded-xl flex items-center justify-center p-1.5 bg-gradient-to-br from-terra-500 to-terra-600">
+                  <img src={GlimmoraLogo} alt="Glimmora" className="w-full h-full object-contain" />
+                </div>
+              )}
             </div>
 
             {!isCollapsed && (
-              <div>
-                <h1 className="text-sm font-semibold text-neutral-800">
-                  Glimmora
+              <div className="min-w-0 flex-1">
+                <h1 className="text-sm font-semibold text-neutral-800 truncate">
+                  {hotelName}
                 </h1>
                 <p className="text-[10px] text-neutral-400">
                   Hotel Management

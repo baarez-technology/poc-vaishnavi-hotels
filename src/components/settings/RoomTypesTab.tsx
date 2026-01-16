@@ -6,6 +6,7 @@ import EditRoomTypeModal from './EditRoomTypeModal';
 import { Button } from '../ui2/Button';
 import { roomTypesService, RoomTypeUpdate } from '../../api/services/roomTypes.service';
 import { useToast } from '../../contexts/ToastContext';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface RoomType {
   id: string;
@@ -31,6 +32,7 @@ export default function RoomTypesTab() {
   const [isSaving, setIsSaving] = useState(false);
 
   const toast = useToast();
+  const { currency } = useCurrency();
 
   // Fetch room types from API
   const fetchRoomTypes = async () => {
@@ -119,7 +121,7 @@ export default function RoomTypesTab() {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: currency,
       maximumFractionDigits: 0
     }).format(price);
   };

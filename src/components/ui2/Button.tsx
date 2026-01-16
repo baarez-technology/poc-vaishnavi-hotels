@@ -4,29 +4,39 @@ import { cn } from '../../lib/utils';
 import { Loader2 } from 'lucide-react';
 
 /**
- * Glimmora Design System v4.0 - Button
- * Warm enterprise aesthetic with gradient depth, no shadows
+ * Glimmora Design System v5.0 - Button
+ * Warm enterprise aesthetic with dynamic branding support
  */
 
 const VARIANT = {
+  // Primary - uses brand primary color
   primary: `
     text-white font-semibold
-    bg-terra-500
-    hover:bg-terra-600
-    active:bg-terra-700
+    bg-[var(--brand-primary)]
+    hover:bg-[var(--brand-primary-hover)]
+    active:brightness-90
   `,
+  // Secondary - uses brand accent color
   secondary: `
     text-white font-semibold
-    bg-ocean-500
-    hover:bg-ocean-600
-    active:bg-ocean-700
+    bg-[var(--brand-accent)]
+    hover:bg-[var(--brand-accent-hover)]
+    active:brightness-90
   `,
+  // Outline variants - white background with colored border/text
   outline: `
-    text-terra-600 font-semibold
+    text-[var(--brand-primary)] font-semibold
     bg-white
-    border border-terra-200
-    hover:bg-terra-50 hover:border-terra-300
-    active:bg-terra-100
+    border border-[var(--brand-primary)]/30
+    hover:bg-[var(--brand-primary-45)] hover:border-[var(--brand-primary)]/60
+    active:bg-[var(--brand-primary-light)]
+  `,
+  'outline-secondary': `
+    text-[var(--brand-accent)] font-semibold
+    bg-white
+    border border-[var(--brand-accent)]/30
+    hover:bg-[var(--brand-accent-50)] hover:border-[var(--brand-accent)]/60
+    active:bg-[var(--brand-accent-light)]
   `,
   'outline-neutral': `
     text-neutral-600 font-semibold
@@ -35,6 +45,28 @@ const VARIANT = {
     hover:bg-neutral-50 hover:border-neutral-300
     active:bg-neutral-100
   `,
+  'outline-danger': `
+    text-rose-600 font-semibold
+    bg-white
+    border border-rose-200
+    hover:bg-rose-50 hover:border-rose-300
+    active:bg-rose-100
+  `,
+  'outline-success': `
+    text-sage-600 font-semibold
+    bg-white
+    border border-sage-200
+    hover:bg-sage-50 hover:border-sage-300
+    active:bg-sage-100
+  `,
+  'outline-warning': `
+    text-gold-700 font-semibold
+    bg-white
+    border border-gold-200
+    hover:bg-gold-50 hover:border-gold-300
+    active:bg-gold-100
+  `,
+  // Ghost and subtle variants
   ghost: `
     text-neutral-600 font-medium
     bg-transparent
@@ -47,6 +79,7 @@ const VARIANT = {
     hover:bg-neutral-200 hover:text-neutral-900
     active:bg-neutral-300
   `,
+  // Solid semantic variants
   danger: `
     text-white font-semibold
     bg-rose-500
@@ -74,11 +107,11 @@ const VARIANT = {
 };
 
 const SIZE = {
-  xs: 'h-7 px-2.5 text-xs gap-1.5 rounded-md',
-  sm: 'h-8 px-3 text-xs gap-1.5 rounded-lg',
-  md: 'h-9 px-4 text-sm gap-2 rounded-lg',
-  lg: 'h-10 px-5 text-sm gap-2 rounded-xl',
-  xl: 'h-12 px-6 text-base gap-2.5 rounded-xl',
+  xs: 'h-7 px-2.5 text-xs gap-1.5 rounded-[var(--brand-radius-sm)]',
+  sm: 'h-8 px-3 text-xs gap-1.5 rounded-[var(--brand-radius-sm)]',
+  md: 'h-9 px-4 text-sm gap-2 rounded-[var(--brand-radius-md)]',
+  lg: 'h-10 px-5 text-sm gap-2 rounded-[var(--brand-radius-lg)]',
+  xl: 'h-12 px-6 text-base gap-2.5 rounded-[var(--brand-radius-xl)]',
 };
 
 const ICON_SIZE = {
@@ -128,7 +161,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       className={cn(
         'inline-flex items-center justify-center whitespace-nowrap',
         'transition-all duration-150 ease-out',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terra-500/40 focus-visible:ring-offset-2',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/40 focus-visible:ring-offset-2',
         'disabled:opacity-50 disabled:pointer-events-none',
         'active:scale-[0.98]',
         VARIANT[variant] ?? VARIANT.primary,
@@ -185,9 +218,9 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       type={props.type ?? 'button'}
       aria-label={label}
       className={cn(
-        'inline-flex items-center justify-center rounded-lg',
+        'inline-flex items-center justify-center rounded-[var(--brand-radius-md)]',
         'transition-all duration-150 ease-out',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terra-500/40 focus-visible:ring-offset-2',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/40 focus-visible:ring-offset-2',
         'disabled:opacity-50 disabled:pointer-events-none',
         'active:scale-[0.95]',
         VARIANT[variant] ?? VARIANT.ghost,

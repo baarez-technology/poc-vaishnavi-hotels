@@ -1,5 +1,5 @@
-import { useState, useEffect, Component, ReactNode } from 'react';
-import { Download, RefreshCw, Sparkles, Target, CheckCircle, Cpu, Calculator, Building2, CalendarDays, AlertTriangle } from 'lucide-react';
+import { useState, useEffect, useCallback, Component, ReactNode } from 'react';
+import { Download, RefreshCw, Sparkles, Target, CheckCircle, Cpu, Calculator, Building2, CalendarDays, AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '../../components/ui2/Button';
 
 // Import revenue components
@@ -24,7 +24,7 @@ import EventModal from '../../components/revenue/EventModal';
 // Import centralized data provider
 import { RevenueDataProvider, useRevenueData } from '../../contexts/RevenueDataContext';
 
-// Import API service for export only
+// Import API service
 import { revenueIntelligenceService } from '../../api/services/revenue-intelligence.service';
 
 const STORAGE_KEY = 'glimmora_revenue_settings';
@@ -129,6 +129,7 @@ function RevenueAIContent() {
   });
 
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSyncingSettings, setIsSyncingSettings] = useState(false);
 
   // Modal states
   const [scenarioModalOpen, setScenarioModalOpen] = useState(false);
@@ -140,9 +141,39 @@ function RevenueAIContent() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
   }, [settings]);
 
-  const handleSettingsChange = (newSettings: typeof settings) => {
+  // Sync settings with backend
+  const syncSettingsWithBackend = useCallback(async (newSettings: typeof settings, changedKey?: string) => {
+    setIsSyncingSettings(true);
+    try {
+      // Sync based on which setting changed
+      if (!changedKey || changedKey === 'autoRate') {
+        await revenueIntelligenceService.toggleAutoPricing(newSettings.autoRate);
+      }
+      if (!changedKey || changedKey === 'competitorScan') {
+        await revenueIntelligenceService.toggleCompetitorScan(newSettings.competitorScan);
+      }
+      if (!changedKey || changedKey === 'demandPricing') {
+        await revenueIntelligenceService.toggleDemandPricing(newSettings.demandPricing);
+      }
+      console.log('Revenue AI settings synced with backend');
+    } catch (error) {
+      console.error('Failed to sync Revenue AI settings with backend:', error);
+    } finally {
+      setIsSyncingSettings(false);
+    }
+  }, []);
+
+  const handleSettingsChange = useCallback((newSettings: typeof settings) => {
+    // Find which key changed
+    const changedKey = Object.keys(newSettings).find(
+      key => newSettings[key as keyof typeof newSettings] !== settings[key as keyof typeof settings]
+    );
+
     setSettings(newSettings);
-  };
+
+    // Sync with backend
+    syncSettingsWithBackend(newSettings, changedKey);
+  }, [settings, syncSettingsWithBackend]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -214,8 +245,14 @@ function RevenueAIContent() {
                   </span>
                 )}
               </div>
-              <p className="text-[13px] text-neutral-500 mt-1">
-                AI-powered revenue management & forecasting • Updated {getLastUpdatedText()}
+              <p className="text-[13px] text-neutral-500 mt-1 flex items-center gap-2">
+                <span>AI-powered revenue management & forecasting • Updated {getLastUpdatedText()}</span>
+                {isSyncingSettings && (
+                  <span className="flex items-center gap-1 text-ocean-600">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span className="text-[11px]">Syncing...</span>
+                  </span>
+                )}
               </p>
             </div>
 

@@ -1,19 +1,22 @@
-import { DollarSign, TrendingUp, Users, Percent, ArrowUp, ArrowDown } from 'lucide-react';
+import { TrendingUp, Users, Percent, ArrowUp, ArrowDown } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function RevenueSummaryCards({ summary, yoyComparison }) {
+  const { symbol } = useCurrency();
+
   const cards = [
     {
       title: 'Total Revenue',
-      value: `$${(summary.totalRevenue / 1000).toFixed(1)}K`,
+      value: `${symbol}${(summary.totalRevenue / 1000).toFixed(1)}K`,
       change: yoyComparison.revenueGrowth,
-      icon: DollarSign,
+      icon: () => <span className="text-base font-bold">{symbol}</span>,
       iconBg: 'bg-[#A57865]/10',
       iconColor: 'text-[#A57865]',
       description: '30-day total'
     },
     {
       title: 'Average ADR',
-      value: `$${summary.avgADR}`,
+      value: `${symbol}${summary.avgADR}`,
       change: yoyComparison.adrGrowth,
       icon: TrendingUp,
       iconBg: 'bg-[#5C9BA4]/10',
@@ -31,7 +34,7 @@ export default function RevenueSummaryCards({ summary, yoyComparison }) {
     },
     {
       title: 'RevPAR',
-      value: `$${summary.avgRevPAR}`,
+      value: `${symbol}${summary.avgRevPAR}`,
       change: yoyComparison.revparGrowth,
       icon: Percent,
       iconBg: 'bg-[#4E5840]/10',

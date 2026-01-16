@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { Calendar, Users, MapPin, Edit2 } from 'lucide-react';
 import { Card, Button } from '@/components/ui';
-import { formatCurrency } from '@/utils/helpers/format';
+import { useCurrency } from '@/hooks/useCurrency';
 import type { BookingDraft, Booking } from '@/api/types/booking.types';
 
 interface BookingSummaryWidgetProps {
@@ -19,6 +19,7 @@ export const BookingSummaryWidget = ({
   showCancellationPolicy = true,
   onEdit,
 }: BookingSummaryWidgetProps) => {
+  const { formatCurrency } = useCurrency();
   const isDraft = 'checkIn' in booking && booking.checkIn instanceof Date;
   const room = 'room' in booking ? booking.room : null;
 

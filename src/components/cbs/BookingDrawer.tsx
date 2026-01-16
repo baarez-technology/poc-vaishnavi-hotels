@@ -19,6 +19,7 @@ import { Select } from '../ui2/Input';
 import { StatusBadge, Badge } from '../ui2/Badge';
 import { Drawer } from '../ui2/Drawer';
 import { statusConfig, sourceConfig } from '../../data/cbs/sampleBookings';
+import { useCurrency } from '@/hooks/useCurrency';
 
 const statusOptions = [
   { value: 'CONFIRMED', label: 'Confirmed', color: 'text-ocean-600', bg: 'bg-ocean-500', dotBg: 'bg-ocean-500', lightBg: 'bg-ocean-50' },
@@ -46,6 +47,7 @@ export default function BookingDrawer({
   onAddPayment,
   aiInsights = []
 }) {
+  const { formatCurrency } = useCurrency();
   const [activeTab, setActiveTab] = useState('details');
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [editingField, setEditingField] = useState(null);
@@ -139,8 +141,6 @@ export default function BookingDrawer({
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
-
-  const formatCurrency = (amount) => `$${amount.toLocaleString()}`;
 
   const source = sourceConfig[booking.source];
   const currentStatusOption = statusOptions.find(s => s.value === booking.status) || statusOptions[1];

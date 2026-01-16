@@ -3,9 +3,10 @@ import { createPortal } from 'react-dom';
 import {
   X, Crown, Mail, Phone, Bed, Globe, Sparkles, Edit, XCircle,
   CheckCircle, Users, Calendar, ChevronDown, Check, MapPin,
-  CreditCard, Clock, MessageSquare, ArrowRight, DollarSign,
+  CreditCard, Clock, MessageSquare, ArrowRight,
   FileText, History, Copy, ExternalLink, Shield, Star
 } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 
 /**
  * Enhanced Booking Drawer
@@ -20,6 +21,7 @@ export default function EnhancedBookingDrawer({
   onAssignRoom,
   onCancelBooking,
 }) {
+  const { formatCurrency } = useCurrency();
   const [showStatusSuccess, setShowStatusSuccess] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
@@ -78,8 +80,6 @@ export default function EnhancedBookingDrawer({
       year: 'numeric'
     });
   };
-
-  const formatCurrency = (amount) => `$${amount.toLocaleString()}`;
 
   const copyToClipboard = (text, field) => {
     navigator.clipboard.writeText(text);

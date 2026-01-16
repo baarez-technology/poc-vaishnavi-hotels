@@ -1,6 +1,6 @@
 /**
- * Glimmora Design System - Base Drawer Component
- * Reusable drawer/modal component following luxury design principles
+ * Glimmora Design System v5.0 - Base Drawer Component
+ * Reusable drawer/modal component with dynamic branding
  */
 
 import { useEffect } from 'react';
@@ -85,7 +85,7 @@ export function Drawer({
             size="sm"
             label="Close"
             onClick={onClose}
-            className="absolute top-5 right-5 z-30 hover:bg-neutral-100 rounded-lg transition-all duration-200"
+            className="absolute top-5 right-5 z-30 hover:bg-neutral-100 rounded-[var(--brand-radius-md)] transition-all duration-200"
           />
         )}
 
@@ -160,9 +160,14 @@ export function ConfirmDrawer({
       buttonVariant: 'primary'
     },
     primary: {
-      iconBg: 'bg-terra-50',
-      iconColor: 'text-terra-600',
+      iconBg: 'bg-[var(--brand-primary-50)]',
+      iconColor: 'text-[var(--brand-primary)]',
       buttonVariant: 'primary'
+    },
+    secondary: {
+      iconBg: 'bg-[var(--brand-accent-50)]',
+      iconColor: 'text-[var(--brand-accent)]',
+      buttonVariant: 'secondary'
     }
   };
 
@@ -180,7 +185,7 @@ export function ConfirmDrawer({
         {/* Content */}
         <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 text-center">
           {/* Icon */}
-          <div className={cn('w-16 h-16 rounded-2xl flex items-center justify-center mb-6', config.iconBg)}>
+          <div className={cn('w-16 h-16 rounded-[var(--brand-radius-card)] flex items-center justify-center mb-6', config.iconBg)}>
             <IconComponent className={cn('w-8 h-8', config.iconColor)} />
           </div>
 

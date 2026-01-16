@@ -12,6 +12,7 @@ import {
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { ForecastItem } from '../../api/services/revenue-intelligence.service';
 import { useForecast, useRevenueData } from '../../contexts/RevenueDataContext';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface ChartDataItem {
   date: string;
@@ -23,29 +24,29 @@ interface ChartDataItem {
   confidenceLower?: number;
 }
 
-const formatCurrency = (value: number) => {
-  if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`;
-  }
-  if (value >= 1000) {
-    return `$${(value / 1000).toFixed(0)}K`;
-  }
-  return `$${value.toLocaleString()}`;
-};
-
 interface TooltipPayload {
   value: number;
   payload: ChartDataItem;
 }
 
-const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: TooltipPayload[]; label?: string }) => {
+const CustomTooltip = ({ active, payload, label, symbol = '$' }: { active?: boolean; payload?: TooltipPayload[]; label?: string; symbol?: string }) => {
+  const formatCurrencyValue = (value: number) => {
+    if (value >= 1000000) {
+      return `${symbol}${(value / 1000000).toFixed(1)}M`;
+    }
+    if (value >= 1000) {
+      return `${symbol}${(value / 1000).toFixed(0)}K`;
+    }
+    return `${symbol}${value.toLocaleString()}`;
+  };
+
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
       <div className="bg-white border border-neutral-200 rounded-[10px] p-3 shadow-lg">
         <p className="text-[11px] text-neutral-500 font-medium mb-1">{label}</p>
         <p className="text-sm font-bold text-terra-600">
-          {formatCurrency(payload[0].value)}
+          {formatCurrencyValue(payload[0].value)}
         </p>
         {data.demand !== undefined && (
           <p className="text-[11px] text-neutral-400 mt-1">
@@ -143,7 +144,18 @@ const generateFallbackData = (): ChartDataItem[] => {
 export default function ForecastChart() {
   const { data: forecastData, loading } = useForecast();
   const { refresh, error } = useRevenueData();
+  const { symbol } = useCurrency();
   const [showConfidenceBands, setShowConfidenceBands] = useState(true);
+
+  const formatCurrencyValue = (value: number) => {
+    if (value >= 1000000) {
+      return `${symbol}${(value / 1000000).toFixed(1)}M`;
+    }
+    if (value >= 1000) {
+      return `${symbol}${(value / 1000).toFixed(0)}K`;
+    }
+    return `${symbol}${value.toLocaleString()}`;
+  };
 
   // Transform API response to chart format
   const data = useMemo(() => {
@@ -226,7 +238,7 @@ export default function ForecastChart() {
           </label>
           <div className="text-right">
             <p className="text-[11px] text-neutral-400 font-medium">7-Day Forecast</p>
-            <p className="text-xl font-bold text-terra-600">{formatCurrency(totalForecast)}</p>
+            <p className="text-xl font-bold text-terra-600">{formatCurrencyValue(totalForecast)}</p>
           </div>
         </div>
       </div>
@@ -257,10 +269,10 @@ export default function ForecastChart() {
               tick={{ fontSize: 11, fill: '#9ca3af' }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
+              tickFormatter={(value) => `${symbol}${(value / 1000).toFixed(0)}K`}
               dx={-5}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip symbol={symbol} />} />
 
             {/* Average Reference Line */}
             <ReferenceLine
@@ -323,7 +335,7 @@ export default function ForecastChart() {
         </div>
         <div className="flex items-center gap-2">
           <div className="w-6 h-0 border-t-2 border-dashed border-gold-500" />
-          <span className="text-[11px] text-neutral-600 font-medium">Average ({formatCurrency(avgRevenue)})</span>
+          <span className="text-[11px] text-neutral-600 font-medium">Average ({formatCurrencyValue(avgRevenue)})</span>
         </div>
         {showConfidenceBands && (
           <div className="flex items-center gap-2">

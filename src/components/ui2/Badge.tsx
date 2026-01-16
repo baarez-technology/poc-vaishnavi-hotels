@@ -2,30 +2,30 @@ import React from 'react';
 import { cn } from '../../lib/utils';
 
 /**
- * Glimmora Design System v4.0 - Badge
- * Status indicators with semantic color coding
+ * Glimmora Design System v5.0 - Badge
+ * Status indicators with dynamic branding
  */
 
 const VARIANT = {
   // Semantic variants
   neutral: 'bg-neutral-100 text-neutral-700 border-neutral-200',
-  primary: 'bg-terra-50 text-terra-700 border-terra-200',
-  secondary: 'bg-ocean-50 text-ocean-700 border-ocean-200',
+  primary: 'bg-[var(--brand-primary-50)] text-[var(--brand-primary)] border-[var(--brand-primary-light)]',
+  secondary: 'bg-[var(--brand-accent-50)] text-[var(--brand-accent)] border-[var(--brand-accent-light)]',
   success: 'bg-sage-50 text-sage-700 border-sage-200',
   warning: 'bg-gold-50 text-gold-800 border-gold-200',
   danger: 'bg-rose-50 text-rose-700 border-rose-200',
   info: 'bg-ocean-50 text-ocean-700 border-ocean-200',
 
   // Solid variants (more emphasis)
-  'primary-solid': 'bg-terra-500 text-white border-terra-600',
-  'secondary-solid': 'bg-ocean-500 text-white border-ocean-600',
+  'primary-solid': 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary-hover)]',
+  'secondary-solid': 'bg-[var(--brand-accent)] text-white border-[var(--brand-accent-hover)]',
   'success-solid': 'bg-sage-500 text-white border-sage-600',
   'warning-solid': 'bg-gold-500 text-gold-900 border-gold-600',
   'danger-solid': 'bg-rose-500 text-white border-rose-600',
 
   // Outline variants
-  'primary-outline': 'bg-transparent text-terra-600 border-terra-300',
-  'secondary-outline': 'bg-transparent text-ocean-600 border-ocean-300',
+  'primary-outline': 'bg-transparent text-[var(--brand-primary)] border-[var(--brand-primary)]/40',
+  'secondary-outline': 'bg-transparent text-[var(--brand-accent)] border-[var(--brand-accent)]/40',
   'success-outline': 'bg-transparent text-sage-600 border-sage-300',
   'danger-outline': 'bg-transparent text-rose-600 border-rose-300',
 };
@@ -49,8 +49,8 @@ export function Badge({
 }) {
   const dotColors = {
     neutral: 'bg-neutral-400',
-    primary: 'bg-terra-500',
-    secondary: 'bg-ocean-500',
+    primary: 'bg-[var(--brand-primary)]',
+    secondary: 'bg-[var(--brand-accent)]',
     success: 'bg-sage-500',
     warning: 'bg-gold-500',
     danger: 'bg-rose-500',

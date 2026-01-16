@@ -8,8 +8,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X, Bed, Check, AlertTriangle, ArrowRight,
-  DollarSign, Search, Users, Layers, Crown
+  Search, Users, Layers, Crown
 } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 import { ConfirmModal } from '../ui2/Modal';
 import { Button, IconButton } from '../ui2/Button';
 import { SearchBar } from '../ui2/SearchBar';
@@ -43,6 +44,7 @@ export default function AssignRoomModal({
   onNotifyHousekeeping,
   hideBackdrop = false
 }) {
+  const { formatCurrency, symbol } = useCurrency();
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -141,8 +143,7 @@ export default function AssignRoomModal({
     }
   };
 
-  const formatCurrency = (amount) => `$${amount.toLocaleString()}`;
-
+  
   const roomTypes = ['all', 'Minimalist Studio', 'Coastal Retreat', 'Urban Oasis', 'Sunset Vista', 'Pacific Suite', 'Wellness Suite', 'Family Sanctuary', 'Oceanfront Penthouse'];
 
   if (!isOpen || !booking) return null;
@@ -230,7 +231,7 @@ export default function AssignRoomModal({
               <div className="rounded-[10px] border border-neutral-200 bg-white p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-6 h-6 rounded-md bg-gold-50 flex items-center justify-center">
-                    <DollarSign className="w-3 h-3 text-gold-600" />
+                    <span className="text-xs font-bold text-gold-600">{symbol}</span>
                   </div>
                   <span className="text-[9px] font-semibold uppercase tracking-widest text-neutral-400">Total</span>
                 </div>
@@ -409,7 +410,7 @@ export default function AssignRoomModal({
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-semibold text-gold-700">Fee:</span>
                   <div className="relative">
-                    <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-medium text-neutral-400">{symbol}</span>
                     <input
                       type="number"
                       value={upgradeFee}

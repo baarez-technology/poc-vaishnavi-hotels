@@ -6,7 +6,7 @@ import { Button } from '../ui2/Button';
 import { SelectDropdown } from '../ui2/Input';
 
 export default function HotelInfoTab() {
-  const { generalSettings, updateGeneralSettings, updateContactInfo, updateAddress, setCurrency, setTimezone, setHotelName } = useSettingsContext();
+  const { generalSettings, updateGeneralSettings, updateContactInfo, updateAddress, setCurrency, setTimezone, setHotelName, updateBranding } = useSettingsContext();
 
   const [form, setForm] = useState({
     hotelName: '',
@@ -84,6 +84,11 @@ export default function HotelInfoTab() {
       checkInTime: form.checkInTime,
       checkOutTime: form.checkOutTime
     });
+
+    // Save the logo to branding settings
+    if (form.logo) {
+      updateBranding({ logo: form.logo });
+    }
 
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);

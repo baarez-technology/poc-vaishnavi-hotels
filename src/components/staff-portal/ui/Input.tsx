@@ -42,9 +42,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             type={type}
             className={`
-              w-full px-4 py-3 rounded-[10px] border transition-all duration-200
+              w-full px-4 py-3 rounded-[var(--brand-radius-md)] border transition-all duration-200
               text-[13px] text-neutral-800 placeholder:text-neutral-400
-              focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500
+              focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20 focus:border-[var(--brand-primary)]
               disabled:bg-neutral-50 disabled:cursor-not-allowed
               ${error ? 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-500' : 'border-neutral-200'}
               ${hasIcon && iconPosition === 'left' ? 'pl-11' : ''}
@@ -101,9 +101,9 @@ export const Textarea = forwardRef<HTMLTextAreaElement, {
           ref={ref}
           rows={rows}
           className={`
-            w-full px-4 py-3 rounded-[10px] border transition-all duration-200
+            w-full px-4 py-3 rounded-[var(--brand-radius-md)] border transition-all duration-200
             text-[13px] text-neutral-800 placeholder:text-neutral-400 resize-none
-            focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500
+            focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20 focus:border-[var(--brand-primary)]
             disabled:bg-neutral-50 disabled:cursor-not-allowed
             ${error ? 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-500' : 'border-neutral-200'}
             ${className}
@@ -158,9 +158,9 @@ export const Select = forwardRef<HTMLSelectElement, {
         <select
           ref={ref}
           className={`
-            w-full px-4 py-3 rounded-[10px] border transition-all duration-200
+            w-full px-4 py-3 rounded-[var(--brand-radius-md)] border transition-all duration-200
             text-[13px] text-neutral-800 bg-white
-            focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500
+            focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20 focus:border-[var(--brand-primary)]
             disabled:bg-neutral-50 disabled:cursor-not-allowed
             ${error ? 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-500' : 'border-neutral-200'}
             ${className}
@@ -210,8 +210,8 @@ export const Checkbox = forwardRef<HTMLInputElement, {
           ref={ref}
           type="checkbox"
           className={`
-            w-4 h-4 mt-0.5 rounded border-neutral-200 text-terra-600
-            focus:ring-2 focus:ring-terra-500/20 focus:ring-offset-0
+            w-4 h-4 mt-0.5 rounded border-neutral-200 text-[var(--brand-primary)]
+            focus:ring-2 focus:ring-[var(--brand-primary)]/20 focus:ring-offset-0
             disabled:opacity-50 disabled:cursor-not-allowed
             ${className}
           `}
@@ -273,9 +273,9 @@ export const SearchInput = forwardRef<HTMLInputElement, {
           placeholder={placeholder}
           value={value}
           className={`
-            w-full pl-11 pr-10 py-3 rounded-[10px] border border-neutral-200
+            w-full pl-11 pr-10 py-3 rounded-[var(--brand-radius-md)] border border-neutral-200
             text-[13px] text-neutral-800 placeholder:text-neutral-400
-            focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500
+            focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20 focus:border-[var(--brand-primary)]
             transition-all duration-200
             ${className}
           `}

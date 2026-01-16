@@ -1,16 +1,55 @@
 /**
+ * Currency symbol lookup
+ */
+export const CURRENCY_SYMBOLS: Record<string, string> = {
+  INR: '₹',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  AED: 'د.إ',
+  SGD: 'S$'
+};
+
+/**
+ * Get currency symbol
+ * @param {string} currency - Currency code
+ * @returns {string} Currency symbol
+ */
+export const getCurrencySymbol = (currency: string): string => {
+  return CURRENCY_SYMBOLS[currency] || '$';
+};
+
+/**
  * Format currency values
  * @param {number} value - The numeric value to format
  * @param {string} currency - Currency code (default: USD)
  * @returns {string} Formatted currency string
  */
-export const formatCurrency = (value, currency = 'USD') => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
+export const formatCurrency = (value: number, currency = 'USD'): string => {
+  // Use Intl.NumberFormat for proper locale-based formatting
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  } catch {
+    // Fallback if currency code is invalid
+    const symbol = getCurrencySymbol(currency);
+    return `${symbol}${value.toLocaleString()}`;
+  }
+};
+
+/**
+ * Format currency with symbol only (for display without locale formatting)
+ * @param {number} value - The numeric value to format
+ * @param {string} currency - Currency code (default: USD)
+ * @returns {string} Formatted currency string with symbol
+ */
+export const formatCurrencySimple = (value: number, currency = 'USD'): string => {
+  const symbol = getCurrencySymbol(currency);
+  return `${symbol}${value.toLocaleString()}`;
 };
 
 /**

@@ -3,8 +3,10 @@ import { AlertCircle } from 'lucide-react';
 import { AMENITIES } from '../../utils/settings';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function EditRoomTypeModal({ room, onClose, onSave }) {
+  const { symbol } = useCurrency();
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -135,7 +137,7 @@ export default function EditRoomTypeModal({ room, onClose, onSave }) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>
-              Price per Night ($) <span className="text-rose-500">*</span>
+              Price per Night ({symbol}) <span className="text-rose-500">*</span>
             </label>
             <input
               type="number"

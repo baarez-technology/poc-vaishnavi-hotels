@@ -41,6 +41,8 @@ export default function BrandingTab() {
   const saveBranding = (newBranding: typeof branding) => {
     setBranding(newBranding);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newBranding));
+    // Dispatch custom event to notify BrandingContext of changes
+    window.dispatchEvent(new CustomEvent('branding-updated'));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };

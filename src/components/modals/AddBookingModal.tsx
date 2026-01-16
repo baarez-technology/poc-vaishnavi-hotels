@@ -9,13 +9,13 @@ import {
   ROOM_TYPES,
   calculateNights,
   calculateBookingAmount,
-  formatCurrency,
   generateBookingId,
 } from '../../utils/bookings';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 import { Input, FormField, Textarea } from '../ui2/Input';
 import DatePicker from '../ui2/DatePicker';
+import { useCurrency } from '@/hooks/useCurrency';
 
 const SOURCE_OPTIONS = [
   { value: 'Website', label: 'Website' },
@@ -76,6 +76,7 @@ function CustomSelect({ value, onChange, options, placeholder = 'Select...' }) {
 }
 
 export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating = false }) {
+  const { formatCurrency } = useCurrency();
   const [formData, setFormData] = useState({
     guestName: '',
     email: '',

@@ -21,7 +21,6 @@ import {
   TrendingDown,
   Users,
   Calendar,
-  DollarSign,
   Home,
   ArrowUpRight,
   ArrowDownRight,
@@ -60,6 +59,7 @@ import {
 import { useTheme } from '../../contexts/ThemeContext';
 import { reviewsData, reviewsSummary } from '../../data/reviewsData';
 import { formatCurrency } from '../../utils/dashboardUtils';
+import { useCurrency } from '@/hooks/useCurrency';
 import { cn } from '../../lib/utils';
 import { dashboardsService, AdminDashboard } from '../../api/services/dashboards.service';
 import { Button, IconButton } from '../../components/ui2/Button';
@@ -129,6 +129,7 @@ function LuxuryKPICard({
   delay = 0
 }) {
   const isPositive = changeType === 'positive';
+  const isIconFunction = typeof Icon === 'function' && !Icon.displayName && !Icon.$$typeof;
 
   return (
     <div
@@ -145,13 +146,25 @@ function LuxuryKPICard({
             accentColorClass === 'gold' && 'bg-gold-50',
             accentColorClass === 'ocean' && 'bg-ocean-50'
           )}>
-            <Icon className={cn(
-              "w-4 h-4",
-              accentColorClass === 'terra' && 'text-terra-600',
-              accentColorClass === 'sage' && 'text-sage-600',
-              accentColorClass === 'gold' && 'text-gold-600',
-              accentColorClass === 'ocean' && 'text-ocean-600'
-            )} />
+            {isIconFunction ? (
+              <span className={cn(
+                "text-sm font-bold",
+                accentColorClass === 'terra' && 'text-terra-600',
+                accentColorClass === 'sage' && 'text-sage-600',
+                accentColorClass === 'gold' && 'text-gold-600',
+                accentColorClass === 'ocean' && 'text-ocean-600'
+              )}>
+                {Icon()}
+              </span>
+            ) : (
+              <Icon className={cn(
+                "w-4 h-4",
+                accentColorClass === 'terra' && 'text-terra-600',
+                accentColorClass === 'sage' && 'text-sage-600',
+                accentColorClass === 'gold' && 'text-gold-600',
+                accentColorClass === 'ocean' && 'text-ocean-600'
+              )} />
+            )}
           </div>
           <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
             {label}
@@ -695,6 +708,7 @@ export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const navigate = useNavigate();
   const { isDark } = useTheme();
+  const { symbol, formatCurrency: formatCurrencyDynamic } = useCurrency();
 
   // Live time
   useEffect(() => {
@@ -923,10 +937,10 @@ export default function Dashboard() {
             <LuxuryKPICard
               label="Today's Revenue"
               value={todayRevenue}
-              prefix="$"
+              prefix={symbol}
               change={`${dashboardData?.trends.adr >= 0 ? '+' : ''}${dashboardData?.trends.adr.toFixed(1) || '0.0'}%`}
               changeType={dashboardData?.trends.adr >= 0 ? "positive" : "negative"}
-              icon={DollarSign}
+              icon={() => symbol}
               accentColor="#4E5840"
               accentColorClass="sage"
               sparkData={generateSparkData(todayRevenue / 1000, 5)}
@@ -937,7 +951,7 @@ export default function Dashboard() {
             <LuxuryKPICard
               label="ADR"
               value={Math.round(adr)}
-              prefix="$"
+              prefix={symbol}
               change={`${dashboardData?.trends.adr >= 0 ? '+' : ''}${dashboardData?.trends.adr.toFixed(1) || '0.0'}%`}
               changeType={dashboardData?.trends.adr >= 0 ? "positive" : "negative"}
               icon={TrendingUp}
@@ -951,7 +965,7 @@ export default function Dashboard() {
             <LuxuryKPICard
               label="RevPAR"
               value={Math.round(revpar)}
-              prefix="$"
+              prefix={symbol}
               change={`${dashboardData?.trends.revpar >= 0 ? '+' : ''}${dashboardData?.trends.revpar.toFixed(1) || '0.0'}%`}
               changeType={dashboardData?.trends.revpar >= 0 ? "positive" : "negative"}
               icon={Target}
@@ -1027,7 +1041,7 @@ export default function Dashboard() {
                     axisLine={false}
                     tickLine={false}
                     tick={{ fontSize: 12, fill: '#57534E', fontWeight: 600, fontFamily: 'Inter, sans-serif' }}
-                    tickFormatter={v => `$${(v / 1000).toFixed(0)}k`}
+                    tickFormatter={v => `${symbol}${(v / 1000).toFixed(0)}k`}
                     width={55}
                     domain={[0, 'auto']}
                   />
@@ -1050,7 +1064,7 @@ export default function Dashboard() {
                                   </span>
                                 </div>
                                 <span className="text-xs font-bold text-neutral-900">
-                                  ${entry.value?.toLocaleString()}
+                                  {symbol}{entry.value?.toLocaleString()}
                                 </span>
                               </div>
                             ))}
@@ -1226,10 +1240,10 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-baseline gap-2 mb-2">
                   <span className="text-xl font-semibold text-neutral-900">
-                    {formatCurrency(performanceMetrics.revenue.thisWeek)}
+                    {formatCurrencyDynamic(performanceMetrics.revenue.thisWeek)}
                   </span>
                   <span className="text-[11px] text-neutral-400 font-medium">
-                    vs {formatCurrency(performanceMetrics.revenue.lastWeek)}
+                    vs {formatCurrencyDynamic(performanceMetrics.revenue.lastWeek)}
                   </span>
                 </div>
                 <div className="h-1.5 rounded-full bg-neutral-100 overflow-hidden">
@@ -1282,10 +1296,10 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-baseline gap-2 mb-2">
                   <span className="text-xl font-semibold text-neutral-900">
-                    {formatCurrency(performanceMetrics.adr.thisWeek)}
+                    {formatCurrencyDynamic(performanceMetrics.adr.thisWeek)}
                   </span>
                   <span className="text-[11px] text-neutral-400 font-medium">
-                    vs {formatCurrency(performanceMetrics.adr.lastWeek)}
+                    vs {formatCurrencyDynamic(performanceMetrics.adr.lastWeek)}
                   </span>
                 </div>
                 <div className="h-1.5 rounded-full bg-neutral-100 overflow-hidden">
@@ -1505,7 +1519,7 @@ export default function Dashboard() {
                       </td>
                       <td className="py-4 px-6 text-right">
                         <span className="text-[13px] font-semibold text-neutral-900">
-                          {formatCurrency(booking.totalAmount || 324)}
+                          {formatCurrencyDynamic(booking.totalAmount || 324)}
                         </span>
                       </td>
                       <td className="py-4 px-6">

@@ -1,12 +1,16 @@
-import { useState, useEffect } from 'react';
-import { Brain, TrendingUp, MessageSquare, Users, Mic, Check, Sparkles } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Brain, TrendingUp, MessageSquare, Users, Mic, Check, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { defaultSettings, deepMerge } from '@/utils/admin/settings';
+import { revenueIntelligenceService } from '@/api/services/revenue-intelligence.service';
+import { reputationService } from '@/api/services/reputation.service';
 
 const STORAGE_KEY = 'glimmora_ai_settings';
 
 export default function AISettingsTab() {
   const [ai, setAI] = useState(defaultSettings.ai);
   const [saved, setSaved] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -20,18 +24,66 @@ export default function AISettingsTab() {
     }
   }, []);
 
-  const saveAI = (newAI) => {
+  // Sync settings with backend services
+  const syncWithBackend = useCallback(async (newAI: typeof ai, changedSection?: string) => {
+    setSyncing(true);
+    setSyncError(null);
+
+    try {
+      // Sync Revenue AI settings
+      if (!changedSection || changedSection === 'revenueAI') {
+        await revenueIntelligenceService.updateAutoPricingSettings({
+          enabled: true,
+          minRateThreshold: newAI.revenueAI.minRateChange,
+          maxRateThreshold: newAI.revenueAI.maxRateChange,
+          demandBasedPricing: true,
+          competitorTracking: newAI.revenueAI.competitorTracking,
+          seasonalAdjustments: true,
+          lastUpdated: new Date().toISOString()
+        });
+
+        await revenueIntelligenceService.toggleCompetitorScan(newAI.revenueAI.competitorTracking);
+      }
+
+      // Sync Reputation AI settings
+      if (!changedSection || changedSection === 'reputationAI') {
+        await reputationService.updateAutomationConfig({
+          global_enabled: newAI.reputationAI.autoResponse,
+          auto_respond_positive: newAI.reputationAI.autoResponse,
+          auto_respond_threshold: newAI.reputationAI.sentimentThreshold,
+          require_approval: !newAI.reputationAI.autoResponse,
+          response_delay_hours: newAI.reputationAI.autoResponseDelay,
+          templates: { positive: '', neutral: '', negative: '' },
+          sentiment_threshold_positive: 100 - newAI.reputationAI.sentimentThreshold,
+          sentiment_threshold_negative: newAI.reputationAI.escalateThreshold
+        });
+      }
+
+      console.log('AI settings synced with backend successfully');
+    } catch (error) {
+      console.error('Error syncing AI settings with backend:', error);
+      setSyncError('Settings saved locally. Backend sync failed - will retry on next save.');
+    } finally {
+      setSyncing(false);
+    }
+  }, []);
+
+  const saveAI = useCallback((newAI: typeof ai, changedSection?: string) => {
     setAI(newAI);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newAI));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
-  };
 
-  const updateSection = (section, updates) => {
-    saveAI({
+    // Sync with backend
+    syncWithBackend(newAI, changedSection);
+  }, [syncWithBackend]);
+
+  const updateSection = (section: string, updates: Record<string, unknown>) => {
+    const newAI = {
       ...ai,
-      [section]: { ...ai[section], ...updates }
-    });
+      [section]: { ...ai[section as keyof typeof ai], ...updates }
+    };
+    saveAI(newAI, section);
   };
 
   return (
@@ -44,13 +96,38 @@ export default function AISettingsTab() {
             Configure AI modules and intelligence features
           </p>
         </div>
-        {saved && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-[#4E5840]/10 text-[#4E5840] rounded-lg">
-            <Check className="w-4 h-4" />
-            <span className="text-sm font-medium">Saved</span>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {syncing && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm font-medium">Syncing...</span>
+            </div>
+          )}
+          {saved && !syncing && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-[#4E5840]/10 text-[#4E5840] rounded-lg">
+              <Check className="w-4 h-4" />
+              <span className="text-sm font-medium">Saved</span>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Sync Error Banner */}
+      {syncError && (
+        <div className="flex items-start gap-3 p-4 mb-6 bg-amber-50 border border-amber-200 rounded-lg">
+          <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-amber-800">Sync Warning</p>
+            <p className="text-xs text-amber-600 mt-0.5">{syncError}</p>
+          </div>
+          <button
+            onClick={() => setSyncError(null)}
+            className="ml-auto text-amber-500 hover:text-amber-700"
+          >
+            &times;
+          </button>
+        </div>
+      )}
 
       <div className="space-y-6">
         {/* Revenue AI */}

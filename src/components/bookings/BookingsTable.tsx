@@ -4,6 +4,7 @@ import { Crown, Eye, Pencil, MoreHorizontal, Bed, XCircle, CalendarX, ChevronUp,
 import { statusConfig, sourceConfig } from '../../data/bookingsData';
 import { IconButton } from '../ui2/Button';
 import { StatusBadge } from '../ui2/Badge';
+import { useCurrency } from '@/hooks/useCurrency';
 
 type BookingLike = any;
 type SortConfigLike = { field?: string; direction?: 'asc' | 'desc' } | any;
@@ -25,13 +26,11 @@ export default function BookingsTable({
   onAssignRoom?: (booking: BookingLike) => void;
   onCancelBooking?: (booking: BookingLike) => void;
 }) {
+  const { formatCurrency } = useCurrency();
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return `$${amount.toLocaleString()}`;
   };
 
   const [openDropdownId, setOpenDropdownId] = useState(null);

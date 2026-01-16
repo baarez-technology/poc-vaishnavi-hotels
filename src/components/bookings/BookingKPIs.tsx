@@ -1,15 +1,17 @@
 import { useMemo } from 'react';
 import {
-  CalendarCheck, Clock, XCircle, DollarSign,
+  CalendarCheck, Clock, XCircle,
   TrendingUp, Users, ArrowUpRight, ArrowDownRight,
   Sparkles
 } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 
 /**
  * Premium Booking KPI Dashboard
  * Elegant stat cards with key booking metrics
  */
 export default function BookingKPIs({ bookings = [] }) {
+  const { formatCurrency, symbol } = useCurrency();
   const stats = useMemo(() => {
     const total = bookings.length;
     const confirmed = bookings.filter(b => b.status === 'CONFIRMED').length;
@@ -78,8 +80,8 @@ export default function BookingKPIs({ bookings = [] }) {
     {
       id: 'revenue',
       label: 'Revenue',
-      value: `$${stats.totalRevenue.toLocaleString()}`,
-      icon: DollarSign,
+      value: formatCurrency(stats.totalRevenue),
+      icon: () => <span className="text-lg font-bold">{symbol}</span>,
       trend: '+24%',
       trendUp: true,
       color: 'sage',
@@ -88,7 +90,7 @@ export default function BookingKPIs({ bookings = [] }) {
     {
       id: 'adr',
       label: 'Avg. ADR',
-      value: `$${stats.avgADR}`,
+      value: formatCurrency(stats.avgADR),
       icon: TrendingUp,
       trend: '+5%',
       trendUp: true,

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Crown, Mail, Phone, Calendar, Bed, DollarSign, Globe, Sparkles, Edit, XCircle, CheckCircle } from 'lucide-react';
 import { statusConfig, sourceConfig } from '@/data/bookingsData';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function BookingDrawer({
   booking,
@@ -12,6 +13,7 @@ export default function BookingDrawer({
   onAssignRoom,
   onCancelBooking,
 }) {
+  const { formatCurrency } = useCurrency();
   const [showStatusSuccess, setShowStatusSuccess] = useState(false);
   // Prevent scrolling and handle ESC key
   useEffect(() => {
@@ -123,10 +125,6 @@ export default function BookingDrawer({
       day: 'numeric',
       year: 'numeric'
     });
-  };
-
-  const formatCurrency = (amount) => {
-    return `$${amount.toLocaleString()}`;
   };
 
   const source = sourceConfig[booking.source];

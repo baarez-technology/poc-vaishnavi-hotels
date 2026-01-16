@@ -44,13 +44,22 @@ export default function RolesPermissionsTab() {
     saveRoles(newRoles);
   };
 
+  const getPermissionTypes = (module) => {
+    if (module === 'reports') return ['view', 'edit', 'export'];
+    if (module === 'dashboard' || module === 'revenueAI' || module === 'reputationAI' || module === 'crm' || module === 'settings' || module === 'aiAssistant') {
+      return ['view', 'edit'];
+    }
+    return ['view', 'edit', 'delete'];
+  };
+
   const toggleAllPermissions = (roleId, module, value) => {
     const newRoles = roles.map((role) => {
       if (role.id !== roleId) return role;
-      const permissions = role.permissions[module] || {};
+      // Use getPermissionTypes to get all permission types for this module
+      const permTypes = getPermissionTypes(module);
       const updated = {};
-      Object.keys(permissions).forEach((key) => {
-        updated[key] = value;
+      permTypes.forEach((perm) => {
+        updated[perm] = value;
       });
       return {
         ...role,
@@ -63,12 +72,24 @@ export default function RolesPermissionsTab() {
     saveRoles(newRoles);
   };
 
-  const getPermissionTypes = (module) => {
-    if (module === 'reports') return ['view', 'edit', 'export'];
-    if (module === 'dashboard' || module === 'revenueAI' || module === 'reputationAI' || module === 'crm' || module === 'settings' || module === 'aiAssistant') {
-      return ['view', 'edit'];
-    }
-    return ['view', 'edit', 'delete'];
+  // Grant or revoke all permissions for a role across all modules
+  const setAllPermissionsForRole = (roleId, value) => {
+    const newRoles = roles.map((role) => {
+      if (role.id !== roleId) return role;
+      const newPermissions = {};
+      PERMISSION_MODULES.forEach((mod) => {
+        const permTypes = getPermissionTypes(mod.id);
+        newPermissions[mod.id] = {};
+        permTypes.forEach((perm) => {
+          newPermissions[mod.id][perm] = value;
+        });
+      });
+      return {
+        ...role,
+        permissions: newPermissions
+      };
+    });
+    saveRoles(newRoles);
   };
 
   const countPermissions = (role) => {
@@ -205,22 +226,14 @@ export default function RolesPermissionsTab() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        PERMISSION_MODULES.forEach((mod) => {
-                          toggleAllPermissions(role.id, mod.id, true);
-                        });
-                      }}
+                      onClick={() => setAllPermissionsForRole(role.id, true)}
                     >
                       Grant all
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        PERMISSION_MODULES.forEach((mod) => {
-                          toggleAllPermissions(role.id, mod.id, false);
-                        });
-                      }}
+                      onClick={() => setAllPermissionsForRole(role.id, false)}
                     >
                       Revoke all
                     </Button>

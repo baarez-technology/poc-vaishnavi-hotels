@@ -1,5 +1,6 @@
 import { Crown } from 'lucide-react';
 import { statusConfig, sourceConfig } from '@/data/bookingsData';
+import { useCurrency } from '@/hooks/useCurrency';
 
 // Default fallback configs
 const defaultStatus = {
@@ -13,15 +14,17 @@ const defaultSource = {
 };
 
 export default function BookingRow({ booking, onClick }) {
+  const { formatCurrency, symbol } = useCurrency();
+
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const formatCurrency = (amount) => {
-    if (amount === undefined || amount === null) return '$0';
-    return `$${Number(amount).toLocaleString()}`;
+  const formatAmount = (amount) => {
+    if (amount === undefined || amount === null) return `${symbol}0`;
+    return formatCurrency(Number(amount));
   };
 
   // Normalize status to uppercase for lookup
@@ -96,7 +99,7 @@ export default function BookingRow({ booking, onClick }) {
 
       {/* Amount */}
       <div className="text-sm font-bold text-neutral-900 text-right">
-        {formatCurrency(booking.total || booking.amount)}
+        {formatAmount(booking.total || booking.amount)}
       </div>
     </div>
   );

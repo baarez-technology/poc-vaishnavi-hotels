@@ -3,8 +3,8 @@ import { cn } from '../../lib/utils';
 import { TrendingUp, TrendingDown, Minus, LucideIcon } from 'lucide-react';
 
 /**
- * Glimmora Design System v4.0 - Card Components
- * Information-dense cards with border-defined hierarchy
+ * Glimmora Design System v5.0 - Card Components
+ * Information-dense cards with dynamic branding
  */
 
 // Type Definitions
@@ -92,7 +92,7 @@ export function Card({ className, hover = false, padding = true, ...props }: Bas
   return (
     <div
       className={cn(
-        'rounded-xl bg-white border border-neutral-200/40',
+        'rounded-[var(--brand-radius-card)] bg-white border border-neutral-200/40',
         'transition-all duration-200',
         hover && 'hover:bg-neutral-50/30 cursor-pointer',
         padding && 'p-5',
@@ -117,7 +117,7 @@ export function AccentCard({ className, accent = 'terra', children, ...props }: 
   return (
     <div
       className={cn(
-        'rounded-xl bg-white border border-neutral-200/40',
+        'rounded-[var(--brand-radius-card)] bg-white border border-neutral-200/40',
         'border-l-[3px]',
         accents[accent],
         'p-5 transition-all duration-200',
@@ -242,7 +242,7 @@ export function MetricCard({
 
   if (loading) {
     return (
-      <div className={cn('rounded-xl bg-white border border-neutral-200/40', s.wrapper, className)}>
+      <div className={cn('rounded-[var(--brand-radius-card)] bg-white border border-neutral-200/40', s.wrapper, className)}>
         <div className="animate-pulse">
           <div className="flex items-start justify-between mb-3">
             <div className={cn('rounded-lg bg-neutral-200', s.icon)} />
@@ -258,7 +258,7 @@ export function MetricCard({
   return (
     <div
       className={cn(
-        'rounded-xl bg-white border border-neutral-200/40',
+        'rounded-[var(--brand-radius-card)] bg-white border border-neutral-200/40',
         'transition-all duration-200',
         s.wrapper,
         className
@@ -358,7 +358,7 @@ export function ActionCard({
     <button
       onClick={onClick}
       className={cn(
-        'w-full flex items-center gap-4 p-4 rounded-xl text-white text-left',
+        'w-full flex items-center gap-4 p-4 rounded-[var(--brand-radius-card)] text-white text-left',
         'transition-all duration-200 active:scale-[0.98]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2',
         variants[variant],
@@ -384,7 +384,7 @@ export function DataCard({ className, children, ...props }: DataCardProps) {
   return (
     <div
       className={cn(
-        'rounded-xl bg-white border border-neutral-200/40 overflow-hidden',
+        'rounded-[var(--brand-radius-card)] bg-white border border-neutral-200/40 overflow-hidden',
         className
       )}
       {...props}

@@ -1,5 +1,4 @@
 import {
-  DollarSign,
   TrendingUp,
   TrendingDown,
   Percent,
@@ -7,6 +6,7 @@ import {
   Calendar,
   Building2
 } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface KPIData {
   // API format (snake_case)
@@ -33,17 +33,18 @@ interface KPICardsProps {
   data?: KPIData | null;
 }
 
-const formatCurrency = (value: number) => {
-  if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`;
-  }
-  if (value >= 1000) {
-    return `$${(value / 1000).toFixed(0)}K`;
-  }
-  return `$${value.toLocaleString()}`;
-};
-
 export default function KPICards({ data }: KPICardsProps) {
+  const { symbol } = useCurrency();
+
+  const formatCurrencyValue = (value: number) => {
+    if (value >= 1000000) {
+      return `${symbol}${(value / 1000000).toFixed(1)}M`;
+    }
+    if (value >= 1000) {
+      return `${symbol}${(value / 1000).toFixed(0)}K`;
+    }
+    return `${symbol}${value.toLocaleString()}`;
+  };
   // Loading skeleton when no data
   if (!data) {
     return (
@@ -77,8 +78,8 @@ export default function KPICards({ data }: KPICardsProps) {
     {
       id: 'todayRevenue',
       label: "Today's Revenue",
-      value: formatCurrency(todayRevenue),
-      icon: DollarSign,
+      value: formatCurrencyValue(todayRevenue),
+      icon: () => <span className="text-sm font-bold">{symbol}</span>,
       accentColor: 'terra',
       trend: revenueTrend >= 0 ? 'up' : 'down',
       trendValue: revenueTrend
@@ -86,7 +87,7 @@ export default function KPICards({ data }: KPICardsProps) {
     {
       id: 'adr',
       label: 'ADR',
-      value: `$${adr.toLocaleString()}`,
+      value: `${symbol}${adr.toLocaleString()}`,
       icon: Building2,
       accentColor: 'ocean',
       subLabel: 'Avg Daily Rate'
@@ -94,7 +95,7 @@ export default function KPICards({ data }: KPICardsProps) {
     {
       id: 'revpar',
       label: 'RevPAR',
-      value: `$${revpar.toLocaleString()}`,
+      value: `${symbol}${revpar.toLocaleString()}`,
       icon: BarChart3,
       accentColor: 'sage',
       subLabel: 'Revenue Per Room'
@@ -110,7 +111,7 @@ export default function KPICards({ data }: KPICardsProps) {
     {
       id: 'forecast',
       label: '7-Day Forecast',
-      value: formatCurrency(forecastedRevenue),
+      value: formatCurrencyValue(forecastedRevenue),
       icon: Calendar,
       accentColor: 'terra',
       subLabel: 'Projected revenue'

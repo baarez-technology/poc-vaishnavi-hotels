@@ -15,6 +15,7 @@ import { Drawer } from '../ui2/Drawer';
 import { Input, FormField, Select, Textarea } from '../ui2/Input';
 import { Button } from '../ui2/Button';
 import DatePicker from '../ui2/DatePicker';
+import { useCurrency } from '@/hooks/useCurrency';
 
 const roomTypes = [
   'Minimalist Studio',
@@ -42,6 +43,7 @@ export default function NewBookingDrawer({
   availableRooms = [],
   getRateForBooking
 }) {
+  const { formatCurrency } = useCurrency();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     guestName: '',
@@ -200,7 +202,6 @@ export default function NewBookingDrawer({
     onClose();
   };
 
-  const formatCurrency = (amount) => `$${amount.toLocaleString()}`;
   const today = new Date().toISOString().split('T')[0];
 
   const steps = [

@@ -182,7 +182,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
         }`}>
           <div className="flex items-center gap-3">
             <div className={`flex-shrink-0 ${isCollapsed ? 'w-8 h-8' : 'w-9 h-9'}`}>
-              <div className="w-full h-full rounded-xl flex items-center justify-center p-1.5 bg-gradient-to-br from-terra-500 to-terra-600">
+              <div className="w-full h-full rounded-xl flex items-center justify-center p-1.5 bg-[var(--brand-primary)]">
                 <img src={GlimmoraLogo} alt="Glimmora" className="w-full h-full object-contain" />
               </div>
             </div>
@@ -247,7 +247,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                     >
                       <div className="flex items-center gap-2">
                         <CategoryIcon className={`w-4 h-4 ${
-                          hasActiveItem ? 'text-terra-500' : 'text-neutral-400'
+                          hasActiveItem ? 'text-[var(--brand-primary)]' : 'text-neutral-400'
                         }`} />
                         <span className={`text-xs font-semibold uppercase tracking-wide ${
                           hasActiveItem ? 'text-neutral-700' : 'text-neutral-500'
@@ -285,14 +285,14 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                                 className={({ isActive }) =>
                                   `relative flex items-center justify-center p-3 mx-auto rounded-xl transition-all duration-150 ${
                                     isActive
-                                      ? 'bg-terra-50 text-terra-600'
+                                      ? 'bg-[var(--brand-primary-45)] text-[var(--brand-primary)]'
                                       : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800'
                                   }`
                                 }
                               >
                                 {({ isActive }) => (
                                   <Icon className={`flex-shrink-0 w-[18px] h-[18px] ${
-                                    isActive ? 'text-terra-500' : 'text-neutral-400'
+                                    isActive ? 'text-[var(--brand-primary)]' : 'text-neutral-400'
                                   }`} strokeWidth={1.75} />
                                 )}
                               </NavLink>
@@ -301,7 +301,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                               <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-md bg-neutral-800 text-white text-xs font-medium opacity-0 invisible group-hover/item:opacity-100 group-hover/item:visible transition-all duration-150 whitespace-nowrap z-50">
                                 {item.label}
                                 {item.badge && (
-                                  <span className="ml-2 bg-terra-500 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
+                                  <span className="ml-2 bg-[var(--brand-primary)] text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
                                     {item.badge}
                                   </span>
                                 )}
@@ -320,7 +320,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                               <li key={item.to} className="relative group/item">
                                 {/* Horizontal connector line */}
                                 <div className={`absolute -left-4 top-1/2 w-3 h-px ${
-                                  isItemActive ? 'bg-terra-400' : 'bg-neutral-200'
+                                  isItemActive ? 'bg-[var(--brand-primary)]' : 'bg-neutral-200'
                                 }`} />
 
                                 <NavLink
@@ -329,7 +329,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                                   className={({ isActive }) =>
                                     `relative flex items-center justify-between gap-2 px-3 py-2 rounded-lg transition-all duration-150 ${
                                       isActive
-                                        ? 'bg-terra-50 text-terra-700'
+                                        ? 'bg-[var(--brand-primary-45)] text-[var(--brand-primary)]'
                                         : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800'
                                     }`
                                   }
@@ -343,7 +343,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                                       </span>
                                       {item.badge && (
                                         <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                                          isActive ? 'bg-terra-200 text-terra-700' : 'bg-terra-500 text-white'
+                                          isActive ? 'bg-[var(--brand-primary-light)] text-[var(--brand-primary)]' : 'bg-[var(--brand-primary)] text-white'
                                         }`}>
                                           {item.badge}
                                         </span>
@@ -369,7 +369,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                                 className={({ isActive }) =>
                                   `relative flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-150 ${
                                     isActive
-                                      ? 'bg-terra-50 text-terra-700'
+                                      ? 'bg-[var(--brand-primary-45)] text-[var(--brand-primary)]'
                                       : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800'
                                   }`
                                 }
@@ -377,7 +377,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                                 {({ isActive }) => (
                                   <>
                                     <Icon className={`flex-shrink-0 w-[18px] h-[18px] ${
-                                      isActive ? 'text-terra-500' : 'text-neutral-400'
+                                      isActive ? 'text-[var(--brand-primary)]' : 'text-neutral-400'
                                     }`} strokeWidth={1.75} />
 
                                     <span className={`text-[13px] ${
@@ -415,7 +415,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
       <div className="h-14 flex items-center justify-between px-5 border-b border-neutral-100">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 flex-shrink-0">
-            <div className="w-full h-full rounded-xl flex items-center justify-center p-1.5 bg-gradient-to-br from-terra-500 to-terra-600">
+            <div className="w-full h-full rounded-xl flex items-center justify-center p-1.5 bg-[var(--brand-primary)]">
               <img src={GlimmoraLogo} alt="Glimmora" className="w-full h-full object-contain" />
             </div>
           </div>
@@ -453,7 +453,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                   >
                     <div className="flex items-center gap-2">
                       <CategoryIcon className={`w-4 h-4 ${
-                        hasActiveItem ? 'text-terra-500' : 'text-neutral-400'
+                        hasActiveItem ? 'text-[var(--brand-primary)]' : 'text-neutral-400'
                       }`} />
                       <span className={`text-xs font-semibold uppercase tracking-wide ${
                         hasActiveItem ? 'text-neutral-700' : 'text-neutral-500'
@@ -480,7 +480,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                           return (
                             <li key={item.to} className="relative group/item">
                               <div className={`absolute -left-4 top-1/2 w-3 h-px ${
-                                isItemActive ? 'bg-terra-400' : 'bg-neutral-200'
+                                isItemActive ? 'bg-[var(--brand-primary)]' : 'bg-neutral-200'
                               }`} />
                               <NavLink
                                 to={item.to}
@@ -489,7 +489,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                                 className={({ isActive }) =>
                                   `relative flex items-center justify-between gap-2 px-3 py-2 rounded-lg transition-all duration-150 ${
                                     isActive
-                                      ? 'bg-terra-50 text-terra-700'
+                                      ? 'bg-[var(--brand-primary-45)] text-[var(--brand-primary)]'
                                       : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800'
                                   }`
                                 }
@@ -501,7 +501,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                                     </span>
                                     {item.badge && (
                                       <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                                        isActive ? 'bg-terra-200 text-terra-700' : 'bg-terra-500 text-white'
+                                        isActive ? 'bg-[var(--brand-primary-light)] text-[var(--brand-primary)]' : 'bg-[var(--brand-primary)] text-white'
                                       }`}>
                                         {item.badge}
                                       </span>
@@ -528,7 +528,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                               className={({ isActive }) =>
                                 `relative flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-150 ${
                                   isActive
-                                    ? 'bg-terra-50 text-terra-700'
+                                    ? 'bg-[var(--brand-primary-45)] text-[var(--brand-primary)]'
                                     : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800'
                                 }`
                               }
@@ -536,7 +536,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                               {({ isActive }) => (
                                 <>
                                   <Icon className={`flex-shrink-0 w-[18px] h-[18px] ${
-                                    isActive ? 'text-terra-500' : 'text-neutral-400'
+                                    isActive ? 'text-[var(--brand-primary)]' : 'text-neutral-400'
                                   }`} strokeWidth={1.75} />
                                   <span className={`text-[13px] ${isActive ? 'font-medium' : 'font-normal'}`}>
                                     {item.label}

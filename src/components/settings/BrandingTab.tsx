@@ -6,13 +6,15 @@ import { Button } from '../ui2/Button';
 const STORAGE_KEY = 'glimmora_branding';
 
 const PRIMARY_COLORS = [
-  '#A57865', '#4E5840', '#5C9BA4', '#CDB261', '#C8B29D',
-  '#8B5CF6', '#EC4899', '#F97316', '#14B8A6', '#6366F1'
+  '#A57865', '#4E5840', '#5C9BA4', '#CDB261',
+  // '#C8B29D',
+  // '#8B5CF6', '#EC4899', '#F97316', '#14B8A6', '#6366F1'
 ];
 
 const ACCENT_COLORS = [
-  '#8E6554', '#3D4731', '#4A8A99', '#B5A051', '#B09D8A',
-  '#7C3AED', '#DB2777', '#EA580C', '#0D9488', '#4F46E5'
+  '#8E6554', '#3D4731', '#4A8A99', '#B5A051',
+  // '#B09D8A',
+  // '#7C3AED', '#DB2777', '#EA580C', '#0D9488', '#4F46E5'
 ];
 
 const BUTTON_STYLES = [

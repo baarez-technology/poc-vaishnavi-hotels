@@ -6,6 +6,7 @@ import { useToast } from '../../../contexts/ToastContext';
 import RateCalendarView from '../../../components/revenue-management/RateCalendarView';
 import { RecommendationsPanel } from '../../../components/revenue-management/RecommendationCard';
 import { Button } from '../../../components/ui2/Button';
+import { useChannelManagerSSEEvents } from '../../../hooks/useChannelManagerSSEEvents';
 
 // KPI Card Component - Consistent with Design System
 function KPICard({ title, value, trendValue, icon: Icon, accentColor = 'terra', subtitle, children }) {
@@ -63,6 +64,8 @@ const RateCalendar = () => {
     runAllRules,
     lastRecalculation,
     recommendations,
+    refreshRecommendations,
+    refreshAll,
   } = useRMS();
 
   const [selectedDate, setSelectedDate] = useState(null);
@@ -100,6 +103,20 @@ const RateCalendar = () => {
       window.history.replaceState({}, document.title);
     }
   }, [location.state, showToast]);
+
+  // SSE Integration for real-time rates updates
+  useChannelManagerSSEEvents({
+    onRatesUpdated: () => {
+      console.log('[Rate Calendar] 💰 Refreshing rates data due to SSE event');
+      refreshAll?.();
+      refreshRecommendations?.();
+    },
+    refetchData: () => {
+      console.log('[Rate Calendar] 🔄 Refetching rates data due to SSE event');
+      refreshAll?.();
+      refreshRecommendations?.();
+    },
+  });
 
   const handleRecalculateAll = async () => {
     setIsRecalculating(true);

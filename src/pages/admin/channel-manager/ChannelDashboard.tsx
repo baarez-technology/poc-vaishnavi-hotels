@@ -14,6 +14,7 @@ import {
 import { Link } from 'react-router-dom';
 import { Button } from '../../../components/ui2/Button';
 import { useChannelManager } from '../../../context/ChannelManagerContext';
+import { useChannelManagerSSEEvents } from '../../../hooks/useChannelManagerSSEEvents';
 
 export default function ChannelDashboard() {
   const [isLoading, setIsLoading] = useState(true);

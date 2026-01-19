@@ -204,7 +204,7 @@ export function useBookings() {
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     page: 1,
-    pageSize: 50,
+    pageSize: 100,
     total: 0,
     totalPages: 1,
   });
@@ -212,7 +212,7 @@ export function useBookings() {
   /**
    * Fetch bookings from API
    */
-  const fetchBookings = useCallback(async (page = 1, pageSize = 50, status?: string) => {
+  const fetchBookings = useCallback(async (page = 1, pageSize = 100, status?: string) => {
     try {
       setIsLoading(true);
       setError(null);

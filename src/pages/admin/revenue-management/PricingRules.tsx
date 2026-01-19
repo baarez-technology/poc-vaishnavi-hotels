@@ -33,7 +33,7 @@ const PricingRules = () => {
     try {
       setError(null);
       const data = await revenueIntelligenceService.getPricingRules();
-      setRules(data || []);
+      setRules(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch pricing rules:', err);
       setError('Failed to load pricing rules');
@@ -97,7 +97,7 @@ const PricingRules = () => {
   const handleToggleRule = async (rule: PricingRule) => {
     try {
       await revenueIntelligenceService.togglePricingRule(rule.id);
-      showToast(`Rule ${rule.is_active ? 'disabled' : 'enabled'} successfully`, 'success');
+      showToast(`Rule ${rule.isActive ? 'disabled' : 'enabled'} successfully`, 'success');
       // Refresh rules
       await fetchRules();
     } catch (err) {
@@ -128,22 +128,22 @@ const PricingRules = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredRules = rules.filter(rule => {
-    if (filterActive === 'active' && !rule.is_active) return false;
-    if (filterActive === 'inactive' && rule.is_active) return false;
+  const filteredRules = Array.isArray(rules) ? rules.filter(rule => {
+    if (filterActive === 'active' && !rule.isActive) return false;
+    if (filterActive === 'inactive' && rule.isActive) return false;
     if (filterPriority !== 'all' && rule.priority !== parseInt(filterPriority)) return false;
     return true;
-  });
+  }) : [];
 
   const sortedRules = [...filteredRules].sort((a, b) => a.priority - b.priority);
 
   // Convert API rules to format expected by RuleSummary
-  const ruleSummaryData = rules.map(rule => ({
+  const ruleSummaryData = Array.isArray(rules) ? rules.map(rule => ({
     ...rule,
-    isActive: rule.is_active,
-  }));
+    isActive: rule.isActive,
+  })) : [];
 
-  if (error && rules.length === 0) {
+  if (error && (!Array.isArray(rules) || rules.length === 0)) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F9F7F7' }}>
         <div className="text-center">
@@ -196,7 +196,7 @@ const PricingRules = () => {
               loading={isRunning}
               icon={isRunning ? RefreshCw : Play}
               variant="outline"
-              disabled={rules.length === 0}
+              disabled={!Array.isArray(rules) || rules.length === 0}
             >
               {isRunning ? 'Running...' : 'Run All'}
             </Button>
@@ -269,7 +269,7 @@ const PricingRules = () => {
           </div>
           <div className="px-6 pb-5">
             <p className="text-[12px] text-neutral-500">
-              Showing <span className="font-semibold text-neutral-800">{filteredRules.length}</span> of {rules.length} rules
+              Showing <span className="font-semibold text-neutral-800">{filteredRules.length}</span> of {Array.isArray(rules) ? rules.length : 0} rules
             </p>
           </div>
         </section>
@@ -323,9 +323,9 @@ const PricingRules = () => {
                   key={rule.id}
                   rule={{
                     ...rule,
-                    isActive: rule.is_active,
-                    lastTriggeredAt: rule.last_triggered_at,
-                    executionStatus: rule.execution_status,
+                    isActive: rule.isActive,
+                    lastTriggeredAt: (rule as any).lastTriggeredAt ?? (rule as any).last_triggered_at,
+                    executionStatus: (rule as any).executionStatus ?? (rule as any).execution_status,
                   }}
                   onEdit={() => handleEditRule(rule)}
                   onDelete={() => handleDeleteRule(rule)}
@@ -347,7 +347,7 @@ const PricingRules = () => {
           }}
           rule={editingRule ? {
             ...editingRule,
-            isActive: editingRule.is_active,
+            isActive: editingRule.isActive,
           } : null}
           onSave={handleSaveRule}
         />

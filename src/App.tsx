@@ -7,6 +7,7 @@ import { BookingProvider } from './contexts/BookingContext';
 import { PreCheckInProvider } from './contexts/PreCheckInContext';
 import { GuestAIProvider } from './contexts/GuestAIContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { SSEProvider } from './contexts/SSEContext';
 import { AGIChatWidget } from './components/chatbot/AGIChatWidget';
 
 // Wrapper component to conditionally show Aria AI Chat Widget only on guest pages
@@ -241,7 +242,8 @@ function App() {
                         element={
                           <ProtectedRoute>
                           <ToastProvider>
-                            <SettingsProvider>
+                            <SSEProvider>
+                              <SettingsProvider>
                               <AdminProvider>
                                   <ChannelManagerProvider>
                                     <AIInsightsProvider>
@@ -325,6 +327,7 @@ function App() {
                                   </ChannelManagerProvider>
                               </AdminProvider>
                             </SettingsProvider>
+                            </SSEProvider>
                           </ToastProvider>
                         </ProtectedRoute>
                         }

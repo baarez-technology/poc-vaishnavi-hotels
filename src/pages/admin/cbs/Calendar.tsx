@@ -12,6 +12,8 @@ import AvailabilityCalendar from '../../../components/cbs/AvailabilityCalendar';
 import { ConfirmModal } from '../../../components/ui2/Modal';
 import { Button } from '../../../components/ui2/Button';
 import { cn } from '../../../lib/utils';
+import { useBookingsSSE } from '../../../hooks/useBookingsSSE';
+import { useChannelManagerSSEEvents } from '../../../hooks/useChannelManagerSSEEvents';
 import {
   Calendar, Download, TrendingUp, Percent, Home, CalendarX, Lock,
   AlertTriangle, Ban, Sparkles, LogIn, LogOut, ChevronRight,
@@ -20,7 +22,7 @@ import {
 
 export default function CBSCalendar() {
   const navigate = useNavigate();
-  const { availability, updateAvailability, getCalendarData, bookings } = useCBS();
+  const { availability, updateAvailability, getCalendarData, bookings, refreshBookings } = useCBS();
   const { success } = useToast();
   const calendarRef = useRef(null);
 
@@ -42,6 +44,48 @@ export default function CBSCalendar() {
     }, 100);
     return () => clearTimeout(timer);
   }, []);
+
+  // SSE Integration for real-time updates
+  useBookingsSSE({
+    onBookingCreated: (bookingData) => {
+      console.log('[CBS Calendar] 🎉 New booking received via SSE, refreshing calendar:', bookingData);
+      if (refreshBookings) {
+        refreshBookings();
+      }
+    },
+    onBookingModified: (bookingId, changes) => {
+      console.log('[CBS Calendar] 🔄 Booking modified via SSE, refreshing calendar:', bookingId, changes);
+      if (refreshBookings) {
+        refreshBookings();
+      }
+    },
+    onBookingCancelled: (bookingId) => {
+      console.log('[CBS Calendar] 🚫 Booking cancelled via SSE, refreshing calendar:', bookingId);
+      if (refreshBookings) {
+        refreshBookings();
+      }
+    },
+    refetchBookings: refreshBookings,
+  });
+
+  // SSE Integration for availability and restrictions updates
+  useChannelManagerSSEEvents({
+    onAvailabilityUpdated: () => {
+      console.log('[CBS Calendar] 🏠 Availability updated via SSE, refreshing calendar');
+      // Refresh bookings as availability changes may affect booking display
+      if (refreshBookings) {
+        refreshBookings();
+      }
+    },
+    onRestrictionsUpdated: () => {
+      console.log('[CBS Calendar] 🔒 Restrictions updated via SSE, refreshing calendar');
+      // Refresh bookings as restriction changes may affect booking display
+      if (refreshBookings) {
+        refreshBookings();
+      }
+    },
+    refetchData: refreshBookings,
+  });
 
   const handleUpdateAvailability = (date, roomType, updates) => {
     const previousData = availability[date]?.[roomType];

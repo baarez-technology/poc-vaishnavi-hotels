@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Calendar, Users, Download, Eye, Filter, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { bookingService } from '@/api/services/booking.service';
 import toast from 'react-hot-toast';
 import { BookingDetailsPanel } from '@/components/booking/BookingDetailsPanel';
+import { useBookingsSSE } from '@/hooks/useBookingsSSE';
 
 type BookingStatus = 'all' | 'upcoming' | 'past' | 'cancelled';
 
@@ -26,42 +27,59 @@ export function BookingsTab() {
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        setLoading(true);
-        const statusMap: Record<BookingStatus, string | undefined> = {
-          all: undefined,
-          upcoming: 'upcoming',
-          past: 'past',
-          cancelled: 'cancelled',
-        };
-        
-        const response = await bookingService.getBookings(1, 100, statusMap[filter]);
-        const bookingList = response?.items || [];
-        
-        setBookings((bookingList || []).map((b: any) => ({
-          id: b.id,
-          bookingNumber: b.bookingNumber,
-          roomType: b.room?.name || b.roomType || 'Unknown Room',
-          checkIn: new Date(b.checkIn),
-          checkOut: new Date(b.checkOut),
-          guests: (b.guests?.adults || 0) + (b.guests?.children || 0),
-          status: b.status === 'confirmed' ? 'confirmed' : 
-                 b.status === 'checked-out' || b.status === 'completed' ? 'completed' : 
-                 b.status === 'cancelled' ? 'cancelled' : 'confirmed',
-          totalAmount: b.totalPrice || 0,
-        })));
-      } catch (error: any) {
-        console.error('Failed to fetch bookings:', error);
-        toast.error('Failed to load bookings');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBookings();
+  const fetchBookings = useCallback(async () => {
+    try {
+      setLoading(true);
+      const statusMap: Record<BookingStatus, string | undefined> = {
+        all: undefined,
+        upcoming: 'upcoming',
+        past: 'past',
+        cancelled: 'cancelled',
+      };
+      
+      const response = await bookingService.getBookings(1, 100, statusMap[filter]);
+      const bookingList = response?.items || [];
+      
+      setBookings((bookingList || []).map((b: any) => ({
+        id: b.id,
+        bookingNumber: b.bookingNumber,
+        roomType: b.room?.name || b.roomType || 'Unknown Room',
+        checkIn: new Date(b.checkIn),
+        checkOut: new Date(b.checkOut),
+        guests: (b.guests?.adults || 0) + (b.guests?.children || 0),
+        status: b.status === 'confirmed' ? 'confirmed' : 
+               b.status === 'checked-out' || b.status === 'completed' ? 'completed' : 
+               b.status === 'cancelled' ? 'cancelled' : 'confirmed',
+        totalAmount: b.totalPrice || 0,
+      })));
+    } catch (error: any) {
+      console.error('Failed to fetch bookings:', error);
+      toast.error('Failed to load bookings');
+    } finally {
+      setLoading(false);
+    }
   }, [filter]);
+
+  useEffect(() => {
+    fetchBookings();
+  }, [fetchBookings]);
+
+  // SSE Integration for real-time booking updates
+  useBookingsSSE({
+    onBookingCreated: (bookingData) => {
+      console.log('[Dashboard BookingsTab] 🎉 New booking received via SSE:', bookingData);
+      fetchBookings();
+    },
+    onBookingModified: (bookingId, changes) => {
+      console.log('[Dashboard BookingsTab] 🔄 Booking modified via SSE:', bookingId, changes);
+      fetchBookings();
+    },
+    onBookingCancelled: (bookingId) => {
+      console.log('[Dashboard BookingsTab] 🚫 Booking cancelled via SSE:', bookingId);
+      fetchBookings();
+    },
+    refetchBookings: fetchBookings,
+  });
 
   const handleViewDetails = (booking: Booking) => {
     setSelectedBookingId(booking.id);

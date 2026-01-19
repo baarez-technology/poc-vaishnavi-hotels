@@ -283,6 +283,100 @@ export function CBSProvider({ children }) {
     fetchFromApi();
   }, []);
 
+  // Refresh bookings and related data from API
+  const refreshBookings = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('glimmora_access_token');
+      if (!token) {
+        return; // Skip if not authenticated
+      }
+
+      // Fetch bookings from API
+      const bookingsResponse = await apiClient.get('/api/v1/bookings', {
+        params: { pageSize: 1000 }
+      });
+      const apiBookings = bookingsResponse.data?.items || bookingsResponse.data?.data?.items || [];
+
+      if (apiBookings.length > 0) {
+        const transformedBookings = apiBookings.map((b: any) => {
+          const guest = b.guestInfo;
+          const guestName = `${guest?.firstName || ''} ${guest?.lastName || ''}`.trim() || 'Guest';
+
+          const statusMap: Record<string, string> = {
+            'confirmed': 'CONFIRMED',
+            'pending': 'PENDING',
+            'checked-in': 'CHECKED-IN',
+            'checked_in': 'CHECKED-IN',
+            'checked-out': 'CHECKED-OUT',
+            'checked_out': 'CHECKED-OUT',
+            'cancelled': 'CANCELLED',
+          };
+
+          const totalPrice = b.totalPrice || b.total_price || 0;
+          const depositAmount = b.depositAmount || b.deposit_amount || 0;
+          const balanceDue = b.balanceDue || b.balance_due;
+
+          let amountPaid = 0;
+          let balance = totalPrice;
+
+          if (b.payment_status === 'paid') {
+            amountPaid = totalPrice;
+            balance = 0;
+          } else if (b.payment_status === 'partial' || depositAmount > 0) {
+            amountPaid = depositAmount;
+            balance = balanceDue !== null && balanceDue !== undefined ? balanceDue : (totalPrice - depositAmount);
+          } else if (balanceDue !== null && balanceDue !== undefined) {
+            amountPaid = totalPrice - balanceDue;
+            balance = balanceDue;
+          }
+
+          return {
+            id: b.bookingNumber || b.id,
+            dbId: b.id,
+            guestName: guestName,
+            guestEmail: guest?.email || '',
+            guestPhone: guest?.phone || '',
+            isVip: b.vipStatus || b.vip_flag || false,
+            checkIn: b.checkIn || b.arrival_date,
+            checkOut: b.checkOut || b.departure_date,
+            nights: b.nights || 1,
+            roomType: b.room?.name || 'Minimalist Studio',
+            roomNumber: b.room?.number || null,
+            ratePlan: 'BAR',
+            adults: (b.guests?.adults || b.adults || 1),
+            children: (b.guests?.children || b.children || 0),
+            status: statusMap[b.status?.toLowerCase()] || 'CONFIRMED',
+            source: b.bookingSource || b.booking_source || 'Direct',
+            amount: totalPrice,
+            amountPaid: amountPaid,
+            balance: balance,
+            paymentStatus: b.payment_status || 'pending',
+            specialRequests: guest?.specialRequests || b.special_requests || '',
+            createdAt: b.createdAt || b.created_at || new Date().toISOString(),
+            createdBy: 'System',
+            payments: depositAmount > 0 ? [{
+              id: `PAY-${b.id || Date.now()}`,
+              date: b.createdAt || b.created_at || new Date().toISOString(),
+              amount: depositAmount,
+              method: 'Card',
+              status: 'completed'
+            }] : [],
+            activityLog: [{
+              date: b.createdAt || b.created_at || new Date().toISOString(),
+              action: 'Booking created',
+              user: 'System'
+            }]
+          };
+        });
+        setBookings(transformedBookings);
+      } else {
+        setBookings([]);
+      }
+    } catch (err) {
+      console.error('[CBSContext] Error refreshing bookings:', err);
+    }
+  }, []);
+
   // ============ BOOKING FUNCTIONS ============
 
   const createBooking = useCallback(async (bookingData) => {
@@ -1165,6 +1259,7 @@ export function CBSProvider({ children }) {
     getBookingById,
     getBookingsForDate,
     getBookingsByStatus,
+    refreshBookings,
 
     // Room assignment
     assignRoom,

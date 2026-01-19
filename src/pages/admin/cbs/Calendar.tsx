@@ -12,6 +12,7 @@ import AvailabilityCalendar from '../../../components/cbs/AvailabilityCalendar';
 import { ConfirmModal } from '../../../components/ui2/Modal';
 import { Button } from '../../../components/ui2/Button';
 import { MinStayConfigModal } from '../../../components/availability/MinStayConfigModal';
+import { BulkUpdateDrawer } from '../../../components/availability/BulkUpdateDrawer';
 import { cn } from '../../../lib/utils';
 import {
   Calendar, Download, TrendingUp, Percent, Home, CalendarX, Lock,
@@ -35,6 +36,7 @@ export default function CBSCalendar() {
 
   const [isInsightsExpanded, setIsInsightsExpanded] = useState(false);
   const [isMinStayModalOpen, setIsMinStayModalOpen] = useState(false);
+  const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
 
   const dates = useMemo(() => getCalendarData(30), [getCalendarData]);
 
@@ -167,6 +169,65 @@ export default function CBSCalendar() {
     });
 
     success(`Stop sell applied to all ${roomTypes.length} room types for next 30 days`);
+  };
+
+  // Handler: Bulk Update
+  const handleBulkUpdate = ({ startDate, endDate, roomTypes: selectedRoomTypes, updates }) => {
+    // Generate all dates in the range
+    const datesToUpdate: string[] = [];
+    let current = new Date(startDate);
+    const end = new Date(endDate);
+    while (current <= end) {
+      datesToUpdate.push(current.toISOString().split('T')[0]);
+      current.setDate(current.getDate() + 1);
+    }
+
+    let totalUpdates = 0;
+
+    selectedRoomTypes.forEach((roomType: string) => {
+      datesToUpdate.forEach(date => {
+        const currentData = availability[date]?.[roomType] || {};
+        const updatePayload: any = {};
+
+        // Handle rate updates
+        if (updates.rate) {
+          const currentRate = currentData.rate || 200;
+          if (updates.rate.type === 'fixed') {
+            updatePayload.rate = updates.rate.value;
+          } else if (updates.rate.type === 'adjust') {
+            updatePayload.rate = currentRate + updates.rate.value;
+          } else if (updates.rate.type === 'percent') {
+            updatePayload.rate = Math.round(currentRate * (1 + updates.rate.value / 100));
+          }
+        }
+
+        // Handle inventory updates
+        if (updates.inventory !== undefined) {
+          updatePayload.available = updates.inventory;
+        }
+
+        // Handle restriction updates
+        if (updates.restrictions) {
+          updatePayload.restrictions = {
+            ...(currentData.restrictions || {}),
+            ...updates.restrictions
+          };
+        }
+
+        if (Object.keys(updatePayload).length > 0) {
+          updateAvailability(date, roomType, updatePayload);
+          totalUpdates++;
+        }
+      });
+    });
+
+    const updateTypes = [];
+    if (updates.rate) updateTypes.push('rates');
+    if (updates.inventory !== undefined) updateTypes.push('inventory');
+    if (updates.restrictions) updateTypes.push('restrictions');
+
+    success(`Bulk update applied: ${updateTypes.join(', ')} updated for ${selectedRoomTypes.length} room types across ${datesToUpdate.length} days`);
+    setIsBulkUpdateOpen(false);
   };
 
   const stats = useMemo(() => {
@@ -313,13 +374,7 @@ export default function CBSCalendar() {
             <Button
               variant="primary"
               icon={RefreshCw}
-              onClick={() => setConfirmDialog({
-                isOpen: true,
-                title: 'Bulk Update',
-                message: 'Open the bulk update wizard to modify multiple dates at once.',
-                variant: 'primary',
-                onConfirm: () => success('Bulk update wizard opened')
-              })}
+              onClick={() => setIsBulkUpdateOpen(true)}
             >
               Bulk Update
             </Button>
@@ -610,6 +665,15 @@ export default function CBSCalendar() {
         roomTypes={roomTypes}
         availability={availability}
         onApply={handleApplyMinStay}
+      />
+
+      {/* Bulk Update Drawer */}
+      <BulkUpdateDrawer
+        isOpen={isBulkUpdateOpen}
+        onClose={() => setIsBulkUpdateOpen(false)}
+        roomTypes={roomTypes}
+        availability={availability}
+        onApply={handleBulkUpdate}
       />
     </div>
   );

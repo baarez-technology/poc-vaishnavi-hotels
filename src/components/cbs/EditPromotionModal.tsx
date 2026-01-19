@@ -1,6 +1,6 @@
 /**
- * NewPromotionModal Component
- * Create new promotions - Glimmora Design System v4.0
+ * EditPromotionModal Component
+ * Edit existing promotions - Glimmora Design System v4.0
  * Premium side drawer with refined luxury aesthetic
  */
 
@@ -118,34 +118,47 @@ const STATUS_OPTIONS = [
   { value: 'inactive', label: 'Inactive' },
 ];
 
-export default function NewPromotionModal({
+interface Promotion {
+  id: string;
+  title: string;
+  description?: string;
+  discountType: string;
+  discountValue: number;
+  validFrom: string;
+  validTo: string;
+  bookingWindowStart?: string;
+  bookingWindowEnd?: string;
+  minNights?: number;
+  maxNights?: number;
+  minBookingAmount?: number;
+  stackable?: boolean;
+  isActive: boolean;
+  applicableRoomTypes?: string[];
+  applicableChannels?: string[];
+  code?: string;
+  usageLimit?: number;
+  usageCount?: number;
+}
+
+interface EditPromotionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (id: string, data: any) => void;
+  promotion: Promotion | null;
+  roomTypes?: { id: string; name: string }[];
+  promotionTypes?: { value: string; label: string }[];
+}
+
+export default function EditPromotionModal({
   isOpen,
   onClose,
   onSubmit,
+  promotion,
   roomTypes = DEFAULT_ROOM_TYPES,
   promotionTypes = DEFAULT_PROMOTION_TYPES
-}) {
-  // Use the passed promotionTypes or fall back to defaults
+}: EditPromotionModalProps) {
+  // Use the passed promotion types for the dropdown
   const PROMOTION_TYPES = promotionTypes;
-  const getDefaultDates = () => {
-    const today = new Date();
-    const stayStart = new Date(today);
-    stayStart.setDate(stayStart.getDate() + 7);
-    const stayEnd = new Date(stayStart);
-    stayEnd.setMonth(stayEnd.getMonth() + 3);
-    const bookingEnd = new Date(stayStart);
-    bookingEnd.setDate(bookingEnd.getDate() - 1);
-
-    return {
-      stayStart: stayStart.toISOString().split('T')[0],
-      stayEnd: stayEnd.toISOString().split('T')[0],
-      bookingStart: today.toISOString().split('T')[0],
-      bookingEnd: bookingEnd.toISOString().split('T')[0],
-    };
-  };
-
-  const defaultDates = getDefaultDates();
-
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -156,39 +169,85 @@ export default function NewPromotionModal({
     stayX: 4,
     payY: 3,
     derivedPercent: 10,
-    stayStart: defaultDates.stayStart,
-    stayEnd: defaultDates.stayEnd,
-    bookingStart: defaultDates.bookingStart,
-    bookingEnd: defaultDates.bookingEnd,
+    stayStart: '',
+    stayEnd: '',
+    bookingStart: '',
+    bookingEnd: '',
     minLos: 1,
     maxLos: 30,
     cta: false,
     ctd: false,
     stackable: false,
-    eligibleRooms: [],
+    eligibleRooms: [] as string[],
     channels: ['website'],
     status: 'active',
-    blackoutDates: [],
+    blackoutDates: [] as string[],
+    code: '',
+    usageLimit: 0,
   });
 
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [blackoutInput, setBlackoutInput] = useState('');
 
-  const handleChange = (field, value) => {
+  // Initialize form data when promotion changes
+  useEffect(() => {
+    if (promotion && isOpen) {
+      // Map room type names to IDs
+      const roomIds = (promotion.applicableRoomTypes || []).map(name => {
+        const room = roomTypes.find(r => r.name === name);
+        return room?.id || name;
+      });
+
+      // Map channel names to IDs
+      const channelIds = (promotion.applicableChannels || []).map(name => {
+        const channel = CHANNELS.find(c => c.name.toLowerCase() === name.toLowerCase());
+        return channel?.id || name.toLowerCase();
+      });
+
+      setFormData({
+        name: promotion.title || '',
+        description: promotion.description || '',
+        type: 'Early Bird', // Default since not stored in promotion
+        discountType: promotion.discountType || 'percentage',
+        discountValue: promotion.discountType === 'percentage' ? (promotion.discountValue || 10) : 10,
+        flatAmount: promotion.discountType === 'flat' || promotion.discountType === 'fixed' ? (promotion.discountValue || 50) : 50,
+        stayX: promotion.discountType === 'free_night' ? (promotion.discountValue || 4) : 4,
+        payY: 3, // Default
+        derivedPercent: promotion.discountType === 'derived' ? (promotion.discountValue || 10) : 10,
+        stayStart: promotion.validFrom || '',
+        stayEnd: promotion.validTo || '',
+        bookingStart: promotion.bookingWindowStart || '',
+        bookingEnd: promotion.bookingWindowEnd || '',
+        minLos: promotion.minNights || 1,
+        maxLos: promotion.maxNights || 30,
+        cta: false,
+        ctd: false,
+        stackable: promotion.stackable || false,
+        eligibleRooms: roomIds,
+        channels: channelIds.length > 0 ? channelIds : ['website'],
+        status: promotion.isActive ? 'active' : 'inactive',
+        blackoutDates: [],
+        code: promotion.code || '',
+        usageLimit: promotion.usageLimit || 0,
+      });
+    }
+  }, [promotion, isOpen, roomTypes]);
+
+  const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
 
-  const handleRoomToggle = (roomId) => {
+  const handleRoomToggle = (roomId: string) => {
     const newRooms = formData.eligibleRooms.includes(roomId)
       ? formData.eligibleRooms.filter(id => id !== roomId)
       : [...formData.eligibleRooms, roomId];
     handleChange('eligibleRooms', newRooms);
   };
 
-  const handleChannelToggle = (channelId) => {
+  const handleChannelToggle = (channelId: string) => {
     const newChannels = formData.channels.includes(channelId)
       ? formData.channels.filter(id => id !== channelId)
       : [...formData.channels, channelId];
@@ -208,12 +267,12 @@ export default function NewPromotionModal({
     }
   };
 
-  const handleRemoveBlackout = (date) => {
+  const handleRemoveBlackout = (date: string) => {
     handleChange('blackoutDates', formData.blackoutDates.filter(d => d !== date));
   };
 
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors: Record<string, string> = {};
     if (!formData.name.trim()) newErrors.name = 'Name is required';
     if (formData.eligibleRooms.length === 0) newErrors.eligibleRooms = 'Select at least one room';
     if (formData.channels.length === 0) newErrors.channels = 'Select at least one channel';
@@ -224,52 +283,53 @@ export default function NewPromotionModal({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!validateForm()) return;
+    if (!validateForm() || !promotion) return;
 
-    let discount = { type: formData.discountType };
+    let discountValue = formData.discountValue;
     switch (formData.discountType) {
-      case 'percentage': discount.value = formData.discountValue; break;
-      case 'flat': discount.value = formData.flatAmount; break;
-      case 'free_night': discount.stayX = formData.stayX; discount.payY = formData.payY; break;
-      case 'derived': discount.value = formData.derivedPercent; break;
+      case 'flat': discountValue = formData.flatAmount; break;
+      case 'free_night': discountValue = formData.stayX; break;
+      case 'derived': discountValue = formData.derivedPercent; break;
     }
 
+    // Map room IDs back to names
+    const roomNames = formData.eligibleRooms.map(id => {
+      const room = roomTypes.find(r => r.id === id);
+      return room?.name || id;
+    });
+
+    // Map channel IDs back to names
+    const channelNames = formData.channels.map(id => {
+      const channel = CHANNELS.find(c => c.id === id);
+      return channel?.name || id;
+    });
+
     const payload = {
-      name: formData.name.trim(),
+      title: formData.name.trim(),
       description: formData.description.trim(),
-      type: formData.type,
-      discount,
-      stayPeriod: { start: formData.stayStart, end: formData.stayEnd },
-      bookingWindow: { start: formData.bookingStart, end: formData.bookingEnd },
-      restrictions: {
-        minLos: formData.minLos,
-        maxLos: formData.maxLos,
-        cta: formData.cta,
-        ctd: formData.ctd,
-        blackoutDates: formData.blackoutDates,
-        stackable: formData.stackable,
-      },
-      eligibleRooms: formData.eligibleRooms,
-      channels: formData.channels,
-      status: formData.status,
+      discountType: formData.discountType === 'flat' ? 'fixed' : formData.discountType,
+      discountValue,
+      validFrom: formData.stayStart,
+      validTo: formData.stayEnd,
+      bookingWindowStart: formData.bookingStart,
+      bookingWindowEnd: formData.bookingEnd,
+      minNights: formData.minLos,
+      maxNights: formData.maxLos,
+      stackable: formData.stackable,
+      isActive: formData.status === 'active',
+      applicableRoomTypes: roomNames,
+      applicableChannels: channelNames,
+      code: formData.code,
+      usageLimit: formData.usageLimit,
     };
 
-    onSubmit(payload);
+    onSubmit(promotion.id, payload);
     handleClose();
   };
 
   const handleClose = () => {
-    setFormData({
-      name: '', description: '', type: 'Early Bird',
-      discountType: 'percentage', discountValue: 10, flatAmount: 50,
-      stayX: 4, payY: 3, derivedPercent: 10,
-      stayStart: defaultDates.stayStart, stayEnd: defaultDates.stayEnd,
-      bookingStart: defaultDates.bookingStart, bookingEnd: defaultDates.bookingEnd,
-      minLos: 1, maxLos: 30, cta: false, ctd: false, stackable: false,
-      eligibleRooms: [], channels: ['website'], status: 'active', blackoutDates: [],
-    });
     setErrors({});
     onClose();
   };
@@ -279,16 +339,18 @@ export default function NewPromotionModal({
   const drawerFooter = (
     <div className="flex items-center justify-end gap-2 sm:gap-3 w-full">
       <Button variant="outline" onClick={handleClose} className="text-xs sm:text-sm h-9 sm:h-10 px-3 sm:px-4">Cancel</Button>
-      <Button variant="primary" onClick={handleSubmit} className="text-xs sm:text-sm h-9 sm:h-10 px-3 sm:px-4">Create Promotion</Button>
+      <Button variant="primary" onClick={handleSubmit} className="text-xs sm:text-sm h-9 sm:h-10 px-3 sm:px-4">Save Changes</Button>
     </div>
   );
+
+  if (!promotion) return null;
 
   return (
     <Drawer
       isOpen={isOpen}
       onClose={handleClose}
-      title="New Promotion"
-      subtitle="Configure discount rules and distribution"
+      title="Edit Promotion"
+      subtitle={`Editing: ${promotion.title}`}
       maxWidth="max-w-2xl"
       footer={drawerFooter}
     >
@@ -329,6 +391,15 @@ export default function NewPromotionModal({
                 />
               </FormField>
             </div>
+
+            <FormField label="Promo Code" description="Optional code for customers">
+              <Input
+                value={formData.code}
+                onChange={(e) => handleChange('code', e.target.value.toUpperCase())}
+                placeholder="e.g., SUMMER20"
+                className="h-9 sm:h-10 text-xs sm:text-sm font-mono"
+              />
+            </FormField>
 
             <FormField label="Description" description="Optional internal notes">
               <Textarea
@@ -388,7 +459,7 @@ export default function NewPromotionModal({
                 <Input
                   type="number"
                   value={formData.discountValue}
-                  onChange={(e) => handleChange('discountValue', e.target.value)}
+                  onChange={(e) => handleChange('discountValue', parseInt(e.target.value) || 0)}
                   min={1} max={100}
                   error={errors.discountValue}
                 />
@@ -399,7 +470,7 @@ export default function NewPromotionModal({
                 <Input
                   type="number"
                   value={formData.flatAmount}
-                  onChange={(e) => handleChange('flatAmount', e.target.value)}
+                  onChange={(e) => handleChange('flatAmount', parseInt(e.target.value) || 0)}
                   min={1}
                 />
               </FormField>
@@ -410,7 +481,7 @@ export default function NewPromotionModal({
                   <Input
                     type="number"
                     value={formData.stayX}
-                    onChange={(e) => handleChange('stayX', e.target.value)}
+                    onChange={(e) => handleChange('stayX', parseInt(e.target.value) || 2)}
                     min={2}
                   />
                 </FormField>
@@ -418,7 +489,7 @@ export default function NewPromotionModal({
                   <Input
                     type="number"
                     value={formData.payY}
-                    onChange={(e) => handleChange('payY', e.target.value)}
+                    onChange={(e) => handleChange('payY', parseInt(e.target.value) || 1)}
                     min={1}
                   />
                 </FormField>
@@ -429,11 +500,19 @@ export default function NewPromotionModal({
                 <Input
                   type="number"
                   value={formData.derivedPercent}
-                  onChange={(e) => handleChange('derivedPercent', e.target.value)}
+                  onChange={(e) => handleChange('derivedPercent', parseInt(e.target.value) || 0)}
                   min={1} max={100}
                 />
               </FormField>
             )}
+            <FormField label="Usage Limit" description="0 = unlimited">
+              <Input
+                type="number"
+                value={formData.usageLimit}
+                onChange={(e) => handleChange('usageLimit', parseInt(e.target.value) || 0)}
+                min={0}
+              />
+            </FormField>
           </div>
         </section>
 

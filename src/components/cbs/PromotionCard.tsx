@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import {
   Gift, Percent, Calendar, Tag, Users, Check,
-  ChevronDown, ChevronUp, Copy, Trash2, CheckCircle, Clock, Globe, Files
+  ChevronDown, ChevronUp, Copy, Trash2, CheckCircle, Clock, Globe, Pencil
 } from 'lucide-react';
 import SearchHighlight from '../ui2/SearchHighlight';
 import { Button, IconButton } from '../ui2/Button';
@@ -20,7 +20,7 @@ const discountTypeLabels = {
   'addon': 'Free Add-on'
 };
 
-export default function PromotionCard({ promotion, onUpdate, onToggleStatus, onDelete, onClone, searchQuery = '' }) {
+export default function PromotionCard({ promotion, onUpdate, onToggleStatus, onDelete, onEdit, searchQuery = '' }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -366,14 +366,14 @@ export default function PromotionCard({ promotion, onUpdate, onToggleStatus, onD
               {promotion.createdAt && formatDate(promotion.createdAt)}
             </p>
             <div className="flex items-center gap-2">
-              {onClone && (
+              {onEdit && (
                 <Button
-                  onClick={() => onClone(promotion)}
+                  onClick={() => onEdit(promotion)}
                   variant="outline"
                   size="sm"
-                  icon={Files}
+                  icon={Pencil}
                 >
-                  Clone
+                  Edit
                 </Button>
               )}
               <Button

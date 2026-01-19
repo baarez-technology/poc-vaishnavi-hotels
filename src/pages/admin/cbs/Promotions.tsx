@@ -9,28 +9,42 @@ import { useCBS } from '../../../context/CBSContext';
 import { useToast } from '../../../contexts/ToastContext';
 import PromotionCard from '../../../components/cbs/PromotionCard';
 import NewPromotionModal from '../../../components/cms/NewPromotionModal';
+import EditPromotionModal from '../../../components/cbs/EditPromotionModal';
+import ManagePromotionTypesModal from '../../../components/cbs/ManagePromotionTypesModal';
 import { Button } from '../../../components/ui2/Button';
 import { ConfirmModal } from '../../../components/ui2/Modal';
 import { DropdownMenu, DropdownMenuItem } from '../../../components/ui2/DropdownMenu';
 import { Pagination, PaginationInfo } from '../../../components/core/Pagination';
 import {
   Search, Gift, Plus, Percent, Tag, Clock,
-  Download, ChevronUp, ChevronDown
+  Download, ChevronUp, ChevronDown, Settings2
 } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 10;
 
 export default function CBSPromotions() {
-  const { promotions, createPromotion, updatePromotion, togglePromotionStatus } = useCBS();
+  const {
+    promotions,
+    createPromotion,
+    updatePromotion,
+    togglePromotionStatus,
+    promotionTypes,
+    addPromotionType,
+    updatePromotionType,
+    deletePromotionType,
+    resetPromotionTypes
+  } = useCBS();
   const { success, error } = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
   const [showNewPromotion, setShowNewPromotion] = useState(false);
+  const [editPromotion, setEditPromotion] = useState<any>(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, promotionId: null });
   const [isInsightsExpanded, setIsInsightsExpanded] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showManageTypes, setShowManageTypes] = useState(false);
 
   const now = new Date();
 
@@ -111,6 +125,21 @@ export default function CBSPromotions() {
     } catch (err) {
       error('Failed to create promotion');
       console.error('Promotion creation error:', err);
+    }
+  };
+
+  const handleEditPromotion = (promotion) => {
+    setEditPromotion(promotion);
+  };
+
+  const handleUpdatePromotion = (id, data) => {
+    try {
+      updatePromotion(id, data);
+      success(`${data.title} updated successfully`);
+      setEditPromotion(null);
+    } catch (err) {
+      error('Failed to update promotion');
+      console.error('Promotion update error:', err);
     }
   };
 
@@ -201,6 +230,9 @@ export default function CBSPromotions() {
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
+            <Button variant="outline" icon={Settings2} onClick={() => setShowManageTypes(true)} className="text-xs sm:text-sm px-3 sm:px-4">
+              <span className="hidden sm:inline">Manage Types</span>
+            </Button>
             <Button variant="outline" icon={Download} className="text-xs sm:text-sm px-3 sm:px-4">
               <span className="hidden sm:inline">Export</span>
             </Button>
@@ -429,6 +461,7 @@ export default function CBSPromotions() {
                   onUpdate={updatePromotion}
                   onToggleStatus={handleToggleStatus}
                   onDelete={handleDelete}
+                  onEdit={handleEditPromotion}
                 />
               ))}
             </section>
@@ -457,6 +490,7 @@ export default function CBSPromotions() {
         isOpen={showNewPromotion}
         onClose={() => setShowNewPromotion(false)}
         onSubmit={handleCreatePromotion}
+        promotionTypes={promotionTypes}
       />
 
       {/* Delete Confirmation Modal */}
@@ -469,6 +503,26 @@ export default function CBSPromotions() {
         variant="danger"
         confirmText="Delete"
         cancelText="Cancel"
+      />
+
+      {/* Edit Promotion Modal */}
+      <EditPromotionModal
+        isOpen={!!editPromotion}
+        onClose={() => setEditPromotion(null)}
+        onSubmit={handleUpdatePromotion}
+        promotion={editPromotion}
+        promotionTypes={promotionTypes}
+      />
+
+      {/* Manage Promotion Types Modal */}
+      <ManagePromotionTypesModal
+        isOpen={showManageTypes}
+        onClose={() => setShowManageTypes(false)}
+        promotionTypes={promotionTypes}
+        onAdd={addPromotionType}
+        onUpdate={updatePromotionType}
+        onDelete={deletePromotionType}
+        onReset={resetPromotionTypes}
       />
     </div>
   );

@@ -133,60 +133,48 @@ function LuxuryKPICard({
 
   return (
     <div
-      className="relative overflow-hidden rounded-[10px] bg-white p-6"
+      className="relative overflow-hidden rounded-[10px] bg-white p-4 sm:p-6"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="relative">
         {/* Header with Icon and Title */}
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
           <div className={cn(
-            "w-8 h-8 rounded-lg flex items-center justify-center",
+            "w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0",
             accentColorClass === 'terra' && 'bg-terra-50',
             accentColorClass === 'sage' && 'bg-sage-50',
             accentColorClass === 'gold' && 'bg-gold-50',
             accentColorClass === 'ocean' && 'bg-ocean-50'
           )}>
-            {isIconFunction ? (
-              <span className={cn(
-                "text-sm font-bold",
-                accentColorClass === 'terra' && 'text-terra-600',
-                accentColorClass === 'sage' && 'text-sage-600',
-                accentColorClass === 'gold' && 'text-gold-600',
-                accentColorClass === 'ocean' && 'text-ocean-600'
-              )}>
-                {Icon()}
-              </span>
-            ) : (
-              <Icon className={cn(
-                "w-4 h-4",
-                accentColorClass === 'terra' && 'text-terra-600',
-                accentColorClass === 'sage' && 'text-sage-600',
-                accentColorClass === 'gold' && 'text-gold-600',
-                accentColorClass === 'ocean' && 'text-ocean-600'
-              )} />
-            )}
+            <Icon className={cn(
+              "w-3.5 h-3.5 sm:w-4 sm:h-4",
+              accentColorClass === 'terra' && 'text-terra-600',
+              accentColorClass === 'sage' && 'text-sage-600',
+              accentColorClass === 'gold' && 'text-gold-600',
+              accentColorClass === 'ocean' && 'text-ocean-600'
+            )} />
           </div>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 truncate">
             {label}
           </p>
         </div>
 
         {/* Value */}
-        <p className="text-[28px] font-semibold tracking-tight text-neutral-900 mb-2">
+        <p className="text-xl sm:text-[28px] font-semibold tracking-tight text-neutral-900 mb-1 sm:mb-2">
           <AnimatedNumber value={value} prefix={prefix} suffix={suffix} />
         </p>
 
         {/* Comparison */}
-        <div className="flex items-center justify-between">
-          <p className="text-[11px] text-neutral-400 font-medium">vs Last Month</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">vs Last Month</p>
           {change && (
             <div className={cn(
-              'flex items-center gap-1 text-[11px] font-semibold',
+              'flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-[11px] font-semibold',
               isPositive
                 ? 'text-sage-600'
                 : 'text-rose-600'
             )}>
-              {isPositive ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+              {isPositive ? <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : <ArrowDownRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
               {change}
             </div>
           )}
@@ -250,16 +238,16 @@ function OccupancyGauge({ value, occupied, total }) {
   const offset = circumference - (value / 100) * circumference;
 
   return (
-    <div className="flex flex-col items-center py-3">
-      <div className="relative" style={{ width: 180, height: 180 }}>
-        <svg width="180" height="180" className="transform -rotate-90">
+    <div className="flex flex-col items-center py-2 sm:py-3">
+      <div className="relative w-36 h-36 sm:w-[180px] sm:h-[180px]">
+        <svg viewBox="0 0 180 180" className="w-full h-full transform -rotate-90">
           <defs>
             <linearGradient id="occupancyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#A57865" />
               <stop offset="100%" stopColor="#BFA793" />
             </linearGradient>
           </defs>
-          
+
           {/* Background track */}
           <circle
             cx="90"
@@ -270,7 +258,7 @@ function OccupancyGauge({ value, occupied, total }) {
             strokeWidth={strokeWidth}
             opacity={0.5}
           />
-          
+
           {/* Progress arc with gradient */}
           <circle
             cx="90"
@@ -284,7 +272,7 @@ function OccupancyGauge({ value, occupied, total }) {
             strokeLinecap="round"
             className="transition-all duration-1000 ease-out"
           />
-          
+
           {/* Decorative inner ring */}
           <circle
             cx="90"
@@ -300,35 +288,35 @@ function OccupancyGauge({ value, occupied, total }) {
 
         {/* Center content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-[32px] font-semibold text-neutral-900 tracking-tight">
+          <span className="text-2xl sm:text-[32px] font-semibold text-neutral-900 tracking-tight">
             <AnimatedNumber value={value} suffix="%" />
           </span>
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mt-1">
+          <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mt-0.5 sm:mt-1">
             Occupied
           </span>
         </div>
       </div>
 
       {/* Stats below */}
-      <div className="flex items-center gap-6 mt-5 pt-5 border-t border-neutral-100 w-full">
+      <div className="flex items-center gap-4 sm:gap-6 mt-4 sm:mt-5 pt-4 sm:pt-5 border-t border-neutral-100 w-full">
         <div className="flex-1 text-center">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <div className="w-2.5 h-2.5 rounded-full bg-terra-500"></div>
-            <p className="text-2xl font-semibold text-neutral-900">
+          <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+            <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-terra-500"></div>
+            <p className="text-lg sm:text-2xl font-semibold text-neutral-900">
               <AnimatedNumber value={occupied} />
             </p>
           </div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Occupied</p>
+          <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Occupied</p>
         </div>
-        <div className="w-px h-10 bg-neutral-100" />
+        <div className="w-px h-8 sm:h-10 bg-neutral-100" />
         <div className="flex-1 text-center">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <div className="w-2.5 h-2.5 rounded-full bg-sage-400"></div>
-            <p className="text-2xl font-semibold text-neutral-900">
+          <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+            <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-sage-400"></div>
+            <p className="text-lg sm:text-2xl font-semibold text-neutral-900">
               <AnimatedNumber value={total - occupied} />
             </p>
           </div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Available</p>
+          <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Available</p>
         </div>
       </div>
     </div>
@@ -370,38 +358,38 @@ function InsightCard({ insight, index }) {
   return (
     <div
       className={cn(
-        'relative rounded-lg p-4 overflow-hidden hover:shadow-sm transition-all',
+        'relative rounded-lg p-3 sm:p-4 overflow-hidden hover:shadow-sm transition-all',
         config.bg
       )}
       style={{ animationDelay: `${index * 100}ms` }}
     >
-      <div className="flex items-start gap-4">
-        <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0", config.iconBg)}>
-          <IconComponent className={cn("w-5 h-5", config.iconColor)} />
+      <div className="flex items-start gap-3 sm:gap-4">
+        <div className={cn("w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0", config.iconBg)}>
+          <IconComponent className={cn("w-4 h-4 sm:w-5 sm:h-5", config.iconColor)} />
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-1.5">
+            <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
               {insight.category}
             </span>
-            <span className="text-[10px] text-neutral-300">•</span>
-            <span className="text-[10px] font-medium text-neutral-400">
+            <span className="text-[9px] sm:text-[10px] text-neutral-300 hidden sm:inline">•</span>
+            <span className="text-[9px] sm:text-[10px] font-medium text-neutral-400 hidden sm:inline">
               {insight.timeAgo}
             </span>
           </div>
 
-          <p className="text-[13px] font-semibold text-neutral-800 mb-1 leading-snug">
+          <p className="text-xs sm:text-[13px] font-semibold text-neutral-800 mb-0.5 sm:mb-1 leading-snug">
             {insight.title}
           </p>
 
-          <p className="text-[11px] text-neutral-500 leading-relaxed line-clamp-2 mb-3">
+          <p className="text-[10px] sm:text-[11px] text-neutral-500 leading-relaxed line-clamp-2 mb-2 sm:mb-3">
             {insight.message}
           </p>
 
           {/* Confidence bar */}
           <div className="flex items-center gap-2">
-            <div className="flex-1 h-1.5 rounded-full bg-neutral-100 overflow-hidden">
+            <div className="flex-1 h-1 sm:h-1.5 rounded-full bg-neutral-100 overflow-hidden">
               <div
                 className={cn(
                   "h-full rounded-full transition-all duration-1000",
@@ -414,7 +402,7 @@ function InsightCard({ insight, index }) {
                 }}
               />
             </div>
-            <span className="text-[10px] font-semibold text-neutral-600 min-w-[32px]">
+            <span className="text-[9px] sm:text-[10px] font-semibold text-neutral-600 min-w-[28px] sm:min-w-[32px]">
               {insight.confidence}%
             </span>
           </div>
@@ -443,15 +431,15 @@ function HousekeepingChart({ summary }) {
     <div className="h-full flex flex-col">
       {/* Donut Chart */}
       <div className="flex-1 flex flex-col items-center justify-center py-2">
-        <div className="relative w-40 h-40">
+        <div className="relative w-32 h-32 sm:w-40 sm:h-40">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={chartData}
                 cx="50%"
                 cy="50%"
-                innerRadius={45}
-                outerRadius={65}
+                innerRadius={35}
+                outerRadius={50}
                 paddingAngle={3}
                 dataKey="value"
                 strokeWidth={0}
@@ -463,45 +451,45 @@ function HousekeepingChart({ summary }) {
             </PieChart>
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-[28px] font-semibold text-neutral-900 tracking-tight">
+            <span className="text-xl sm:text-[28px] font-semibold text-neutral-900 tracking-tight">
               {cleanPercentage}%
             </span>
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mt-1">
+            <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mt-0.5 sm:mt-1">
               Clean
             </span>
           </div>
         </div>
 
         {/* Legend */}
-        <div className="w-full flex flex-col gap-2 mt-4">
+        <div className="w-full flex flex-col gap-1.5 sm:gap-2 mt-3 sm:mt-4">
           {chartData.map((item) => (
             <div
               key={item.name}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-neutral-50/50 hover:bg-neutral-50 transition-colors"
+              className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-neutral-50/50 hover:bg-neutral-50 transition-colors"
             >
-              <div className={cn("w-3 h-3 rounded-full flex-shrink-0", item.colorClass)} />
-              <span className="text-[13px] font-medium text-neutral-600 flex-1">{item.name}</span>
-              <span className="text-[13px] font-semibold text-neutral-900">{item.value}</span>
+              <div className={cn("w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0", item.colorClass)} />
+              <span className="text-xs sm:text-[13px] font-medium text-neutral-600 flex-1">{item.name}</span>
+              <span className="text-xs sm:text-[13px] font-semibold text-neutral-900">{item.value}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 pt-4 mt-2 border-t border-neutral-100">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 mt-2 border-t border-neutral-100">
         <div className="text-center">
-          <p className="text-2xl font-semibold text-neutral-900 mb-0.5">
-            {summary.avgCleaningTime}<span className="text-sm text-neutral-400 font-medium ml-0.5">m</span>
+          <p className="text-lg sm:text-2xl font-semibold text-neutral-900 mb-0.5">
+            {summary.avgCleaningTime}<span className="text-xs sm:text-sm text-neutral-400 font-medium ml-0.5">m</span>
           </p>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+          <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
             Avg Clean Time
           </p>
         </div>
         <div className="text-center">
-          <p className="text-2xl font-semibold text-neutral-900 mb-0.5">
+          <p className="text-lg sm:text-2xl font-semibold text-neutral-900 mb-0.5">
             {summary.staffOnShift}
           </p>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+          <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
             Staff on Duty
           </p>
         </div>
@@ -518,8 +506,8 @@ function ChannelDistribution({ data }) {
   const COLORS = ['#A57865', '#BFA793', '#8B6450', '#D4C4B4', '#B49A82'];
 
   return (
-    <div className="flex flex-col items-center gap-6">
-      <div className="relative w-44 h-44 flex-shrink-0">
+    <div className="flex flex-col items-center gap-4 sm:gap-6">
+      <div className="relative w-32 h-32 sm:w-44 sm:h-44 flex-shrink-0">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <defs>
@@ -531,8 +519,8 @@ function ChannelDistribution({ data }) {
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={45}
-              outerRadius={65}
+              innerRadius={35}
+              outerRadius={50}
               paddingAngle={3}
               dataKey="value"
               strokeWidth={0}
@@ -548,27 +536,27 @@ function ChannelDistribution({ data }) {
           </PieChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-[28px] font-semibold text-neutral-900 tracking-tight">
+          <span className="text-xl sm:text-[28px] font-semibold text-neutral-900 tracking-tight">
             {data[0]?.value}%
           </span>
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mt-1">
+          <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mt-0.5 sm:mt-1">
             Direct
           </span>
         </div>
       </div>
 
-      <div className="w-full flex flex-col gap-3">
+      <div className="w-full flex flex-col gap-2 sm:gap-3">
         {data.slice(0, 4).map((channel, i) => (
           <div
             key={i}
-            className="flex items-center gap-4 px-4 py-3 rounded-lg bg-neutral-50/50 hover:bg-neutral-50 transition-colors"
+            className="flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-neutral-50/50 hover:bg-neutral-50 transition-colors"
           >
             <div
-              className="w-3 h-3 rounded-full flex-shrink-0"
+              className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0"
               style={{ backgroundColor: COLORS[i] }}
             />
-            <span className="text-[13px] font-medium text-neutral-600 flex-1">{channel.name}</span>
-            <span className="text-[13px] font-semibold text-neutral-900">{channel.value}%</span>
+            <span className="text-xs sm:text-[13px] font-medium text-neutral-600 flex-1">{channel.name}</span>
+            <span className="text-xs sm:text-[13px] font-semibold text-neutral-900">{channel.value}%</span>
           </div>
         ))}
       </div>
@@ -584,19 +572,19 @@ function QuickAction({ icon: Icon, label, sublabel, color, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-4 p-4 rounded-lg bg-neutral-50/50 text-left hover:bg-neutral-50 transition-all group"
+      className="w-full flex items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg bg-neutral-50/50 text-left hover:bg-neutral-50 transition-all group"
     >
       <div
-        className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+        className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0"
         style={{ backgroundColor: `${color}15` }}
       >
-        <Icon className="w-4.5 h-4.5" style={{ color }} />
+        <Icon className="w-4 h-4 sm:w-4.5 sm:h-4.5" style={{ color }} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-semibold text-neutral-800 mb-0.5 leading-tight">{label}</p>
-        <p className="text-[11px] text-neutral-400 font-medium">{sublabel}</p>
+        <p className="text-xs sm:text-[13px] font-semibold text-neutral-800 mb-0.5 leading-tight truncate">{label}</p>
+        <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium hidden sm:block">{sublabel}</p>
       </div>
-      <ChevronRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-terra-600 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+      <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-300 group-hover:text-terra-600 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
     </button>
   );
 }
@@ -607,16 +595,16 @@ function QuickAction({ icon: Icon, label, sublabel, color, onClick }) {
 
 function AmenityUsage({ icon: Icon, name, usage, color }) {
   return (
-    <div className="flex items-center gap-4 p-4 rounded-lg bg-neutral-50/50 hover:bg-neutral-50 transition-colors">
-      <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
-        <Icon className="w-4.5 h-4.5 text-neutral-600" />
+    <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-neutral-50/50 hover:bg-neutral-50 transition-colors">
+      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+        <Icon className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-neutral-600" />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[13px] font-semibold text-neutral-800">{name}</span>
-          <span className="text-[13px] font-semibold text-neutral-900">{usage}%</span>
+        <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+          <span className="text-xs sm:text-[13px] font-semibold text-neutral-800">{name}</span>
+          <span className="text-xs sm:text-[13px] font-semibold text-neutral-900">{usage}%</span>
         </div>
-        <div className="h-1.5 rounded-full bg-neutral-200/60 overflow-hidden">
+        <div className="h-1 sm:h-1.5 rounded-full bg-neutral-200/60 overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-1000"
             style={{
@@ -657,7 +645,7 @@ function LuxurySectionCard({ title, subtitle, action, actionLabel, children, cla
   return (
     <div className={cn('rounded-[10px] bg-white overflow-hidden', className)}>
       {(title || action || legend) && (
-        <div className="flex items-center justify-between px-6 py-5 flex-shrink-0">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-4 sm:py-5 flex-shrink-0">
           <div className="flex items-center gap-3">
             {Icon && (
               <div className="w-10 h-10 rounded-lg bg-terra-50 flex items-center justify-center flex-shrink-0">
@@ -671,20 +659,20 @@ function LuxurySectionCard({ title, subtitle, action, actionLabel, children, cla
                 </h3>
               )}
               {subtitle && (
-                <p className="text-[11px] text-neutral-400 font-medium mt-0.5">{subtitle}</p>
+                <p className="text-[11px] text-neutral-400 font-medium mt-0.5 hidden sm:block">{subtitle}</p>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             {legend && (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 {legend}
               </div>
             )}
             {action && (
               <button
                 onClick={action}
-                className="flex items-center gap-1 text-[11px] font-semibold text-terra-600 px-3 py-1.5 rounded-lg hover:bg-terra-50 transition-colors"
+                className="flex items-center gap-1 text-[11px] font-semibold text-terra-600 px-2 sm:px-3 py-1.5 rounded-lg hover:bg-terra-50 transition-colors"
               >
                 {actionLabel} <ChevronRight className="w-3 h-3" />
               </button>
@@ -692,7 +680,7 @@ function LuxurySectionCard({ title, subtitle, action, actionLabel, children, cla
           </div>
         </div>
       )}
-      <div className={cn(noPadding ? '' : 'px-6 pb-6', hasFlex && 'flex-1')}>{children}</div>
+      <div className={cn(noPadding ? '' : 'px-4 sm:px-6 pb-4 sm:pb-6', hasFlex && 'flex-1')}>{children}</div>
     </div>
   );
 }
@@ -916,9 +904,9 @@ export default function Dashboard() {
       {/* MAIN CONTENT - 12 Column Grid System */}
       {/* Grid: 12 columns, 24px gutters, 40px margins */}
       {/* ═══════════════════════════════════════════════════════════════════════ */}
-      <main className="px-10 py-6">
+      <main className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6">
         {/* Primary KPIs - 4 cards × 3 columns each = 12 columns */}
-        <div className="grid grid-cols-12 gap-6 mb-6">
+        <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
           <div className="col-span-12 sm:col-span-6 lg:col-span-3">
             <LuxuryKPICard
               label="Occupancy Rate"
@@ -981,7 +969,7 @@ export default function Dashboard() {
         {/* ANALYTICS SECTION - 4 cols + 8 cols = 12 columns */}
         {/* ═══════════════════════════════════════════════════════════════════ */}
 
-        <div className="grid grid-cols-12 gap-6 mb-6">
+        <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
           {/* Occupancy Gauge - 4 columns */}
           <div className="col-span-12 lg:col-span-4">
             <LuxurySectionCard
@@ -1017,9 +1005,9 @@ export default function Dashboard() {
                 </>
               }
             >
-              <div className="h-80 px-6 pt-4 pb-6">
+              <div className="h-64 sm:h-80 px-2 sm:px-4 lg:px-6 pt-4 pb-6">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueChartData} margin={{ top: 10, right: 10, bottom: -10, left: 0 }}>
+                <AreaChart data={revenueChartData} margin={{ top: 10, right: 5, bottom: -10, left: -10 }}>
                   <defs>
                     <linearGradient id="revenueAreaGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#A57865" stopOpacity={0.3} />
@@ -1034,15 +1022,15 @@ export default function Dashboard() {
                     dataKey="day"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 13, fill: '#57534E', fontWeight: 600, fontFamily: 'Inter, sans-serif' }}
-                    padding={{ left: 20, right: 20 }}
+                    tick={{ fontSize: 11, fill: '#57534E', fontWeight: 600, fontFamily: 'Inter, sans-serif' }}
+                    padding={{ left: 5, right: 5 }}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 12, fill: '#57534E', fontWeight: 600, fontFamily: 'Inter, sans-serif' }}
-                    tickFormatter={v => `${symbol}${(v / 1000).toFixed(0)}k`}
-                    width={55}
+                    tick={{ fontSize: 11, fill: '#57534E', fontWeight: 600, fontFamily: 'Inter, sans-serif' }}
+                    tickFormatter={v => `$${(v / 1000).toFixed(0)}k`}
+                    width={45}
                     domain={[0, 'auto']}
                   />
                   <Tooltip
@@ -1102,7 +1090,7 @@ export default function Dashboard() {
         {/* OPERATIONS SECTION - 3 × 4 columns = 12 columns */}
         {/* ═══════════════════════════════════════════════════════════════════ */}
 
-        <div className="grid grid-cols-12 gap-6 mb-6">
+        <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
           {/* Channel Distribution - 4 columns */}
           <div className="col-span-12 lg:col-span-4">
             <LuxurySectionCard
@@ -1149,7 +1137,7 @@ export default function Dashboard() {
         {/* QUICK ACTIONS & AMENITIES - 6 + 6 = 12 columns */}
         {/* ═══════════════════════════════════════════════════════════════════ */}
 
-        <div className="grid grid-cols-12 gap-6 mb-6">
+        <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
           {/* Quick Actions - 6 columns */}
           <div className="col-span-12 lg:col-span-6">
             <LuxurySectionCard title="Quick Actions" subtitle="Common tasks" className="h-full">
@@ -1217,7 +1205,7 @@ export default function Dashboard() {
         {/* PERFORMANCE & ARRIVALS - 6 + 6 = 12 columns */}
         {/* ═══════════════════════════════════════════════════════════════════ */}
 
-        <div className="grid grid-cols-12 gap-6 mb-6">
+        <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
           {/* Performance Summary - 6 columns */}
           <div className="col-span-12 lg:col-span-6">
             <LuxurySectionCard
@@ -1225,28 +1213,28 @@ export default function Dashboard() {
               subtitle="This week vs. last week"
               className="h-full"
             >
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Revenue */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Revenue</span>
+                <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                  <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Revenue</span>
                   <span className={cn(
-                    "text-[11px] font-semibold",
+                    "text-[10px] sm:text-[11px] font-semibold",
                     performanceMetrics.revenue.change >= 0 ? "text-sage-600" : "text-rose-600"
                   )}>
                     {performanceMetrics.revenue.change >= 0 ? '+' : ''}
                     {performanceMetrics.revenue.change.toFixed(1)}%
                   </span>
                 </div>
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-xl font-semibold text-neutral-900">
-                    {formatCurrencyDynamic(performanceMetrics.revenue.thisWeek)}
+                <div className="flex items-baseline gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                  <span className="text-lg sm:text-xl font-semibold text-neutral-900">
+                    {formatCurrency(performanceMetrics.revenue.thisWeek)}
                   </span>
-                  <span className="text-[11px] text-neutral-400 font-medium">
-                    vs {formatCurrencyDynamic(performanceMetrics.revenue.lastWeek)}
+                  <span className="text-[10px] sm:text-[11px] text-neutral-400 font-medium hidden sm:inline">
+                    vs {formatCurrency(performanceMetrics.revenue.lastWeek)}
                   </span>
                 </div>
-                <div className="h-1.5 rounded-full bg-neutral-100 overflow-hidden">
+                <div className="h-1 sm:h-1.5 rounded-full bg-neutral-100 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-terra-500 transition-all duration-1000"
                     style={{ width: `${Math.min(100, (performanceMetrics.revenue.thisWeek / performanceMetrics.revenue.lastWeek) * 100)}%` }}
@@ -1256,25 +1244,25 @@ export default function Dashboard() {
 
               {/* Occupancy */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Occupancy</span>
+                <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                  <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Occupancy</span>
                   <span className={cn(
-                    "text-[11px] font-semibold",
+                    "text-[10px] sm:text-[11px] font-semibold",
                     performanceMetrics.occupancy.change >= 0 ? "text-sage-600" : "text-rose-600"
                   )}>
                     {performanceMetrics.occupancy.change >= 0 ? '+' : ''}
                     {performanceMetrics.occupancy.change.toFixed(1)}%
                   </span>
                 </div>
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-xl font-semibold text-neutral-900">
+                <div className="flex items-baseline gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                  <span className="text-lg sm:text-xl font-semibold text-neutral-900">
                     {performanceMetrics.occupancy.thisWeek.toFixed(1)}%
                   </span>
-                  <span className="text-[11px] text-neutral-400 font-medium">
+                  <span className="text-[10px] sm:text-[11px] text-neutral-400 font-medium hidden sm:inline">
                     vs {performanceMetrics.occupancy.lastWeek.toFixed(1)}%
                   </span>
                 </div>
-                <div className="h-1.5 rounded-full bg-neutral-100 overflow-hidden">
+                <div className="h-1 sm:h-1.5 rounded-full bg-neutral-100 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-sage-500 transition-all duration-1000"
                     style={{ width: `${performanceMetrics.occupancy.thisWeek}%` }}
@@ -1284,25 +1272,25 @@ export default function Dashboard() {
 
               {/* ADR */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">ADR</span>
+                <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                  <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">ADR</span>
                   <span className={cn(
-                    "text-[11px] font-semibold",
+                    "text-[10px] sm:text-[11px] font-semibold",
                     performanceMetrics.adr.change >= 0 ? "text-sage-600" : "text-rose-600"
                   )}>
                     {performanceMetrics.adr.change >= 0 ? '+' : ''}
                     {performanceMetrics.adr.change.toFixed(1)}%
                   </span>
                 </div>
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-xl font-semibold text-neutral-900">
-                    {formatCurrencyDynamic(performanceMetrics.adr.thisWeek)}
+                <div className="flex items-baseline gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                  <span className="text-lg sm:text-xl font-semibold text-neutral-900">
+                    {formatCurrency(performanceMetrics.adr.thisWeek)}
                   </span>
-                  <span className="text-[11px] text-neutral-400 font-medium">
-                    vs {formatCurrencyDynamic(performanceMetrics.adr.lastWeek)}
+                  <span className="text-[10px] sm:text-[11px] text-neutral-400 font-medium hidden sm:inline">
+                    vs {formatCurrency(performanceMetrics.adr.lastWeek)}
                   </span>
                 </div>
-                <div className="h-1.5 rounded-full bg-neutral-100 overflow-hidden">
+                <div className="h-1 sm:h-1.5 rounded-full bg-neutral-100 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-gold-500 transition-all duration-1000"
                     style={{ width: `${Math.min(100, (performanceMetrics.adr.thisWeek / performanceMetrics.adr.lastWeek) * 100)}%` }}
@@ -1322,46 +1310,46 @@ export default function Dashboard() {
               actionLabel="View All"
               className="h-full"
             >
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {upcomingArrivals.length > 0 ? (
                 upcomingArrivals.map((arrival, idx) => {
                   const checkInTime = arrival.checkIn ? new Date(arrival.checkIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
                   return (
                     <div
                       key={arrival.id}
-                      className="flex items-center gap-4 p-4 rounded-lg bg-neutral-50/50 hover:bg-neutral-50 transition-colors"
+                      className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-neutral-50/50 hover:bg-neutral-50 transition-colors"
                     >
-                      <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
-                        <Clock className="w-4.5 h-4.5 text-neutral-500" />
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
+                        <Clock className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-neutral-500" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <p className="text-[13px] font-semibold text-neutral-800">{arrival.guest}</p>
+                        <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5">
+                          <p className="text-xs sm:text-[13px] font-semibold text-neutral-800 truncate">{arrival.guest}</p>
                           {arrival.isVIP && (
-                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-gold-50">
-                              <Crown className="w-2.5 h-2.5 text-gold-600" />
-                              <span className="text-[9px] font-semibold text-gold-700 uppercase tracking-wider">VIP</span>
+                            <div className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 rounded-full bg-gold-50 flex-shrink-0">
+                              <Crown className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-gold-600" />
+                              <span className="text-[8px] sm:text-[9px] font-semibold text-gold-700 uppercase tracking-wider">VIP</span>
                             </div>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 text-[11px] text-neutral-500">
+                        <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] text-neutral-500">
                           <span className="font-medium">Room {arrival.room}</span>
                           <span className="text-neutral-300">•</span>
                           <span>{checkInTime}</span>
                           {arrival.specialRequests && arrival.specialRequests.length > 0 && (
                             <>
-                              <span className="text-neutral-300">•</span>
-                              <span className="text-terra-600 font-medium">{arrival.specialRequests.length} requests</span>
+                              <span className="text-neutral-300 hidden sm:inline">•</span>
+                              <span className="text-terra-600 font-medium hidden sm:inline">{arrival.specialRequests.length} requests</span>
                             </>
                           )}
                         </div>
                       </div>
-                      <ChevronRight className="w-3.5 h-3.5 text-neutral-300 flex-shrink-0" />
+                      <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-300 flex-shrink-0" />
                     </div>
                   );
                 })
               ) : (
-                <div className="text-center py-8 text-[11px] text-neutral-400 font-medium">
+                <div className="text-center py-6 sm:py-8 text-[10px] sm:text-[11px] text-neutral-400 font-medium">
                   No arrivals scheduled for today
                 </div>
               )}
@@ -1374,7 +1362,7 @@ export default function Dashboard() {
         {/* REVIEWS - 12 columns full width */}
         {/* ═══════════════════════════════════════════════════════════════════ */}
 
-        <div className="grid grid-cols-12 gap-6 mb-6">
+        <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
           <div className="col-span-12">
             <LuxurySectionCard
               title="Recent Reviews"
@@ -1382,7 +1370,7 @@ export default function Dashboard() {
               action={() => navigate('/admin/reputation')}
               actionLabel="View All"
             >
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {recentReviews.map((review) => {
               const platformColors = {
                 'Google': '#4285F4',
@@ -1400,11 +1388,11 @@ export default function Dashboard() {
               return (
                 <div
                   key={review.id}
-                  className="flex items-start gap-4 p-4 rounded-lg bg-neutral-50/50 hover:bg-neutral-50 transition-colors"
+                  className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-neutral-50/50 hover:bg-neutral-50 transition-colors"
                 >
                   {/* Platform Badge */}
                   <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0"
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-white text-[10px] sm:text-[11px] font-bold flex-shrink-0"
                     style={{ backgroundColor: platformColors[review.platform] || '#A57865' }}
                   >
                     {review.platformIcon}
@@ -1412,35 +1400,35 @@ export default function Dashboard() {
 
                   {/* Review Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1 sm:mb-1.5">
                       <div className="flex items-center gap-0.5">
                         {Array.from({ length: 5 }).map((_, i) => (
                           <Star
                             key={i}
                             className={cn(
-                              "w-3.5 h-3.5",
+                              "w-3 h-3 sm:w-3.5 sm:h-3.5",
                               i < review.rating ? "fill-gold-500 text-gold-500" : "text-neutral-200"
                             )}
                           />
                         ))}
                       </div>
                       <span className={cn(
-                        "px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider",
+                        "px-1 sm:px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-semibold uppercase tracking-wider",
                         sentimentColors[review.sentiment] || sentimentColors.Neutral
                       )}>
                         {review.sentiment}
                       </span>
-                      <span className="text-[10px] text-neutral-400 font-medium">
+                      <span className="text-[9px] sm:text-[10px] text-neutral-400 font-medium hidden sm:inline">
                         {new Date(review.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </span>
                     </div>
-                    <p className="text-[13px] font-semibold text-neutral-800 mb-0.5">{review.guestName}</p>
-                    <p className="text-[11px] text-neutral-500 line-clamp-2 leading-relaxed">
+                    <p className="text-xs sm:text-[13px] font-semibold text-neutral-800 mb-0.5">{review.guestName}</p>
+                    <p className="text-[10px] sm:text-[11px] text-neutral-500 line-clamp-2 leading-relaxed">
                       {review.reviewText}
                     </p>
                     {review.hasReply && (
-                      <div className="mt-1.5 flex items-center gap-1 text-[10px] text-sage-600">
-                        <CheckCircle2 className="w-3 h-3" />
+                      <div className="mt-1 sm:mt-1.5 flex items-center gap-1 text-[9px] sm:text-[10px] text-sage-600">
+                        <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                         <span className="font-semibold">Responded</span>
                       </div>
                     )}
@@ -1457,7 +1445,7 @@ export default function Dashboard() {
         {/* RECENT BOOKINGS - 12 columns full width */}
         {/* ═══════════════════════════════════════════════════════════════════ */}
 
-        <div className="grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-12 gap-4 sm:gap-6">
           <div className="col-span-12">
             <LuxurySectionCard
               title="Recent Bookings"
@@ -1466,7 +1454,38 @@ export default function Dashboard() {
               actionLabel="View All"
               noPadding
             >
-          <div className="overflow-x-auto">
+          {/* Mobile Card View */}
+          <div className="sm:hidden px-4 pb-4 space-y-3">
+            {recentBookings.map((booking, idx) => {
+              const initials = booking.guest?.split(' ').filter(n => n).map(n => n[0]).join('') || 'G';
+              const avatarColors = ['#A57865', '#CDB261', '#4E5840', '#5C9BA4', '#B49A82'];
+
+              return (
+                <div key={booking.id} className="p-3 rounded-lg bg-neutral-50/50">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[10px] font-semibold flex-shrink-0"
+                      style={{ backgroundColor: avatarColors[idx % avatarColors.length] }}
+                    >
+                      {initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-neutral-800 truncate">{booking.guest}</p>
+                      <p className="text-[10px] text-neutral-400">{booking.room} • {booking.roomType}</p>
+                    </div>
+                    <BookingStatus status={booking.status} />
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-neutral-500">
+                    <span>{new Date(booking.checkIn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(booking.checkOut).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    <span className="font-semibold text-neutral-900">{formatCurrency(booking.totalAmount || 324)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-neutral-50/30">
@@ -1474,7 +1493,7 @@ export default function Dashboard() {
                     <th
                       key={header}
                       className={cn(
-                        'py-4 px-6 text-[10px] font-semibold uppercase tracking-widest text-neutral-400',
+                        'py-3 sm:py-4 px-4 sm:px-6 text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400',
                         i === 5 ? 'text-right' : 'text-left'
                       )}
                     >
@@ -1485,44 +1504,44 @@ export default function Dashboard() {
               </thead>
               <tbody className="divide-y divide-neutral-100">
                 {recentBookings.map((booking, idx) => {
-                  const initials = booking.guest?.split(' ').filter(n => n).map(n => n[0]).join('') || 'G' || 'G';
+                  const initials = booking.guest?.split(' ').filter(n => n).map(n => n[0]).join('') || 'G';
                   const avatarColors = ['#A57865', '#CDB261', '#4E5840', '#5C9BA4', '#B49A82'];
 
                   return (
                     <tr key={booking.id} className="bg-white hover:bg-neutral-50/30 transition-colors">
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-4">
+                      <td className="py-3 sm:py-4 px-4 sm:px-6">
+                        <div className="flex items-center gap-3 sm:gap-4">
                           <div
-                            className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-[11px] font-semibold flex-shrink-0"
+                            className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-white text-[10px] sm:text-[11px] font-semibold flex-shrink-0"
                             style={{ backgroundColor: avatarColors[idx % avatarColors.length] }}
                           >
                             {initials}
                           </div>
                           <div>
-                            <p className="text-[13px] font-semibold text-neutral-800">{booking.guest}</p>
-                            <p className="text-[10px] text-neutral-400 font-medium">{booking.id}</p>
+                            <p className="text-xs sm:text-[13px] font-semibold text-neutral-800">{booking.guest}</p>
+                            <p className="text-[9px] sm:text-[10px] text-neutral-400 font-medium">{booking.id}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="py-4 px-6">
-                        <p className="text-[13px] font-medium text-neutral-800">{booking.room}</p>
-                        <p className="text-[10px] text-neutral-400 font-medium">{booking.roomType}</p>
+                      <td className="py-3 sm:py-4 px-4 sm:px-6">
+                        <p className="text-xs sm:text-[13px] font-medium text-neutral-800">{booking.room}</p>
+                        <p className="text-[9px] sm:text-[10px] text-neutral-400 font-medium">{booking.roomType}</p>
                       </td>
-                      <td className="py-4 px-6 text-[13px] text-neutral-600 font-medium">
+                      <td className="py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-[13px] text-neutral-600 font-medium">
                         {new Date(booking.checkIn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </td>
-                      <td className="py-4 px-6 text-[13px] text-neutral-600 font-medium">
+                      <td className="py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-[13px] text-neutral-600 font-medium">
                         {new Date(booking.checkOut).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </td>
-                      <td className="py-4 px-6 text-[13px] text-neutral-500 font-medium">
+                      <td className="py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-[13px] text-neutral-500 font-medium">
                         {booking.source || 'Direct'}
                       </td>
-                      <td className="py-4 px-6 text-right">
-                        <span className="text-[13px] font-semibold text-neutral-900">
-                          {formatCurrencyDynamic(booking.totalAmount || 324)}
+                      <td className="py-3 sm:py-4 px-4 sm:px-6 text-right">
+                        <span className="text-xs sm:text-[13px] font-semibold text-neutral-900">
+                          {formatCurrency(booking.totalAmount || 324)}
                         </span>
                       </td>
-                      <td className="py-4 px-6">
+                      <td className="py-3 sm:py-4 px-4 sm:px-6">
                         <BookingStatus status={booking.status} />
                       </td>
                     </tr>

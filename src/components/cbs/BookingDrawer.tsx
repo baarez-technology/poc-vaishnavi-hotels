@@ -175,18 +175,18 @@ export default function BookingDrawer({
   };
 
   const drawerFooter = (
-    <div className="flex items-center justify-end gap-3 w-full">
+    <div className="flex items-center justify-end gap-2 sm:gap-3 w-full">
       <Button
         variant="outline"
         onClick={onClose}
-        className="px-5 py-2 text-[13px] font-semibold"
+        className="px-3 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-[13px] font-semibold"
       >
         Close
       </Button>
       <Button
         variant="primary"
         onClick={onAssignRoom}
-        className="px-5 py-2 text-[13px] font-semibold"
+        className="px-3 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-[13px] font-semibold"
       >
         {booking.roomNumber ? 'Change Room' : 'Assign Room'}
       </Button>
@@ -194,13 +194,13 @@ export default function BookingDrawer({
   );
 
   const drawerHeader = (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Guest Info Header */}
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-2.5 sm:gap-3">
         {/* Avatar */}
-        <div className="relative">
+        <div className="relative flex-shrink-0">
           <div className={cn(
-            "w-12 h-12 rounded-lg flex items-center justify-center text-sm font-bold",
+            "w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center text-xs sm:text-sm font-bold",
             booking.isVip
               ? "bg-gold-500 text-white"
               : "bg-terra-500 text-white"
@@ -208,22 +208,22 @@ export default function BookingDrawer({
             {getInitials(booking.guestName)}
           </div>
           {booking.isVip && (
-            <div className="absolute -top-1 -right-1 w-5 h-5 bg-gold-500 rounded-full flex items-center justify-center ring-2 ring-white">
-              <Crown className="w-2.5 h-2.5 text-white" />
+            <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-gold-500 rounded-full flex items-center justify-center ring-2 ring-white">
+              <Crown className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-white" />
             </div>
           )}
         </div>
 
         <div className="flex-1 min-w-0">
           {editingField === 'name' ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <input
                 ref={inputRef}
                 type="text"
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
                 onKeyDown={(e) => handleKeyDown(e, 'name')}
-                className="text-lg font-semibold px-3 py-1.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 min-w-[200px] outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all"
+                className="text-sm sm:text-lg font-semibold px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-neutral-200 bg-white text-neutral-900 min-w-[140px] sm:min-w-[200px] outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all"
               />
               <IconButton
                 icon={Check}
@@ -243,55 +243,55 @@ export default function BookingDrawer({
           ) : (
             <button
               onClick={() => startEditing('name', booking.guestName)}
-              className="group flex items-center gap-2 rounded-lg"
+              className="group flex items-center gap-1.5 sm:gap-2 rounded-lg"
             >
-              <h2 className="text-lg font-semibold text-neutral-900 tracking-tight">
+              <h2 className="text-sm sm:text-lg font-semibold text-neutral-900 tracking-tight truncate">
                 {booking.guestName}
               </h2>
-              <PenLine className="w-3.5 h-3.5 text-neutral-300 group-hover:text-terra-500 transition-colors" />
+              <PenLine className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-300 group-hover:text-terra-500 transition-colors flex-shrink-0" />
             </button>
           )}
-          <p className="text-[11px] text-neutral-400 font-mono mt-0.5">{booking.id}</p>
+          <p className="text-[10px] sm:text-[11px] text-neutral-400 font-mono mt-0.5 truncate">{booking.id}</p>
         </div>
       </div>
 
       {/* Status and Source badges */}
-      <div className="flex items-center gap-2" ref={dropdownRef}>
+      <div className="flex items-center flex-wrap gap-1.5 sm:gap-2" ref={dropdownRef}>
         <div className="relative">
           <button
             onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
             className={cn(
-              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all duration-150",
+              "inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg border transition-all duration-150",
               statusDropdownOpen
                 ? "border-terra-300 bg-white"
                 : "border-neutral-200 bg-white hover:border-neutral-300"
             )}
           >
             <span className={cn("w-1.5 h-1.5 rounded-full", currentStatusOption.dotBg)} />
-            <span className={cn("text-[13px] font-medium", currentStatusOption.color)}>
+            <span className={cn("text-xs sm:text-[13px] font-medium", currentStatusOption.color)}>
               {currentStatusOption.label}
             </span>
             <ChevronDown className={cn(
-              "w-3 h-3 text-neutral-400 transition-transform duration-150",
+              "w-2.5 h-2.5 sm:w-3 sm:h-3 text-neutral-400 transition-transform duration-150",
               statusDropdownOpen && "rotate-180"
             )} />
           </button>
 
           {statusDropdownOpen && (
-            <div className="absolute left-0 top-full mt-1 w-40 rounded-[10px] border border-neutral-200 bg-white py-1 shadow-lg z-50 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-100">
+            <div className="absolute left-0 top-full mt-1 w-36 sm:w-40 rounded-[10px] border border-neutral-200 bg-white py-1 shadow-lg z-50 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-100">
               {statusOptions.map((option) => (
                 <button
                   key={option.value}
                   onClick={() => handleStatusChange(option.value)}
                   className={cn(
-                    "w-full flex items-center gap-2 px-3 py-2 text-[13px] font-medium transition-colors",
+                    "w-full flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-[13px] font-medium transition-colors",
                     booking.status === option.value ? option.lightBg : "hover:bg-neutral-50"
                   )}
                 >
                   <span className={cn("w-1.5 h-1.5 rounded-full", option.dotBg)} />
                   <span className={cn("font-medium", option.color)}>{option.label}</span>
                   {booking.status === option.value && (
-                    <Check className="w-3.5 h-3.5 text-terra-500 ml-auto" />
+                    <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-terra-500 ml-auto" />
                   )}
                 </button>
               ))}
@@ -299,13 +299,13 @@ export default function BookingDrawer({
           )}
         </div>
 
-        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-neutral-100 text-neutral-600">
+        <span className="inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[10px] sm:text-[11px] font-semibold bg-neutral-100 text-neutral-600">
           via {booking.source}
         </span>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-neutral-100">
+      <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-neutral-100 overflow-x-auto">
         {tabs.map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -314,17 +314,17 @@ export default function BookingDrawer({
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[13px] font-semibold rounded-md transition-all duration-150 whitespace-nowrap",
+                "flex-1 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-[13px] font-semibold rounded-md transition-all duration-150 whitespace-nowrap min-w-0",
                 isActive
                   ? "bg-white text-neutral-900"
                   : "text-neutral-500 hover:text-neutral-700"
               )}
             >
-              <Icon className={cn("w-3.5 h-3.5 flex-shrink-0", isActive && "text-terra-500")} />
-              <span>{tab.label}</span>
+              <Icon className={cn("w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0", isActive && "text-terra-500")} />
+              <span className="hidden xs:inline sm:inline">{tab.label}</span>
               {tab.badge > 0 && (
                 <span className={cn(
-                  "inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold rounded-full",
+                  "inline-flex items-center justify-center w-3.5 h-3.5 sm:w-4 sm:h-4 text-[8px] sm:text-[10px] font-bold rounded-full",
                   isActive ? "bg-terra-500 text-white" : "bg-neutral-300 text-white"
                 )}>
                   {tab.badge}
@@ -346,37 +346,37 @@ export default function BookingDrawer({
       footer={drawerFooter}
     >
       {/* Content */}
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Details Tab */}
         {activeTab === 'details' && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
               {/* Stay Details Card */}
               <div className="rounded-[10px] border border-neutral-200 bg-white overflow-hidden">
                 <div className="grid grid-cols-3 divide-x divide-neutral-200">
-                  <div className="p-4 text-center">
-                    <div className="flex items-center justify-center gap-1.5 mb-2">
-                      <Calendar className="w-3.5 h-3.5 text-neutral-400" />
-                      <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Check-in</span>
+                  <div className="p-2 sm:p-4 text-center">
+                    <div className="flex items-center justify-center gap-1 sm:gap-1.5 mb-1 sm:mb-2">
+                      <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-400" />
+                      <span className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Check-in</span>
                     </div>
-                    <p className="text-[15px] font-semibold text-neutral-900">
+                    <p className="text-xs sm:text-[15px] font-semibold text-neutral-900">
                       {formatDate(booking.checkIn)}
                     </p>
                   </div>
-                  <div className="p-4 text-center">
-                    <div className="flex items-center justify-center gap-1.5 mb-2">
-                      <Moon className="w-3.5 h-3.5 text-neutral-400" />
-                      <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Duration</span>
+                  <div className="p-2 sm:p-4 text-center">
+                    <div className="flex items-center justify-center gap-1 sm:gap-1.5 mb-1 sm:mb-2">
+                      <Moon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-400" />
+                      <span className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Duration</span>
                     </div>
-                    <p className="text-[15px] font-semibold text-neutral-900">
+                    <p className="text-xs sm:text-[15px] font-semibold text-neutral-900">
                       {booking.nights} night{booking.nights !== 1 ? 's' : ''}
                     </p>
                   </div>
-                  <div className="p-4 text-center">
-                    <div className="flex items-center justify-center gap-1.5 mb-2">
-                      <Calendar className="w-3.5 h-3.5 text-neutral-400" />
-                      <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Check-out</span>
+                  <div className="p-2 sm:p-4 text-center">
+                    <div className="flex items-center justify-center gap-1 sm:gap-1.5 mb-1 sm:mb-2">
+                      <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-400" />
+                      <span className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Check-out</span>
                     </div>
-                    <p className="text-[15px] font-semibold text-neutral-900">
+                    <p className="text-xs sm:text-[15px] font-semibold text-neutral-900">
                       {formatDate(booking.checkOut)}
                     </p>
                   </div>
@@ -384,63 +384,63 @@ export default function BookingDrawer({
               </div>
 
               {/* Room & Guests */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-[10px] border border-neutral-200 bg-white p-4">
-                  <div className="flex items-center gap-2.5 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center">
-                      <Bed className="w-4 h-4 text-neutral-500" />
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <div className="rounded-[10px] border border-neutral-200 bg-white p-3 sm:p-4">
+                  <div className="flex items-center gap-2 sm:gap-2.5 mb-2 sm:mb-3">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
+                      <Bed className="w-3 h-3 sm:w-4 sm:h-4 text-neutral-500" />
                     </div>
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Room</span>
+                    <span className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Room</span>
                   </div>
                   {booking.roomNumber ? (
                     <>
-                      <p className="text-xl font-semibold text-neutral-900">{booking.roomNumber}</p>
-                      <p className="text-[11px] mt-1 text-neutral-500">{booking.roomType}</p>
+                      <p className="text-lg sm:text-xl font-semibold text-neutral-900">{booking.roomNumber}</p>
+                      <p className="text-[10px] sm:text-[11px] mt-1 text-neutral-500 truncate">{booking.roomType}</p>
                     </>
                   ) : (
                     <button
                       onClick={onAssignRoom}
-                      className="text-[13px] font-semibold text-terra-500 hover:text-terra-600 transition-colors flex items-center gap-1"
+                      className="text-xs sm:text-[13px] font-semibold text-terra-500 hover:text-terra-600 transition-colors flex items-center gap-1"
                     >
                       Assign Room
-                      <ChevronRight className="w-3.5 h-3.5" />
+                      <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     </button>
                   )}
                 </div>
 
-                <div className="rounded-[10px] border border-neutral-200 bg-white p-4">
-                  <div className="flex items-center gap-2.5 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center">
-                      <Users className="w-4 h-4 text-neutral-500" />
+                <div className="rounded-[10px] border border-neutral-200 bg-white p-3 sm:p-4">
+                  <div className="flex items-center gap-2 sm:gap-2.5 mb-2 sm:mb-3">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
+                      <Users className="w-3 h-3 sm:w-4 sm:h-4 text-neutral-500" />
                     </div>
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Guests</span>
+                    <span className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Guests</span>
                   </div>
-                  <p className="text-xl font-semibold text-neutral-900">
+                  <p className="text-lg sm:text-xl font-semibold text-neutral-900">
                     {booking.adults} Adult{booking.adults !== 1 ? 's' : ''}
                   </p>
-                  <p className="text-[11px] mt-1 text-neutral-500">
+                  <p className="text-[10px] sm:text-[11px] mt-1 text-neutral-500 truncate">
                     {booking.children > 0 && `${booking.children} Children · `}{booking.ratePlan} Rate
                   </p>
                 </div>
               </div>
 
               {/* Contact Info */}
-              <div className="space-y-4">
-                <h3 className="text-[13px] font-semibold text-neutral-800">
+              <div className="space-y-3 sm:space-y-4">
+                <h3 className="text-xs sm:text-[13px] font-semibold text-neutral-800">
                   Contact Information
                 </h3>
                 <div className="rounded-[10px] border border-neutral-200 bg-white overflow-hidden divide-y divide-neutral-200">
                   {/* Email */}
-                  <div className="flex items-center gap-3 p-4">
-                    <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
-                      <Mail className="w-4 h-4 text-neutral-500" />
+                  <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
+                      <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <label className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 block mb-1">
+                      <label className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 block mb-0.5 sm:mb-1">
                         Email Address
                       </label>
                       {editingField === 'email' ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
                           <input
                             ref={inputRef}
                             type="email"
@@ -448,36 +448,36 @@ export default function BookingDrawer({
                             onChange={(e) => setEditValue(e.target.value)}
                             onKeyDown={(e) => handleKeyDown(e, 'email')}
                             placeholder="Enter email address..."
-                            className="flex-1 text-[13px] font-medium px-3 py-2 rounded-lg border border-neutral-200 bg-white text-neutral-900 placeholder:text-neutral-400 outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all"
+                            className="flex-1 text-xs sm:text-[13px] font-medium px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-neutral-200 bg-white text-neutral-900 placeholder:text-neutral-400 outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all"
                           />
                           <button
                             onClick={() => saveField('email')}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-terra-500 hover:bg-terra-600 text-white transition-colors"
+                            className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg bg-terra-500 hover:bg-terra-600 text-white transition-colors flex-shrink-0"
                           >
-                            <Check className="w-3.5 h-3.5" />
+                            <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                           </button>
                           <button
                             onClick={cancelEditing}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg border border-neutral-200 hover:bg-neutral-50 text-neutral-500 transition-colors"
+                            className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg border border-neutral-200 hover:bg-neutral-50 text-neutral-500 transition-colors flex-shrink-0"
                           >
-                            <X className="w-3.5 h-3.5" />
+                            <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                           </button>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[13px] font-medium text-neutral-900 truncate">{booking.guestEmail || "Not provided"}</span>
+                        <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+                          <span className="text-xs sm:text-[13px] font-medium text-neutral-900 truncate">{booking.guestEmail || "Not provided"}</span>
                           <div className="flex items-center gap-0.5 flex-shrink-0">
                             <button
                               onClick={() => copyToClipboard(booking.guestEmail, 'email')}
-                              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-all"
+                              className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-all"
                             >
-                              {copiedField === 'email' ? <CheckCircle2 className="w-3.5 h-3.5 text-sage-500" /> : <Copy className="w-3.5 h-3.5" />}
+                              {copiedField === 'email' ? <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-sage-500" /> : <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
                             </button>
                             <button
                               onClick={() => startEditing('email', booking.guestEmail)}
-                              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-terra-500 transition-all"
+                              className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-terra-500 transition-all"
                             >
-                              <PenLine className="w-3.5 h-3.5" />
+                              <PenLine className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                             </button>
                           </div>
                         </div>
@@ -485,16 +485,16 @@ export default function BookingDrawer({
                     </div>
                   </div>
                   {/* Phone */}
-                  <div className="flex items-center gap-3 p-4">
-                    <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
-                      <Phone className="w-4 h-4 text-neutral-500" />
+                  <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
+                      <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <label className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 block mb-1">
+                      <label className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 block mb-0.5 sm:mb-1">
                         Phone Number
                       </label>
                       {editingField === 'phone' ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
                           <input
                             ref={inputRef}
                             type="tel"
@@ -502,36 +502,36 @@ export default function BookingDrawer({
                             onChange={(e) => setEditValue(e.target.value)}
                             onKeyDown={(e) => handleKeyDown(e, 'phone')}
                             placeholder="Enter phone number..."
-                            className="flex-1 text-[13px] font-medium px-3 py-2 rounded-lg border border-neutral-200 bg-white text-neutral-900 placeholder:text-neutral-400 outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all"
+                            className="flex-1 text-xs sm:text-[13px] font-medium px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-neutral-200 bg-white text-neutral-900 placeholder:text-neutral-400 outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all"
                           />
                           <button
                             onClick={() => saveField('phone')}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-terra-500 hover:bg-terra-600 text-white transition-colors"
+                            className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg bg-terra-500 hover:bg-terra-600 text-white transition-colors flex-shrink-0"
                           >
-                            <Check className="w-3.5 h-3.5" />
+                            <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                           </button>
                           <button
                             onClick={cancelEditing}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg border border-neutral-200 hover:bg-neutral-50 text-neutral-500 transition-colors"
+                            className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg border border-neutral-200 hover:bg-neutral-50 text-neutral-500 transition-colors flex-shrink-0"
                           >
-                            <X className="w-3.5 h-3.5" />
+                            <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                           </button>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[13px] font-medium text-neutral-900 truncate">{booking.guestPhone || "Not provided"}</span>
+                        <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+                          <span className="text-xs sm:text-[13px] font-medium text-neutral-900 truncate">{booking.guestPhone || "Not provided"}</span>
                           <div className="flex items-center gap-0.5 flex-shrink-0">
                             <button
                               onClick={() => copyToClipboard(booking.guestPhone, 'phone')}
-                              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-all"
+                              className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600 transition-all"
                             >
-                              {copiedField === 'phone' ? <CheckCircle2 className="w-3.5 h-3.5 text-sage-500" /> : <Copy className="w-3.5 h-3.5" />}
+                              {copiedField === 'phone' ? <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-sage-500" /> : <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
                             </button>
                             <button
                               onClick={() => startEditing('phone', booking.guestPhone)}
-                              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-terra-500 transition-all"
+                              className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-terra-500 transition-all"
                             >
-                              <PenLine className="w-3.5 h-3.5" />
+                              <PenLine className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                             </button>
                           </div>
                         </div>
@@ -542,18 +542,18 @@ export default function BookingDrawer({
               </div>
 
               {/* Special Requests */}
-              <div className="space-y-3">
-                <h3 className="text-[13px] font-semibold text-neutral-800">
+              <div className="space-y-2 sm:space-y-3">
+                <h3 className="text-xs sm:text-[13px] font-semibold text-neutral-800">
                   Special Requests
                 </h3>
                 {editingField === 'requests' ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2 sm:space-y-3">
                     <textarea
                       ref={inputRef}
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}
                       onKeyDown={(e) => handleKeyDown(e, 'requests')}
-                      className="w-full p-3 rounded-[10px] text-[13px] border border-neutral-200 bg-white text-neutral-900 placeholder:text-neutral-400 outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all resize-none"
+                      className="w-full p-2.5 sm:p-3 rounded-[10px] text-xs sm:text-[13px] border border-neutral-200 bg-white text-neutral-900 placeholder:text-neutral-400 outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all resize-none"
                       rows={3}
                       placeholder="Enter special requests..."
                     />
@@ -562,6 +562,7 @@ export default function BookingDrawer({
                         variant="outline"
                         size="sm"
                         onClick={cancelEditing}
+                        className="text-xs sm:text-sm"
                       >
                         Cancel
                       </Button>
@@ -569,6 +570,7 @@ export default function BookingDrawer({
                         variant="primary"
                         size="sm"
                         onClick={() => saveField('requests')}
+                        className="text-xs sm:text-sm"
                       >
                         Save
                       </Button>
@@ -579,15 +581,15 @@ export default function BookingDrawer({
                     onClick={() => startEditing('requests', booking.specialRequests || '')}
                     className="w-full text-left group"
                   >
-                    <div className="p-3 rounded-[10px] bg-gold-50 border border-gold-200">
+                    <div className="p-2.5 sm:p-3 rounded-[10px] bg-gold-50 border border-gold-200">
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-start gap-2.5 flex-1">
-                          <Sparkles className="w-3.5 h-3.5 text-gold-500 mt-0.5 flex-shrink-0" />
-                          <p className="text-[13px] text-gold-700">
+                        <div className="flex items-start gap-2 sm:gap-2.5 flex-1">
+                          <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gold-500 mt-0.5 flex-shrink-0" />
+                          <p className="text-xs sm:text-[13px] text-gold-700">
                             {booking.specialRequests || 'No special requests - click to add'}
                           </p>
                         </div>
-                        <PenLine className="w-3.5 h-3.5 text-gold-400 group-hover:text-gold-600 flex-shrink-0 transition-colors" />
+                        <PenLine className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gold-400 group-hover:text-gold-600 flex-shrink-0 transition-colors" />
                       </div>
                     </div>
                   </button>
@@ -595,16 +597,16 @@ export default function BookingDrawer({
               </div>
 
               {/* Total Amount */}
-              <div className="p-4 rounded-[10px] bg-terra-500">
+              <div className="p-3 sm:p-4 rounded-[10px] bg-terra-500">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-terra-200">Total Amount</p>
-                    <p className="text-xl font-bold text-white mt-1">{formatCurrency(booking.amount)}</p>
+                    <p className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest text-terra-200">Total Amount</p>
+                    <p className="text-base sm:text-xl font-bold text-white mt-0.5 sm:mt-1">{formatCurrency(booking.amount)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-terra-200">Balance</p>
+                    <p className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest text-terra-200">Balance</p>
                     <p className={cn(
-                      "text-xl font-bold mt-1",
+                      "text-base sm:text-xl font-bold mt-0.5 sm:mt-1",
                       booking.balance > 0 ? "text-rose-200" : "text-sage-200"
                     )}>
                       {formatCurrency(booking.balance)}
@@ -617,27 +619,27 @@ export default function BookingDrawer({
 
         {/* Payments Tab */}
         {activeTab === 'payments' && (
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5">
               {/* Payment Summary */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="p-3 rounded-[10px] text-center bg-white border border-neutral-200">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5 text-neutral-400">Total</p>
-                  <p className="text-lg font-bold text-neutral-900">{formatCurrency(booking.amount)}</p>
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="p-2 sm:p-3 rounded-[10px] text-center bg-white border border-neutral-200">
+                  <p className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest mb-1 sm:mb-1.5 text-neutral-400">Total</p>
+                  <p className="text-sm sm:text-lg font-bold text-neutral-900">{formatCurrency(booking.amount)}</p>
                 </div>
-                <div className="p-3 rounded-[10px] text-center bg-sage-50 border border-sage-200">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5 text-sage-600">Paid</p>
-                  <p className="text-lg font-bold text-sage-700">{formatCurrency(booking.amountPaid)}</p>
+                <div className="p-2 sm:p-3 rounded-[10px] text-center bg-sage-50 border border-sage-200">
+                  <p className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest mb-1 sm:mb-1.5 text-sage-600">Paid</p>
+                  <p className="text-sm sm:text-lg font-bold text-sage-700">{formatCurrency(booking.amountPaid)}</p>
                 </div>
                 <div className={cn(
-                  "p-3 rounded-[10px] text-center",
+                  "p-2 sm:p-3 rounded-[10px] text-center",
                   booking.balance > 0 ? "bg-rose-50 border border-rose-200" : "bg-sage-50 border border-sage-200"
                 )}>
                   <p className={cn(
-                    "text-[10px] font-semibold uppercase tracking-widest mb-1.5",
+                    "text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest mb-1 sm:mb-1.5",
                     booking.balance > 0 ? "text-rose-600" : "text-sage-600"
                   )}>Balance</p>
                   <p className={cn(
-                    "text-lg font-bold",
+                    "text-sm sm:text-lg font-bold",
                     booking.balance > 0 ? "text-rose-700" : "text-sage-700"
                   )}>
                     {formatCurrency(booking.balance)}
@@ -647,31 +649,31 @@ export default function BookingDrawer({
 
               {/* Add Payment */}
               {booking.balance > 0 && (
-                <div className="rounded-[10px] border border-neutral-200 bg-white p-4">
+                <div className="rounded-[10px] border border-neutral-200 bg-white p-3 sm:p-4">
                   {showPaymentForm ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 space-y-1.5">
-                          <label className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Amount</label>
+                    <div className="space-y-3 sm:space-y-4">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                        <div className="flex-1 space-y-1 sm:space-y-1.5">
+                          <label className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Amount</label>
                           <div className="relative">
-                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                            <DollarSign className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400" />
                             <input
                               type="number"
                               value={paymentAmount}
                               onChange={(e) => setPaymentAmount(e.target.value)}
                               placeholder="0.00"
                               max={booking.balance}
-                              className="w-full pl-9 pr-3 py-2 rounded-lg border border-neutral-200 bg-white text-[13px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all"
+                              className="w-full pl-8 sm:pl-9 pr-2.5 sm:pr-3 py-1.5 sm:py-2 rounded-lg border border-neutral-200 bg-white text-xs sm:text-[13px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all"
                             />
                           </div>
                         </div>
-                        <div className="flex-1 space-y-1.5">
-                          <label className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Method</label>
+                        <div className="flex-1 space-y-1 sm:space-y-1.5">
+                          <label className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Method</label>
                           <Select
                             value={paymentMethod}
                             onChange={(e) => setPaymentMethod(e.target.value)}
                             size="sm"
-                            className="w-full"
+                            className="w-full text-xs sm:text-sm"
                           >
                             {paymentMethodOptions.map(opt => (
                               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -685,6 +687,7 @@ export default function BookingDrawer({
                           size="sm"
                           onClick={() => setShowPaymentForm(false)}
                           fullWidth
+                          className="text-xs sm:text-sm"
                         >
                           Cancel
                         </Button>
@@ -693,6 +696,7 @@ export default function BookingDrawer({
                           size="sm"
                           onClick={handleAddPayment}
                           fullWidth
+                          className="text-xs sm:text-sm"
                         >
                           Add Payment
                         </Button>
@@ -705,6 +709,7 @@ export default function BookingDrawer({
                       icon={CreditCard}
                       onClick={() => setShowPaymentForm(true)}
                       fullWidth
+                      className="text-xs sm:text-sm"
                     >
                       Add Payment
                     </Button>
@@ -714,45 +719,45 @@ export default function BookingDrawer({
 
               {/* Payment History */}
               <div>
-                <h3 className="text-[13px] font-semibold text-neutral-800 mb-3">
+                <h3 className="text-xs sm:text-[13px] font-semibold text-neutral-800 mb-2 sm:mb-3">
                   Payment History
                 </h3>
                 {booking.payments.length === 0 ? (
-                  <div className="rounded-[10px] border border-neutral-200 bg-white p-6 text-center">
-                    <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center mx-auto mb-2">
-                      <CreditCard className="w-5 h-5 text-neutral-400" />
+                  <div className="rounded-[10px] border border-neutral-200 bg-white p-4 sm:p-6 text-center">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-neutral-100 flex items-center justify-center mx-auto mb-2">
+                      <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-400" />
                     </div>
-                    <p className="text-[13px] font-medium text-neutral-500">No payments recorded</p>
+                    <p className="text-xs sm:text-[13px] font-medium text-neutral-500">No payments recorded</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {booking.payments.map((payment, index) => (
-                      <div key={payment.id || index} className="flex items-center justify-between rounded-[10px] border border-neutral-200 bg-white p-3">
-                        <div className="flex items-center gap-3">
+                      <div key={payment.id || index} className="flex items-center justify-between rounded-[10px] border border-neutral-200 bg-white p-2.5 sm:p-3">
+                        <div className="flex items-center gap-2 sm:gap-3">
                           <div className={cn(
-                            "w-8 h-8 rounded-lg flex items-center justify-center",
+                            "w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0",
                             payment.status === 'refunded'
                               ? "bg-rose-50"
                               : "bg-sage-50"
                           )}>
                             <CreditCard className={cn(
-                              "w-4 h-4",
+                              "w-3.5 h-3.5 sm:w-4 sm:h-4",
                               payment.status === 'refunded' ? "text-rose-600" : "text-sage-600"
                             )} />
                           </div>
-                          <div>
-                            <p className="text-[13px] font-semibold text-neutral-900">{payment.method}</p>
-                            <p className="text-[10px] text-neutral-400">{formatDate(payment.date)}</p>
+                          <div className="min-w-0">
+                            <p className="text-xs sm:text-[13px] font-semibold text-neutral-900 truncate">{payment.method}</p>
+                            <p className="text-[9px] sm:text-[10px] text-neutral-400">{formatDate(payment.date)}</p>
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex-shrink-0">
                           <p className={cn(
-                            "text-[15px] font-bold",
+                            "text-sm sm:text-[15px] font-bold",
                             payment.status === 'refunded' ? "text-rose-600" : "text-sage-600"
                           )}>
                             {payment.status === 'refunded' ? '-' : '+'}{formatCurrency(payment.amount)}
                           </p>
-                          <p className="text-[10px] capitalize text-neutral-400">{payment.status}</p>
+                          <p className="text-[9px] sm:text-[10px] capitalize text-neutral-400">{payment.status}</p>
                         </div>
                       </div>
                     ))}
@@ -764,22 +769,22 @@ export default function BookingDrawer({
 
         {/* Activity Tab */}
         {activeTab === 'activity' && (
-          <div className="space-y-4">
-              <h3 className="text-[13px] font-semibold text-neutral-800">
+          <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-xs sm:text-[13px] font-semibold text-neutral-800">
                 Activity Log
               </h3>
               <div className="relative">
-                <div className="absolute left-4 top-0 bottom-0 w-px bg-neutral-200"></div>
-                <div className="space-y-3">
+                <div className="absolute left-3 sm:left-4 top-0 bottom-0 w-px bg-neutral-200"></div>
+                <div className="space-y-2 sm:space-y-3">
                   {booking.activityLog.map((activity, index) => (
-                    <div key={index} className="relative flex items-start gap-3 pl-8">
-                      <div className="absolute left-2.5 w-3 h-3 rounded-full bg-terra-500 border-2 border-white"></div>
-                      <div className="flex-1 rounded-[10px] border border-neutral-200 bg-white p-3">
-                        <p className="text-[13px] font-medium text-neutral-900">{activity.action}</p>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <Clock className="w-3 h-3 text-neutral-400" />
-                          <span className="text-[10px] text-neutral-500">{formatDate(activity.date)}</span>
-                          <span className="text-[10px] text-neutral-400">by {activity.user}</span>
+                    <div key={index} className="relative flex items-start gap-2 sm:gap-3 pl-6 sm:pl-8">
+                      <div className="absolute left-1.5 sm:left-2.5 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-terra-500 border-2 border-white"></div>
+                      <div className="flex-1 rounded-[10px] border border-neutral-200 bg-white p-2.5 sm:p-3">
+                        <p className="text-xs sm:text-[13px] font-medium text-neutral-900">{activity.action}</p>
+                        <div className="flex items-center flex-wrap gap-1.5 sm:gap-2 mt-1 sm:mt-1.5">
+                          <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-neutral-400 flex-shrink-0" />
+                          <span className="text-[9px] sm:text-[10px] text-neutral-500">{formatDate(activity.date)}</span>
+                          <span className="text-[9px] sm:text-[10px] text-neutral-400">by {activity.user}</span>
                         </div>
                       </div>
                     </div>
@@ -791,18 +796,18 @@ export default function BookingDrawer({
 
         {/* AI Insights Tab */}
         {activeTab === 'insights' && (
-          <div className="space-y-4">
-              <h3 className="text-[13px] font-semibold text-neutral-800 flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-gold-500" />
+          <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-xs sm:text-[13px] font-semibold text-neutral-800 flex items-center gap-1.5 sm:gap-2">
+                <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gold-500 flex-shrink-0" />
                 AI-Powered Insights
               </h3>
               {aiInsights.length === 0 ? (
-                <div className="rounded-[10px] border border-neutral-200 bg-white p-8 text-center">
-                  <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center mx-auto mb-3">
-                    <Brain className="w-5 h-5 text-neutral-400" />
+                <div className="rounded-[10px] border border-neutral-200 bg-white p-5 sm:p-8 text-center">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-neutral-100 flex items-center justify-center mx-auto mb-2 sm:mb-3">
+                    <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-400" />
                   </div>
-                  <p className="text-[13px] font-medium text-neutral-500">No insights available</p>
-                  <p className="text-[11px] mt-1 text-neutral-400">AI insights will appear here when available</p>
+                  <p className="text-xs sm:text-[13px] font-medium text-neutral-500">No insights available</p>
+                  <p className="text-[10px] sm:text-[11px] mt-1 text-neutral-400">AI insights will appear here when available</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -825,9 +830,9 @@ export default function BookingDrawer({
                     const iconColorClass = iconColors[insight.type] || iconColors.info;
 
                     return (
-                      <div key={index} className={cn("flex items-start gap-3 p-3 rounded-[10px] border", colorClass)}>
-                        <Icon className={cn("w-4 h-4 mt-0.5 flex-shrink-0", iconColorClass)} />
-                        <p className="text-[13px] font-medium flex-1">{insight.message}</p>
+                      <div key={index} className={cn("flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-[10px] border", colorClass)}>
+                        <Icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5 flex-shrink-0", iconColorClass)} />
+                        <p className="text-xs sm:text-[13px] font-medium flex-1">{insight.message}</p>
                       </div>
                     );
                   })}

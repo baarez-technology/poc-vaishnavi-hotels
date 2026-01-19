@@ -11,6 +11,7 @@ import { useToast } from '../../../contexts/ToastContext';
 import AvailabilityCalendar from '../../../components/cbs/AvailabilityCalendar';
 import { ConfirmModal } from '../../../components/ui2/Modal';
 import { Button } from '../../../components/ui2/Button';
+import { MinStayConfigModal } from '../../../components/availability/MinStayConfigModal';
 import { cn } from '../../../lib/utils';
 import {
   Calendar, Download, TrendingUp, Percent, Home, CalendarX, Lock,
@@ -33,8 +34,15 @@ export default function CBSCalendar() {
   });
 
   const [isInsightsExpanded, setIsInsightsExpanded] = useState(false);
+  const [isMinStayModalOpen, setIsMinStayModalOpen] = useState(false);
 
   const dates = useMemo(() => getCalendarData(30), [getCalendarData]);
+
+  // Room types list for the min stay modal
+  const roomTypes = useMemo(() => [
+    'Minimalist Studio', 'Coastal Retreat', 'Urban Oasis', 'Sunset Vista',
+    'Pacific Suite', 'Wellness Suite', 'Family Sanctuary', 'Oceanfront Penthouse'
+  ], []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -51,6 +59,114 @@ export default function CBSCalendar() {
         updateAvailability(date, roomType, previousData);
       }
     });
+  };
+
+  // Handler for applying min stay restrictions from modal
+  const handleApplyMinStay = ({ startDate, endDate, roomConfigs }) => {
+    // Generate all dates in the range
+    const datesToUpdate: string[] = [];
+    let current = new Date(startDate);
+    const end = new Date(endDate);
+    while (current <= end) {
+      datesToUpdate.push(current.toISOString().split('T')[0]);
+      current.setDate(current.getDate() + 1);
+    }
+
+    // Apply min stay for each room type across all dates
+    let totalUpdates = 0;
+    roomConfigs.forEach(({ roomType, minStay }) => {
+      datesToUpdate.forEach(date => {
+        updateAvailability(date, roomType, {
+          restrictions: { minStay }
+        });
+        totalUpdates++;
+      });
+    });
+
+    success(`Minimum stay updated for ${roomConfigs.length} room types across ${datesToUpdate.length} days`);
+    setIsMinStayModalOpen(false);
+  };
+
+  // Helper: Get weekend dates for next 30 days
+  const getWeekendDates = () => {
+    const weekendDates: string[] = [];
+    const today = new Date();
+    for (let i = 0; i < 30; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() + i);
+      const dayOfWeek = date.getDay();
+      if (dayOfWeek === 0 || dayOfWeek === 6) { // Sunday = 0, Saturday = 6
+        weekendDates.push(date.toISOString().split('T')[0]);
+      }
+    }
+    return weekendDates;
+  };
+
+  // Helper: Get all dates for next 30 days
+  const getAllDatesNext30Days = () => {
+    const allDates: string[] = [];
+    const today = new Date();
+    for (let i = 0; i < 30; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() + i);
+      allDates.push(date.toISOString().split('T')[0]);
+    }
+    return allDates;
+  };
+
+  // Handler: Close Weekends to Arrival (CTA)
+  const handleCloseWeekends = () => {
+    const weekendDates = getWeekendDates();
+    let totalUpdates = 0;
+
+    roomTypes.forEach(roomType => {
+      weekendDates.forEach(date => {
+        updateAvailability(date, roomType, {
+          restrictions: { cta: true } // Closed to Arrival
+        });
+        totalUpdates++;
+      });
+    });
+
+    success(`Closed ${weekendDates.length} weekend days to arrival for all room types`);
+  };
+
+  // Handler: Apply Weekend +15% Rate
+  const handleWeekendPremium = () => {
+    const weekendDates = getWeekendDates();
+    let totalUpdates = 0;
+
+    roomTypes.forEach(roomType => {
+      weekendDates.forEach(date => {
+        const currentData = availability[date]?.[roomType];
+        const currentRate = currentData?.rate || 200; // Default base rate
+        const newRate = Math.round(currentRate * 1.15); // +15%
+
+        updateAvailability(date, roomType, {
+          rate: newRate
+        });
+        totalUpdates++;
+      });
+    });
+
+    success(`Applied 15% weekend premium to ${weekendDates.length} days for all room types`);
+  };
+
+  // Handler: Stop Sell All
+  const handleStopSellAll = () => {
+    const allDates = getAllDatesNext30Days();
+    let totalUpdates = 0;
+
+    roomTypes.forEach(roomType => {
+      allDates.forEach(date => {
+        updateAvailability(date, roomType, {
+          restrictions: { stopSell: true }
+        });
+        totalUpdates++;
+      });
+    });
+
+    success(`Stop sell applied to all ${roomTypes.length} room types for next 30 days`);
   };
 
   const stats = useMemo(() => {
@@ -132,9 +248,9 @@ export default function CBSCalendar() {
       onClick: () => setConfirmDialog({
         isOpen: true,
         title: 'Close Weekends to Arrival',
-        message: 'This will prevent check-ins on all Saturdays and Sundays for the next 30 days.',
+        message: 'This will prevent check-ins on all Saturdays and Sundays for the next 30 days. This applies CTA (Closed to Arrival) restriction to all room types.',
         variant: 'warning',
-        onConfirm: () => success('Weekend CTA applied')
+        onConfirm: handleCloseWeekends
       })
     },
     {
@@ -145,9 +261,9 @@ export default function CBSCalendar() {
       onClick: () => setConfirmDialog({
         isOpen: true,
         title: 'Apply Weekend Rate',
-        message: 'This will increase rates by 15% for all weekends in the next 30 days.',
+        message: 'This will increase rates by 15% for all weekends (Saturdays and Sundays) in the next 30 days for all room types.',
         variant: 'primary',
-        onConfirm: () => success('Weekend premium applied')
+        onConfirm: handleWeekendPremium
       })
     },
     {
@@ -155,13 +271,7 @@ export default function CBSCalendar() {
       title: 'Min 2-Night',
       description: 'Set length restriction',
       accent: 'gold',
-      onClick: () => setConfirmDialog({
-        isOpen: true,
-        title: 'Set Minimum Stay',
-        message: 'This will require a minimum 2-night stay for all room types.',
-        variant: 'primary',
-        onConfirm: () => success('Minimum stay applied')
-      })
+      onClick: () => setIsMinStayModalOpen(true)
     },
     {
       icon: AlertTriangle,
@@ -171,9 +281,9 @@ export default function CBSCalendar() {
       onClick: () => setConfirmDialog({
         isOpen: true,
         title: 'Stop Sell All Rooms',
-        message: 'This will prevent ALL new bookings. This is a drastic action.',
+        message: 'This will prevent ALL new bookings for ALL room types for the next 30 days. This is a drastic action that blocks your entire inventory.',
         variant: 'danger',
-        onConfirm: () => success('Stop sell applied')
+        onConfirm: handleStopSellAll
       })
     }
   ];
@@ -491,6 +601,15 @@ export default function CBSCalendar() {
         variant={confirmDialog.variant}
         confirmText="Apply"
         cancelText="Cancel"
+      />
+
+      {/* Min Stay Configuration Modal */}
+      <MinStayConfigModal
+        isOpen={isMinStayModalOpen}
+        onClose={() => setIsMinStayModalOpen(false)}
+        roomTypes={roomTypes}
+        availability={availability}
+        onApply={handleApplyMinStay}
       />
     </div>
   );

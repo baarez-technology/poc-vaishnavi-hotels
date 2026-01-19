@@ -358,89 +358,92 @@ export default function CBSCalendar() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <main className="px-10 py-6">
+      <main className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6">
 
         {/* Page Header */}
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
               Availability
             </h1>
-            <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
-              Manage rates, inventory, and restrictions across all room types
+            <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">
+              Manage rates, inventory, and restrictions
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Button
               variant="outline"
               icon={Download}
               onClick={() => success('Exporting...')}
+              className="text-[12px] sm:text-[13px]"
             >
-              Export
+              <span className="hidden sm:inline">Export</span>
+              <span className="sm:hidden sr-only">Export</span>
             </Button>
             <Button
               variant="primary"
               icon={RefreshCw}
               onClick={() => setIsBulkUpdateOpen(true)}
             >
-              Bulk Update
+              <span className="hidden sm:inline">Bulk Update</span>
+              <span className="sm:hidden">Update</span>
             </Button>
           </div>
         </header>
 
         {/* KPI Cards - Matching Dashboard Design */}
-        <section className="grid grid-cols-12 gap-6 mb-6">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-4 sm:mb-6">
           {kpiCards.map((kpi, index) => {
             const isPositive = kpi.changeType === 'positive';
             return (
               <div
                 key={index}
-                className="col-span-12 sm:col-span-6 lg:col-span-3 rounded-[10px] bg-white p-6"
+                className="rounded-[10px] bg-white p-4 sm:p-6"
               >
                 {/* Header with Icon */}
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
                   <div className={cn(
-                    "w-8 h-8 rounded-lg flex items-center justify-center",
+                    "w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center",
                     kpi.accent === 'terra' && 'bg-terra-50',
                     kpi.accent === 'sage' && 'bg-sage-50',
                     kpi.accent === 'gold' && 'bg-gold-50',
                     kpi.accent === 'ocean' && 'bg-ocean-50'
                   )}>
                     <kpi.icon className={cn(
-                      "w-4 h-4",
+                      "w-3.5 h-3.5 sm:w-4 sm:h-4",
                       kpi.accent === 'terra' && 'text-terra-600',
                       kpi.accent === 'sage' && 'text-sage-600',
                       kpi.accent === 'gold' && 'text-gold-600',
                       kpi.accent === 'ocean' && 'text-ocean-600'
                     )} />
                   </div>
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+                  <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
                     {kpi.title}
                   </p>
                 </div>
 
                 {/* Value */}
-                <p className="text-[28px] font-semibold tracking-tight text-neutral-900 mb-2">
+                <p className="text-xl sm:text-[28px] font-semibold tracking-tight text-neutral-900 mb-1 sm:mb-2">
                   {kpi.value}
                 </p>
 
                 {/* Comparison */}
                 <div className="flex items-center justify-between">
-                  <p className="text-[11px] text-neutral-400 font-medium">
+                  <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium truncate">
                     {kpi.subtitle || 'vs Last Month'}
                   </p>
                   {kpi.change && (
                     <div className={cn(
-                      'flex items-center gap-1 text-[11px] font-semibold',
+                      'flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-[11px] font-semibold flex-shrink-0',
                       isPositive
                         ? 'text-sage-600'
                         : kpi.changeType === 'negative'
                           ? 'text-rose-600'
                           : 'text-neutral-500'
                     )}>
-                      {isPositive && <ArrowUpRight className="w-3.5 h-3.5" />}
-                      {kpi.changeType === 'negative' && <ArrowDownRight className="w-3.5 h-3.5" />}
-                      {kpi.change}
+                      {isPositive && <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
+                      {kpi.changeType === 'negative' && <ArrowDownRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
+                      <span className="hidden sm:inline">{kpi.change}</span>
                     </div>
                   )}
                 </div>
@@ -450,33 +453,35 @@ export default function CBSCalendar() {
         </section>
 
         {/* Today's Activity - Horizontal Stats Strip */}
-        <section className="grid grid-cols-12 gap-6 mb-6">
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-4 sm:mb-6">
           {/* Arrivals */}
-          <div className="col-span-3 rounded-[10px] bg-white p-5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-sage-100 flex items-center justify-center">
-              <LogIn className="w-6 h-6 text-sage-600" />
+          <div className="rounded-[10px] bg-white p-3 sm:p-5 flex items-center gap-2.5 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-sage-100 flex items-center justify-center flex-shrink-0">
+              <LogIn className="w-5 h-5 sm:w-6 sm:h-6 text-sage-600" />
             </div>
-            <div>
-              <p className="text-2xl font-semibold text-neutral-900 tracking-tight">
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-semibold text-neutral-900 tracking-tight">
                 {todayStats.arrivals}
               </p>
-              <p className="text-[11px] text-neutral-400 font-medium uppercase tracking-wider">
-                Arrivals Today
+              <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium uppercase tracking-wider truncate">
+                <span className="hidden sm:inline">Arrivals Today</span>
+                <span className="sm:hidden">Arrivals</span>
               </p>
             </div>
           </div>
 
           {/* Departures */}
-          <div className="col-span-3 rounded-[10px] bg-white p-5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-ocean-100 flex items-center justify-center">
-              <LogOut className="w-6 h-6 text-ocean-600" />
+          <div className="rounded-[10px] bg-white p-3 sm:p-5 flex items-center gap-2.5 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-ocean-100 flex items-center justify-center flex-shrink-0">
+              <LogOut className="w-5 h-5 sm:w-6 sm:h-6 text-ocean-600" />
             </div>
-            <div>
-              <p className="text-2xl font-semibold text-neutral-900 tracking-tight">
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-semibold text-neutral-900 tracking-tight">
                 {todayStats.departures}
               </p>
-              <p className="text-[11px] text-neutral-400 font-medium uppercase tracking-wider">
-                Departures Today
+              <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium uppercase tracking-wider truncate">
+                <span className="hidden sm:inline">Departures Today</span>
+                <span className="sm:hidden">Departs</span>
               </p>
             </div>
           </div>
@@ -513,29 +518,29 @@ export default function CBSCalendar() {
         </section>
 
         {/* AI Insights */}
-        <section className="rounded-[10px] bg-white overflow-hidden mb-6">
+        <section className="rounded-[10px] bg-white overflow-hidden mb-4 sm:mb-6">
           <button
             onClick={() => setIsInsightsExpanded(!isInsightsExpanded)}
-            className="w-full px-6 py-5 flex items-center justify-between hover:bg-neutral-50/50 transition-colors"
+            className="w-full px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between hover:bg-neutral-50/50 transition-colors"
           >
             <div className="text-left">
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-neutral-800">
+                <h3 className="text-[13px] sm:text-sm font-semibold text-neutral-800">
                   AI Revenue Insights
                 </h3>
-                <span className="px-2 py-0.5 rounded-lg text-[9px] font-semibold uppercase tracking-wider bg-gold-50 text-gold-600">
+                <span className="px-1.5 sm:px-2 py-0.5 rounded-lg text-[8px] sm:text-[9px] font-semibold uppercase tracking-wider bg-gold-50 text-gold-600">
                   Smart
                 </span>
               </div>
-              <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
+              <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">
                 Personalized recommendations
               </p>
             </div>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-neutral-50">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-neutral-50 flex-shrink-0">
               {isInsightsExpanded ? (
-                <ChevronUp className="w-4 h-4 text-neutral-400" />
+                <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400" />
               ) : (
-                <ChevronDown className="w-4 h-4 text-neutral-400" />
+                <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400" />
               )}
             </div>
           </button>
@@ -543,7 +548,7 @@ export default function CBSCalendar() {
           <div className={`transition-all duration-300 ease-out overflow-hidden ${
             isInsightsExpanded ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
           }`}>
-            <div className="px-6 pb-6 pt-2 space-y-2.5 border-t border-neutral-100">
+            <div className="px-4 sm:px-6 pb-4 sm:pb-6 pt-2 space-y-2 sm:space-y-2.5 border-t border-neutral-100">
               {stats.occupancyRate > 80 && (
                 <div className="flex items-start gap-3 p-4 rounded-lg bg-sage-50">
                   <div className="w-1.5 h-1.5 rounded-full bg-sage-500 mt-1.5 flex-shrink-0" />
@@ -593,46 +598,46 @@ export default function CBSCalendar() {
         </section>
 
         {/* Quick Actions */}
-        <section className="mb-6">
-          <div className="mb-4">
-            <h3 className="text-sm font-semibold text-neutral-800">Quick Actions</h3>
-            <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
-              Bulk operations for efficient inventory management
+        <section className="mb-4 sm:mb-6">
+          <div className="mb-3 sm:mb-4">
+            <h3 className="text-[13px] sm:text-sm font-semibold text-neutral-800">Quick Actions</h3>
+            <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">
+              Bulk operations for inventory management
             </p>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             {quickActions.map((action, index) => {
               return (
                 <button
                   key={index}
                   onClick={action.onClick}
-                  className="group flex items-center gap-4 p-4 rounded-[10px] bg-white"
+                  className="group flex items-center gap-2.5 sm:gap-4 p-3 sm:p-4 rounded-[10px] bg-white"
                 >
                   <div className={cn(
-                    "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
+                    "w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0",
                     action.accent === 'terra' && 'bg-terra-50',
                     action.accent === 'ocean' && 'bg-ocean-50',
                     action.accent === 'gold' && 'bg-gold-50',
                     action.accent === 'rose' && 'bg-rose-50'
                   )}>
                     <action.icon className={cn(
-                      "w-5 h-5",
+                      "w-4 h-4 sm:w-5 sm:h-5",
                       action.accent === 'terra' && 'text-terra-600',
                       action.accent === 'ocean' && 'text-ocean-600',
                       action.accent === 'gold' && 'text-gold-600',
                       action.accent === 'rose' && 'text-rose-600'
                     )} />
                   </div>
-                  <div className="flex-1 text-left">
-                    <p className="text-[13px] font-semibold text-neutral-800 mb-0.5">
+                  <div className="flex-1 text-left min-w-0">
+                    <p className="text-[12px] sm:text-[13px] font-semibold text-neutral-800 mb-0.5 truncate">
                       {action.title}
                     </p>
-                    <p className="text-[11px] text-neutral-500 font-medium">
+                    <p className="text-[10px] sm:text-[11px] text-neutral-500 font-medium truncate hidden sm:block">
                       {action.description}
                     </p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-neutral-300 flex-shrink-0" />
+                  <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-300 flex-shrink-0 hidden sm:block" />
                 </button>
               );
             })}

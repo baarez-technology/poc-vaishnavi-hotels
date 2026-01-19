@@ -179,21 +179,21 @@ export default function BulkAssignModal({
     <div className="space-y-3">
       {/* Duplicate Warning */}
       {showDuplicateWarning && duplicateRooms.length > 0 && (
-        <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div className="p-3 sm:p-4 rounded-lg bg-amber-50 border border-amber-200">
+          <div className="flex items-start gap-2 sm:gap-3">
+            <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="font-semibold text-amber-800 text-[13px] mb-1">
+              <h4 className="font-semibold text-amber-800 text-[12px] sm:text-[13px] mb-1">
                 Duplicate Assignment Detected
               </h4>
-              <p className="text-[12px] text-amber-700 mb-2">
+              <p className="text-[11px] sm:text-[12px] text-amber-700 mb-2">
                 The following rooms are already assigned to this housekeeper:
               </p>
               <div className="flex flex-wrap gap-1 mb-3">
                 {duplicateRooms.map((roomNum, idx) => (
                   <span
                     key={idx}
-                    className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-[11px] font-medium"
+                    className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-[10px] sm:text-[11px] font-medium"
                   >
                     {roomNum}
                   </span>
@@ -202,21 +202,21 @@ export default function BulkAssignModal({
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={handleCancelDuplicate}
-                  className="px-3 py-1.5 text-[11px] font-medium text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors"
+                  className="px-2.5 sm:px-3 py-1.5 text-[10px] sm:text-[11px] font-medium text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors"
                 >
                   Cancel
                 </button>
                 {checkForDuplicates().newRooms.length > 0 && (
                   <button
                     onClick={handleAssignNewOnly}
-                    className="px-3 py-1.5 text-[11px] font-medium text-amber-700 bg-amber-100 border border-amber-300 rounded-lg hover:bg-amber-200 transition-colors"
+                    className="px-2.5 sm:px-3 py-1.5 text-[10px] sm:text-[11px] font-medium text-amber-700 bg-amber-100 border border-amber-300 rounded-lg hover:bg-amber-200 transition-colors"
                   >
                     Assign New Only ({checkForDuplicates().newRooms.length})
                   </button>
                 )}
                 <button
                   onClick={handleAssign}
-                  className="px-3 py-1.5 text-[11px] font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors"
+                  className="px-2.5 sm:px-3 py-1.5 text-[10px] sm:text-[11px] font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors"
                 >
                   Assign Anyway
                 </button>
@@ -300,7 +300,7 @@ export default function BulkAssignModal({
                 <div
                   key={room.id}
                   onClick={() => handleToggleRoom(room.id)}
-                  className={`flex items-center gap-3 p-4 rounded-lg cursor-pointer transition-all ${
+                  className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg cursor-pointer transition-all ${
                     isSelected
                       ? 'bg-terra-50 border-2 border-terra-300'
                       : 'bg-neutral-50 border border-neutral-100 hover:border-neutral-200'
@@ -312,16 +312,16 @@ export default function BulkAssignModal({
                     {isSelected && <Check className="w-3 h-3 text-white" />}
                   </div>
 
-                  <div className="w-10 h-10 rounded-lg bg-terra-100 flex items-center justify-center text-terra-600 font-bold text-[13px] flex-shrink-0">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-terra-100 flex items-center justify-center text-terra-600 font-bold text-[12px] sm:text-[13px] flex-shrink-0">
                     {room.roomNumber}
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <p className="font-semibold text-neutral-900 text-[13px]">Room {room.roomNumber}</p>
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                      <p className="font-semibold text-neutral-900 text-[12px] sm:text-[13px]">Room {room.roomNumber}</p>
                       {getStatusBadge(room.status)}
                     </div>
-                    <div className="flex items-center gap-2.5 text-[11px] text-neutral-500 font-medium">
+                    <div className="flex items-center gap-2 sm:gap-2.5 text-[10px] sm:text-[11px] text-neutral-500 font-medium flex-wrap">
                       <span>{room.type}</span>
                       <span className="flex items-center gap-1">
                         <MapPin className="w-3 h-3" />
@@ -335,12 +335,12 @@ export default function BulkAssignModal({
           </div>
 
           {rooms.length === 0 && (
-            <div className="p-8 rounded-lg bg-neutral-50 border border-neutral-100 text-center">
-              <div className="w-12 h-12 bg-white border border-neutral-200 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Users className="w-6 h-6 text-neutral-400" />
+            <div className="p-6 sm:p-8 rounded-lg bg-neutral-50 border border-neutral-100 text-center">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white border border-neutral-200 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-neutral-400" />
               </div>
-              <p className="text-[13px] font-semibold text-neutral-900">No rooms available</p>
-              <p className="text-[11px] text-neutral-500 mt-1">All rooms have been assigned</p>
+              <p className="text-[12px] sm:text-[13px] font-semibold text-neutral-900">No rooms available</p>
+              <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-1">All rooms have been assigned</p>
             </div>
           )}
         </div>

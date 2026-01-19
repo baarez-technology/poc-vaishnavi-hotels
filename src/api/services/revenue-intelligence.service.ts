@@ -484,6 +484,53 @@ export interface DashboardResponse {
   generated_at: string;
 }
 
+// Legacy DashboardData type for backward compatibility with RevenueDashboard component
+export interface DashboardSummary {
+  total_revenue_7d: number;
+  total_revenue_30d: number;
+  revenue_trend: number;
+  avg_occupancy: number;
+  occupancy_trend: number;
+  avg_adr: number;
+  adr_trend: number;
+}
+
+export interface SegmentData {
+  segment_name: string;
+  revenue_contribution: number;
+  color?: string;
+}
+
+export interface CompetitorInsights {
+  avg_gap_percent: number;
+  underpriced_days: number;
+  overpriced_days: number;
+  potential_revenue_loss?: number;
+}
+
+export interface PickupSummary {
+  strong_days: number;
+  critical_days: number;
+  total_remaining: number;
+}
+
+export interface Recommendation {
+  id: string;
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  potential_revenue: number;
+  title?: string;
+  description?: string;
+}
+
+export interface DashboardData {
+  summary: DashboardSummary;
+  forecast_data: ForecastItem[];
+  high_impact_days: ForecastItem[];
+  segment_data: SegmentData[];
+  competitor_insights: CompetitorInsights;
+  pickup_summary: PickupSummary;
+}
+
 // ==================== API SERVICE ====================
 
 const BASE_URL = '/api/v1/revenue-intelligence';
@@ -677,6 +724,107 @@ export const revenueIntelligenceService = {
       const response = await apiClient.get<DashboardResponse>(`${BASE_URL}/dashboard`);
       return response.data;
     });
+  },
+
+  /**
+   * Get dashboard data in legacy format for RevenueDashboard component
+   * Transforms the new API response to the expected format
+   */
+  async getDashboardLegacy(): Promise<DashboardData> {
+    return requestCache.get('dashboard-legacy', async () => {
+      // Fetch data from multiple endpoints to assemble legacy dashboard format
+      const [kpiSummary, forecastRes, competitorInsights, pickupMetrics, segmentPerformance] = await Promise.all([
+        this.getKPISummary().catch(() => null),
+        this.getForecast().catch(() => ({ forecasts: [] })),
+        this.getCompetitorInsights().catch(() => null),
+        this.getPickupMetrics().catch(() => null),
+        this.getSegmentPerformance().catch(() => []),
+      ]);
+
+      // Transform KPI summary to legacy summary format
+      const summary: DashboardSummary = {
+        total_revenue_7d: kpiSummary?.next_7_days?.total_revenue || 0,
+        total_revenue_30d: kpiSummary?.next_30_days?.total_revenue || 0,
+        revenue_trend: kpiSummary?.week?.revenue_trend || 0,
+        avg_occupancy: kpiSummary?.week?.occupancy || 0,
+        occupancy_trend: kpiSummary?.week?.occupancy_trend || 0,
+        avg_adr: kpiSummary?.week?.adr || 0,
+        adr_trend: kpiSummary?.week?.adr_trend || 0,
+      };
+
+      // Transform forecast data
+      const forecast_data: ForecastItem[] = forecastRes?.forecasts || [];
+
+      // Get high impact days
+      const high_impact_days = forecast_data.filter(
+        day => day.demand_level === 'critical' || day.demand_level === 'high'
+      );
+
+      // Transform segment data
+      const segment_data: SegmentData[] = segmentPerformance?.map((seg, index) => ({
+        segment_name: seg.segmentName,
+        revenue_contribution: seg.revenueContribution,
+        color: ['#4E5840', '#A57865', '#C9A86C', '#6B8E8E', '#9E6E78'][index % 5],
+      })) || [];
+
+      // Transform competitor insights
+      const competitor_insights: CompetitorInsights = {
+        avg_gap_percent: competitorInsights?.market_averages?.avg_rate
+          ? Math.round(((competitorInsights.market_averages.avg_rate - (summary.avg_adr || 0)) / competitorInsights.market_averages.avg_rate) * 100)
+          : 0,
+        underpriced_days: 0,
+        overpriced_days: 0,
+        potential_revenue_loss: 0,
+      };
+
+      // Transform pickup summary
+      const pickup_summary: PickupSummary = {
+        strong_days: pickupMetrics?.summary?.strong_pace_days || 0,
+        critical_days: pickupMetrics?.summary?.critical_pace_days || 0,
+        total_remaining: pickupMetrics?.summary?.total_remaining_rooms || 0,
+      };
+
+      return {
+        summary,
+        forecast_data,
+        high_impact_days,
+        segment_data,
+        competitor_insights,
+        pickup_summary,
+      };
+    });
+  },
+
+  /**
+   * Get recommendations in legacy format
+   * Returns recommendations with potential_revenue field
+   */
+  async getRecommendations(): Promise<Recommendation[]> {
+    return requestCache.get('recommendations-legacy', async () => {
+      try {
+        const response = await this.getPricingRecommendations();
+        return (response?.recommendations || []).map((rec, index) => ({
+          id: `rec-${index}`,
+          priority: rec.priority,
+          potential_revenue: Math.round(Math.abs(rec.change_percent) * (rec.current_rate || 100)),
+          title: `Rate ${rec.change_percent > 0 ? 'Increase' : 'Decrease'} Recommended`,
+          description: rec.reasoning,
+        }));
+      } catch {
+        // Return empty array if API fails
+        return [];
+      }
+    });
+  },
+
+  /**
+   * Run all pricing rules (alias for executePricingRules)
+   */
+  async runAllRules(): Promise<ExecuteRulesResponse> {
+    const result = await this.executePricingRules();
+    // Invalidate all caches after running rules
+    requestCache.invalidate();
+    return result;
   },
 
   // ==================== PRICING RECOMMENDATIONS ACTIONS ====================

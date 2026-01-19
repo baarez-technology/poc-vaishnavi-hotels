@@ -78,11 +78,11 @@ export default function ManageSourcesDrawer({ isOpen, onClose, sourcesConfig, on
   };
 
   const footer = (
-    <div className="flex items-center justify-end gap-3 w-full">
-      <Button variant="outline" onClick={onClose}>
+    <div className="flex items-center justify-end gap-2 sm:gap-3 w-full">
+      <Button variant="outline" onClick={onClose} className="text-[12px] sm:text-[13px] px-3 sm:px-4 py-2">
         Cancel
       </Button>
-      <Button variant="primary" onClick={handleSave}>
+      <Button variant="primary" onClick={handleSave} className="text-[12px] sm:text-[13px] px-3 sm:px-4 py-2">
         Save Changes
       </Button>
     </div>
@@ -97,49 +97,49 @@ export default function ManageSourcesDrawer({ isOpen, onClose, sourcesConfig, on
       maxWidth="max-w-xl"
       footer={footer}
     >
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {config.map((source) => {
           const platform = getPlatformConfig(source.platform);
           return (
             <div
               key={source.platform}
-              className={`rounded-[10px] border p-4 transition-colors ${
+              className={`rounded-[10px] border p-3 sm:p-4 transition-colors ${
                 source.enabled
                   ? 'bg-white border-terra-200'
                   : 'bg-neutral-50 border-neutral-200'
               }`}
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
+              <div className="flex items-start justify-between gap-3 mb-3 sm:mb-4">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                   <div
-                    className="w-11 h-11 rounded-[8px] flex items-center justify-center text-white font-bold text-base"
+                    className="w-9 h-9 sm:w-11 sm:h-11 rounded-[8px] flex items-center justify-center text-white font-bold text-sm sm:text-base flex-shrink-0"
                     style={{ backgroundColor: source.enabled ? platform.color : '#9CA3AF' }}
                   >
                     {platform.icon}
                   </div>
-                  <div>
-                    <p className="text-[14px] font-semibold text-neutral-900">{platform.name}</p>
-                    <div className="flex items-center gap-2 text-[11px] text-neutral-500 mt-0.5">
-                      <Clock className="w-3 h-3" />
-                      Last sync: {formatLastSync(source.lastSync)}
+                  <div className="min-w-0">
+                    <p className="text-[13px] sm:text-[14px] font-semibold text-neutral-900 truncate">{platform.name}</p>
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] text-neutral-500 mt-0.5">
+                      <Clock className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">Last sync: {formatLastSync(source.lastSync)}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Enable Toggle */}
-                <label className="flex items-center gap-2.5 cursor-pointer">
-                  <span className="text-[12px] text-neutral-600 font-medium">
+                <label className="flex items-center gap-1.5 sm:gap-2.5 cursor-pointer flex-shrink-0">
+                  <span className="text-[11px] sm:text-[12px] text-neutral-600 font-medium hidden sm:inline">
                     {source.enabled ? 'Enabled' : 'Disabled'}
                   </span>
                   <button
                     onClick={() => handleToggle(source.platform)}
-                    className={`relative w-11 h-6 rounded-full transition-colors ${
+                    className={`relative w-10 sm:w-11 h-5 sm:h-6 rounded-full transition-colors ${
                       source.enabled ? 'bg-terra-500' : 'bg-neutral-200'
                     }`}
                   >
                     <span
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
-                        source.enabled ? 'left-6' : 'left-1'
+                      className={`absolute top-0.5 sm:top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
+                        source.enabled ? 'left-5 sm:left-6' : 'left-0.5 sm:left-1'
                       }`}
                     />
                   </button>
@@ -147,10 +147,10 @@ export default function ManageSourcesDrawer({ isOpen, onClose, sourcesConfig, on
               </div>
 
               {source.enabled && (
-                <div className="space-y-4 pt-4 border-t border-neutral-100">
+                <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 border-t border-neutral-100">
                   {/* API Key */}
                   <div>
-                    <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <label className="text-[10px] sm:text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-1.5 sm:mb-2 flex items-center gap-1.5">
                       <Key className="w-3 h-3" />
                       API Key
                     </label>
@@ -164,7 +164,7 @@ export default function ManageSourcesDrawer({ isOpen, onClose, sourcesConfig, on
 
                   {/* Import Frequency */}
                   <div>
-                    <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                    <label className="text-[10px] sm:text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-1.5 sm:mb-2 flex items-center gap-1.5">
                       <RefreshCw className="w-3 h-3" />
                       Import Frequency
                     </label>
@@ -180,7 +180,7 @@ export default function ManageSourcesDrawer({ isOpen, onClose, sourcesConfig, on
                   </div>
 
                   {/* Test Connection Button */}
-                  <Button variant="ghost" size="sm" icon={Check}>
+                  <Button variant="ghost" size="sm" icon={Check} className="text-[11px] sm:text-[12px]">
                     Test Connection
                   </Button>
                 </div>
@@ -190,12 +190,12 @@ export default function ManageSourcesDrawer({ isOpen, onClose, sourcesConfig, on
         })}
 
         {/* Additional Connections */}
-        <div className="bg-neutral-50 rounded-[10px] p-4 border border-dashed border-neutral-300">
-          <div className="flex items-center gap-2 mb-2">
-            <Link2 className="w-4 h-4 text-neutral-500" />
-            <h3 className="text-[14px] font-semibold text-neutral-900">Connect Additional Sources</h3>
+        <div className="bg-neutral-50 rounded-[10px] p-3 sm:p-4 border border-dashed border-neutral-300">
+          <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
+            <Link2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-500" />
+            <h3 className="text-[13px] sm:text-[14px] font-semibold text-neutral-900">Connect Additional Sources</h3>
           </div>
-          <p className="text-[12px] text-neutral-600 mb-4">
+          <p className="text-[11px] sm:text-[12px] text-neutral-600 mb-3 sm:mb-4">
             Link your Google Business Profile or TripAdvisor account to automatically import reviews.
           </p>
           <div className="flex flex-wrap gap-2">

@@ -64,24 +64,24 @@ export default function GuestDrawer({
   };
 
   const drawerFooter = (
-    <div className="flex items-center gap-3 w-full">
+    <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full">
       {guest.status !== 'Blacklisted' && guest.status !== 'blacklisted' && (
         <Button
           variant="outline"
           onClick={() => onBlacklist(guest)}
-          className="text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300"
+          className="text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300 text-xs sm:text-sm"
         >
           Blacklist
         </Button>
       )}
-      <Button variant="outline" onClick={() => onMessage(guest)}>
+      <Button variant="outline" onClick={() => onMessage(guest)} className="text-xs sm:text-sm">
         Message
       </Button>
-      <Button variant="outline" onClick={() => onEdit(guest)}>
+      <Button variant="outline" onClick={() => onEdit(guest)} className="text-xs sm:text-sm">
         Edit
       </Button>
       {onViewProfile && (
-        <Button variant="primary" onClick={() => onViewProfile(guest)} className="flex-1">
+        <Button variant="primary" onClick={() => onViewProfile(guest)} className="flex-1 text-xs sm:text-sm">
           View Profile
         </Button>
       )}
@@ -153,7 +153,7 @@ export default function GuestDrawer({
           <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3">
             Guest Statistics
           </h3>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 xs:grid-cols-3 gap-3 sm:gap-4">
             <div className="p-4 bg-neutral-50 rounded-lg text-center">
               <p className="text-2xl font-bold text-neutral-900">{guest.totalStays || 0}</p>
               <p className="text-[11px] text-neutral-500 mt-1">Total Stays</p>

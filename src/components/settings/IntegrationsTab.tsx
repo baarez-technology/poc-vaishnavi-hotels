@@ -81,19 +81,19 @@ export default function IntegrationsTab() {
   );
 
   return (
-    <div className="max-w-4xl space-y-8">
+    <div className="max-w-4xl space-y-6 sm:space-y-8">
       {/* Header */}
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-neutral-900">
+          <h1 className="text-base sm:text-lg font-semibold text-neutral-900">
             Integrations
           </h1>
-          <p className="text-sm text-neutral-500 mt-1">
+          <p className="text-[12px] sm:text-sm text-neutral-500 mt-1">
             Connect external services and manage API configurations
           </p>
         </div>
         {saved && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-sage-50 text-sage-600 rounded-lg">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-sage-50 text-sage-600 rounded-lg self-start">
             <Check className="w-3.5 h-3.5" />
             <span className="text-xs font-medium">Saved</span>
           </div>
@@ -102,17 +102,17 @@ export default function IntegrationsTab() {
 
       {/* Channel Manager */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Globe className="w-5 h-5 text-neutral-400" />
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <div className="flex items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Globe className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-400 flex-shrink-0" />
               <div>
-                <h2 className="text-sm font-medium text-neutral-900">Channel Manager</h2>
-                <p className="text-xs text-neutral-500 mt-0.5">Manage room availability across OTAs</p>
+                <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">Channel Manager</h2>
+                <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Manage room availability across OTAs</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className={`px-2 py-1 rounded-md text-xs font-medium ${
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-medium hidden sm:inline ${
                 integrations.channelManager.enabled
                   ? 'bg-sage-50 text-sage-600'
                   : 'bg-neutral-100 text-neutral-500'
@@ -126,8 +126,8 @@ export default function IntegrationsTab() {
             </div>
           </div>
         </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className={labelClass}>Provider</label>
               <SelectDropdown
@@ -172,17 +172,17 @@ export default function IntegrationsTab() {
 
       {/* Payment Gateway */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <CreditCard className="w-5 h-5 text-neutral-400" />
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <div className="flex items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-400 flex-shrink-0" />
               <div>
-                <h2 className="text-sm font-medium text-neutral-900">Payment Gateway</h2>
-                <p className="text-xs text-neutral-500 mt-0.5">Process payments securely</p>
+                <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">Payment Gateway</h2>
+                <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Process payments securely</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className={`px-2 py-1 rounded-md text-xs font-medium ${
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-medium hidden sm:inline ${
                 integrations.paymentGateway.enabled
                   ? 'bg-sage-50 text-sage-600'
                   : 'bg-neutral-100 text-neutral-500'
@@ -196,8 +196,8 @@ export default function IntegrationsTab() {
             </div>
           </div>
         </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className={labelClass}>Provider</label>
               <SelectDropdown
@@ -260,17 +260,17 @@ export default function IntegrationsTab() {
 
       {/* Email Provider */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Mail className="w-5 h-5 text-neutral-400" />
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <div className="flex items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-400 flex-shrink-0" />
               <div>
-                <h2 className="text-sm font-medium text-neutral-900">Email Provider</h2>
-                <p className="text-xs text-neutral-500 mt-0.5">Transactional email delivery</p>
+                <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">Email Provider</h2>
+                <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Transactional email delivery</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className={`px-2 py-1 rounded-md text-xs font-medium ${
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-medium hidden sm:inline ${
                 integrations.emailProvider.enabled
                   ? 'bg-sage-50 text-sage-600'
                   : 'bg-neutral-100 text-neutral-500'
@@ -284,8 +284,8 @@ export default function IntegrationsTab() {
             </div>
           </div>
         </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className={labelClass}>Provider</label>
               <SelectDropdown
@@ -339,17 +339,17 @@ export default function IntegrationsTab() {
 
       {/* SMS Provider */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <MessageSquare className="w-5 h-5 text-neutral-400" />
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <div className="flex items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-400 flex-shrink-0" />
               <div>
-                <h2 className="text-sm font-medium text-neutral-900">SMS Provider</h2>
-                <p className="text-xs text-neutral-500 mt-0.5">SMS notifications and alerts</p>
+                <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">SMS Provider</h2>
+                <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">SMS notifications and alerts</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className={`px-2 py-1 rounded-md text-xs font-medium ${
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-medium hidden sm:inline ${
                 integrations.smsProvider.enabled
                   ? 'bg-sage-50 text-sage-600'
                   : 'bg-neutral-100 text-neutral-500'
@@ -363,8 +363,8 @@ export default function IntegrationsTab() {
             </div>
           </div>
         </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className={labelClass}>Provider</label>
               <SelectDropdown
@@ -427,26 +427,26 @@ export default function IntegrationsTab() {
 
       {/* OTA Sync */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <h2 className="text-sm font-medium text-neutral-900">OTA Sync Settings</h2>
-          <p className="text-xs text-neutral-500 mt-0.5">Configure sync intervals per platform</p>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">OTA Sync Settings</h2>
+          <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Configure sync intervals per platform</p>
         </div>
-        <div className="p-6">
-          <div className="space-y-3">
+        <div className="p-4 sm:p-6">
+          <div className="space-y-2 sm:space-y-3">
             {Object.entries(integrations.otaSync).map(([ota, config]) => (
-              <div key={ota} className="flex items-center justify-between p-4 rounded-lg border border-neutral-100 hover:border-neutral-200 transition-colors">
-                <div className="flex items-center gap-3">
+              <div key={ota} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg border border-neutral-100 hover:border-neutral-200 transition-colors">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <input
                     type="checkbox"
                     checked={config.enabled}
                     onChange={(e) => updateOTA(ota, { enabled: e.target.checked })}
                     className="w-4 h-4 rounded border-neutral-300 text-terra-500 focus:ring-terra-500"
                   />
-                  <div>
-                    <span className="text-sm font-medium text-neutral-900">
+                  <div className="flex items-center flex-wrap gap-2">
+                    <span className="text-[12px] sm:text-sm font-medium text-neutral-900">
                       {ota === 'bookingCom' ? 'Booking.com' : ota === 'mmt' ? 'MakeMyTrip' : ota.charAt(0).toUpperCase() + ota.slice(1)}
                     </span>
-                    <span className={`ml-3 px-2 py-0.5 rounded text-xs font-medium ${
+                    <span className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium ${
                       config.enabled
                         ? 'bg-sage-50 text-sage-600'
                         : 'bg-neutral-100 text-neutral-500'
@@ -455,17 +455,17 @@ export default function IntegrationsTab() {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-neutral-500">Sync every</span>
+                <div className="flex items-center gap-2 ml-6 sm:ml-0">
+                  <span className="text-[10px] sm:text-xs text-neutral-500">Sync every</span>
                   <input
                     type="number"
                     value={config.syncInterval}
                     onChange={(e) => updateOTA(ota, { syncInterval: parseInt(e.target.value) })}
                     min="5"
                     max="120"
-                    className="w-16 h-10 px-2 rounded-lg border border-neutral-200 text-sm text-center hover:border-neutral-300 focus:border-terra-500 focus:ring-2 focus:ring-terra-500/20 focus:ring-0 focus:outline-none transition-colors"
+                    className="w-14 sm:w-16 h-8 sm:h-10 px-2 rounded-lg border border-neutral-200 text-[12px] sm:text-sm text-center hover:border-neutral-300 focus:border-terra-500 focus:ring-2 focus:ring-terra-500/20 focus:ring-0 focus:outline-none transition-colors"
                   />
-                  <span className="text-xs text-neutral-500">min</span>
+                  <span className="text-[10px] sm:text-xs text-neutral-500">min</span>
                 </div>
               </div>
             ))}
@@ -475,16 +475,16 @@ export default function IntegrationsTab() {
 
       {/* Webhooks */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <div className="flex items-center gap-3">
-            <Link2 className="w-5 h-5 text-neutral-400" />
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link2 className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-400 flex-shrink-0" />
             <div>
-              <h2 className="text-sm font-medium text-neutral-900">Webhook URLs</h2>
-              <p className="text-xs text-neutral-500 mt-0.5">Receive real-time event notifications</p>
+              <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">Webhook URLs</h2>
+              <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Receive real-time event notifications</p>
             </div>
           </div>
         </div>
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
           {Object.entries(integrations.webhooks).map(([key, url]) => (
             <div key={key}>
               <label className={`${labelClass} capitalize`}>
@@ -504,17 +504,17 @@ export default function IntegrationsTab() {
 
       {/* Security */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Lock className="w-5 h-5 text-neutral-400" />
+        <div className="px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Lock className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-400 flex-shrink-0" />
               <div>
-                <h2 className="text-sm font-medium text-neutral-900">Encryption</h2>
-                <p className="text-xs text-neutral-500 mt-0.5">Encrypt sensitive data in transit</p>
+                <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">Encryption</h2>
+                <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Encrypt sensitive data in transit</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className={`px-2 py-1 rounded-md text-xs font-medium ${
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-medium hidden sm:inline ${
                 integrations.encryption
                   ? 'bg-sage-50 text-sage-600'
                   : 'bg-neutral-100 text-neutral-500'

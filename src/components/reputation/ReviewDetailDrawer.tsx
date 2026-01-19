@@ -37,7 +37,7 @@ const StarRating = ({ rating }: { rating: number }) => {
       {[...Array(5)].map((_, i) => (
         <Star
           key={i}
-          className={`w-4 h-4 ${
+          className={`w-3 h-3 sm:w-4 sm:h-4 ${
             i < fullStars
               ? 'text-gold-500 fill-gold-500'
               : i === fullStars && hasHalf
@@ -119,27 +119,27 @@ export default function ReviewDetailDrawer({
   };
 
   const header = (
-    <div className="flex items-center gap-4">
-      <div className="w-12 h-12 rounded-[10px] bg-terra-500 flex items-center justify-center text-white text-lg font-bold">
+    <div className="flex items-center gap-3 sm:gap-4">
+      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-[10px] bg-terra-500 flex items-center justify-center text-white text-sm sm:text-lg font-bold flex-shrink-0">
         {review.guest?.split(' ').filter(n => n).map(n => n[0]).join('').substring(0, 2) || 'G'}
       </div>
       <div className="flex-1 min-w-0">
-        <h2 className="text-lg font-semibold text-neutral-900 tracking-tight">{review.guest}</h2>
-        <div className="flex items-center gap-2 mt-1">
+        <h2 className="text-base sm:text-lg font-semibold text-neutral-900 tracking-tight truncate">{review.guest}</h2>
+        <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1 flex-wrap">
           <span
-            className="px-2 py-0.5 text-[10px] font-bold text-white rounded"
+            className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-white rounded"
             style={{ backgroundColor: sourceColor }}
           >
             {review.source}
           </span>
-          <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${sentimentStyle.bg} ${sentimentStyle.text}`}>
+          <span className={`px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-semibold ${sentimentStyle.bg} ${sentimentStyle.text}`}>
             {sentimentStyle.label}
           </span>
         </div>
         {review.email && (
-          <p className="text-[11px] text-neutral-400 mt-1 flex items-center gap-1">
-            <Mail className="w-3 h-3" />
-            {review.email}
+          <p className="text-[10px] sm:text-[11px] text-neutral-400 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+            <Mail className="w-3 h-3 flex-shrink-0" />
+            <span className="truncate">{review.email}</span>
           </p>
         )}
       </div>
@@ -147,21 +147,22 @@ export default function ReviewDetailDrawer({
   );
 
   const footer = !review.responded ? (
-    <div className="flex items-center justify-end gap-3 w-full">
-      <Button variant="outline" onClick={onClose}>
+    <div className="flex items-center justify-end gap-2 sm:gap-3 w-full">
+      <Button variant="outline" onClick={onClose} className="text-[12px] sm:text-[13px] px-3 sm:px-4 py-2">
         Cancel
       </Button>
       <Button
         variant="primary"
         onClick={handleSend}
         disabled={!responseText.trim()}
+        className="text-[12px] sm:text-[13px] px-3 sm:px-4 py-2"
       >
         Send Response
       </Button>
     </div>
   ) : (
     <div className="flex items-center justify-end w-full">
-      <Button variant="ghost" onClick={onClose}>
+      <Button variant="ghost" onClick={onClose} className="text-[12px] sm:text-[13px] px-3 sm:px-4 py-2">
         Close
       </Button>
     </div>
@@ -175,40 +176,40 @@ export default function ReviewDetailDrawer({
       maxWidth="max-w-xl"
       footer={footer}
     >
-      <div className="space-y-5">
+      <div className="space-y-4 sm:space-y-5">
         {/* Rating & Sentiment */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-[10px]">
-            <div className="w-9 h-9 rounded-[8px] bg-gold-100 flex items-center justify-center">
-              <Star className="w-4 h-4 text-gold-600" />
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-neutral-50 rounded-[10px]">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-[8px] bg-gold-100 flex items-center justify-center flex-shrink-0">
+              <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gold-600" />
             </div>
-            <div>
-              <p className="text-[11px] text-neutral-500">Rating</p>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-[11px] text-neutral-500">Rating</p>
+              <div className="flex items-center gap-1 sm:gap-2">
                 <StarRating rating={review.rating} />
-                <span className="text-[13px] font-semibold text-neutral-900">{review.rating}/5</span>
+                <span className="text-[12px] sm:text-[13px] font-semibold text-neutral-900">{review.rating}/5</span>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-[10px]">
-            <div className="w-9 h-9 rounded-[8px] bg-terra-100 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-terra-600" />
+          <div className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-neutral-50 rounded-[10px]">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-[8px] bg-terra-100 flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-terra-600" />
             </div>
-            <div>
-              <p className="text-[11px] text-neutral-500">Sentiment</p>
-              <p className="text-[13px] font-semibold text-neutral-900">{review.sentiment}/100</p>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-[11px] text-neutral-500">Sentiment</p>
+              <p className="text-[12px] sm:text-[13px] font-semibold text-neutral-900">{review.sentiment}/100</p>
             </div>
           </div>
         </div>
 
         {/* Date */}
-        <div className="flex items-center gap-2 text-[13px] text-neutral-500">
-          <Calendar className="w-4 h-4" />
-          <span>
+        <div className="flex items-center gap-2 text-[12px] sm:text-[13px] text-neutral-500">
+          <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+          <span className="truncate">
             {new Date(review.date).toLocaleDateString('en-US', {
-              weekday: 'long',
+              weekday: 'short',
               year: 'numeric',
-              month: 'long',
+              month: 'short',
               day: 'numeric'
             })}
           </span>
@@ -216,15 +217,15 @@ export default function ReviewDetailDrawer({
 
         {/* Review Title */}
         <div>
-          <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2">Review Title</p>
-          <p className="text-[16px] font-medium text-neutral-900">"{review.title}"</p>
+          <p className="text-[10px] sm:text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-1.5 sm:mb-2">Review Title</p>
+          <p className="text-[14px] sm:text-[16px] font-medium text-neutral-900">"{review.title}"</p>
         </div>
 
         {/* Full Review */}
         <div>
-          <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2">Full Review</p>
-          <div className="bg-neutral-50 rounded-[10px] p-4">
-            <p className="text-[13px] text-neutral-700 whitespace-pre-wrap leading-relaxed">
+          <p className="text-[10px] sm:text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-1.5 sm:mb-2">Full Review</p>
+          <div className="bg-neutral-50 rounded-[10px] p-3 sm:p-4">
+            <p className="text-[12px] sm:text-[13px] text-neutral-700 whitespace-pre-wrap leading-relaxed">
               {review.review}
             </p>
           </div>
@@ -233,12 +234,12 @@ export default function ReviewDetailDrawer({
         {/* Keywords */}
         {review.keywords && review.keywords.length > 0 && (
           <div>
-            <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2">Detected Keywords</p>
-            <div className="flex flex-wrap gap-2">
+            <p className="text-[10px] sm:text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-1.5 sm:mb-2">Detected Keywords</p>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {review.keywords.map((keyword, index) => (
                 <span
                   key={index}
-                  className="px-3 py-1 bg-ocean-100 text-ocean-700 text-[11px] font-medium rounded-full"
+                  className="px-2 sm:px-3 py-0.5 sm:py-1 bg-ocean-100 text-ocean-700 text-[10px] sm:text-[11px] font-medium rounded-full"
                 >
                   {keyword}
                 </span>
@@ -249,26 +250,26 @@ export default function ReviewDetailDrawer({
 
         {/* CRM Guest Profile */}
         {guestCRMData && (
-          <div className="bg-sage-50 rounded-[10px] p-4 border border-sage-100">
-            <div className="flex items-center gap-2 mb-3">
-              <User className="w-4 h-4 text-sage-700" />
-              <p className="text-[13px] font-semibold text-sage-800">CRM Guest Profile</p>
+          <div className="bg-sage-50 rounded-[10px] p-3 sm:p-4 border border-sage-100">
+            <div className="flex items-center gap-2 mb-2 sm:mb-3">
+              <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sage-700" />
+              <p className="text-[12px] sm:text-[13px] font-semibold text-sage-800">CRM Guest Profile</p>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               <div>
-                <p className="text-[11px] text-neutral-500">Total Stays</p>
-                <p className="text-[18px] font-bold text-neutral-900">{guestCRMData.totalStays || 0}</p>
+                <p className="text-[10px] sm:text-[11px] text-neutral-500">Total Stays</p>
+                <p className="text-[16px] sm:text-[18px] font-bold text-neutral-900">{guestCRMData.totalStays || 0}</p>
               </div>
               <div>
-                <p className="text-[11px] text-neutral-500">LTV</p>
-                <p className="text-[18px] font-bold text-sage-700">${(guestCRMData.ltv || 0).toLocaleString()}</p>
+                <p className="text-[10px] sm:text-[11px] text-neutral-500">LTV</p>
+                <p className="text-[16px] sm:text-[18px] font-bold text-sage-700">${(guestCRMData.ltv || 0).toLocaleString()}</p>
               </div>
               <div>
-                <p className="text-[11px] text-neutral-500">Segment</p>
-                <p className="text-[13px] font-semibold text-neutral-900">{guestCRMData.segment || 'N/A'}</p>
+                <p className="text-[10px] sm:text-[11px] text-neutral-500">Segment</p>
+                <p className="text-[12px] sm:text-[13px] font-semibold text-neutral-900">{guestCRMData.segment || 'N/A'}</p>
               </div>
             </div>
-            <button className="mt-3 flex items-center gap-1 text-[11px] font-medium text-sage-700 hover:underline">
+            <button className="mt-2 sm:mt-3 flex items-center gap-1 text-[10px] sm:text-[11px] font-medium text-sage-700 hover:underline">
               View Full Profile
               <ExternalLink className="w-3 h-3" />
             </button>
@@ -278,12 +279,12 @@ export default function ReviewDetailDrawer({
         {/* Existing Response */}
         {review.responded && review.responseText && (
           <div>
-            <p className="text-[11px] font-semibold text-sage-700 uppercase tracking-widest mb-2 flex items-center gap-1">
+            <p className="text-[10px] sm:text-[11px] font-semibold text-sage-700 uppercase tracking-widest mb-1.5 sm:mb-2 flex items-center gap-1">
               <Check className="w-3 h-3" />
               Your Response
             </p>
-            <div className="bg-sage-50 rounded-[10px] p-4 border border-sage-100">
-              <p className="text-[13px] text-neutral-700 whitespace-pre-wrap">
+            <div className="bg-sage-50 rounded-[10px] p-3 sm:p-4 border border-sage-100">
+              <p className="text-[12px] sm:text-[13px] text-neutral-700 whitespace-pre-wrap">
                 {review.responseText}
               </p>
             </div>
@@ -293,21 +294,22 @@ export default function ReviewDetailDrawer({
         {/* AI Response Generator */}
         {!review.responded && (
           <div>
-            <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+            <p className="text-[10px] sm:text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-1.5 sm:mb-2 flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-terra-600" />
               AI Suggested Response
             </p>
 
-            <div className="bg-terra-50 rounded-[10px] p-4 border border-terra-100 mb-3">
-              <p className="text-[13px] text-neutral-700 whitespace-pre-wrap leading-relaxed">
+            <div className="bg-terra-50 rounded-[10px] p-3 sm:p-4 border border-terra-100 mb-2 sm:mb-3">
+              <p className="text-[12px] sm:text-[13px] text-neutral-700 whitespace-pre-wrap leading-relaxed">
                 {suggestedReply}
               </p>
-              <div className="flex items-center gap-2 mt-3">
+              <div className="flex items-center gap-2 mt-2 sm:mt-3">
                 <Button
                   variant="outline"
                   size="xs"
                   icon={copied ? Check : Copy}
                   onClick={handleCopy}
+                  className="text-[10px] sm:text-[11px]"
                 >
                   {copied ? 'Copied' : 'Copy'}
                 </Button>
@@ -316,6 +318,7 @@ export default function ReviewDetailDrawer({
                   size="xs"
                   icon={Edit3}
                   onClick={handleUseSuggested}
+                  className="text-[10px] sm:text-[11px]"
                 >
                   Use & Edit
                 </Button>
@@ -324,14 +327,14 @@ export default function ReviewDetailDrawer({
 
             {isEditing && (
               <div>
-                <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2 block">
+                <label className="text-[10px] sm:text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-1.5 sm:mb-2 block">
                   Edit Response
                 </label>
                 <textarea
                   value={responseText}
                   onChange={(e) => setResponseText(e.target.value)}
                   rows={4}
-                  className="w-full px-4 py-3 border border-neutral-200 rounded-[10px] text-[13px] focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 resize-none"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-neutral-200 rounded-[10px] text-[12px] sm:text-[13px] focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 resize-none"
                   placeholder="Edit your response..."
                 />
               </div>

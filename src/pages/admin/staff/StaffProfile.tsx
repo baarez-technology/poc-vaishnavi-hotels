@@ -312,7 +312,7 @@ export default function StaffProfile() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-neutral-50">
-      <div className="max-w-[1440px] mx-auto p-6 space-y-6">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Back Button */}
         <button
           onClick={() => navigate('/admin/staff')}
@@ -323,26 +323,26 @@ export default function StaffProfile() {
         </button>
 
         {/* Profile Header */}
-        <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="flex items-center gap-6">
-              <div className="w-24 h-24 rounded-full bg-[#A57865]/15 ring-2 ring-[#A57865]/30 flex items-center justify-center text-[#A57865] font-bold text-3xl">
+        <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6">
+            <div className="flex items-center gap-4 sm:gap-6">
+              <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-[#A57865]/15 ring-2 ring-[#A57865]/30 flex items-center justify-center text-[#A57865] font-bold text-xl sm:text-3xl flex-shrink-0">
                 {staff.avatar}
               </div>
-              <div>
-                <h1 className="text-2xl font-sans font-bold text-neutral-900">{staff.name}</h1>
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-sans font-bold text-neutral-900 truncate">{staff.name}</h1>
                 <div className="flex items-center gap-2 mt-1">
                   <Briefcase className="w-4 h-4 text-neutral-500" />
                   <span className="text-neutral-600">{staff.role}</span>
                 </div>
-                <div className="flex items-center gap-3 mt-3">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusInfo.style}`}>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 sm:mt-3">
+                  <span className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold border ${statusInfo.style}`}>
                     {statusInfo.label}
                   </span>
-                  <span className="px-3 py-1 bg-[#FAF8F6] border border-neutral-200 rounded-full text-xs font-medium text-neutral-700 capitalize">
+                  <span className="px-2 sm:px-3 py-1 bg-[#FAF8F6] border border-neutral-200 rounded-full text-[10px] sm:text-xs font-medium text-neutral-700 capitalize">
                     {staff.department}
                   </span>
-                  <span className="px-3 py-1 bg-[#5C9BA4]/10 border border-[#5C9BA4]/30 rounded-full text-xs font-medium text-[#5C9BA4] capitalize">
+                  <span className="px-2 sm:px-3 py-1 bg-[#5C9BA4]/10 border border-[#5C9BA4]/30 rounded-full text-[10px] sm:text-xs font-medium text-[#5C9BA4] capitalize">
                     {staff.shift} Shift
                   </span>
                 </div>
@@ -350,56 +350,56 @@ export default function StaffProfile() {
             </div>
 
             {/* Performance Summary */}
-            <div className="flex items-center gap-6">
-              <div className="text-center">
+            <div className="flex items-center gap-4 sm:gap-6 overflow-x-auto pb-2 lg:pb-0">
+              <div className="text-center flex-shrink-0">
                 <div className="flex items-center justify-center gap-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star
                       key={star}
-                      className={`w-5 h-5 ${star <= Math.round(staff.rating || 4.5) ? 'text-amber-400 fill-amber-400' : 'text-neutral-300'}`}
+                      className={`w-4 h-4 sm:w-5 sm:h-5 ${star <= Math.round(staff.rating || 4.5) ? 'text-amber-400 fill-amber-400' : 'text-neutral-300'}`}
                     />
                   ))}
                 </div>
-                <p className="text-sm text-neutral-500 mt-1">{staff.rating || 4.5} Rating</p>
+                <p className="text-xs sm:text-sm text-neutral-500 mt-1">{staff.rating || 4.5} Rating</p>
               </div>
-              <div className="h-12 w-px bg-neutral-200" />
-              <div className="text-center">
-                <p className="text-3xl font-bold text-[#5C9BA4]">{staff.efficiency || 88}%</p>
-                <p className="text-sm text-neutral-500">Efficiency</p>
+              <div className="h-10 sm:h-12 w-px bg-neutral-200 flex-shrink-0" />
+              <div className="text-center flex-shrink-0">
+                <p className="text-2xl sm:text-3xl font-bold text-[#5C9BA4]">{staff.efficiency || 88}%</p>
+                <p className="text-xs sm:text-sm text-neutral-500">Efficiency</p>
               </div>
-              <div className="h-12 w-px bg-neutral-200" />
-              <div className="text-center">
-                <p className="text-3xl font-bold text-[#A57865]">{staff.performance?.tasksCompleted || 245}</p>
-                <p className="text-sm text-neutral-500">Tasks Done</p>
+              <div className="h-10 sm:h-12 w-px bg-neutral-200 flex-shrink-0" />
+              <div className="text-center flex-shrink-0">
+                <p className="text-2xl sm:text-3xl font-bold text-[#A57865]">{staff.performance?.tasksCompleted || 245}</p>
+                <p className="text-xs sm:text-sm text-neutral-500">Tasks Done</p>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               <button
                 onClick={() => setIsEditModalOpen(true)}
-                className="px-4 py-2 bg-[#A57865] text-white rounded-lg hover:bg-[#8E6554] transition-colors flex items-center gap-2"
+                className="px-3 sm:px-4 py-2 bg-[#A57865] text-white rounded-lg hover:bg-[#8E6554] transition-colors flex items-center gap-2 text-sm"
               >
                 <Edit className="w-4 h-4" />
-                Edit
+                <span className="hidden sm:inline">Edit</span>
               </button>
               <button
                 onClick={() => setIsDisableModalOpen(true)}
-                className="px-4 py-2 border border-rose-300 text-rose-600 rounded-lg hover:bg-rose-50 transition-colors flex items-center gap-2"
+                className="px-3 sm:px-4 py-2 border border-rose-300 text-rose-600 rounded-lg hover:bg-rose-50 transition-colors flex items-center gap-2 text-sm"
               >
                 <UserX className="w-4 h-4" />
-                Disable
+                <span className="hidden sm:inline">Disable</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Left Column */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Personal Information */}
-            <div className="bg-white rounded-xl border border-neutral-200 p-6">
+            <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
               <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <User className="w-4 h-4 text-[#A57865]" />
                 Personal Information
@@ -421,7 +421,7 @@ export default function StaffProfile() {
             </div>
 
             {/* Contact Information */}
-            <div className="bg-white rounded-xl border border-neutral-200 p-6">
+            <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
               <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Phone className="w-4 h-4 text-[#A57865]" />
                 Contact Information
@@ -449,7 +449,7 @@ export default function StaffProfile() {
             </div>
 
             {/* Employment Details */}
-            <div className="bg-white rounded-xl border border-neutral-200 p-6">
+            <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
               <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Briefcase className="w-4 h-4 text-[#A57865]" />
                 Employment Details
@@ -524,7 +524,7 @@ export default function StaffProfile() {
 
             {/* Skills & Certifications */}
             {((staff.skills && staff.skills.length > 0) || (staff.certifications && staff.certifications.length > 0)) && (
-              <div className="bg-white rounded-xl border border-neutral-200 p-6">
+              <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
                 <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
                   <Award className="w-4 h-4 text-[#A57865]" />
                   Skills & Certifications
@@ -560,7 +560,7 @@ export default function StaffProfile() {
 
             {/* Languages */}
             {staff.languagesSpoken && staff.languagesSpoken.length > 0 && (
-              <div className="bg-white rounded-xl border border-neutral-200 p-6">
+              <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
                 <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
                   <Languages className="w-4 h-4 text-[#A57865]" />
                   Languages
@@ -577,7 +577,7 @@ export default function StaffProfile() {
 
             {/* Emergency Contact */}
             {(staff.emergencyContactName || staff.emergencyContactPhone) && (
-              <div className="bg-white rounded-xl border border-neutral-200 p-6">
+              <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
                 <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-rose-500" />
                   Emergency Contact
@@ -605,7 +605,7 @@ export default function StaffProfile() {
             )}
 
             {/* Permissions */}
-            <div className="bg-white rounded-xl border border-neutral-200 p-6">
+            <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
               <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Shield className="w-4 h-4 text-[#A57865]" />
                 Permissions
@@ -627,11 +627,11 @@ export default function StaffProfile() {
           </div>
 
           {/* Right Column - Charts */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Performance Charts */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {/* Performance Score Trend */}
-              <div className="bg-white rounded-xl border border-neutral-200 p-6">
+              <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
                 <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-[#5C9BA4]" />
                   Performance Trend
@@ -657,7 +657,7 @@ export default function StaffProfile() {
               </div>
 
               {/* Tasks Completed */}
-              <div className="bg-white rounded-xl border border-neutral-200 p-6">
+              <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
                 <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-[#A57865]" />
                   Tasks Completed
@@ -683,7 +683,7 @@ export default function StaffProfile() {
             </div>
 
             {/* Punctuality Chart */}
-            <div className="bg-white rounded-xl border border-neutral-200 p-6">
+            <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
               <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Clock className="w-4 h-4 text-[#5C9BA4]" />
                 Punctuality (Last 6 Months)
@@ -702,7 +702,7 @@ export default function StaffProfile() {
             </div>
 
             {/* Attendance Log */}
-            <div className="bg-white rounded-xl border border-neutral-200 p-6">
+            <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-[#A57865]" />
@@ -751,7 +751,7 @@ export default function StaffProfile() {
             </div>
 
             {/* Task History */}
-            <div className="bg-white rounded-xl border border-neutral-200 p-6">
+            <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-[#5C9BA4]" />

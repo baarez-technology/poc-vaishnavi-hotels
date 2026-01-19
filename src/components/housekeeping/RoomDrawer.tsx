@@ -138,7 +138,7 @@ export default function RoomDrawer({
             </button>
           </div>
           {housekeeper ? (
-            <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100">
+            <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-terra-100 flex items-center justify-center text-terra-600 font-bold text-[13px]">
                   {housekeeper.avatar}
@@ -152,7 +152,7 @@ export default function RoomDrawer({
               </div>
             </div>
           ) : (
-            <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100 text-center">
+            <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100 text-center">
               <div className="w-10 h-10 rounded-lg bg-white border border-neutral-200 flex items-center justify-center mx-auto mb-2">
                 <User className="w-5 h-5 text-neutral-400" />
               </div>
@@ -168,7 +168,7 @@ export default function RoomDrawer({
             <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
               Time Tracking
             </h4>
-            <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100 space-y-3">
+            <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100 space-y-3">
               {room.timeSinceDirtyMinutes > 0 && (
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-gold-100 flex items-center justify-center flex-shrink-0">
@@ -261,7 +261,7 @@ export default function RoomDrawer({
                 Edit
               </button>
             </div>
-            <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100 space-y-2">
+            <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100 space-y-2">
               {room.checklist.map((item, index) => (
                 <div
                   key={item.id || index}
@@ -292,7 +292,7 @@ export default function RoomDrawer({
             <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
               Notes
             </h4>
-            <div className="p-4 rounded-lg bg-gold-50 border border-gold-100">
+            <div className="p-3 sm:p-4 rounded-lg bg-gold-50 border border-gold-100">
               <p className="text-[13px] text-neutral-700 leading-relaxed">{room.notes}</p>
             </div>
           </div>

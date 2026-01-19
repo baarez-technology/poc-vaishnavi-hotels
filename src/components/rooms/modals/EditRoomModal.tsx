@@ -140,7 +140,7 @@ export default function EditRoomModal({ room, isOpen, onClose, onSave }) {
             Room Information
           </h4>
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
                   Room Number
@@ -172,7 +172,7 @@ export default function EditRoomModal({ room, isOpen, onClose, onSave }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
                   Floor
@@ -211,7 +211,7 @@ export default function EditRoomModal({ room, isOpen, onClose, onSave }) {
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Capacity & Pricing
           </h4>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
                 Max Guests
@@ -268,7 +268,7 @@ export default function EditRoomModal({ room, isOpen, onClose, onSave }) {
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Amenities
           </h4>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {availableAmenities.map(amenity => {
               const isSelected = formData.amenities.includes(amenity);
               return (
@@ -301,8 +301,8 @@ export default function EditRoomModal({ room, isOpen, onClose, onSave }) {
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Current Status
           </h4>
-          <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100">
-            <div className="flex items-center gap-6">
+          <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-medium text-neutral-500">Status:</span>
                 <span className={`inline-flex items-center gap-1.5 text-[13px] font-semibold ${

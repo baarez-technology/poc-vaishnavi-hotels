@@ -97,7 +97,7 @@ export default function Bookings() {
   const [isCreating, setIsCreating] = useState(false);
 
   // Toast state
-  const [toast, setToast] = useState(null);
+  const [toast, setToast] = useState<{ message: string } | null>(null);
 
   // Handle filter changes
   const handleFilterChange = (key, value) => {
@@ -346,12 +346,12 @@ export default function Bookings() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <div className="px-10 py-6 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
       {/* Page Header */}
-      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">Bookings</h1>
-          <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">Bookings</h1>
+          <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">
             Manage reservations, availability, and guest information.
           </p>
         </div>
@@ -362,18 +362,18 @@ export default function Bookings() {
       <div className="bg-white rounded-[10px] overflow-hidden">
         {/* Tabs + Actions */}
         <div className="border-b border-neutral-100">
-          <div className="px-6 pt-4 flex items-center justify-between">
+          <div className="px-3 sm:px-6 pt-3 sm:pt-4 flex items-center justify-between overflow-x-auto">
             <Tabs activeTab={activeTab} onTabChange={setActiveTab} />
           </div>
         </div>
 
         {/* Search & Filters Row */}
-        <div className="px-6 py-4 bg-neutral-50/30 border-b border-neutral-100">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 max-w-md">
+        <div className="px-3 sm:px-6 py-3 sm:py-4 bg-neutral-50/30 border-b border-neutral-100">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="w-full sm:flex-1 sm:max-w-md">
               <SearchBar value={searchQuery} onChange={setSearchQuery} onClear={() => setSearchQuery('')} />
             </div>
-            <div className="flex-1" />
+            <div className="hidden sm:block sm:flex-1" />
             <FiltersBar
               filters={filters}
               onFilterChange={handleFilterChange}
@@ -394,7 +394,7 @@ export default function Bookings() {
         />
 
         {/* Pagination */}
-        <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/30">
+        <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 bg-neutral-50/30">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -459,9 +459,9 @@ export default function Bookings() {
 
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-[80]">
+        <div className="fixed bottom-4 sm:bottom-6 left-4 right-4 sm:left-auto sm:right-6 z-[80]">
           <div className="px-4 py-3 rounded-[10px] bg-neutral-900 text-white shadow-xl flex items-center gap-2">
-            <span className="text-[13px] font-medium">{toast.message}</span>
+            <span className="text-xs sm:text-[13px] font-medium">{toast.message}</span>
           </div>
         </div>
       )}

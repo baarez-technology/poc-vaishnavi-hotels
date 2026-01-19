@@ -80,25 +80,25 @@ export default function AutoAssignResultsModal({
     >
       <div className="space-y-6">
         {/* Summary Stats */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="p-4 rounded-xl bg-sage-50 border border-sage-100">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <div className="p-3 sm:p-4 rounded-xl bg-sage-50 border border-sage-100">
             <div className="flex items-center gap-2 mb-1">
-              <CheckCircle className="w-4 h-4 text-sage-600" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-sage-700">
+              <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sage-600" />
+              <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-sage-700">
                 Assigned
               </span>
             </div>
-            <p className="text-2xl font-bold text-sage-800">{totalAssigned}</p>
+            <p className="text-xl sm:text-2xl font-bold text-sage-800">{totalAssigned}</p>
           </div>
           {failed > 0 && (
-            <div className="p-4 rounded-xl bg-rose-50 border border-rose-100">
+            <div className="p-3 sm:p-4 rounded-xl bg-rose-50 border border-rose-100">
               <div className="flex items-center gap-2 mb-1">
-                <XCircle className="w-4 h-4 text-rose-600" />
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-rose-700">
+                <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-600" />
+                <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-rose-700">
                   Failed
                 </span>
               </div>
-              <p className="text-2xl font-bold text-rose-800">{failed}</p>
+              <p className="text-xl sm:text-2xl font-bold text-rose-800">{failed}</p>
             </div>
           )}
         </div>
@@ -113,33 +113,33 @@ export default function AutoAssignResultsModal({
               {Object.entries(groupedByStaff).map(([staffName, staffAssignments]) => (
                 <div
                   key={staffName}
-                  className="p-4 rounded-xl bg-neutral-50 border border-neutral-100"
+                  className="p-3 sm:p-4 rounded-xl bg-neutral-50 border border-neutral-100"
                 >
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-terra-100 flex items-center justify-center">
-                      <User className="w-4 h-4 text-terra-600" />
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-terra-100 flex items-center justify-center">
+                      <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-terra-600" />
                     </div>
                     <div>
-                      <p className="text-[13px] font-semibold text-neutral-900">
+                      <p className="text-[12px] sm:text-[13px] font-semibold text-neutral-900">
                         {staffName}
                       </p>
-                      <p className="text-[11px] text-neutral-500">
+                      <p className="text-[10px] sm:text-[11px] text-neutral-500">
                         {staffAssignments.length} room{staffAssignments.length !== 1 ? 's' : ''} assigned
                       </p>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {staffAssignments.map((assignment) => (
                       <div
                         key={assignment.roomId}
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-neutral-200"
+                        className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg bg-white border border-neutral-200"
                       >
-                        <DoorOpen className="w-3.5 h-3.5 text-neutral-500" />
-                        <span className="text-[12px] font-medium text-neutral-700">
+                        <DoorOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-500" />
+                        <span className="text-[11px] sm:text-[12px] font-medium text-neutral-700">
                           {assignment.roomNumber || `Room ${assignment.roomId}`}
                         </span>
                         {assignment.score && (
-                          <span className="text-[10px] text-neutral-400 ml-1">
+                          <span className="text-[9px] sm:text-[10px] text-neutral-400 ml-1">
                             ({Math.round(assignment.score * 100)}%)
                           </span>
                         )}
@@ -151,14 +151,14 @@ export default function AutoAssignResultsModal({
             </div>
           </div>
         ) : (
-          <div className="text-center py-8">
-            <div className="w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center mx-auto mb-3">
-              <DoorOpen className="w-6 h-6 text-neutral-400" />
+          <div className="text-center py-6 sm:py-8">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-neutral-100 flex items-center justify-center mx-auto mb-3">
+              <DoorOpen className="w-5 h-5 sm:w-6 sm:h-6 text-neutral-400" />
             </div>
-            <p className="text-[13px] font-medium text-neutral-600">
+            <p className="text-[12px] sm:text-[13px] font-medium text-neutral-600">
               No assignments were made
             </p>
-            <p className="text-[11px] text-neutral-500 mt-1">
+            <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-1">
               All rooms may already be assigned or no staff available
             </p>
           </div>

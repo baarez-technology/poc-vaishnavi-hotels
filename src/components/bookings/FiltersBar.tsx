@@ -19,7 +19,7 @@ function FilterSelect({ value, onChange, options, placeholder }) {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`h-9 px-3.5 rounded-lg text-[13px] bg-white border transition-all duration-150 flex items-center gap-2 focus:outline-none min-w-[140px] ${
+        className={`h-9 px-2.5 sm:px-3.5 rounded-lg text-xs sm:text-[13px] bg-white border transition-all duration-150 flex items-center gap-1.5 sm:gap-2 focus:outline-none w-full sm:min-w-[140px] ${
           isOpen
             ? 'border-terra-400 ring-2 ring-terra-500/10'
             : value !== 'all'
@@ -116,7 +116,7 @@ function DateRangeFilter({ dateFrom, dateTo, onDateFromChange, onDateToChange })
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`h-9 px-3.5 rounded-lg text-[13px] bg-white border transition-all duration-150 flex items-center gap-2 focus:outline-none ${
+        className={`h-9 px-2.5 sm:px-3.5 rounded-lg text-xs sm:text-[13px] bg-white border transition-all duration-150 flex items-center gap-1.5 sm:gap-2 focus:outline-none w-full sm:w-auto ${
           isOpen
             ? 'border-terra-400 ring-2 ring-terra-500/10'
             : hasValue
@@ -124,8 +124,8 @@ function DateRangeFilter({ dateFrom, dateTo, onDateFromChange, onDateToChange })
             : 'border-neutral-200 hover:border-neutral-300'
         }`}
       >
-        <Calendar className={`w-4 h-4 ${hasValue ? 'text-terra-500' : 'text-neutral-400'}`} />
-        <span className={hasValue ? 'text-terra-700 font-medium' : 'text-neutral-500'}>
+        <Calendar className={`w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 ${hasValue ? 'text-terra-500' : 'text-neutral-400'}`} />
+        <span className={`truncate ${hasValue ? 'text-terra-700 font-medium' : 'text-neutral-500'}`}>
           {getDisplayLabel()}
         </span>
         {hasValue && (
@@ -252,39 +252,46 @@ export default function FiltersBar({ filters, onFilterChange, onClearFilters }) 
   const hasActiveFilters = filters.status !== 'all' || filters.source !== 'all' || filters.dateFrom || filters.dateTo;
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
       {/* Status Filter */}
-      <FilterSelect
-        value={filters.status}
-        onChange={(value) => onFilterChange('status', value)}
-        options={statusOptions}
-        placeholder="All Statuses"
-      />
+      <div className="w-[calc(50%-4px)] sm:w-auto">
+        <FilterSelect
+          value={filters.status}
+          onChange={(value) => onFilterChange('status', value)}
+          options={statusOptions}
+          placeholder="Status"
+        />
+      </div>
 
       {/* Source Filter */}
-      <FilterSelect
-        value={filters.source}
-        onChange={(value) => onFilterChange('source', value)}
-        options={sourceOptions}
-        placeholder="All Sources"
-      />
+      <div className="w-[calc(50%-4px)] sm:w-auto">
+        <FilterSelect
+          value={filters.source}
+          onChange={(value) => onFilterChange('source', value)}
+          options={sourceOptions}
+          placeholder="Source"
+        />
+      </div>
 
       {/* Date Range Filter */}
-      <DateRangeFilter
-        dateFrom={filters.dateFrom}
-        dateTo={filters.dateTo}
-        onDateFromChange={(value) => onFilterChange('dateFrom', value)}
-        onDateToChange={(value) => onFilterChange('dateTo', value)}
-      />
+      <div className="w-full sm:w-auto">
+        <DateRangeFilter
+          dateFrom={filters.dateFrom}
+          dateTo={filters.dateTo}
+          onDateFromChange={(value) => onFilterChange('dateFrom', value)}
+          onDateToChange={(value) => onFilterChange('dateTo', value)}
+        />
+      </div>
 
       {/* Clear All Filters */}
       {hasActiveFilters && (
         <button
           onClick={onClearFilters}
-          className="h-9 px-3 flex items-center gap-1.5 text-[13px] font-medium text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
+          className="h-9 px-2 sm:px-3 flex items-center gap-1 sm:gap-1.5 text-xs sm:text-[13px] font-medium text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
         >
-          <X className="w-4 h-4" />
-          Clear All
+          <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden xs:inline">Clear</span>
+          <span className="hidden sm:inline">All</span>
         </button>
       )}
     </div>

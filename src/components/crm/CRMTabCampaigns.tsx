@@ -358,199 +358,196 @@ function CampaignModal({ isOpen, onClose, onSave, campaign, mode, segments, temp
   ];
 
   const modalContent = (
-    <>
+    <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/30 z-[60]"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Centered Modal */}
-      <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-        <div
-          className="w-full max-w-lg max-h-[90vh] bg-white shadow-2xl rounded-2xl flex flex-col"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex-shrink-0 p-6 border-b border-neutral-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-semibold text-neutral-900">
-                    {mode === 'create' ? 'Create Campaign' : 'Edit Campaign'}
-                  </h2>
-                  {aiSuggestion && (
-                    <span className="px-2 py-0.5 bg-[#4E5840]/10 text-[#4E5840] text-xs font-medium rounded-full flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" />
-                      AI Suggested
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-neutral-500">Configure campaign settings</p>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            <div>
-              <label className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2 block">Campaign Name *</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., Holiday Season Promotion"
-                className="w-full px-4 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2 block">Type</label>
-                <CustomDropdown
-                  options={CAMPAIGN_TYPE_OPTIONS}
-                  value={formData.type}
-                  onChange={(value) => setFormData(prev => ({ ...prev, type: value, templateId: '' }))}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2 block">Status</label>
-                <CustomDropdown
-                  options={CAMPAIGN_STATUS_OPTIONS}
-                  value={formData.status}
-                  onChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
-                  className="w-full"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2 block">Target Segment *</label>
-              <CustomDropdown
-                options={segmentOptions}
-                value={formData.segmentId}
-                onChange={(value) => setFormData(prev => ({ ...prev, segmentId: value }))}
-                className="w-full"
-              />
-              {/* AI Recommended Segments */}
-              {aiSuggestion?.type && (
-                <AIRecommendedSegments
-                  campaignType={aiSuggestion.type}
-                  segments={segments}
-                  selectedSegmentId={formData.segmentId}
-                  onSelect={(segmentId) => setFormData(prev => ({ ...prev, segmentId }))}
-                />
+      {/* Right-side Drawer */}
+      <div
+        className="fixed right-0 top-0 bottom-0 w-full sm:max-w-lg flex flex-col bg-white border-l border-neutral-200 shadow-2xl h-screen"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="relative px-4 sm:px-6 py-4 sm:py-5 pr-12 sm:pr-14 border-b border-neutral-100 bg-white flex-shrink-0 z-10">
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base sm:text-lg font-semibold text-neutral-900">
+                {mode === 'create' ? 'Create Campaign' : 'Edit Campaign'}
+              </h2>
+              {aiSuggestion && (
+                <span className="px-2 py-0.5 bg-[#4E5840]/10 text-[#4E5840] text-[10px] sm:text-xs font-medium rounded-full flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" />
+                  AI Suggested
+                </span>
               )}
             </div>
+            <p className="text-xs sm:text-sm text-neutral-500">Configure campaign settings</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 bg-white space-y-4">
+          <div>
+            <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Campaign Name *</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="e.g., Holiday Season Promotion"
+              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <label className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2 block">Message Template</label>
+              <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Type</label>
               <CustomDropdown
-                options={templateOptions}
-                value={formData.templateId}
-                onChange={(value) => setFormData(prev => ({ ...prev, templateId: value }))}
+                options={CAMPAIGN_TYPE_OPTIONS}
+                value={formData.type}
+                onChange={(value) => setFormData(prev => ({ ...prev, type: value, templateId: '' }))}
                 className="w-full"
               />
             </div>
-
-            {formData.type === 'email' && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-medium text-neutral-500 uppercase tracking-wide">Subject Line</label>
-                  <button
-                    type="button"
-                    onClick={generateSubjectLines}
-                    disabled={isLoadingSubjects}
-                    className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-[#4E5840] bg-[#4E5840]/10 rounded-lg hover:bg-[#4E5840]/20 transition-colors disabled:opacity-50"
-                  >
-                    <Wand2 className="w-3.5 h-3.5" />
-                    Generate with AI
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  value={formData.subject}
-                  onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
-                  placeholder="Email subject..."
-                  className="w-full px-4 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
-                />
-                <AISubjectLineSuggestions
-                  suggestions={aiSubjectSuggestions}
-                  onSelect={(subject) => setFormData(prev => ({ ...prev, subject }))}
-                  isLoading={isLoadingSubjects}
-                />
-              </div>
-            )}
-
             <div>
-              <label className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2 block">Schedule Date</label>
-              <input
-                type="datetime-local"
-                value={formData.scheduleDate}
-                onChange={(e) => setFormData(prev => ({ ...prev, scheduleDate: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
+              <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Status</label>
+              <CustomDropdown
+                options={CAMPAIGN_STATUS_OPTIONS}
+                value={formData.status}
+                onChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+                className="w-full"
               />
             </div>
+          </div>
 
-            {/* AI Predictions */}
-            {selectedSegment && (
-              <AIPredictions
-                openRate={aiPredictions.openRate}
-                clickRate={aiPredictions.clickRate}
-                optimalSendTime={aiPredictions.optimalSendTime}
-                isLoading={isLoadingPredictions}
+          <div>
+            <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Target Segment *</label>
+            <CustomDropdown
+              options={segmentOptions}
+              value={formData.segmentId}
+              onChange={(value) => setFormData(prev => ({ ...prev, segmentId: value }))}
+              className="w-full"
+            />
+            {/* AI Recommended Segments */}
+            {aiSuggestion?.type && (
+              <AIRecommendedSegments
+                campaignType={aiSuggestion.type}
+                segments={segments}
+                selectedSegmentId={formData.segmentId}
+                onSelect={(segmentId) => setFormData(prev => ({ ...prev, segmentId }))}
               />
-            )}
-
-            {selectedSegment && (
-              <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
-                <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-3">Target Audience</h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="text-center">
-                    <p className="text-xl font-bold text-[#A57865]">{selectedSegment.guestCount || 0}</p>
-                    <p className="text-xs text-neutral-500">Recipients</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xl font-bold text-[#4E5840]">${(selectedSegment.avgRevenue || 0).toLocaleString()}</p>
-                    <p className="text-xs text-neutral-500">Avg LTV</p>
-                  </div>
-                </div>
-              </div>
             )}
           </div>
 
-          {/* Footer */}
-          <div className="flex-shrink-0 border-t border-neutral-200 p-4 bg-white rounded-b-2xl">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2.5 border border-neutral-200 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={!formData.name.trim() || !formData.segmentId}
-                className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                  formData.name.trim() && formData.segmentId
-                    ? 'bg-[#4E5840] text-white hover:bg-[#3d4632]'
-                    : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
-                }`}
-              >
-                {mode === 'create' ? 'Create Campaign' : 'Save Changes'}
-              </button>
+          <div>
+            <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Message Template</label>
+            <CustomDropdown
+              options={templateOptions}
+              value={formData.templateId}
+              onChange={(value) => setFormData(prev => ({ ...prev, templateId: value }))}
+              className="w-full"
+            />
+          </div>
+
+          {formData.type === 'email' && (
+            <div>
+              <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide">Subject Line</label>
+                <button
+                  type="button"
+                  onClick={generateSubjectLines}
+                  disabled={isLoadingSubjects}
+                  className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-medium text-[#4E5840] bg-[#4E5840]/10 rounded-lg hover:bg-[#4E5840]/20 transition-colors disabled:opacity-50"
+                >
+                  <Wand2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span className="hidden sm:inline">Generate with AI</span>
+                  <span className="sm:hidden">AI</span>
+                </button>
+              </div>
+              <input
+                type="text"
+                value={formData.subject}
+                onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
+                placeholder="Email subject..."
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
+              />
+              <AISubjectLineSuggestions
+                suggestions={aiSubjectSuggestions}
+                onSelect={(subject) => setFormData(prev => ({ ...prev, subject }))}
+                isLoading={isLoadingSubjects}
+              />
             </div>
+          )}
+
+          <div>
+            <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Schedule Date</label>
+            <input
+              type="datetime-local"
+              value={formData.scheduleDate}
+              onChange={(e) => setFormData(prev => ({ ...prev, scheduleDate: e.target.value }))}
+              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
+            />
+          </div>
+
+          {/* AI Predictions */}
+          {selectedSegment && (
+            <AIPredictions
+              openRate={aiPredictions.openRate}
+              clickRate={aiPredictions.clickRate}
+              optimalSendTime={aiPredictions.optimalSendTime}
+              isLoading={isLoadingPredictions}
+            />
+          )}
+
+          {selectedSegment && (
+            <div className="bg-neutral-50 rounded-xl p-3 sm:p-4 border border-neutral-200">
+              <h4 className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2 sm:mb-3">Target Audience</h4>
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                <div className="text-center">
+                  <p className="text-lg sm:text-xl font-bold text-[#A57865]">{selectedSegment.guestCount || 0}</p>
+                  <p className="text-[10px] sm:text-xs text-neutral-500">Recipients</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg sm:text-xl font-bold text-[#4E5840]">${(selectedSegment.avgRevenue || 0).toLocaleString()}</p>
+                  <p className="text-[10px] sm:text-xs text-neutral-500">Avg LTV</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex-shrink-0 border-t border-neutral-100 px-4 sm:px-6 py-4 sm:py-5 bg-neutral-50/50">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 border border-neutral-200 text-neutral-700 rounded-xl text-xs sm:text-sm font-medium hover:bg-neutral-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!formData.name.trim() || !formData.segmentId}
+              className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
+                formData.name.trim() && formData.segmentId
+                  ? 'bg-[#4E5840] text-white hover:bg-[#3d4632]'
+                  : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
+              }`}
+            >
+              {mode === 'create' ? 'Create Campaign' : 'Save Changes'}
+            </button>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 
   return createPortal(modalContent, document.body);
@@ -893,18 +890,18 @@ export default function CRMTabCampaigns({ campaigns, segments, templates, onSave
   };
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[#4E5840]/10 flex items-center justify-center">
-            <Send className="w-5 h-5 text-[#4E5840]" />
+    <div className="bg-white rounded-xl border border-neutral-200 p-3 sm:p-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-[#4E5840]/10 flex items-center justify-center flex-shrink-0">
+            <Send className="w-4 h-4 sm:w-5 sm:h-5 text-[#4E5840]" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-neutral-900">Campaigns</h3>
-            <p className="text-sm text-neutral-500">{campaigns.length} campaigns</p>
+            <h3 className="text-base sm:text-lg font-bold text-neutral-900">Campaigns</h3>
+            <p className="text-xs sm:text-sm text-neutral-500">{campaigns.length} campaigns</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <CustomDropdown
             options={[
               { value: 'all', label: 'All Status' },
@@ -916,14 +913,15 @@ export default function CRMTabCampaigns({ campaigns, segments, templates, onSave
             ]}
             value={filter}
             onChange={setFilter}
-            className="[&_button]:min-w-[120px]"
+            className="[&_button]:min-w-[90px] sm:[&_button]:min-w-[120px]"
           />
           <button
             onClick={() => handleCreateCampaign()}
-            className="flex items-center gap-2 px-4 py-2 bg-[#A57865] text-white rounded-lg text-sm font-medium hover:bg-[#A57865]/90 transition-colors"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-[#A57865] text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-[#A57865]/90 transition-colors whitespace-nowrap"
           >
-            <Plus className="w-4 h-4" />
-            Create Campaign
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Create Campaign</span>
+            <span className="sm:hidden">Add</span>
           </button>
         </div>
       </div>

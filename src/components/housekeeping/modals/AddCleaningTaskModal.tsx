@@ -213,14 +213,14 @@ export default function AddCleaningTaskModal({
             <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
               Estimated Cleaning Time
             </h4>
-            <div className="p-4 rounded-lg bg-sage-50 border border-sage-100">
+            <div className="p-3 sm:p-4 rounded-lg bg-sage-50 border border-sage-100">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-sage-100 flex items-center justify-center flex-shrink-0">
-                  <Clock className="w-5 h-5 text-sage-600" />
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-sage-100 flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-sage-600" />
                 </div>
                 <div>
-                  <p className="text-[17px] font-bold text-neutral-900">{estimatedTime} minutes</p>
-                  <p className="text-[11px] text-neutral-500">
+                  <p className="text-[15px] sm:text-[17px] font-bold text-neutral-900">{estimatedTime} minutes</p>
+                  <p className="text-[10px] sm:text-[11px] text-neutral-500">
                     Based on {selectedRoom.type} room type + {formData.priority} priority
                   </p>
                 </div>

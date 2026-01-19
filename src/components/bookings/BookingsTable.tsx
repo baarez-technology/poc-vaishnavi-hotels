@@ -90,8 +90,7 @@ export default function BookingsTable({
 
   return (
     <div className="overflow-x-auto">
-      {/* Prevent header wrapping; allow horizontal scroll like CMS */}
-      <table className="w-full min-w-[1450px] border-collapse">
+      <table className="w-full min-w-[1200px] border-collapse">
         <colgroup>
           <col style={{ width: '220px' }} />
           <col style={{ width: '170px' }} />

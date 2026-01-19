@@ -257,10 +257,10 @@ export default function BookingList({
   }, [totalPages]);
 
   const tabs = [
-    { id: 'all', label: 'All Bookings', count: counts.all, icon: CalendarDays },
-    { id: 'arrivals', label: 'Arrivals', count: counts.arrivals, icon: LogIn },
-    { id: 'departures', label: 'Departures', count: counts.departures, icon: LogOut },
-    { id: 'inHouse', label: 'In-House', count: counts.inHouse, icon: Home }
+    { id: 'all', label: 'All Bookings', shortLabel: 'All', count: counts.all, icon: CalendarDays },
+    { id: 'arrivals', label: 'Arrivals', shortLabel: 'Arrivals', count: counts.arrivals, icon: LogIn },
+    { id: 'departures', label: 'Departures', shortLabel: 'Departs', count: counts.departures, icon: LogOut },
+    { id: 'inHouse', label: 'In-House', shortLabel: 'In-House', count: counts.inHouse, icon: Home }
   ];
 
   // Clear selection when changing tabs
@@ -269,28 +269,29 @@ export default function BookingList({
   }, [activeTab]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Main Container */}
-      <div className="bg-white rounded-[10px] overflow-hidden">
+      <div className="bg-white rounded-[10px]">
         {/* Header Section */}
         <div className="border-b border-neutral-100">
           {/* Tab Navigation - Underline style */}
-          <div className="px-6 pt-4 flex items-center justify-between">
-            <div className="flex items-center gap-0.5">
+          <div className="px-4 sm:px-6 pt-3 sm:pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
+            <div className="flex items-center gap-0.5 overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => { setActiveTab(tab.id); setCurrentPage(1); }}
-                  className={`relative px-4 py-3 text-[13px] font-semibold transition-all duration-150 ${
+                  className={`relative px-2.5 sm:px-4 py-2.5 sm:py-3 text-[12px] sm:text-[13px] font-semibold transition-all duration-150 whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'text-neutral-900'
                       : 'text-neutral-500 hover:text-neutral-700'
                   }`}
                 >
-                  <span className="flex items-center gap-2">
-                    <tab.icon className="w-4 h-4" />
-                    {tab.label}
-                    <span className={`px-1.5 py-0.5 rounded text-[11px] font-semibold tabular-nums ${
+                  <span className="flex items-center gap-1.5 sm:gap-2">
+                    <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">{tab.shortLabel}</span>
+                    <span className={`px-1 sm:px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-semibold tabular-nums ${
                       activeTab === tab.id
                         ? 'bg-terra-500 text-white'
                         : 'bg-neutral-100 text-neutral-500'
@@ -313,33 +314,35 @@ export default function BookingList({
                 size="md"
                 icon={Plus}
                 onClick={onNewBooking}
+                className="text-[12px] sm:text-[13px]"
               >
-                New Booking
+                <span className="hidden sm:inline">New Booking</span>
+                <span className="sm:hidden">New</span>
               </Button>
             )}
           </div>
         </div>
 
         {/* Search & Filters Bar */}
-        <div className="px-6 py-4 bg-neutral-50/30 border-b border-neutral-100">
-          <div className="flex items-center gap-3">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 bg-neutral-50/30 border-b border-neutral-100">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Search */}
-            <div className="flex-1 max-w-md">
+            <div className="flex-1 min-w-0 sm:max-w-md">
               <SearchBar
                 value={searchQuery}
                 onChange={(val) => { setSearchQuery(val); setCurrentPage(1); }}
                 onClear={() => setSearchQuery('')}
-                placeholder="Search by guest, booking ID, or room..."
+                placeholder="Search guest, ID, room..."
                 size="md"
               />
             </div>
 
-            {/* Spacer to push filters to right */}
-            <div className="flex-1" />
+            {/* Spacer to push filters to right - hidden on mobile */}
+            <div className="hidden sm:block flex-1" />
 
-            {/* Active Filter Chips - positioned LEFT of filter button */}
+            {/* Active Filter Chips - hidden on mobile, visible on desktop */}
             {hasActiveFilters && (
-              <div className="flex items-center gap-2">
+              <div className="hidden sm:flex items-center gap-2">
                 {statusFilter !== 'all' && (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-ocean-100 text-ocean-700 rounded-full text-xs font-medium">
                     {statusFilter}
@@ -360,20 +363,23 @@ export default function BookingList({
             )}
 
             {/* Filter Button & Panel */}
-            <div className="relative" ref={filterPanelRef}>
-              <Button
-                variant={hasActiveFilters ? 'primary' : 'subtle'}
-                size="md"
-                icon={SlidersHorizontal}
+            <div className="relative flex-shrink-0" ref={filterPanelRef}>
+              <button
                 onClick={() => setFilterPanelOpen(!filterPanelOpen)}
+                className={`h-9 sm:h-10 px-2.5 sm:px-3.5 rounded-lg text-[12px] sm:text-[13px] font-medium flex items-center gap-1.5 sm:gap-2 transition-all duration-150 ${
+                  hasActiveFilters
+                    ? 'bg-terra-500 text-white'
+                    : 'bg-white border border-neutral-200 text-neutral-600 hover:border-neutral-300'
+                }`}
               >
-                Filters
+                <SlidersHorizontal className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Filters</span>
                 {activeFilterCount > 0 && (
-                  <span className="ml-1 w-5 h-5 flex items-center justify-center bg-white text-terra-600 text-xs font-bold rounded-full">
+                  <span className="min-w-[16px] h-[16px] sm:min-w-[18px] sm:h-[18px] px-1 rounded-full bg-white text-terra-600 text-[10px] sm:text-[11px] font-semibold flex items-center justify-center">
                     {activeFilterCount}
                   </span>
                 )}
-              </Button>
+              </button>
 
               {/* Filter Panel */}
               {filterPanelOpen && (
@@ -478,28 +484,30 @@ export default function BookingList({
 
         {/* Bulk Actions Bar */}
         {selectedIds.size > 0 && (
-          <div className="px-6 py-3 bg-terra-500 flex items-center justify-between border-b border-terra-600/20">
-            <div className="flex items-center gap-3 text-white">
-              <span className="flex items-center justify-center w-7 h-7 bg-white/20 rounded-lg text-[13px] font-semibold">
+          <div className="px-4 sm:px-6 py-2.5 sm:py-3 bg-terra-500 flex items-center justify-between border-b border-terra-600/20">
+            <div className="flex items-center gap-2 sm:gap-3 text-white">
+              <span className="flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 bg-white/20 rounded-lg text-[12px] sm:text-[13px] font-semibold">
                 {selectedIds.size}
               </span>
-              <span className="text-[13px] font-semibold">
-                {selectedIds.size === 1 ? 'booking' : 'bookings'} selected
+              <span className="text-[12px] sm:text-[13px] font-semibold">
+                <span className="hidden sm:inline">{selectedIds.size === 1 ? 'booking' : 'bookings'} selected</span>
+                <span className="sm:hidden">selected</span>
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" icon={Mail} className="text-white hover:bg-white/20 hover:text-white text-[12px] font-semibold">
-                Send Email
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Button variant="ghost" size="sm" icon={Mail} className="text-white hover:bg-white/20 hover:text-white text-[11px] sm:text-[12px] font-semibold px-2 sm:px-3">
+                <span className="hidden sm:inline">Send Email</span>
+                <span className="sm:hidden">Email</span>
               </Button>
-              <Button variant="ghost" size="sm" icon={X} onClick={() => setSelectedIds(new Set())} className="text-white hover:bg-white/20 hover:text-white text-[12px] font-semibold">
-                Deselect
+              <Button variant="ghost" size="sm" icon={X} onClick={() => setSelectedIds(new Set())} className="text-white hover:bg-white/20 hover:text-white text-[11px] sm:text-[12px] font-semibold px-2 sm:px-3">
+                <span className="hidden sm:inline">Deselect</span>
               </Button>
             </div>
           </div>
         )}
 
         {/* Table */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-hidden rounded-b-[10px]">
           <table className="w-full min-w-[1280px] border-collapse">
             <colgroup>
               <col style={{ width: '48px' }} />
@@ -621,29 +629,31 @@ export default function BookingList({
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-neutral-100 flex items-center justify-between bg-neutral-50/30">
-            <p className="text-[13px] text-neutral-500">
-              Showing <span className="font-semibold text-neutral-700">{(currentPage - 1) * itemsPerPage + 1}</span>
-              {' '}to{' '}
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 bg-neutral-50/30">
+            <p className="text-[12px] sm:text-[13px] text-neutral-500 order-2 sm:order-1">
+              <span className="hidden sm:inline">Showing </span>
+              <span className="font-semibold text-neutral-700">{(currentPage - 1) * itemsPerPage + 1}</span>
+              <span className="hidden sm:inline">{' '}to{' '}</span>
+              <span className="sm:hidden">-</span>
               <span className="font-semibold text-neutral-700">{Math.min(currentPage * itemsPerPage, filteredBookings.length)}</span>
               {' '}of{' '}
-              <span className="font-semibold text-neutral-700">{filteredBookings.length}</span> results
+              <span className="font-semibold text-neutral-700">{filteredBookings.length}</span>
             </p>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5 sm:gap-1 order-1 sm:order-2">
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg transition-colors ${
                   currentPage === 1
                     ? 'text-neutral-300 cursor-not-allowed'
                     : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700'
                 }`}
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
 
-              <div className="flex items-center gap-0.5 mx-1">
+              <div className="flex items-center gap-0.5 mx-0.5 sm:mx-1">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   let page;
                   if (totalPages <= 5) {
@@ -659,7 +669,7 @@ export default function BookingList({
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`w-8 h-8 rounded-lg text-[13px] font-semibold transition-colors ${
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-[12px] sm:text-[13px] font-semibold transition-colors ${
                         currentPage === page
                           ? 'bg-terra-500 text-white'
                           : 'text-neutral-600 hover:bg-neutral-100'
@@ -674,13 +684,13 @@ export default function BookingList({
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg transition-colors ${
                   currentPage === totalPages
                     ? 'text-neutral-300 cursor-not-allowed'
                     : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700'
                 }`}
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             </div>
           </div>

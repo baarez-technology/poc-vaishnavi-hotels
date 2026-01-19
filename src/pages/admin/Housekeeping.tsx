@@ -402,24 +402,24 @@ export default function Housekeeping() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <div className="px-10 py-6 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Page Header */}
-        <header className="flex items-center justify-between">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
               Housekeeping
             </h1>
-            <p className="text-[13px] text-neutral-500 mt-1">
+            <p className="text-[12px] sm:text-[13px] text-neutral-500 mt-1">
               Monitor room cleanliness, assign tasks, and verify inspections
             </p>
           </div>
 
           {/* Quick Actions */}
-          <div className="flex items-center gap-3">
-            <Button variant="outline" icon={Download} onClick={() => setIsExportModalOpen(true)}>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <Button variant="outline" icon={Download} onClick={() => setIsExportModalOpen(true)} className="hidden sm:flex">
               Export
             </Button>
-            <Button variant="outline" icon={ArrowUpDown} onClick={() => setIsBulkAssignModalOpen(true)}>
+            <Button variant="outline" icon={ArrowUpDown} onClick={() => setIsBulkAssignModalOpen(true)} className="hidden sm:flex">
               Bulk Assign
             </Button>
             <Button
@@ -429,10 +429,12 @@ export default function Housekeeping() {
               disabled={isAutoAssigning}
               className={isAutoAssigning ? '[&>svg]:animate-spin' : ''}
             >
-              {isAutoAssigning ? 'Assigning...' : 'Auto-Assign'}
+              <span className="hidden sm:inline">{isAutoAssigning ? 'Assigning...' : 'Auto-Assign'}</span>
+              <span className="sm:hidden">{isAutoAssigning ? '...' : 'Auto'}</span>
             </Button>
             <Button variant="primary" icon={Plus} onClick={() => setIsAddTaskModalOpen(true)}>
-              Add Task
+              <span className="hidden sm:inline">Add Task</span>
+              <span className="sm:hidden">Add</span>
             </Button>
           </div>
         </header>
@@ -444,7 +446,7 @@ export default function Housekeeping() {
         <div className="bg-white rounded-[10px] overflow-hidden">
           {/* Tabs */}
           <div className="border-b border-neutral-100">
-            <div className="px-6 pt-4">
+            <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-6 pt-4">
               <HousekeepingTabs
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
@@ -454,12 +456,12 @@ export default function Housekeeping() {
           </div>
 
           {/* Search & Filters Row */}
-          <div className="px-6 py-4 bg-neutral-50/30 border-b border-neutral-100">
-            <div className="flex items-center gap-3">
-              <div className="flex-1 max-w-md">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 bg-neutral-50/30 border-b border-neutral-100">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="w-full sm:flex-1 sm:max-w-md">
                 <HousekeepingSearch value={searchQuery} onChange={setSearchQuery} />
               </div>
-              <div className="flex-1" />
+              <div className="hidden sm:block sm:flex-1" />
               <HousekeepingFilters
                 filters={filters}
                 onFilterChange={updateFilter}
@@ -475,7 +477,7 @@ export default function Housekeeping() {
 
           {/* Pagination */}
           {sortedRooms.length > 0 && (
-            <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/30">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 bg-neutral-50/30">
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}

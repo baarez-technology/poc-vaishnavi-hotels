@@ -264,7 +264,7 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
                   Employee ID <span className="text-rose-500">*</span>
@@ -335,7 +335,7 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Employment Details
           </h4>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
                 Join Date <span className="text-rose-500">*</span>
@@ -367,7 +367,7 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Floor Assignment
           </h4>
-          <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100">
+          <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100">
             <p className="text-[11px] text-neutral-500 mb-3">Select floors this staff member will be assigned to</p>
             <div className="flex flex-wrap gap-2">
               {floors.map(floor => (

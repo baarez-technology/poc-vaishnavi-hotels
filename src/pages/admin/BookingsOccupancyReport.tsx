@@ -81,14 +81,14 @@ const SOURCE_COLORS = {
 };
 
 const DATE_RANGES = [
-  { value: 'today', label: 'Today' },
-  { value: 'yesterday', label: 'Yesterday' },
-  { value: 'this_week', label: 'This Week' },
-  { value: 'last_week', label: 'Last Week' },
-  { value: 'this_month', label: 'This Month' },
-  { value: 'last_month', label: 'Last Month' },
-  { value: 'last_30_days', label: 'Last 30 Days' },
-  { value: 'ytd', label: 'Year to Date' }
+  { value: 'today', label: 'Today', shortLabel: 'Today' },
+  { value: 'yesterday', label: 'Yesterday', shortLabel: 'Yest.' },
+  { value: 'this_week', label: 'This Week', shortLabel: 'Week' },
+  { value: 'last_week', label: 'Last Week', shortLabel: 'Last Wk' },
+  { value: 'this_month', label: 'This Month', shortLabel: 'Month' },
+  { value: 'last_month', label: 'Last Month', shortLabel: 'Last Mo' },
+  { value: 'last_30_days', label: 'Last 30 Days', shortLabel: '30 Days' },
+  { value: 'ytd', label: 'Year to Date', shortLabel: 'YTD' }
 ];
 
 export default function BookingsOccupancyReport() {
@@ -156,35 +156,36 @@ export default function BookingsOccupancyReport() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <div className="px-10 py-8 space-y-8">
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6 lg:space-y-8">
         {/* Header */}
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <button
               onClick={() => navigate('/admin/reports')}
-              className="w-9 h-9 rounded-lg flex items-center justify-center bg-white border border-neutral-200"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center bg-white border border-neutral-200 flex-shrink-0"
             >
               <ArrowLeft className="w-4 h-4 text-neutral-600" />
             </button>
             <div>
-              <h1 className="text-xl font-semibold text-neutral-900">Bookings & Occupancy</h1>
-              <p className="text-[13px] text-neutral-500">Booking trends and occupancy analytics</p>
+              <h1 className="text-lg sm:text-xl font-semibold text-neutral-900">Bookings & Occupancy</h1>
+              <p className="text-[12px] sm:text-[13px] text-neutral-500">Booking trends and occupancy analytics</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="relative">
               <button
                 onClick={() => setDateDropdownOpen(!dateDropdownOpen)}
-                className="h-9 px-4 pr-9 rounded-lg bg-white border border-neutral-200 text-[13px] font-medium text-neutral-700 cursor-pointer flex items-center gap-2 hover:border-neutral-300 transition-colors"
+                className="h-8 sm:h-9 min-w-[70px] sm:min-w-[120px] px-3 sm:px-4 pr-8 sm:pr-9 rounded-lg bg-white border border-neutral-200 text-[12px] sm:text-[13px] font-medium text-neutral-700 cursor-pointer flex items-center hover:border-neutral-300 transition-colors"
               >
-                {DATE_RANGES.find(r => r.value === dateRange)?.label}
-                <ChevronDown className={`w-4 h-4 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2 transition-transform ${dateDropdownOpen ? 'rotate-180' : ''}`} />
+                <span className="hidden sm:inline truncate">{DATE_RANGES.find(r => r.value === dateRange)?.label}</span>
+                <span className="sm:hidden truncate">{DATE_RANGES.find(r => r.value === dateRange)?.shortLabel}</span>
+                <ChevronDown className={`w-4 h-4 text-neutral-400 absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 transition-transform flex-shrink-0 ${dateDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
               {dateDropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setDateDropdownOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-neutral-200 rounded-lg shadow-lg py-1 z-50">
+                  <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-1 w-44 bg-white border border-neutral-200 rounded-lg shadow-lg py-1 z-50">
                     {DATE_RANGES.map(range => (
                       <button
                         key={range.value}
@@ -207,58 +208,58 @@ export default function BookingsOccupancyReport() {
             </div>
             <button
               onClick={() => window.location.reload()}
-              className="w-9 h-9 rounded-lg flex items-center justify-center bg-white border border-neutral-200"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center bg-white border border-neutral-200"
             >
               <RefreshCw className="w-4 h-4 text-neutral-500" />
             </button>
             <button
               onClick={handleExport}
-              className="h-9 px-4 rounded-lg bg-terra-500 text-white text-[13px] font-medium flex items-center gap-2"
+              className="h-8 sm:h-9 px-3 sm:px-4 rounded-lg bg-terra-500 text-white text-[12px] sm:text-[13px] font-medium flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
-              Export
+              <span className="hidden sm:inline">Export</span>
             </button>
           </div>
         </header>
 
         {/* Stats Grid */}
-        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div className="bg-white rounded-xl p-5">
-            <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Total Bookings</p>
-            <p className="text-2xl font-semibold text-neutral-900">{stats.totalBookings.toLocaleString()}</p>
-            <p className="text-[11px] text-sage-600 font-medium mt-1">+8.2% vs last period</p>
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+          <div className="bg-white rounded-xl p-4 sm:p-5">
+            <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Total Bookings</p>
+            <p className="text-xl sm:text-2xl font-semibold text-neutral-900">{stats.totalBookings.toLocaleString()}</p>
+            <p className="text-[10px] sm:text-[11px] text-sage-600 font-medium mt-1">+8.2% vs last period</p>
           </div>
-          <div className="bg-white rounded-xl p-5">
-            <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Avg Occupancy</p>
-            <p className="text-2xl font-semibold text-neutral-900">{stats.avgOccupancy}%</p>
-            <p className="text-[11px] text-sage-600 font-medium mt-1">+5.1% vs last period</p>
+          <div className="bg-white rounded-xl p-4 sm:p-5">
+            <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Avg Occupancy</p>
+            <p className="text-xl sm:text-2xl font-semibold text-neutral-900">{stats.avgOccupancy}%</p>
+            <p className="text-[10px] sm:text-[11px] text-sage-600 font-medium mt-1">+5.1% vs last period</p>
           </div>
-          <div className="bg-white rounded-xl p-5">
-            <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Avg ADR</p>
-            <p className="text-2xl font-semibold text-neutral-900">${stats.avgADR.toLocaleString()}</p>
-            <p className="text-[11px] text-sage-600 font-medium mt-1">+3.4% vs last period</p>
+          <div className="bg-white rounded-xl p-4 sm:p-5">
+            <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Avg ADR</p>
+            <p className="text-xl sm:text-2xl font-semibold text-neutral-900">${stats.avgADR.toLocaleString()}</p>
+            <p className="text-[10px] sm:text-[11px] text-sage-600 font-medium mt-1">+3.4% vs last period</p>
           </div>
-          <div className="bg-white rounded-xl p-5">
-            <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Avg RevPAR</p>
-            <p className="text-2xl font-semibold text-neutral-900">${stats.avgRevPAR.toLocaleString()}</p>
-            <p className="text-[11px] text-sage-600 font-medium mt-1">+6.8% vs last period</p>
+          <div className="bg-white rounded-xl p-4 sm:p-5">
+            <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Avg RevPAR</p>
+            <p className="text-xl sm:text-2xl font-semibold text-neutral-900">${stats.avgRevPAR.toLocaleString()}</p>
+            <p className="text-[10px] sm:text-[11px] text-sage-600 font-medium mt-1">+6.8% vs last period</p>
           </div>
-          <div className="bg-white rounded-xl p-5">
-            <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Total Revenue</p>
-            <p className="text-2xl font-semibold text-neutral-900">{formatCurrency(stats.totalRevenue)}</p>
-            <p className="text-[11px] text-sage-600 font-medium mt-1">+12.3% vs last period</p>
+          <div className="bg-white rounded-xl p-4 sm:p-5">
+            <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Total Revenue</p>
+            <p className="text-xl sm:text-2xl font-semibold text-neutral-900">{formatCurrency(stats.totalRevenue)}</p>
+            <p className="text-[10px] sm:text-[11px] text-sage-600 font-medium mt-1">+12.3% vs last period</p>
           </div>
-          <div className="bg-white rounded-xl p-5">
-            <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Direct Bookings</p>
-            <p className="text-2xl font-semibold text-neutral-900">{stats.directPercent}%</p>
-            <p className="text-[11px] text-sage-600 font-medium mt-1">+2.1% vs last period</p>
+          <div className="bg-white rounded-xl p-4 sm:p-5">
+            <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Direct Bookings</p>
+            <p className="text-xl sm:text-2xl font-semibold text-neutral-900">{stats.directPercent}%</p>
+            <p className="text-[10px] sm:text-[11px] text-sage-600 font-medium mt-1">+2.1% vs last period</p>
           </div>
         </section>
 
         {/* Charts Row 1 - Line Charts */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Occupancy Trend */}
-          <div className="bg-white rounded-xl p-6">
+          <div className="bg-white rounded-xl p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1">Occupancy Trend</h3>
             <p className="text-[12px] text-neutral-500 mb-4">Daily occupancy rate over time</p>
 
@@ -310,7 +311,7 @@ export default function BookingsOccupancyReport() {
           </div>
 
           {/* ADR & RevPAR Trend */}
-          <div className="bg-white rounded-xl p-6">
+          <div className="bg-white rounded-xl p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1">ADR & RevPAR Trend</h3>
             <p className="text-[12px] text-neutral-500 mb-4">Average daily rate and revenue per available room</p>
 
@@ -363,22 +364,22 @@ export default function BookingsOccupancyReport() {
         </section>
 
         {/* Charts Row 2 */}
-        <section className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <section className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6">
           {/* Booking Sources Pie Chart */}
-          <div className="lg:col-span-2 bg-white rounded-xl p-6">
+          <div className="lg:col-span-2 bg-white rounded-xl p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1">Booking Sources</h3>
             <p className="text-[12px] text-neutral-500 mb-4">Distribution by channel</p>
 
-            <div className="flex items-center gap-6">
-              <div className="w-40 h-40">
+            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+              <div className="w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={bookingSourceData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={45}
-                      outerRadius={70}
+                      innerRadius={35}
+                      outerRadius={55}
                       paddingAngle={2}
                       dataKey="value"
                     >
@@ -390,16 +391,16 @@ export default function BookingsOccupancyReport() {
                 </ResponsiveContainer>
               </div>
 
-              <div className="flex-1 space-y-3">
+              <div className="flex-1 space-y-2 sm:space-y-3 w-full">
                 {bookingSourceData.map((item) => (
                   <div key={item.name} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span className="text-[13px] text-neutral-600">{item.name}</span>
+                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="text-[12px] sm:text-[13px] text-neutral-600">{item.name}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[13px] font-medium text-neutral-900">{item.value}</span>
-                      <span className="text-[11px] text-neutral-400 w-10 text-right">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <span className="text-[12px] sm:text-[13px] font-medium text-neutral-900">{item.value}</span>
+                      <span className="text-[10px] sm:text-[11px] text-neutral-400 w-8 sm:w-10 text-right">
                         {totalSourceBookings > 0 ? ((item.value / totalSourceBookings) * 100).toFixed(0) : 0}%
                       </span>
                     </div>
@@ -410,11 +411,11 @@ export default function BookingsOccupancyReport() {
           </div>
 
           {/* Daily Bookings Bar Chart */}
-          <div className="lg:col-span-3 bg-white rounded-xl p-6">
+          <div className="lg:col-span-3 bg-white rounded-xl p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1">Daily Bookings</h3>
             <p className="text-[12px] text-neutral-500 mb-4">New bookings per day</p>
 
-            <div className="h-52">
+            <div className="h-44 sm:h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={bookingsData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
@@ -455,9 +456,9 @@ export default function BookingsOccupancyReport() {
         </section>
 
         {/* Room Type Performance Table */}
-        <section className="bg-white rounded-xl p-6">
+        <section className="bg-white rounded-xl p-4 sm:p-6">
           <h3 className="text-sm font-semibold text-neutral-900 mb-1">Room Type Performance</h3>
-          <p className="text-[12px] text-neutral-500 mb-4">Bookings and revenue by room category</p>
+          <p className="text-[12px] text-neutral-500 mb-3 sm:mb-4">Bookings and revenue by room category</p>
 
           <div className="overflow-x-auto">
             <table className="w-full">

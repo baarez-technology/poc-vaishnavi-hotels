@@ -34,10 +34,10 @@ function ToggleItem({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between py-4 border-b border-neutral-100 last:border-0">
-      <div className="pr-4">
-        <p className="text-sm font-medium text-neutral-900">{title}</p>
-        <p className="text-xs text-neutral-500 mt-0.5">{description}</p>
+    <div className="flex items-center justify-between py-3 sm:py-4 border-b border-neutral-100 last:border-0 gap-3">
+      <div className="pr-2 sm:pr-4 min-w-0 flex-1">
+        <p className="text-[12px] sm:text-sm font-medium text-neutral-900">{title}</p>
+        <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">{description}</p>
       </div>
       <Toggle enabled={enabled} onChange={onChange} />
     </div>
@@ -55,13 +55,13 @@ function SettingRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="py-4 border-b border-neutral-100 last:border-0">
-      <div className="flex items-center justify-between">
-        <div className="pr-4">
-          <p className="text-sm font-medium text-neutral-900">{label}</p>
-          {hint && <p className="text-xs text-neutral-500 mt-0.5">{hint}</p>}
+    <div className="py-3 sm:py-4 border-b border-neutral-100 last:border-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+        <div className="pr-2 sm:pr-4 min-w-0">
+          <p className="text-[12px] sm:text-sm font-medium text-neutral-900">{label}</p>
+          {hint && <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">{hint}</p>}
         </div>
-        <div className="w-48">
+        <div className="w-full sm:w-48 flex-shrink-0">
           {children}
         </div>
       </div>
@@ -157,12 +157,12 @@ export default function AISettingsTab() {
   const inputClass = "w-full h-10 px-3 rounded-lg border border-neutral-200 text-sm text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:ring-2 focus:ring-terra-500/20 focus:outline-none transition-colors";
 
   return (
-    <div className="max-w-3xl space-y-8">
+    <div className="max-w-3xl space-y-6 sm:space-y-8">
       {/* Header */}
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-neutral-900">AI Settings</h1>
-          <p className="text-sm text-neutral-500 mt-1">
+          <h1 className="text-base sm:text-lg font-semibold text-neutral-900">AI Settings</h1>
+          <p className="text-[12px] sm:text-sm text-neutral-500 mt-1">
             Configure AI modules and intelligence features
           </p>
         </div>
@@ -170,13 +170,13 @@ export default function AISettingsTab() {
           {syncing && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg">
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm font-medium">Syncing...</span>
+              <span className="text-[12px] sm:text-sm font-medium">Syncing...</span>
             </div>
           )}
           {saved && !syncing && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-sage-50 text-sage-600 rounded-lg">
               <Check className="w-4 h-4" />
-              <span className="text-sm font-medium">Saved</span>
+              <span className="text-[12px] sm:text-sm font-medium">Saved</span>
             </div>
           )}
         </div>
@@ -184,15 +184,15 @@ export default function AISettingsTab() {
 
       {/* Sync Error Banner */}
       {syncError && (
-        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-          <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-amber-800">Sync Warning</p>
-            <p className="text-xs text-amber-600 mt-0.5">{syncError}</p>
+        <div className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[12px] sm:text-sm font-medium text-amber-800">Sync Warning</p>
+            <p className="text-[10px] sm:text-xs text-amber-600 mt-0.5">{syncError}</p>
           </div>
           <button
             onClick={() => setSyncError(null)}
-            className="ml-auto text-amber-500 hover:text-amber-700"
+            className="ml-auto text-amber-500 hover:text-amber-700 flex-shrink-0"
           >
             <span className="sr-only">Dismiss</span>
             &times;
@@ -202,10 +202,10 @@ export default function AISettingsTab() {
 
       {/* Revenue AI Section */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <h2 className="text-sm font-medium text-neutral-900">Revenue AI</h2>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">Revenue AI</h2>
         </div>
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <ToggleItem
             title="Competitor Rate Tracking"
             description="Monitor and compare rates from competing properties"
@@ -270,10 +270,10 @@ export default function AISettingsTab() {
 
       {/* Reputation AI Section */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <h2 className="text-sm font-medium text-neutral-900">Reputation AI</h2>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">Reputation AI</h2>
         </div>
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <ToggleItem
             title="Auto-Response"
             description="Automatically generate review responses"
@@ -327,10 +327,10 @@ export default function AISettingsTab() {
 
       {/* CRM AI Section */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <h2 className="text-sm font-medium text-neutral-900">CRM AI</h2>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">CRM AI</h2>
         </div>
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <ToggleItem
             title="AI Segmentation"
             description="Automatically segment guests based on behavior"
@@ -378,10 +378,10 @@ export default function AISettingsTab() {
 
       {/* Baarez AI Assistant Section */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <h2 className="text-sm font-medium text-neutral-900">Baarez AI Assistant</h2>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">Baarez AI Assistant</h2>
         </div>
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <ToggleItem
             title="Enable Assistant"
             description="Activate Baarez AI voice assistant"

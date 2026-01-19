@@ -369,43 +369,43 @@ export default function VoiceRecorderModal({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity"
+        className="fixed inset-0 bg-black/30 z-40 transition-opacity duration-300"
         onClick={onClose}
       />
 
-      {/* Modal */}
-      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md">
-        <div className="bg-white rounded-xl shadow-xl overflow-hidden">
+      {/* Center Modal */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-[10px] shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-neutral-200">
-            <h3 className="text-lg font-bold text-neutral-800">
+          <div className="flex-shrink-0 flex items-center justify-between p-4 sm:p-5 border-b border-neutral-100">
+            <h3 className="text-base sm:text-lg font-semibold text-neutral-900 tracking-tight">
               Voice Input
             </h3>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-neutral-100 transition-colors"
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-neutral-100 transition-colors"
             >
-              <X className="w-5 h-5 text-neutral-600" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-400" />
             </button>
           </div>
 
           {/* Content */}
-          <div className="p-8">
+          <div className="flex-1 overflow-y-auto p-5 sm:p-8">
             {/* Animated microphone */}
-            <div className="flex flex-col items-center mb-6">
+            <div className="flex flex-col items-center mb-4 sm:mb-6">
               <div className="relative">
                 {/* Pulse rings based on audio level */}
                 {isRecording && (
                   <>
                     <div
-                      className="absolute inset-0 rounded-full bg-red-500 opacity-20 animate-ping"
+                      className="absolute inset-0 rounded-full bg-rose-500 opacity-20 animate-ping"
                       style={{
                         animationDuration: '1.5s',
                         transform: `scale(${1 + audioLevel * 0.5})`
                       }}
                     />
                     <div
-                      className="absolute inset-0 rounded-full bg-red-500 opacity-10 animate-ping"
+                      className="absolute inset-0 rounded-full bg-rose-500 opacity-10 animate-ping"
                       style={{
                         animationDuration: '2s',
                         transform: `scale(${1 + audioLevel * 0.3})`
@@ -418,24 +418,24 @@ export default function VoiceRecorderModal({
                 <button
                   onClick={isRecording ? handleStopAndTranscribe : handleRetry}
                   disabled={isTranscribing}
-                  className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-all ${
+                  className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition-all ${
                     isRecording
-                      ? 'bg-gradient-to-br from-red-500 to-red-600 shadow-xl hover:from-red-600 hover:to-red-700'
+                      ? 'bg-gradient-to-br from-rose-500 to-rose-600 shadow-xl hover:from-rose-600 hover:to-rose-700'
                       : isTranscribing
                       ? 'bg-gradient-to-br from-amber-400 to-amber-500 cursor-wait'
-                      : 'bg-gradient-to-br from-neutral-400 to-neutral-500 hover:from-primary-500 hover:to-primary-600'
+                      : 'bg-gradient-to-br from-neutral-400 to-neutral-500 hover:from-terra-500 hover:to-terra-600'
                   }`}
                 >
                   {isRecording ? (
-                    <Square className="w-8 h-8 text-white" />
+                    <Square className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                   ) : (
-                    <Mic className="w-10 h-10 text-white" />
+                    <Mic className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                   )}
                 </button>
               </div>
 
               {/* Status text */}
-              <p className="mt-4 text-sm font-medium text-neutral-700">
+              <p className="mt-3 sm:mt-4 text-[12px] sm:text-sm font-medium text-neutral-700 text-center">
                 {isRecording
                   ? 'Recording... Click to stop'
                   : isTranscribing
@@ -446,8 +446,8 @@ export default function VoiceRecorderModal({
               </p>
 
               {/* Duration */}
-              <p className={`mt-1 text-2xl font-bold tabular-nums ${
-                isRecording ? 'text-red-600' : 'text-neutral-400'
+              <p className={`mt-1 text-xl sm:text-2xl font-bold tabular-nums ${
+                isRecording ? 'text-rose-600' : 'text-neutral-400'
               }`}>
                 {formatDuration(duration)}
               </p>
@@ -455,25 +455,25 @@ export default function VoiceRecorderModal({
 
             {/* Error message */}
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-700">{error}</p>
+              <div className="mb-3 sm:mb-4 p-2.5 sm:p-3 bg-rose-50 border border-rose-200 rounded-[10px] flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-rose-500 flex-shrink-0 mt-0.5" />
+                <p className="text-[12px] sm:text-sm text-rose-700">{error}</p>
               </div>
             )}
 
             {/* Transcript */}
-            <div className="min-h-[100px] p-4 bg-[#FAF8F6] border border-neutral-200 rounded-xl">
+            <div className="min-h-[80px] sm:min-h-[100px] p-3 sm:p-4 bg-neutral-50 border border-neutral-200 rounded-[10px]">
               {isTranscribing ? (
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm text-neutral-600">Processing audio...</p>
+                  <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-[12px] sm:text-sm text-neutral-600">Processing audio...</p>
                 </div>
               ) : transcript ? (
-                <p className="text-sm text-neutral-800 leading-relaxed">
+                <p className="text-[12px] sm:text-sm text-neutral-800 leading-relaxed">
                   {transcript}
                 </p>
               ) : (
-                <p className="text-sm text-neutral-400 italic">
+                <p className="text-[12px] sm:text-sm text-neutral-400 italic">
                   {error
                     ? 'Click the microphone to try again'
                     : 'Start speaking... Your voice will be transcribed here using Whisper AI'}
@@ -483,11 +483,11 @@ export default function VoiceRecorderModal({
 
             {/* Wave animation */}
             {isRecording && (
-              <div className="flex items-center justify-center gap-1 mt-4 h-8">
+              <div className="flex items-center justify-center gap-1 mt-3 sm:mt-4 h-6 sm:h-8">
                 {[...Array(7)].map((_, i) => (
                   <div
                     key={i}
-                    className="w-1 bg-gradient-to-t from-red-500 to-red-400 rounded-full transition-all duration-100"
+                    className="w-1 bg-gradient-to-t from-rose-500 to-rose-400 rounded-full transition-all duration-100"
                     style={{
                       height: `${8 + audioLevel * 20 * Math.sin((Date.now() / 100) + i)}px`,
                       minHeight: '8px',
@@ -500,17 +500,17 @@ export default function VoiceRecorderModal({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center gap-2 p-4 bg-[#FAF8F6] border-t border-neutral-200">
+          <div className="flex-shrink-0 flex items-center gap-2 p-3 sm:p-4 bg-neutral-50/50 border-t border-neutral-100">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-white border border-neutral-300 rounded-xl text-sm font-medium text-neutral-700 hover:bg-[#FAF8F6] transition-colors"
+              className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-lg text-[12px] sm:text-[13px] font-medium text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
             >
               Cancel
             </button>
             {transcript && !isRecording && !isTranscribing && (
               <button
                 onClick={handleRetry}
-                className="px-4 py-2.5 bg-white border border-neutral-300 rounded-xl text-sm font-medium text-neutral-700 hover:bg-[#FAF8F6] transition-colors"
+                className="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-lg text-[12px] sm:text-[13px] font-medium text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
               >
                 Re-record
               </button>
@@ -518,9 +518,9 @@ export default function VoiceRecorderModal({
             <button
               onClick={handleDone}
               disabled={!transcript || isRecording || isTranscribing}
-              className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+              className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-[12px] sm:text-[13px] font-semibold transition-colors ${
                 transcript && !isRecording && !isTranscribing
-                  ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white hover:shadow'
+                  ? 'bg-terra-500 hover:bg-terra-600 text-white'
                   : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
               }`}
             >

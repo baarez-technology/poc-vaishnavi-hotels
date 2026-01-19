@@ -98,11 +98,11 @@ const Profile = lazy(() => import('./pages/admin/Profile'));
 
 
 //Modified CMS pages as its in UI codebase
-const CMSBookings= lazy(() => import('./pages/admin/cbs/Bookings'));
-const CMSAvailability= lazy(() => import('./pages/admin/cbs/Calendar'));
-const CMSRatePlans= lazy(() => import('./pages/admin/cbs/RatePlans'));
-const CMSPromotions= lazy(() => import('./pages/admin/cbs/Promotions'));
-const PromationAnalytics= lazy(() => import('./pages/cms/promotions/Analytics')); 
+const CMSBookings = lazy(() => import('./pages/admin/cbs/Bookings'));
+const CMSAvailability = lazy(() => import('./pages/admin/cbs/Calendar'));
+const CMSRatePlans = lazy(() => import('./pages/admin/cbs/RatePlans'));
+const CMSPromotions = lazy(() => import('./pages/admin/cbs/Promotions'));
+const PromationAnalytics = lazy(() => import('./pages/cms/promotions/Analytics'));
 
 // Channel Manager Pages
 const ChannelDashboard = lazy(() => import('./pages/admin/channel-manager/ChannelDashboard'));
@@ -146,278 +146,278 @@ function App() {
   return (
     <ThemeProvider>
       <BrandingProvider>
-      <Router>
-        <AuthProvider>
-          <ChatProvider>
-            <AGIChatProvider>
-              <PreCheckInProvider>
-                <BookingProvider>
-                  <GuestAIProvider>
-                    <Toaster position="top-right" />
-                    <AriaChatWidgetWrapper />
-                    <CBSProvider>
-                    <Routes>
-                      {/* Public routes with navbar/footer */}
-                      <Route element={<PublicLayout />}>
-                        <Route path="/" element={<HomePage />} />
+        <Router>
+          <AuthProvider>
+            <ChatProvider>
+              <AGIChatProvider>
+                <PreCheckInProvider>
+                  <BookingProvider>
+                    <GuestAIProvider>
+                      <Toaster position="top-right" />
+                      <AriaChatWidgetWrapper />
+                      <CBSProvider>
+                        <Routes>
+                          {/* Public routes with navbar/footer */}
+                          <Route element={<PublicLayout />}>
+                            <Route path="/" element={<HomePage />} />
 
-                        {/* Rooms routes */}
-                        <Route path="/rooms" element={<RoomsPage />} />
-                        <Route path="/rooms/:slug" element={<RoomDetailPage />} />
+                            {/* Rooms routes */}
+                            <Route path="/rooms" element={<RoomsPage />} />
+                            <Route path="/rooms/:slug" element={<RoomDetailPage />} />
 
-                        {/* Contact route */}
-                        <Route path="/contact" element={<ContactPage />} />
+                            {/* Contact route */}
+                            <Route path="/contact" element={<ContactPage />} />
 
-                        {/* Booking flow routes */}
-                        <Route path="/booking" element={<BookingPage />} />
-                        <Route path="/booking/review" element={<BookingReview />} />
-                        <Route
-                          path="/booking/payment"
-                          element={
-                            <Suspense fallback={
-                              <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-                                <div className="text-center">
-                                  <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4" />
-                                  <p className="text-neutral-600">Loading payment page...</p>
-                                </div>
-                              </div>
-                            }>
-                              <BookingPayment />
-                            </Suspense>
-                          }
-                        />
-                        <Route path="/booking/confirmation" element={<BookingConfirmation />} />
-                        <Route path="/booking/failed" element={<BookingFailed />} />
+                            {/* Booking flow routes */}
+                            <Route path="/booking" element={<BookingPage />} />
+                            <Route path="/booking/review" element={<BookingReview />} />
+                            <Route
+                              path="/booking/payment"
+                              element={
+                                <Suspense fallback={
+                                  <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+                                    <div className="text-center">
+                                      <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4" />
+                                      <p className="text-neutral-600">Loading payment page...</p>
+                                    </div>
+                                  </div>
+                                }>
+                                  <BookingPayment />
+                                </Suspense>
+                              }
+                            />
+                            <Route path="/booking/confirmation" element={<BookingConfirmation />} />
+                            <Route path="/booking/failed" element={<BookingFailed />} />
 
-                        {/* Feedback route (accessible via email link after checkout) */}
-                        <Route path="/feedback" element={<FeedbackPage />} />
-                      </Route>
+                            {/* Feedback route (accessible via email link after checkout) */}
+                            <Route path="/feedback" element={<FeedbackPage />} />
+                          </Route>
 
-                      {/* Protected routes */}
-                      <Route element={<PublicLayout />}>
-                        <Route
-                          path="/pre-checkin"
-                          element={
-                            <ProtectedRoute>
-                              <PreCheckInPage />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/dashboard"
-                          element={
-                            <ProtectedRoute>
-                              <DashboardPage />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/dashboard/frontdesk"
-                          element={
-                            <ProtectedRoute>
-                              <FrontDeskDashboard />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/dashboard/housekeeping"
-                          element={
-                            <ProtectedRoute>
-                              <HousekeepingDashboard />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/dashboard/finance"
-                          element={
-                            <ProtectedRoute>
-                              <FinanceDashboard />
-                            </ProtectedRoute>
-                          }
-                        />
-                      </Route>
+                          {/* Protected routes */}
+                          <Route element={<PublicLayout />}>
+                            <Route
+                              path="/pre-checkin"
+                              element={
+                                <ProtectedRoute>
+                                  <PreCheckInPage />
+                                </ProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/dashboard"
+                              element={
+                                <ProtectedRoute>
+                                  <DashboardPage />
+                                </ProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/dashboard/frontdesk"
+                              element={
+                                <ProtectedRoute>
+                                  <FrontDeskDashboard />
+                                </ProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/dashboard/housekeeping"
+                              element={
+                                <ProtectedRoute>
+                                  <HousekeepingDashboard />
+                                </ProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/dashboard/finance"
+                              element={
+                                <ProtectedRoute>
+                                  <FinanceDashboard />
+                                </ProtectedRoute>
+                              }
+                            />
+                          </Route>
 
-                      {/* Admin routes (protected, full page without public layout) */}
-                      <Route
-                        path="/admin/*"
-                        element={
-                          <ProtectedRoute>
-                          <ToastProvider>
-                            <SettingsProvider>
-                              <AdminProvider>
-                                  <ChannelManagerProvider>
-                                    <AIInsightsProvider>
-                                      <RMSProvider>
-                                    <Suspense fallback={
-                                      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-                                        <div className="text-center">
-                                          <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4" />
-                                          <p className="text-neutral-600">Loading admin panel...</p>
-                                        </div>
-                                      </div>
-                                    }>
-                                      <Routes>
-                                        <Route element={<AdminLayout />}>
-                                          <Route index element={<Dashboard />} />
-                                          <Route path="dashboard" element={<Dashboard />} />
-                                          <Route path="bookings" element={<Bookings />} />
-                                          <Route path="guests" element={<Guests />} />
-                                          <Route path="guests/:guestId" element={<GuestProfile />} />
-                                          <Route path="rooms" element={<Rooms />} />
-                                          <Route path="staff" element={<Staff />} />
-                                          <Route path="staff/:staffId" element={<StaffProfile />} />
-                                          <Route path="housekeeping" element={<Housekeeping />} />
-                                          <Route path="maintenance" element={<Maintenance />} />
-                                          <Route path="runner" element={<Runner />} />
-                                          <Route path="revenue" element={<RevenueDashboard />} />
-                                          <Route path="reputation" element={<ReputationAI />} />
-                                          <Route path="crm" element={<CRM />} />
-                                          <Route path="crm/segment/:segmentId" element={<SegmentDetailsWrapper />} />
-                                          <Route path="reports" element={<ReportsHome />} />
-                                          <Route path="reports/bookings-occupancy" element={<BookingsOccupancyReport />} />
-                                          <Route path="reports/housekeeping-rooms" element={<HousekeepingRoomsReport />} />
-                                          <Route path="reports/revenue-snapshot" element={<RevenueSnapshotReport />} />
-                                          <Route path="reports/guest-experience" element={<GuestExperienceReport />} />
-                                          <Route path="analytics" element={<AdvancedAnalytics />} />
-                                          <Route path="settings/*" element={<SettingsLayout />} />
-                                          {/* Profile Route */}
-                                          <Route path="profile" element={<Profile />} />
-                                          {/* CMS Routes */}
-                                          <Route path="cms/availability" element={<CMSAvailability />} />
-                                          {/* Channel Manager Routes */}
-                                          <Route path="channel-manager" element={<ChannelDashboard />} />
-                                          {/* RMS Routes */}
-                                          <Route path="rms" element={<Navigate to="/admin/revenue" replace />} />
-                                          {/* CMS Routes */}
-                                          <Route path="cms/bookings" element={<CMSBookings />} />
-                                          <Route path="cms/rate-plans" element={<CMSRatePlans />} />
-                                          <Route path="cms/promotions" element={<CMSPromotions />} />
-                                          {/* Channel Manager Routes */}
-                                          <Route path="channel-manager/ota" element={<OTAConnections />} />
-                                          <Route path="channel-manager/mapping" element={<RoomMapping />} />
-                                          <Route path="channel-manager/rate-sync" element={<RateSync />} />
-                                          <Route path="channel-manager/restrictions" element={<Restrictions />} />
-                                          <Route path="channel-manager/promotions" element={<ChannelPromotions />} />
-                                          <Route path="channel-manager/logs" element={<SyncLogs />} />
-                                          {/* Revenue Management Routes */}
-                                          <Route path="revenue/calendar" element={<RateCalendar />} />
-                                          <Route path="revenue/pickup" element={<PickupAnalysis />} />
-                                          <Route path="revenue/forecast" element={<DemandForecast />} />
-                                          <Route path="revenue/competitors" element={<CompetitorRates />} />
-                                          <Route path="revenue/segments" element={<Segmentation />} />
-                                          <Route path="revenue/pricing" element={<PricingRules />} />
-                                          <Route path="revenue/ai" element={<RevenueAI />} />
-                                          {/* AI Routes */}
-                                          <Route path="ai/reputation" element={<ReputationAI />} />
-                                          <Route path="ai/crm" element={<CRM />} />
-                                          <Route path="ai/crm-dashboard" element={<CRMAIDashboard />} />
-                                          <Route path="ai/crm-chat" element={<CRMAI />} />
-                                          <Route path="ai/ab-testing" element={<ABTestingDashboard />} />
-                                          <Route path="ai/ota-conversion" element={<OTAConversionCenter />} />
-                                          <Route path="ai/member-tiers" element={<MemberTierManagement />} />
-                                          <Route path="ai/ai-segments" element={<AISegmentationStudio />} />
-                                          <Route path="ai/recovery" element={<RecoveryActionCenter />} />
-                                          {/* Maintenance Specializations */}
-                                          <Route path="maintenance/specializations" element={<TechnicianSpecializations />} />
-                                        </Route>
-                                      </Routes>
-                                    </Suspense>
-                                      </RMSProvider>
-                                    </AIInsightsProvider>
-                                  </ChannelManagerProvider>
-                              </AdminProvider>
-                            </SettingsProvider>
-                          </ToastProvider>
-                        </ProtectedRoute>
-                        }
-                      />
+                          {/* Admin routes (protected, full page without public layout) */}
+                          <Route
+                            path="/admin/*"
+                            element={
+                              <ProtectedRoute>
+                                <ToastProvider>
+                                  <SettingsProvider>
+                                    <AdminProvider>
+                                      <ChannelManagerProvider>
+                                        <AIInsightsProvider>
+                                          <RMSProvider>
+                                            <Suspense fallback={
+                                              <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+                                                <div className="text-center">
+                                                  <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4" />
+                                                  <p className="text-neutral-600">Loading admin panel...</p>
+                                                </div>
+                                              </div>
+                                            }>
+                                              <Routes>
+                                                <Route element={<AdminLayout />}>
+                                                  <Route index element={<Dashboard />} />
+                                                  <Route path="dashboard" element={<Dashboard />} />
+                                                  <Route path="bookings" element={<Bookings />} />
+                                                  <Route path="guests" element={<Guests />} />
+                                                  <Route path="guests/:guestId" element={<GuestProfile />} />
+                                                  <Route path="rooms" element={<Rooms />} />
+                                                  <Route path="staff" element={<Staff />} />
+                                                  <Route path="staff/:staffId" element={<StaffProfile />} />
+                                                  <Route path="housekeeping" element={<Housekeeping />} />
+                                                  <Route path="maintenance" element={<Maintenance />} />
+                                                  <Route path="runner" element={<Runner />} />
+                                                  <Route path="revenue" element={<RevenueDashboard />} />
+                                                  <Route path="reputation" element={<ReputationAI />} />
+                                                  <Route path="crm" element={<CRM />} />
+                                                  <Route path="crm/segment/:segmentId" element={<SegmentDetailsWrapper />} />
+                                                  <Route path="reports" element={<ReportsHome />} />
+                                                  <Route path="reports/bookings-occupancy" element={<BookingsOccupancyReport />} />
+                                                  <Route path="reports/housekeeping-rooms" element={<HousekeepingRoomsReport />} />
+                                                  <Route path="reports/revenue-snapshot" element={<RevenueSnapshotReport />} />
+                                                  <Route path="reports/guest-experience" element={<GuestExperienceReport />} />
+                                                  <Route path="analytics" element={<AdvancedAnalytics />} />
+                                                  <Route path="settings/*" element={<SettingsLayout />} />
+                                                  {/* Profile Route */}
+                                                  <Route path="profile" element={<Profile />} />
+                                                  {/* CMS Routes */}
+                                                  <Route path="cms/availability" element={<CMSAvailability />} />
+                                                  {/* Channel Manager Routes */}
+                                                  <Route path="channel-manager" element={<ChannelDashboard />} />
+                                                  {/* RMS Routes */}
+                                                  <Route path="rms" element={<Navigate to="/admin/revenue" replace />} />
+                                                  {/* CMS Routes */}
+                                                  <Route path="cms/bookings" element={<CMSBookings />} />
+                                                  <Route path="cms/rate-plans" element={<CMSRatePlans />} />
+                                                  <Route path="cms/promotions" element={<CMSPromotions />} />
+                                                  {/* Channel Manager Routes */}
+                                                  <Route path="channel-manager/ota" element={<OTAConnections />} />
+                                                  <Route path="channel-manager/mapping" element={<RoomMapping />} />
+                                                  <Route path="channel-manager/rate-sync" element={<RateSync />} />
+                                                  <Route path="channel-manager/restrictions" element={<Restrictions />} />
+                                                  <Route path="channel-manager/promotions" element={<ChannelPromotions />} />
+                                                  <Route path="channel-manager/logs" element={<SyncLogs />} />
+                                                  {/* Revenue Management Routes */}
+                                                  <Route path="revenue/calendar" element={<RateCalendar />} />
+                                                  <Route path="revenue/pickup" element={<PickupAnalysis />} />
+                                                  <Route path="revenue/forecast" element={<DemandForecast />} />
+                                                  <Route path="revenue/competitors" element={<CompetitorRates />} />
+                                                  <Route path="revenue/segments" element={<Segmentation />} />
+                                                  <Route path="revenue/pricing" element={<PricingRules />} />
+                                                  <Route path="revenue/ai" element={<RevenueAI />} />
+                                                  {/* AI Routes */}
+                                                  <Route path="ai/reputation" element={<ReputationAI />} />
+                                                  <Route path="ai/crm" element={<CRM />} />
+                                                  <Route path="ai/crm-dashboard" element={<CRMAIDashboard />} />
+                                                  <Route path="ai/crm-chat" element={<CRMAI />} />
+                                                  <Route path="ai/ab-testing" element={<ABTestingDashboard />} />
+                                                  <Route path="ai/ota-conversion" element={<OTAConversionCenter />} />
+                                                  <Route path="ai/member-tiers" element={<MemberTierManagement />} />
+                                                  <Route path="ai/ai-segments" element={<AISegmentationStudio />} />
+                                                  <Route path="ai/recovery" element={<RecoveryActionCenter />} />
+                                                  {/* Maintenance Specializations */}
+                                                  <Route path="maintenance/specializations" element={<TechnicianSpecializations />} />
+                                                </Route>
+                                              </Routes>
+                                            </Suspense>
+                                          </RMSProvider>
+                                        </AIInsightsProvider>
+                                      </ChannelManagerProvider>
+                                    </AdminProvider>
+                                  </SettingsProvider>
+                                </ToastProvider>
+                              </ProtectedRoute>
+                            }
+                          />
 
-                      {/* Staff Portal routes (protected, with StaffPortalProvider) */}
-                      <Route
-                        path="/staff/*"
-                        element={
-                          <StaffPortalProvider>
-                            <Suspense fallback={
-                              <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-                                <div className="text-center">
-                                  <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4" />
-                                  <p className="text-neutral-600">Loading staff portal...</p>
-                                </div>
-                              </div>
-                            }>
-                              <Routes>
-                                <Route path="login" element={<StaffLogin />} />
-                                <Route
-                                  path="*"
-                                  element={
-                                    <ProtectedRouteStaff>
-                                      <StaffLayout>
-                                        <Routes>
-                                          {/* Housekeeping routes */}
-                                          <Route path="housekeeping" element={<StaffHousekeepingDashboard />} />
-                                          <Route path="housekeeping/dashboard" element={<StaffHousekeepingDashboard />} />
-                                          <Route path="housekeeping/rooms" element={<StaffHousekeepingRooms />} />
-                                          <Route path="housekeeping/rooms/:id" element={<StaffHousekeepingRoomDetails />} />
-                                          <Route path="housekeeping/tasks" element={<StaffHousekeepingTasks />} />
-                                          <Route path="housekeeping/notifications" element={<StaffNotifications />} />
-                                          <Route path="housekeeping/profile" element={<StaffPortalProfile />} />
+                          {/* Staff Portal routes (protected, with StaffPortalProvider) */}
+                          <Route
+                            path="/staff/*"
+                            element={
+                              <StaffPortalProvider>
+                                <Suspense fallback={
+                                  <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+                                    <div className="text-center">
+                                      <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4" />
+                                      <p className="text-neutral-600">Loading staff portal...</p>
+                                    </div>
+                                  </div>
+                                }>
+                                  <Routes>
+                                    <Route path="login" element={<StaffLogin />} />
+                                    <Route
+                                      path="*"
+                                      element={
+                                        <ProtectedRouteStaff>
+                                          <StaffLayout>
+                                            <Routes>
+                                              {/* Housekeeping routes */}
+                                              <Route path="housekeeping" element={<StaffHousekeepingDashboard />} />
+                                              <Route path="housekeeping/dashboard" element={<StaffHousekeepingDashboard />} />
+                                              <Route path="housekeeping/rooms" element={<StaffHousekeepingRooms />} />
+                                              <Route path="housekeeping/rooms/:id" element={<StaffHousekeepingRoomDetails />} />
+                                              <Route path="housekeeping/tasks" element={<StaffHousekeepingTasks />} />
+                                              <Route path="housekeeping/notifications" element={<StaffNotifications />} />
+                                              <Route path="housekeeping/profile" element={<StaffPortalProfile />} />
 
-                                          {/* Maintenance routes */}
-                                          <Route path="maintenance" element={<StaffMaintenanceDashboard />} />
-                                          <Route path="maintenance/dashboard" element={<StaffMaintenanceDashboard />} />
-                                          <Route path="maintenance/work-orders" element={<StaffMaintenanceWorkOrders />} />
-                                          <Route path="maintenance/work-orders/:id" element={<StaffMaintenanceWorkOrders />} />
-                                          <Route path="maintenance/tasks" element={<StaffMaintenanceTasks />} />
-                                          <Route path="maintenance/equipment" element={<StaffMaintenanceEquipmentIssues />} />
-                                          <Route path="maintenance/notifications" element={<StaffNotifications />} />
-                                          <Route path="maintenance/profile" element={<StaffPortalProfile />} />
+                                              {/* Maintenance routes */}
+                                              <Route path="maintenance" element={<StaffMaintenanceDashboard />} />
+                                              <Route path="maintenance/dashboard" element={<StaffMaintenanceDashboard />} />
+                                              <Route path="maintenance/work-orders" element={<StaffMaintenanceWorkOrders />} />
+                                              <Route path="maintenance/work-orders/:id" element={<StaffMaintenanceWorkOrders />} />
+                                              <Route path="maintenance/tasks" element={<StaffMaintenanceTasks />} />
+                                              <Route path="maintenance/equipment" element={<StaffMaintenanceEquipmentIssues />} />
+                                              <Route path="maintenance/notifications" element={<StaffNotifications />} />
+                                              <Route path="maintenance/profile" element={<StaffPortalProfile />} />
 
-                                          {/* Runner routes */}
-                                          <Route path="runner" element={<StaffRunnerDashboard />} />
-                                          <Route path="runner/dashboard" element={<StaffRunnerDashboard />} />
-                                          <Route path="runner/pickups" element={<StaffRunnerPickupRequests />} />
-                                          <Route path="runner/deliveries" element={<StaffRunnerDeliveries />} />
-                                          <Route path="runner/notifications" element={<StaffNotifications />} />
-                                          <Route path="runner/profile" element={<StaffPortalProfile />} />
+                                              {/* Runner routes */}
+                                              <Route path="runner" element={<StaffRunnerDashboard />} />
+                                              <Route path="runner/dashboard" element={<StaffRunnerDashboard />} />
+                                              <Route path="runner/pickups" element={<StaffRunnerPickupRequests />} />
+                                              <Route path="runner/deliveries" element={<StaffRunnerDeliveries />} />
+                                              <Route path="runner/notifications" element={<StaffNotifications />} />
+                                              <Route path="runner/profile" element={<StaffPortalProfile />} />
 
-                                          {/* Task Acceptance (for force-assigned tasks) */}
-                                          <Route path="tasks/pending" element={<StaffTaskAcceptance />} />
+                                              {/* Task Acceptance (for force-assigned tasks) */}
+                                              <Route path="tasks/pending" element={<StaffTaskAcceptance />} />
 
-                                          {/* Common routes (accessible from any role) */}
-                                          <Route path="profile" element={<StaffPortalProfile />} />
-                                          <Route path="notifications" element={<StaffNotifications />} />
+                                              {/* Common routes (accessible from any role) */}
+                                              <Route path="profile" element={<StaffPortalProfile />} />
+                                              <Route path="notifications" element={<StaffNotifications />} />
 
-                                          {/* Default redirect based on role */}
-                                          <Route index element={<StaffHousekeepingDashboard />} />
-                                        </Routes>
-                                      </StaffLayout>
-                                    </ProtectedRouteStaff>
-                                  }
-                                />
-                              </Routes>
-                            </Suspense>
-                          </StaffPortalProvider>
-                        }
-                      />
+                                              {/* Default redirect based on role */}
+                                              <Route index element={<StaffHousekeepingDashboard />} />
+                                            </Routes>
+                                          </StaffLayout>
+                                        </ProtectedRouteStaff>
+                                      }
+                                    />
+                                  </Routes>
+                                </Suspense>
+                              </StaffPortalProvider>
+                            }
+                          />
 
-                      {/* Auth routes (full page) */}
-                      <Route path="/login" element={<LoginPage />} />
-                      <Route path="/signup" element={<SignupPage />} />
-                      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                      <Route path="/reset-password" element={<ResetPassword />} />
+                          {/* Auth routes (full page) */}
+                          <Route path="/login" element={<LoginPage />} />
+                          <Route path="/signup" element={<SignupPage />} />
+                          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                          <Route path="/reset-password" element={<ResetPassword />} />
 
-                      {/* 404 */}
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                    </CBSProvider>
-                  </GuestAIProvider>
-                </BookingProvider>
-              </PreCheckInProvider>
-            </AGIChatProvider>
-          </ChatProvider>
-        </AuthProvider>
-      </Router>
-    </BrandingProvider>
+                          {/* 404 */}
+                          <Route path="*" element={<NotFound />} />
+                        </Routes>
+                      </CBSProvider>
+                    </GuestAIProvider>
+                  </BookingProvider>
+                </PreCheckInProvider>
+              </AGIChatProvider>
+            </ChatProvider>
+          </AuthProvider>
+        </Router>
+      </BrandingProvider>
     </ThemeProvider>
   );
 }

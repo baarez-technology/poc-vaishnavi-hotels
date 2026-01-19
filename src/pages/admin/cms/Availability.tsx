@@ -77,7 +77,16 @@ const CHANNELS = [
 // ============================================
 // PREMIUM KPI CARD
 // ============================================
-function KPICard({ title, value, prefix = '', suffix = '', subtitle, icon: Icon, trend, accentColor = 'terra', delay = 0 }) {
+function KPICard({ title, value, prefix = '', suffix = '', subtitle, icon: Icon, trend, accentColor = 'terra' }: {
+  title: string;
+  value: number | string;
+  prefix?: string;
+  suffix?: string;
+  subtitle: string;
+  icon: any;
+  trend?: { value: string; isPositive: boolean } | null;
+  accentColor?: string;
+}) {
   const isPositive = trend?.isPositive !== false;
 
   const bgColorMap = {
@@ -1733,7 +1742,7 @@ export default function CMSAvailability() {
         {/* ============================================ */}
         {/* KPI CARDS */}
         {/* ============================================ */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
           <KPICard
             title="Occupancy Rate"
             value={stats.occupancyRate}
@@ -1742,8 +1751,6 @@ export default function CMSAvailability() {
             icon={Percent}
             trend={{ value: stats.occupancyRate >= 80 ? 'High' : stats.occupancyRate >= 60 ? 'Medium' : 'Low', isPositive: stats.occupancyRate >= 60 }}
             accentColor="terra"
-            delay={0}
-            isDark={isDark}
           />
           <KPICard
             title="Available Rooms"
@@ -1751,8 +1758,6 @@ export default function CMSAvailability() {
             subtitle={`of ${stats.totalRooms} total`}
             icon={Home}
             accentColor="sage"
-            delay={1}
-            isDark={isDark}
           />
           <KPICard
             title="Sold Out Days"
@@ -1760,8 +1765,6 @@ export default function CMSAvailability() {
             subtitle="Next 30 days"
             icon={CalendarX}
             accentColor={stats.closedDays > 10 ? 'rose' : 'gold'}
-            delay={2}
-            isDark={isDark}
           />
           <KPICard
             title="High Demand"
@@ -1769,8 +1772,6 @@ export default function CMSAvailability() {
             subtitle="Days at 80%+ (30d)"
             icon={TrendingUp}
             accentColor="ocean"
-            delay={3}
-            isDark={isDark}
           />
           <KPICard
             title="Restrictions"
@@ -1778,8 +1779,6 @@ export default function CMSAvailability() {
             subtitle="Active CTA/CTD (30d)"
             icon={Lock}
             accentColor="gold"
-            delay={4}
-            isDark={isDark}
           />
         </div>
 

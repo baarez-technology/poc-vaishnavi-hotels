@@ -22,11 +22,11 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
   const status = statusConfig[room.status] || statusConfig.available;
 
   const renderFooter = () => (
-    <div className="flex items-center justify-end gap-3">
-      <Button variant="ghost" onClick={onClose} className="px-5 py-2 text-[13px] font-semibold">
+    <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+      <Button variant="ghost" onClick={onClose} className="px-4 sm:px-5 py-2 text-[12px] sm:text-[13px] font-semibold">
         Close
       </Button>
-      <Button variant="primary" onClick={() => onUpdateStatus(room)} className="px-5 py-2 text-[13px] font-semibold">
+      <Button variant="primary" onClick={() => onUpdateStatus(room)} className="px-4 sm:px-5 py-2 text-[12px] sm:text-[13px] font-semibold">
         Update Status
       </Button>
     </div>
@@ -105,22 +105,22 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Room Details
           </h4>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100">
+          <div className="grid grid-cols-1 xs:grid-cols-3 gap-3">
+            <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100">
               <div className="flex items-center gap-2 mb-2">
                 <Bed className="w-4 h-4 text-neutral-400" />
                 <span className="text-[11px] font-medium text-neutral-500">Bed Type</span>
               </div>
               <p className="text-[13px] font-semibold text-neutral-900">{room.bedType}</p>
             </div>
-            <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100">
+            <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100">
               <div className="flex items-center gap-2 mb-2">
                 <UsersRound className="w-4 h-4 text-neutral-400" />
                 <span className="text-[11px] font-medium text-neutral-500">Capacity</span>
               </div>
               <p className="text-[13px] font-semibold text-neutral-900">{room.capacity} guests</p>
             </div>
-            <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100">
+            <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100">
               <div className="flex items-center gap-2 mb-2">
                 <DollarSign className="w-4 h-4 text-neutral-400" />
                 <span className="text-[11px] font-medium text-neutral-500">Price</span>

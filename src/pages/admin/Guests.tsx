@@ -187,12 +187,12 @@ export default function Guests() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <div className="px-10 py-6 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Page Header */}
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">Guests</h1>
-            <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">Guests</h1>
+            <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">
               Manage your guest database and communication.
             </p>
           </div>
@@ -203,7 +203,7 @@ export default function Guests() {
         <div className="bg-white rounded-[10px] overflow-hidden">
           {/* Tabs */}
           <div className="border-b border-neutral-100">
-            <div className="px-6 pt-4 flex items-center justify-between">
+            <div className="px-3 sm:px-6 pt-3 sm:pt-4 flex items-center justify-between overflow-x-auto">
               <GuestsTabs
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
@@ -218,12 +218,12 @@ export default function Guests() {
           </div>
 
           {/* Search & Filters Row */}
-          <div className="px-6 py-4 bg-neutral-50/30 border-b border-neutral-100">
-            <div className="flex items-center gap-3">
-              <div className="flex-1 max-w-md">
+          <div className="px-3 sm:px-6 py-3 sm:py-4 bg-neutral-50/30 border-b border-neutral-100">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="w-full sm:flex-1 sm:max-w-md">
                 <GuestsSearch value={searchQuery} onChange={setSearchQuery} />
               </div>
-              <div className="flex-1" />
+              <div className="hidden sm:block sm:flex-1" />
               <GuestsFilters
                 filters={filters}
                 onFilterChange={updateFilter}
@@ -248,7 +248,7 @@ export default function Guests() {
 
           {/* Pagination */}
           {guests.length > 0 && (
-            <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/30">
+            <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 bg-neutral-50/30">
               <Pagination
                 currentPage={pagination.currentPage}
                 totalPages={pagination.totalPages}

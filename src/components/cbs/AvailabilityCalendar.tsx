@@ -298,7 +298,7 @@ const AvailabilityCalendar = forwardRef(({
   return (
     <div className="bg-white rounded-[10px] overflow-hidden">
       {/* Calendar Header */}
-      <div className="px-6 py-5 flex items-center justify-between">
+      <div className="px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-neutral-800">Availability Calendar</h3>
           <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
@@ -502,45 +502,45 @@ const AvailabilityCalendar = forwardRef(({
       </div>
 
       {/* Legend */}
-      <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50">
-        <div className="flex items-center gap-6 flex-wrap">
-          <span className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Legend</span>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-sage-50 flex items-center justify-center">
-              <CheckCircle className="w-3.5 h-3.5 text-sage-600" />
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 bg-neutral-50/50">
+        <div className="flex items-center gap-3 sm:gap-6 flex-wrap">
+          <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Legend</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-sage-50 flex items-center justify-center">
+              <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-sage-600" />
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">Available</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">Available</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-gold-50 flex items-center justify-center">
-              <AlertCircle className="w-3.5 h-3.5 text-gold-600" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-gold-50 flex items-center justify-center">
+              <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gold-600" />
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">Low Stock</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">Low Stock</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-rose-50 flex items-center justify-center">
-              <XCircle className="w-3.5 h-3.5 text-rose-600" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-rose-50 flex items-center justify-center">
+              <XCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-rose-600" />
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">Sold Out</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">Sold Out</span>
           </div>
-          <div className="h-4 w-px bg-neutral-200" />
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-rose-100 flex items-center justify-center">
-              <span className="text-[10px] font-semibold text-rose-700">S</span>
+          <div className="h-4 w-px bg-neutral-200 hidden sm:block" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-rose-100 flex items-center justify-center">
+              <span className="text-[9px] sm:text-[10px] font-semibold text-rose-700">S</span>
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">Stop Sell</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">Stop Sell</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-gold-100 flex items-center justify-center">
-              <span className="text-[10px] font-semibold text-gold-700">A</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-gold-100 flex items-center justify-center">
+              <span className="text-[9px] sm:text-[10px] font-semibold text-gold-700">A</span>
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">CTA</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">CTA</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-ocean-100 flex items-center justify-center">
-              <span className="text-[10px] font-semibold text-ocean-700">D</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-ocean-100 flex items-center justify-center">
+              <span className="text-[9px] sm:text-[10px] font-semibold text-ocean-700">D</span>
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">CTD</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">CTD</span>
           </div>
         </div>
       </div>

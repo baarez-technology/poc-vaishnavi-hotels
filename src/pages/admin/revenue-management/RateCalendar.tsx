@@ -22,30 +22,30 @@ function KPICard({ title, value, trendValue, icon: Icon, accentColor = 'terra', 
   const style = accentStyles[accentColor] || accentStyles.terra;
 
   return (
-    <div className="rounded-[10px] bg-white p-6">
+    <div className="rounded-[10px] bg-white p-4 sm:p-6">
       {/* Header with Icon and Title */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${style.bg}`}>
-          <Icon className={`w-4 h-4 ${style.icon}`} />
+      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+        <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center ${style.bg}`}>
+          <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${style.icon}`} />
         </div>
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 truncate">
           {title}
         </p>
       </div>
 
       {/* Value */}
-      <p className="text-[28px] font-semibold tracking-tight text-neutral-900 mb-2">
+      <p className="text-xl sm:text-[28px] font-semibold tracking-tight text-neutral-900 mb-1.5 sm:mb-2">
         {value}
       </p>
 
       {/* Comparison */}
       <div className="flex items-center justify-between">
-        <p className="text-[11px] text-neutral-400 font-medium">{subtitle || 'vs Last Week'}</p>
+        <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">{subtitle || 'vs Last Week'}</p>
         {trendValue !== null && trendValue !== undefined ? (
-          <div className={`flex items-center gap-1 text-[11px] font-semibold ${
+          <div className={`flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold ${
             isPositive ? 'text-sage-600' : 'text-rose-600'
           }`}>
-            {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+            {isPositive ? <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : <TrendingDown className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
             {isPositive ? '+' : ''}{trendValue}%
           </div>
         ) : children}
@@ -225,15 +225,17 @@ const RateCalendar = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <main className="px-10 py-6 space-y-6">
+      <main className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Header */}
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
               Rate Calendar
             </h1>
-            <p className="text-[13px] text-neutral-500 mt-1">
-              Manage rates, availability, and restrictions • Updated {new Date(lastRecalculation).toLocaleString('en-US', {
+            <p className="text-xs sm:text-[13px] text-neutral-500 mt-0.5 sm:mt-1">
+              <span className="hidden sm:inline">Manage rates, availability, and restrictions • Updated </span>
+              <span className="sm:hidden">Updated </span>
+              {new Date(lastRecalculation).toLocaleString('en-US', {
                 month: 'short',
                 day: 'numeric',
                 hour: 'numeric',
@@ -242,11 +244,11 @@ const RateCalendar = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {bulkEditMode && selectedDates.length > 0 && (
               <>
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-terra-50 border border-terra-200">
-                  <span className="text-[13px] font-medium text-terra-700">
+                <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-terra-50 border border-terra-200">
+                  <span className="text-xs sm:text-[13px] font-medium text-terra-700">
                     {selectedDates.length} date{selectedDates.length !== 1 ? 's' : ''} selected
                   </span>
                 </div>
@@ -254,8 +256,10 @@ const RateCalendar = () => {
                   variant="success"
                   icon={Edit3}
                   onClick={handleBulkEdit}
+                  className="text-xs sm:text-sm"
                 >
-                  Apply Changes
+                  <span className="hidden sm:inline">Apply Changes</span>
+                  <span className="sm:hidden">Apply</span>
                 </Button>
               </>
             )}
@@ -264,8 +268,10 @@ const RateCalendar = () => {
               variant={bulkEditMode ? 'warning' : 'outline'}
               icon={Copy}
               onClick={toggleBulkEditMode}
+              className="text-xs sm:text-sm"
             >
-              {bulkEditMode ? 'Cancel Bulk Edit' : 'Bulk Edit'}
+              <span className="hidden sm:inline">{bulkEditMode ? 'Cancel Bulk Edit' : 'Bulk Edit'}</span>
+              <span className="sm:hidden">{bulkEditMode ? 'Cancel' : 'Bulk'}</span>
             </Button>
 
             {!bulkEditMode && (
@@ -276,6 +282,7 @@ const RateCalendar = () => {
                   onClick={handleExport}
                   disabled={isExporting}
                   loading={isExporting}
+                  className="text-xs sm:text-sm"
                 >
                   Export
                 </Button>
@@ -286,8 +293,10 @@ const RateCalendar = () => {
                   onClick={handleRecalculateAll}
                   disabled={isRecalculating}
                   loading={isRecalculating}
+                  className="text-xs sm:text-sm"
                 >
-                  {isRecalculating ? 'Recalculating...' : 'Run All Rules'}
+                  <span className="hidden sm:inline">{isRecalculating ? 'Recalculating...' : 'Run All Rules'}</span>
+                  <span className="sm:hidden">{isRecalculating ? 'Running...' : 'Run Rules'}</span>
                 </Button>
               </>
             )}
@@ -295,7 +304,7 @@ const RateCalendar = () => {
         </header>
 
         {/* KPI Cards */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <section className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
           <KPICard
             title="Avg Occupancy"
             value={`${avgOccupancy}%`}
@@ -344,47 +353,48 @@ const RateCalendar = () => {
 
         {/* Competitor Suggestion Banner */}
         {competitorSuggestion && (
-          <div className="rounded-[10px] border p-5 bg-gradient-to-r from-terra-50 to-gold-50 border-terra-200">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-terra-100">
-                  <ExternalLink className="w-6 h-6 text-terra-600" />
+          <div className="rounded-[10px] border p-4 sm:p-5 bg-gradient-to-r from-terra-50 to-gold-50 border-terra-200">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center bg-terra-100 flex-shrink-0">
+                  <ExternalLink className="w-5 h-5 sm:w-6 sm:h-6 text-terra-600" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-[15px] font-semibold text-neutral-800">
-                      Competitor Analysis Suggestion
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-sm sm:text-[15px] font-semibold text-neutral-800">
+                      <span className="hidden sm:inline">Competitor Analysis Suggestion</span>
+                      <span className="sm:hidden">Market Suggestion</span>
                     </h3>
-                    <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-gold-100 text-gold-700">
+                    <span className="px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold rounded-full bg-gold-100 text-gold-700">
                       {new Date(competitorSuggestion.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </span>
                   </div>
-                  <p className="text-[12px] text-neutral-600 mt-1">
+                  <p className="text-[11px] sm:text-[12px] text-neutral-600 mt-1">
                     {competitorSuggestion.reason || 'Recommended rate adjustment based on market analysis'}
                   </p>
 
                   {competitorSuggestion.marketAvg && (
-                    <div className="flex items-center gap-6 mt-3">
+                    <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-3">
                       <div>
-                        <p className="text-[11px] text-neutral-500 font-medium">Your Rate</p>
-                        <p className="text-xl font-bold text-neutral-800">
+                        <p className="text-[10px] sm:text-[11px] text-neutral-500 font-medium">Your Rate</p>
+                        <p className="text-lg sm:text-xl font-bold text-neutral-800">
                           ${competitorSuggestion.currentRate}
                         </p>
                       </div>
-                      <div className="text-2xl text-neutral-300">→</div>
+                      <div className="text-xl sm:text-2xl text-neutral-300 hidden sm:block">→</div>
                       <div>
-                        <p className="text-[11px] text-neutral-500 font-medium">Suggested Rate</p>
-                        <p className="text-xl font-bold text-terra-600">
+                        <p className="text-[10px] sm:text-[11px] text-neutral-500 font-medium">Suggested</p>
+                        <p className="text-lg sm:text-xl font-bold text-terra-600">
                           ${competitorSuggestion.suggestedRate}
                         </p>
                       </div>
-                      <div className="pl-4 border-l border-neutral-200">
-                        <p className="text-[11px] text-neutral-500 font-medium">Market Avg</p>
-                        <p className="text-lg font-semibold text-neutral-700">
+                      <div className="sm:pl-4 sm:border-l border-neutral-200">
+                        <p className="text-[10px] sm:text-[11px] text-neutral-500 font-medium">Market Avg</p>
+                        <p className="text-base sm:text-lg font-semibold text-neutral-700">
                           ${competitorSuggestion.marketAvg}
                         </p>
                       </div>
-                      <div>
+                      <div className="hidden sm:block">
                         <p className="text-[11px] text-neutral-500 font-medium">Market Range</p>
                         <p className="text-[13px] font-medium text-neutral-600">
                           ${competitorSuggestion.marketMin} - ${competitorSuggestion.marketMax}
@@ -396,9 +406,9 @@ const RateCalendar = () => {
               </div>
               <button
                 onClick={() => setCompetitorSuggestion(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-colors"
+                className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-colors flex-shrink-0"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             </div>
           </div>
@@ -406,30 +416,33 @@ const RateCalendar = () => {
 
         {/* Bulk Edit Mode Banner - Top */}
         {bulkEditMode && (
-          <div className="p-4 rounded-[10px] border-2 border-terra-400 bg-terra-50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-terra-500 flex items-center justify-center">
-                  <Copy className="w-5 h-5 text-white" />
+          <div className="p-3 sm:p-4 rounded-[10px] border-2 border-terra-400 bg-terra-50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-terra-500 flex items-center justify-center flex-shrink-0">
+                  <Copy className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
-                <div>
-                  <p className="text-[14px] font-semibold text-neutral-900">
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-[14px] font-semibold text-neutral-900">
                     Bulk Edit Mode Active
                   </p>
-                  <p className="text-[12px] text-neutral-600">
-                    Click calendar dates to select them for bulk editing
+                  <p className="text-[11px] sm:text-[12px] text-neutral-600">
+                    <span className="hidden sm:inline">Click calendar dates to select them for bulk editing</span>
+                    <span className="sm:hidden">Tap dates to select</span>
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="px-4 py-2 rounded-lg bg-terra-500 text-white text-[13px] font-semibold">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-terra-500 text-white text-xs sm:text-[13px] font-semibold">
                   {selectedDates.length} date{selectedDates.length !== 1 ? 's' : ''} selected
                 </div>
                 <Button
                   variant="outline"
                   onClick={toggleBulkEditMode}
+                  className="text-xs sm:text-sm"
                 >
-                  Exit Bulk Edit
+                  <span className="hidden sm:inline">Exit Bulk Edit</span>
+                  <span className="sm:hidden">Exit</span>
                 </Button>
               </div>
             </div>
@@ -447,32 +460,32 @@ const RateCalendar = () => {
 
         {/* AI Recommendations - Full Width */}
         <section className="rounded-[10px] bg-white overflow-hidden">
-          <div className="px-6 py-5 flex items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-neutral-800">AI Recommendations</h3>
+                <h3 className="text-xs sm:text-sm font-semibold text-neutral-800">AI Recommendations</h3>
                 {criticalRecommendations > 0 && (
-                  <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-rose-100 text-rose-700">
+                  <span className="px-1.5 py-0.5 text-[8px] sm:text-[9px] font-bold uppercase rounded bg-rose-100 text-rose-700">
                     {criticalRecommendations} Critical
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-neutral-400 font-medium mt-0.5">Automated pricing insights</p>
+              <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">Automated pricing insights</p>
             </div>
           </div>
-          <div className="px-6 pb-6">
+          <div className="px-4 sm:px-6 pb-4 sm:pb-6">
             <RecommendationsPanel limit={4} />
           </div>
         </section>
 
         {/* Room Type Summary - Full Width */}
         <section className="rounded-[10px] bg-white overflow-hidden">
-          <div className="px-6 py-5">
-            <h3 className="text-sm font-semibold text-neutral-800">Room Types Today</h3>
-            <p className="text-[11px] text-neutral-400 font-medium mt-0.5">Current rates & availability</p>
+          <div className="px-4 sm:px-6 py-4 sm:py-5">
+            <h3 className="text-xs sm:text-sm font-semibold text-neutral-800">Room Types Today</h3>
+            <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">Current rates & availability</p>
           </div>
-          <div className="px-6 pb-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
               {roomTypes.map((room, index) => {
                 const todayData = rateCalendar[today]?.rooms?.[room.id];
                 const rate = todayData?.dynamicRate || room.baseRate;
@@ -484,24 +497,24 @@ const RateCalendar = () => {
                 return (
                   <div
                     key={room.id}
-                    className="group p-4 rounded-lg border border-neutral-100 bg-neutral-50 hover:bg-white hover:border-neutral-200 transition-colors"
+                    className="group p-3 sm:p-4 rounded-lg border border-neutral-100 bg-neutral-50 hover:bg-white hover:border-neutral-200 transition-colors"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <span className="text-[13px] font-semibold text-neutral-900">
+                    <div className="flex items-center justify-between mb-2 sm:mb-3">
+                      <div className="min-w-0 flex-1 pr-2">
+                        <span className="text-xs sm:text-[13px] font-semibold text-neutral-900 truncate block">
                           {room.name}
                         </span>
-                        <p className="text-[11px] text-neutral-500 mt-0.5">
+                        <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-0.5">
                           Base: ${room.baseRate}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-xl font-bold text-neutral-900">
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-lg sm:text-xl font-bold text-neutral-900">
                           ${rate}
                         </p>
                         {rateChange !== 0 && (
-                          <p className={`text-[11px] font-semibold ${
+                          <p className={`text-[10px] sm:text-[11px] font-semibold ${
                             rateChange > 0 ? 'text-sage-600' : 'text-rose-600'
                           }`}>
                             {rateChange > 0 ? '+' : ''}{rateChange}
@@ -511,18 +524,18 @@ const RateCalendar = () => {
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
                           occupancyPct > 80 ? 'bg-sage-500' :
                           occupancyPct > 50 ? 'bg-gold-500' :
                           'bg-neutral-300'
                         }`} />
-                        <span className="text-[11px] text-neutral-600">
+                        <span className="text-[10px] sm:text-[11px] text-neutral-600">
                           {occupancyPct}% occupied
                         </span>
                       </div>
-                      <span className="text-[11px] font-medium text-neutral-700">
-                        {available} available
+                      <span className="text-[10px] sm:text-[11px] font-medium text-neutral-700">
+                        {available} avail
                       </span>
                     </div>
                   </div>
@@ -534,16 +547,17 @@ const RateCalendar = () => {
 
         {/* Bulk Edit Banner */}
         {bulkEditMode && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-white border border-neutral-200 shadow-xl rounded-[10px] p-4 flex items-center gap-4 min-w-[400px]">
-            <div className="flex-1">
-              <p className="text-[13px] font-semibold text-neutral-900">
+          <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 bg-white border border-neutral-200 shadow-xl rounded-[10px] p-3 sm:p-4 flex items-center gap-3 sm:gap-4 w-[calc(100%-2rem)] sm:w-auto sm:min-w-[400px] max-w-md">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-[13px] font-semibold text-neutral-900">
                 Bulk Edit Mode Active
               </p>
-              <p className="text-[11px] text-neutral-500">
-                Click dates in the calendar to select them
+              <p className="text-[10px] sm:text-[11px] text-neutral-500 truncate">
+                <span className="hidden sm:inline">Click dates in the calendar to select them</span>
+                <span className="sm:hidden">Tap dates to select</span>
               </p>
             </div>
-            <div className="px-3 py-1.5 rounded-lg text-[13px] font-semibold bg-terra-50 text-terra-600">
+            <div className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-[13px] font-semibold bg-terra-50 text-terra-600 flex-shrink-0">
               {selectedDates.length} selected
             </div>
           </div>
@@ -551,52 +565,54 @@ const RateCalendar = () => {
 
         {/* Bulk Edit Modal */}
         {showBulkEditModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="w-full max-w-md rounded-[10px] p-6 bg-white border border-neutral-200 shadow-xl">
-              <h3 className="text-lg font-semibold text-neutral-900 mb-1">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-[10px] p-4 sm:p-6 bg-white border border-neutral-200 shadow-xl max-h-[90vh] overflow-y-auto">
+              <h3 className="text-base sm:text-lg font-semibold text-neutral-900 mb-1">
                 Apply Bulk Changes
               </h3>
-              <p className="text-[13px] text-neutral-500 mb-6">
+              <p className="text-xs sm:text-[13px] text-neutral-500 mb-4 sm:mb-6">
                 Update rates for {selectedDates.length} selected date{selectedDates.length !== 1 ? 's' : ''}
               </p>
 
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {/* Change Type */}
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-neutral-400 mb-2">
+                  <label className="block text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-neutral-400 mb-1.5 sm:mb-2">
                     Change Type
                   </label>
                   <div className="flex items-center gap-1 p-1 rounded-lg bg-neutral-100">
                     <button
                       onClick={() => setBulkEditData({ ...bulkEditData, changeType: 'amount' })}
-                      className={`flex-1 px-4 py-2 rounded-lg text-[13px] font-semibold transition-all duration-200 ${
+                      className={`flex-1 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-[13px] font-semibold transition-all duration-200 ${
                         bulkEditData.changeType === 'amount'
                           ? 'bg-white text-neutral-900 shadow-sm'
                           : 'text-neutral-500 hover:text-neutral-900 hover:bg-white/50'
                       }`}
                     >
-                      Fixed Amount ($)
+                      <span className="hidden sm:inline">Fixed Amount ($)</span>
+                      <span className="sm:hidden">Amount ($)</span>
                     </button>
                     <button
                       onClick={() => setBulkEditData({ ...bulkEditData, changeType: 'percentage' })}
-                      className={`flex-1 px-4 py-2 rounded-lg text-[13px] font-semibold transition-all duration-200 ${
+                      className={`flex-1 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-[13px] font-semibold transition-all duration-200 ${
                         bulkEditData.changeType === 'percentage'
                           ? 'bg-white text-neutral-900 shadow-sm'
                           : 'text-neutral-500 hover:text-neutral-900 hover:bg-white/50'
                       }`}
                     >
-                      Percentage (%)
+                      <span className="hidden sm:inline">Percentage (%)</span>
+                      <span className="sm:hidden">Percent (%)</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Rate Change Input */}
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-neutral-400 mb-2">
+                  <label className="block text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-neutral-400 mb-1.5 sm:mb-2">
                     Rate {bulkEditData.changeType === 'amount' ? 'Adjustment' : 'Change'}
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] font-medium text-neutral-500">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs sm:text-[13px] font-medium text-neutral-500">
                       {bulkEditData.changeType === 'amount' ? '$' : '%'}
                     </span>
                     <input
@@ -604,10 +620,10 @@ const RateCalendar = () => {
                       value={bulkEditData.rateChange}
                       onChange={(e) => setBulkEditData({ ...bulkEditData, rateChange: e.target.value })}
                       placeholder={bulkEditData.changeType === 'amount' ? '50' : '10'}
-                      className="w-full pl-8 pr-4 py-2.5 rounded-lg border border-neutral-200 text-[13px] font-medium text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-terra-500/40 focus:border-terra-400 transition-colors"
+                      className="w-full pl-7 sm:pl-8 pr-3 sm:pr-4 py-2 sm:py-2.5 rounded-lg border border-neutral-200 text-xs sm:text-[13px] font-medium text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-terra-500/40 focus:border-terra-400 transition-colors"
                     />
                   </div>
-                  <p className="text-[11px] text-neutral-500 mt-1.5">
+                  <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-1 sm:mt-1.5">
                     {bulkEditData.changeType === 'amount'
                       ? 'Enter amount to increase (+) or decrease (-) rates'
                       : 'Enter percentage to increase (+) or decrease (-) rates'}
@@ -615,22 +631,22 @@ const RateCalendar = () => {
                 </div>
 
                 {/* Selected Dates Preview */}
-                <div className="p-3 rounded-lg bg-neutral-50">
-                  <p className="text-[11px] font-medium text-neutral-600 mb-2">
+                <div className="p-2.5 sm:p-3 rounded-lg bg-neutral-50">
+                  <p className="text-[10px] sm:text-[11px] font-medium text-neutral-600 mb-1.5 sm:mb-2">
                     Selected Dates:
                   </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {selectedDates.slice(0, 10).map(date => (
+                  <div className="flex flex-wrap gap-1 sm:gap-1.5">
+                    {selectedDates.slice(0, 8).map(date => (
                       <span
                         key={date}
-                        className="text-[11px] px-2 py-1 rounded bg-white text-neutral-700 border border-neutral-200"
+                        className="text-[10px] sm:text-[11px] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-white text-neutral-700 border border-neutral-200"
                       >
                         {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </span>
                     ))}
-                    {selectedDates.length > 10 && (
-                      <span className="text-[11px] px-2 py-1 text-neutral-500">
-                        +{selectedDates.length - 10} more
+                    {selectedDates.length > 8 && (
+                      <span className="text-[10px] sm:text-[11px] px-1.5 sm:px-2 py-0.5 sm:py-1 text-neutral-500">
+                        +{selectedDates.length - 8} more
                       </span>
                     )}
                   </div>
@@ -638,11 +654,12 @@ const RateCalendar = () => {
               </div>
 
               {/* Modal Actions */}
-              <div className="flex items-center gap-3 mt-6">
+              <div className="flex items-center gap-2 sm:gap-3 mt-4 sm:mt-6">
                 <Button
                   variant="ghost"
                   onClick={() => setShowBulkEditModal(false)}
                   fullWidth
+                  className="text-xs sm:text-sm"
                 >
                   Cancel
                 </Button>
@@ -650,8 +667,10 @@ const RateCalendar = () => {
                   variant="primary"
                   onClick={applyBulkChanges}
                   fullWidth
+                  className="text-xs sm:text-sm"
                 >
-                  Apply to {selectedDates.length} Date{selectedDates.length !== 1 ? 's' : ''}
+                  <span className="hidden sm:inline">Apply to {selectedDates.length} Date{selectedDates.length !== 1 ? 's' : ''}</span>
+                  <span className="sm:hidden">Apply ({selectedDates.length})</span>
                 </Button>
               </div>
             </div>

@@ -52,45 +52,45 @@ function KPICard({ title, value, trendValue, icon: Icon, accentColor = 'terra', 
 
   if (isLoading) {
     return (
-      <div className="rounded-[10px] bg-white p-6" style={{ animationDelay: `${index * 100}ms` }}>
-        <div className="flex items-center gap-3 mb-4">
-          <SkeletonLoader className="h-8 w-8 rounded-lg" />
-          <SkeletonLoader className="h-4 w-24" />
+      <div className="rounded-[10px] bg-white p-4 sm:p-6" style={{ animationDelay: `${index * 100}ms` }}>
+        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <SkeletonLoader className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg" />
+          <SkeletonLoader className="h-4 w-20 sm:w-24" />
         </div>
-        <SkeletonLoader className="h-9 w-32 mb-2" />
-        <SkeletonLoader className="h-5 w-28" />
+        <SkeletonLoader className="h-7 sm:h-9 w-24 sm:w-32 mb-2" />
+        <SkeletonLoader className="h-5 w-24 sm:w-28" />
       </div>
     );
   }
 
   return (
     <div
-      className="relative overflow-hidden rounded-[10px] bg-white p-6"
+      className="relative overflow-hidden rounded-[10px] bg-white p-4 sm:p-6"
       style={{ animationDelay: `${index * 100}ms` }}
     >
       {/* Header with Icon and Title */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${style.bg}`}>
-          <Icon className={`w-4 h-4 ${style.icon}`} />
+      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+        <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center ${style.bg}`}>
+          <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${style.icon}`} />
         </div>
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 truncate">
           {title}
         </p>
       </div>
 
       {/* Value */}
-      <p className="text-[28px] font-semibold tracking-tight text-neutral-900 mb-2">
+      <p className="text-xl sm:text-[28px] font-semibold tracking-tight text-neutral-900 mb-2">
         {value}
       </p>
 
       {/* Comparison */}
       <div className="flex items-center justify-between">
-        <p className="text-[11px] text-neutral-400 font-medium">{subtitle || 'vs Last Week'}</p>
+        <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">{subtitle || 'vs Last Week'}</p>
         {trendValue !== null && trendValue !== undefined ? (
-          <div className={`flex items-center gap-1 text-[11px] font-semibold ${
+          <div className={`flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold ${
             isPositive ? 'text-sage-600' : 'text-rose-600'
           }`}>
-            {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+            {isPositive ? <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : <TrendingDown className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
             {isPositive ? '+' : ''}{trendValue}%
           </div>
         ) : children}
@@ -123,11 +123,17 @@ const RevenueDashboard = () => {
   const fetchDashboardData = useCallback(async () => {
     try {
       setError(null);
-      const [dashboard, recs, pricingRules] = await Promise.all([
-        revenueIntelligenceService.getDashboard(),
+      // Use Promise.allSettled to handle individual failures gracefully
+      const [dashboardResult, recsResult, rulesResult] = await Promise.allSettled([
+        revenueIntelligenceService.getDashboardLegacy(),
         revenueIntelligenceService.getRecommendations(),
         revenueIntelligenceService.getPricingRules(),
       ]);
+
+      // Extract values, using defaults for failed requests
+      const dashboard = dashboardResult.status === 'fulfilled' ? dashboardResult.value : null;
+      const recs = recsResult.status === 'fulfilled' ? recsResult.value : [];
+      const pricingRules = rulesResult.status === 'fulfilled' ? rulesResult.value : [];
 
       setDashboardData(dashboard);
       setRecommendations(recs || []);
@@ -218,7 +224,7 @@ const RevenueDashboard = () => {
         `$${dashboardData.summary?.avg_adr || 0}`,
         `${dashboardData.summary?.adr_trend || 0}%`
       ]);
-      csvData.push(['Active Pricing Rules', rules.filter(r => r.is_active).length, '']);
+      csvData.push(['Active Pricing Rules', rules.filter(r => r.isActive).length, '']);
       csvData.push([]);
 
       // Revenue Forecast
@@ -408,7 +414,7 @@ const RevenueDashboard = () => {
             </div>
             <div class="kpi-card">
               <div class="kpi-label">Active Pricing Rules</div>
-              <div class="kpi-value">${rules.filter(r => r.is_active).length}</div>
+              <div class="kpi-value">${rules.filter(r => r.isActive).length}</div>
             </div>
           </div>
 
@@ -605,12 +611,12 @@ const RevenueDashboard = () => {
 
   if (error && !dashboardData) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F9F7F7' }}>
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#F9F7F7' }}>
         <div className="text-center">
-          <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-neutral-800 mb-2">Failed to Load Dashboard</h2>
-          <p className="text-sm text-neutral-500 mb-4">{error}</p>
-          <Button onClick={fetchDashboardData} variant="primary">
+          <AlertTriangle className="w-10 h-10 sm:w-12 sm:h-12 text-rose-500 mx-auto mb-3 sm:mb-4" />
+          <h2 className="text-base sm:text-lg font-semibold text-neutral-800 mb-1.5 sm:mb-2">Failed to Load Dashboard</h2>
+          <p className="text-xs sm:text-sm text-neutral-500 mb-3 sm:mb-4">{error}</p>
+          <Button onClick={fetchDashboardData} variant="primary" className="text-xs sm:text-sm">
             Retry
           </Button>
         </div>
@@ -620,77 +626,83 @@ const RevenueDashboard = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <main className="px-10 py-6 space-y-6">
+      <main className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
         {/* Header */}
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
-              Revenue Management
-            </h1>
-            <p className="text-[13px] text-neutral-500 mt-1">
-              AI-powered pricing optimization - Updated {getLastUpdatedText()}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Time Period Selector */}
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-neutral-100">
-              {periodOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => handlePeriodChange(option.value)}
-                  className={`px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-200 ${
-                    timePeriod === option.value
-                      ? 'bg-white text-neutral-900 shadow-sm'
-                      : 'text-neutral-500 hover:text-neutral-900 hover:bg-white/50'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
+        <header className="flex flex-col gap-3 sm:gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
+                Revenue Management
+              </h1>
+              <p className="text-xs sm:text-[13px] text-neutral-500 mt-0.5 sm:mt-1">
+                <span className="hidden sm:inline">AI-powered pricing optimization - Updated {getLastUpdatedText()}</span>
+                <span className="sm:hidden">Updated {getLastUpdatedText()}</span>
+              </p>
             </div>
 
-            {/* Export Button */}
-            <Button
-              variant="outline"
-              icon={Download}
-              onClick={handleExport}
-            >
-              Export
-            </Button>
+            {/* Action Buttons - Always visible */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Export Button */}
+              <Button
+                variant="outline"
+                icon={Download}
+                onClick={handleExport}
+                className="text-xs sm:text-sm"
+              >
+                <span className="hidden sm:inline">Export</span>
+              </Button>
 
-            {/* Refresh Button */}
-            <Button
-              variant="primary"
-              icon={RefreshCw}
-              onClick={() => setShowRefreshConfirm(true)}
-              disabled={isRefreshing}
-              loading={isRefreshing}
-            >
-              {isRefreshing ? 'Refreshing...' : 'Refresh'}
-            </Button>
+              {/* Refresh Button */}
+              <Button
+                variant="primary"
+                icon={RefreshCw}
+                onClick={() => setShowRefreshConfirm(true)}
+                disabled={isRefreshing}
+                loading={isRefreshing}
+                className="text-xs sm:text-sm"
+              >
+                <span className="hidden sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Time Period Selector - Full width on mobile */}
+          <div className="flex items-center gap-1 p-1 sm:p-1.5 rounded-lg bg-neutral-100 w-full sm:w-fit overflow-x-auto">
+            {periodOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => handlePeriodChange(option.value)}
+                className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-[13px] font-semibold transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
+                  timePeriod === option.value
+                    ? 'bg-white text-neutral-900 shadow-sm'
+                    : 'text-neutral-500 hover:text-neutral-900 hover:bg-white/50'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
         </header>
 
         {/* Alerts Banner */}
         {(criticalAlerts > 0 || highAlerts > 0) && !isLoading && (
-          <div className={`rounded-[10px] p-4 flex items-center justify-between ${
+          <div className={`rounded-[10px] p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 ${
             criticalAlerts > 0 ? 'bg-rose-50' : 'bg-gold-50'
           }`}>
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                 criticalAlerts > 0 ? 'bg-rose-100' : 'bg-gold-100'
               }`}>
-                <AlertTriangle className={`w-5 h-5 ${criticalAlerts > 0 ? 'text-rose-600' : 'text-gold-600'}`} />
+                <AlertTriangle className={`w-4 h-4 sm:w-5 sm:h-5 ${criticalAlerts > 0 ? 'text-rose-600' : 'text-gold-600'}`} />
               </div>
               <div>
-                <p className={`text-[13px] font-semibold ${
+                <p className={`text-xs sm:text-[13px] font-semibold ${
                   criticalAlerts > 0 ? 'text-rose-800' : 'text-gold-800'
                 }`}>
                   {criticalAlerts + highAlerts} Pricing Action{criticalAlerts + highAlerts !== 1 ? 's' : ''} Needed
                 </p>
-                <p className="text-[11px] text-neutral-500 font-medium">
+                <p className="text-[10px] sm:text-[11px] text-neutral-500 font-medium">
                   {criticalAlerts > 0 && `${criticalAlerts} critical`}
                   {criticalAlerts > 0 && highAlerts > 0 && ', '}
                   {highAlerts > 0 && `${highAlerts} high priority`}
@@ -699,7 +711,7 @@ const RevenueDashboard = () => {
             </div>
             <Link
               to="/admin/rms/calendar"
-              className={`px-4 py-2 text-[13px] font-semibold rounded-lg text-white transition-colors ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-[13px] font-semibold rounded-lg text-white transition-colors text-center ${
                 criticalAlerts > 0 ? 'bg-rose-600 hover:bg-rose-700' : 'bg-gold-600 hover:bg-gold-700'
               }`}
             >
@@ -709,7 +721,7 @@ const RevenueDashboard = () => {
         )}
 
         {/* Key Metrics */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <KPICard
             title={`${getPeriodDays()}-Day Revenue`}
             value={`$${(getPeriodRevenue() / 1000).toFixed(0)}K`}
@@ -745,7 +757,7 @@ const RevenueDashboard = () => {
 
           <KPICard
             title="Active Rules"
-            value={rules.filter(r => r.is_active).length}
+            value={rules.filter(r => r.isActive).length}
             trendValue={null}
             icon={Sparkles}
             accentColor="gold"
@@ -764,14 +776,14 @@ const RevenueDashboard = () => {
 
         {/* Revenue Forecast Chart - Full Width */}
         <section className="rounded-[10px] bg-white overflow-hidden">
-          <div className="px-6 py-5 flex items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <div>
-              <h3 className="text-sm font-semibold text-neutral-800">Revenue & Occupancy Forecast</h3>
-              <p className="text-[11px] text-neutral-400 font-medium mt-0.5">14-day outlook</p>
+              <h3 className="text-xs sm:text-sm font-semibold text-neutral-800">Revenue & Occupancy Forecast</h3>
+              <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">14-day outlook</p>
             </div>
-            <div className="flex items-center gap-4">
-              {/* Legend */}
-              <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              {/* Legend - Hidden on mobile */}
+              <div className="hidden sm:flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-sm bg-sage-500" />
                   <span className="text-[11px] text-neutral-600 font-medium">Revenue</span>
@@ -782,9 +794,10 @@ const RevenueDashboard = () => {
                 </div>
               </div>
               <Link to="/admin/rms/forecast">
-                <Button variant="ghost" size="sm">
-                  View All
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
+                  <span className="hidden sm:inline">View All</span>
+                  <span className="sm:hidden">View</span>
+                  <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1" />
                 </Button>
               </Link>
             </div>
@@ -792,28 +805,28 @@ const RevenueDashboard = () => {
 
           {/* Summary Stats */}
           {!isLoading && (
-            <div className="px-6 pb-4 grid grid-cols-4 gap-4">
-              <div className="p-3 rounded-lg bg-neutral-50">
-                <p className="text-[11px] text-neutral-400 font-medium">Total Projected</p>
-                <p className="text-lg font-semibold text-neutral-800">
+            <div className="px-4 sm:px-6 pb-3 sm:pb-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+              <div className="p-2.5 sm:p-3 rounded-lg bg-neutral-50">
+                <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Total Projected</p>
+                <p className="text-base sm:text-lg font-semibold text-neutral-800">
                   ${(revenueChartData.reduce((sum, d) => sum + d.revenue, 0) / 1000).toFixed(0)}K
                 </p>
               </div>
-              <div className="p-3 rounded-lg bg-neutral-50">
-                <p className="text-[11px] text-neutral-400 font-medium">Avg Daily Revenue</p>
-                <p className="text-lg font-semibold text-neutral-800">
+              <div className="p-2.5 sm:p-3 rounded-lg bg-neutral-50">
+                <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Avg Daily Revenue</p>
+                <p className="text-base sm:text-lg font-semibold text-neutral-800">
                   ${(revenueChartData.reduce((sum, d) => sum + d.revenue, 0) / Math.max(revenueChartData.length, 1) / 1000).toFixed(1)}K
                 </p>
               </div>
-              <div className="p-3 rounded-lg bg-neutral-50">
-                <p className="text-[11px] text-neutral-400 font-medium">Avg Occupancy</p>
-                <p className="text-lg font-semibold text-neutral-800">
+              <div className="p-2.5 sm:p-3 rounded-lg bg-neutral-50">
+                <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Avg Occupancy</p>
+                <p className="text-base sm:text-lg font-semibold text-neutral-800">
                   {(revenueChartData.reduce((sum, d) => sum + d.occupancy, 0) / Math.max(revenueChartData.length, 1)).toFixed(0)}%
                 </p>
               </div>
-              <div className="p-3 rounded-lg bg-neutral-50">
-                <p className="text-[11px] text-neutral-400 font-medium">Peak Day</p>
-                <p className="text-lg font-semibold text-sage-600">
+              <div className="p-2.5 sm:p-3 rounded-lg bg-neutral-50">
+                <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Peak Day</p>
+                <p className="text-base sm:text-lg font-semibold text-sage-600">
                   {revenueChartData.length > 0 ? revenueChartData.reduce((max, d) => d.revenue > max.revenue ? d : max, revenueChartData[0]).date : '-'}
                 </p>
               </div>
@@ -821,11 +834,17 @@ const RevenueDashboard = () => {
           )}
 
           {isLoading ? (
-            <div className="px-6 pb-6">
-              <SkeletonLoader className="h-80 w-full rounded-lg" />
+            <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+              <SkeletonLoader className="h-60 sm:h-80 w-full rounded-lg" />
+            </div>
+          ) : revenueChartData.length === 0 ? (
+            <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+              <div className="h-60 sm:h-80 flex items-center justify-center bg-neutral-50 rounded-lg">
+                <p className="text-xs sm:text-[13px] text-neutral-400">No forecast data available</p>
+              </div>
             </div>
           ) : (
-            <div className="h-80 px-6 pb-6">
+            <div className="h-60 sm:h-80 px-4 sm:px-6 pb-4 sm:pb-6">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={revenueChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <defs>
@@ -908,45 +927,46 @@ const RevenueDashboard = () => {
 
         {/* High Demand Days - Full Width */}
         <section className="rounded-[10px] bg-white overflow-hidden">
-          <div className="px-6 py-5 flex items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-semibold text-neutral-800">High Demand Days</h3>
-              <p className="text-[11px] text-neutral-400 font-medium mt-0.5">Peak occupancy opportunities</p>
+              <h3 className="text-xs sm:text-sm font-semibold text-neutral-800">High Demand Days</h3>
+              <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">Peak occupancy opportunities</p>
             </div>
             <Link to="/admin/rms/forecast">
-              <Button variant="ghost" size="sm">
-                View All
-                <ChevronRight className="w-4 h-4 ml-1" />
+              <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
+                <span className="hidden sm:inline">View All</span>
+                <span className="sm:hidden">View</span>
+                <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1" />
               </Button>
             </Link>
           </div>
           {isLoading ? (
-            <div className="grid grid-cols-5 gap-3 px-6 pb-6">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3 px-4 sm:px-6 pb-4 sm:pb-6">
               {[...Array(5)].map((_, i) => (
-                <SkeletonLoader key={i} className="h-28 w-full rounded-lg" />
+                <SkeletonLoader key={i} className={`h-24 sm:h-28 w-full rounded-lg ${i >= 3 ? 'hidden sm:block' : ''}`} />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-5 gap-3 px-6 pb-6">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3 px-4 sm:px-6 pb-4 sm:pb-6">
               {(dashboardData?.high_impact_days || []).slice(0, 5).map((day, index) => (
                 <div
                   key={day.date}
-                  className="p-3 rounded-lg bg-rose-50 border border-rose-100 text-center hover:bg-rose-100 transition-colors"
+                  className={`p-2 sm:p-3 rounded-lg bg-rose-50 border border-rose-100 text-center hover:bg-rose-100 transition-colors ${index >= 3 ? 'hidden sm:block' : ''}`}
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <p className="text-[11px] text-neutral-500 font-medium">
+                  <p className="text-[10px] sm:text-[11px] text-neutral-500 font-medium">
                     {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
                   </p>
-                  <p className="text-lg font-bold text-neutral-800">
+                  <p className="text-base sm:text-lg font-bold text-neutral-800">
                     {new Date(day.date).getDate()}
                   </p>
-                  <p className="text-[11px] text-neutral-400">
+                  <p className="text-[10px] sm:text-[11px] text-neutral-400">
                     {new Date(day.date).toLocaleDateString('en-US', { month: 'short' })}
                   </p>
                   <div className="flex justify-center mt-1">
                     <DemandLevelBadge level={day.demand_level} />
                   </div>
-                  <p className="text-[13px] font-bold text-rose-600 mt-1">
+                  <p className="text-xs sm:text-[13px] font-bold text-rose-600 mt-1">
                     {day.forecasted_occupancy}%
                   </p>
                 </div>
@@ -956,28 +976,34 @@ const RevenueDashboard = () => {
         </section>
 
         {/* Three Column Grid: Segment, Market Position, Pickup Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           {/* Segment Pie Chart */}
           <section className="rounded-[10px] bg-white overflow-hidden">
-            <div className="px-6 py-5">
-              <h3 className="text-sm font-semibold text-neutral-800">Revenue by Segment</h3>
-              <p className="text-[11px] text-neutral-400 font-medium mt-0.5">Top 5 segments</p>
+            <div className="px-4 sm:px-6 py-4 sm:py-5">
+              <h3 className="text-xs sm:text-sm font-semibold text-neutral-800">Revenue by Segment</h3>
+              <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">Top 5 segments</p>
             </div>
             {isLoading ? (
-              <div className="px-6 pb-6">
-                <SkeletonLoader className="h-48 w-full rounded-lg" />
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                <SkeletonLoader className="h-40 sm:h-48 w-full rounded-lg" />
+              </div>
+            ) : segmentPieData.length === 0 ? (
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                <div className="h-32 sm:h-36 flex items-center justify-center bg-neutral-50 rounded-lg">
+                  <p className="text-[10px] sm:text-[11px] text-neutral-400">No segment data available</p>
+                </div>
               </div>
             ) : (
-              <div className="px-6 pb-6">
-                <div className="h-36">
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                <div className="h-32 sm:h-36">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={segmentPieData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={35}
-                        outerRadius={60}
+                        innerRadius={30}
+                        outerRadius={50}
                         paddingAngle={2}
                         dataKey="value"
                       >
@@ -991,26 +1017,26 @@ const RevenueDashboard = () => {
                           backgroundColor: '#ffffff',
                           border: '1px solid #E5E4E0',
                           borderRadius: '8px',
-                          fontSize: '12px',
+                          fontSize: '11px',
                         }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
                 {/* Segment Indicators */}
-                <div className="mt-3 space-y-2">
+                <div className="mt-2 sm:mt-3 space-y-1.5 sm:space-y-2">
                   {segmentPieData.slice(0, 5).map((segment, index) => (
                     <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
                         <div
-                          className="w-2 h-2 rounded-full"
+                          className="w-2 h-2 rounded-full flex-shrink-0"
                           style={{ backgroundColor: segment.color }}
                         />
-                        <span className="text-[11px] text-neutral-600 truncate max-w-[100px]">
+                        <span className="text-[10px] sm:text-[11px] text-neutral-600 truncate max-w-[80px] sm:max-w-[100px]">
                           {segment.name}
                         </span>
                       </div>
-                      <span className="text-[11px] font-semibold text-neutral-800">
+                      <span className="text-[10px] sm:text-[11px] font-semibold text-neutral-800">
                         {segment.value}%
                       </span>
                     </div>
@@ -1022,46 +1048,46 @@ const RevenueDashboard = () => {
 
           {/* Market Position */}
           <section className="rounded-[10px] bg-white overflow-hidden">
-            <div className="px-6 py-5">
-              <h3 className="text-sm font-semibold text-neutral-800">Market Position</h3>
-              <p className="text-[11px] text-neutral-400 font-medium mt-0.5">Competitive analysis</p>
+            <div className="px-4 sm:px-6 py-4 sm:py-5">
+              <h3 className="text-xs sm:text-sm font-semibold text-neutral-800">Market Position</h3>
+              <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">Competitive analysis</p>
             </div>
             {isLoading ? (
-              <div className="px-6 pb-6 space-y-3">
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-2 sm:space-y-3">
                 {[...Array(4)].map((_, i) => (
-                  <SkeletonLoader key={i} className="h-6 w-full" />
+                  <SkeletonLoader key={i} className="h-5 sm:h-6 w-full" />
                 ))}
               </div>
             ) : (
-              <div className="px-6 pb-6 space-y-3">
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-[13px] text-neutral-600">Avg Gap vs Market</span>
-                  <span className={`text-[15px] font-bold ${
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-2 sm:space-y-3">
+                <div className="flex items-center justify-between py-1.5 sm:py-2">
+                  <span className="text-xs sm:text-[13px] text-neutral-600">Avg Gap vs Market</span>
+                  <span className={`text-sm sm:text-[15px] font-bold ${
                     (dashboardData?.competitor_insights?.avg_gap_percent || 0) < 0 ? 'text-sage-600' : 'text-rose-600'
                   }`}>
                     {(dashboardData?.competitor_insights?.avg_gap_percent || 0) > 0 ? '+' : ''}{dashboardData?.competitor_insights?.avg_gap_percent || 0}%
                   </span>
                 </div>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-[13px] text-neutral-600">Days Underpriced</span>
-                  <span className="text-[15px] font-bold text-sage-600">
+                <div className="flex items-center justify-between py-1.5 sm:py-2">
+                  <span className="text-xs sm:text-[13px] text-neutral-600">Days Underpriced</span>
+                  <span className="text-sm sm:text-[15px] font-bold text-sage-600">
                     {dashboardData?.competitor_insights?.underpriced_days || 0}
                   </span>
                 </div>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-[13px] text-neutral-600">Days Overpriced</span>
-                  <span className="text-[15px] font-bold text-rose-600">
+                <div className="flex items-center justify-between py-1.5 sm:py-2">
+                  <span className="text-xs sm:text-[13px] text-neutral-600">Days Overpriced</span>
+                  <span className="text-sm sm:text-[15px] font-bold text-rose-600">
                     {dashboardData?.competitor_insights?.overpriced_days || 0}
                   </span>
                 </div>
-                <div className="flex items-center justify-between py-2 border-t border-neutral-100 pt-3">
-                  <span className="text-[13px] text-neutral-600">Revenue Opportunity</span>
-                  <span className="text-[15px] font-bold text-gold-600">
+                <div className="flex items-center justify-between py-1.5 sm:py-2 border-t border-neutral-100 pt-2 sm:pt-3">
+                  <span className="text-xs sm:text-[13px] text-neutral-600">Revenue Opportunity</span>
+                  <span className="text-sm sm:text-[15px] font-bold text-gold-600">
                     ${(dashboardData?.competitor_insights?.potential_revenue_loss || 0).toLocaleString()}
                   </span>
                 </div>
                 <Link to="/admin/rms/competitors" className="block">
-                  <Button variant="outline" size="sm" fullWidth>
+                  <Button variant="outline" size="sm" fullWidth className="text-xs sm:text-sm">
                     View Analysis
                   </Button>
                 </Link>
@@ -1071,38 +1097,38 @@ const RevenueDashboard = () => {
 
           {/* Pickup Summary */}
           <section className="rounded-[10px] bg-white overflow-hidden">
-            <div className="px-6 py-5">
-              <h3 className="text-sm font-semibold text-neutral-800">Pickup Summary</h3>
-              <p className="text-[11px] text-neutral-400 font-medium mt-0.5">Booking pace</p>
+            <div className="px-4 sm:px-6 py-4 sm:py-5">
+              <h3 className="text-xs sm:text-sm font-semibold text-neutral-800">Pickup Summary</h3>
+              <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">Booking pace</p>
             </div>
             {isLoading ? (
-              <div className="px-6 pb-6 space-y-3">
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-2 sm:space-y-3">
                 {[...Array(3)].map((_, i) => (
-                  <SkeletonLoader key={i} className="h-6 w-full" />
+                  <SkeletonLoader key={i} className="h-5 sm:h-6 w-full" />
                 ))}
               </div>
             ) : (
-              <div className="px-6 pb-6 space-y-3">
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-[13px] text-neutral-600">Strong Pace Days (7d)</span>
-                  <span className="text-[15px] font-bold text-sage-600">
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-2 sm:space-y-3">
+                <div className="flex items-center justify-between py-1.5 sm:py-2">
+                  <span className="text-xs sm:text-[13px] text-neutral-600">Strong Pace Days (7d)</span>
+                  <span className="text-sm sm:text-[15px] font-bold text-sage-600">
                     {dashboardData?.pickup_summary?.strong_days || 0}
                   </span>
                 </div>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-[13px] text-neutral-600">Critical Pace Days</span>
-                  <span className="text-[15px] font-bold text-rose-600">
+                <div className="flex items-center justify-between py-1.5 sm:py-2">
+                  <span className="text-xs sm:text-[13px] text-neutral-600">Critical Pace Days</span>
+                  <span className="text-sm sm:text-[15px] font-bold text-rose-600">
                     {dashboardData?.pickup_summary?.critical_days || 0}
                   </span>
                 </div>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-[13px] text-neutral-600">Rooms to Sell (7d)</span>
-                  <span className="text-[15px] font-bold text-neutral-800">
+                <div className="flex items-center justify-between py-1.5 sm:py-2">
+                  <span className="text-xs sm:text-[13px] text-neutral-600">Rooms to Sell (7d)</span>
+                  <span className="text-sm sm:text-[15px] font-bold text-neutral-800">
                     {dashboardData?.pickup_summary?.total_remaining || 0}
                   </span>
                 </div>
-                <Link to="/admin/rms/pickup" className="block mt-2">
-                  <Button variant="outline" size="sm" fullWidth>
+                <Link to="/admin/rms/pickup" className="block mt-1.5 sm:mt-2">
+                  <Button variant="outline" size="sm" fullWidth className="text-xs sm:text-sm">
                     View Analysis
                   </Button>
                 </Link>
@@ -1113,56 +1139,56 @@ const RevenueDashboard = () => {
 
         {/* AI Insights Summary Card */}
         <section className="rounded-[10px] bg-white overflow-hidden">
-          <div className="px-6 py-5">
+          <div className="px-4 sm:px-6 py-4 sm:py-5">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-sm font-semibold text-neutral-800">AI Insights</h3>
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider bg-gold-100 text-gold-700">
+              <h3 className="text-xs sm:text-sm font-semibold text-neutral-800">AI Insights</h3>
+              <span className="px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-semibold uppercase tracking-wider bg-gold-100 text-gold-700">
                 Smart
               </span>
             </div>
-            <p className="text-[11px] text-neutral-400 font-medium">
+            <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">
               Automated pricing recommendations
             </p>
           </div>
-          <div className="px-6 pb-6">
+          <div className="px-4 sm:px-6 pb-4 sm:pb-6">
             {isLoading ? (
-              <SkeletonLoader className="h-24 w-full rounded-lg" />
+              <SkeletonLoader className="h-20 sm:h-24 w-full rounded-lg" />
             ) : recommendations.length === 0 ? (
-              <div className="p-4 rounded-lg bg-sage-50 border border-sage-100 text-center">
-                <p className="text-[13px] font-medium text-sage-700">All Optimized!</p>
-                <p className="text-[11px] text-sage-600 mt-1">No pending recommendations</p>
+              <div className="p-3 sm:p-4 rounded-lg bg-sage-50 border border-sage-100 text-center">
+                <p className="text-xs sm:text-[13px] font-medium text-sage-700">All Optimized!</p>
+                <p className="text-[10px] sm:text-[11px] text-sage-600 mt-1">No pending recommendations</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {/* Summary Stats */}
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 p-3 rounded-lg bg-terra-50 border border-terra-100">
-                    <p className="text-[10px] text-terra-600 font-medium uppercase tracking-wide">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="flex-1 p-2.5 sm:p-3 rounded-lg bg-terra-50 border border-terra-100">
+                    <p className="text-[9px] sm:text-[10px] text-terra-600 font-medium uppercase tracking-wide">
                       Recommendations
                     </p>
-                    <p className="text-xl font-bold text-terra-700">
+                    <p className="text-lg sm:text-xl font-bold text-terra-700">
                       {recommendations.length}
                     </p>
                   </div>
-                  <div className="flex-1 p-3 rounded-lg bg-sage-50 border border-sage-100">
-                    <p className="text-[10px] text-sage-600 font-medium uppercase tracking-wide">
+                  <div className="flex-1 p-2.5 sm:p-3 rounded-lg bg-sage-50 border border-sage-100">
+                    <p className="text-[9px] sm:text-[10px] text-sage-600 font-medium uppercase tracking-wide">
                       Potential Revenue
                     </p>
-                    <p className="text-xl font-bold text-sage-700">
+                    <p className="text-lg sm:text-xl font-bold text-sage-700">
                       +${recommendations.reduce((sum, r) => sum + (r.potential_revenue || 0), 0).toLocaleString()}
                     </p>
                   </div>
                 </div>
 
                 {/* Priority Badges */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                   {recommendations.filter(r => r.priority === 'critical').length > 0 && (
-                    <span className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full bg-rose-100 text-rose-700">
+                    <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-wide rounded-full bg-rose-100 text-rose-700">
                       {recommendations.filter(r => r.priority === 'critical').length} Critical
                     </span>
                   )}
                   {recommendations.filter(r => r.priority === 'high').length > 0 && (
-                    <span className="px-2 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full bg-gold-100 text-gold-700">
+                    <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-wide rounded-full bg-gold-100 text-gold-700">
                       {recommendations.filter(r => r.priority === 'high').length} High
                     </span>
                   )}
@@ -1170,7 +1196,7 @@ const RevenueDashboard = () => {
 
                 {/* Link to Rate Calendar */}
                 <Link to="/admin/rms/calendar">
-                  <Button variant="outline" size="sm" fullWidth iconRight={ChevronRight}>
+                  <Button variant="outline" size="sm" fullWidth iconRight={ChevronRight} className="text-xs sm:text-sm">
                     View in Rate Calendar
                   </Button>
                 </Link>
@@ -1195,35 +1221,35 @@ const RevenueDashboard = () => {
       {/* Export Options Dialog */}
       <Modal open={showExportOptions} onClose={() => setShowExportOptions(false)} size="md">
         <ModalHeader>
-          <ModalTitle>Export Dashboard</ModalTitle>
-          <ModalDescription>Choose your preferred export format</ModalDescription>
+          <ModalTitle className="text-base sm:text-lg">Export Dashboard</ModalTitle>
+          <ModalDescription className="text-xs sm:text-sm">Choose your preferred export format</ModalDescription>
         </ModalHeader>
         <ModalContent>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <button
               onClick={exportToCSV}
-              className="p-5 rounded-lg border border-neutral-200 hover:border-terra-300 hover:bg-terra-50 transition-all duration-200 group"
+              className="p-3 sm:p-5 rounded-lg border border-neutral-200 hover:border-terra-300 hover:bg-terra-50 transition-all duration-200 group"
             >
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-10 h-10 rounded-lg bg-terra-50 group-hover:bg-terra-100 flex items-center justify-center transition-colors">
-                  <Download className="w-5 h-5 text-terra-600" />
+              <div className="flex flex-col items-center gap-1.5 sm:gap-2">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-terra-50 group-hover:bg-terra-100 flex items-center justify-center transition-colors">
+                  <Download className="w-4 h-4 sm:w-5 sm:h-5 text-terra-600" />
                 </div>
-                <span className="text-[13px] font-semibold text-neutral-800">CSV File</span>
-                <span className="text-[11px] text-center text-neutral-500">
+                <span className="text-xs sm:text-[13px] font-semibold text-neutral-800">CSV File</span>
+                <span className="text-[10px] sm:text-[11px] text-center text-neutral-500">
                   Spreadsheet format
                 </span>
               </div>
             </button>
             <button
               onClick={exportToPDF}
-              className="p-5 rounded-lg border border-neutral-200 hover:border-terra-300 hover:bg-terra-50 transition-all duration-200 group"
+              className="p-3 sm:p-5 rounded-lg border border-neutral-200 hover:border-terra-300 hover:bg-terra-50 transition-all duration-200 group"
             >
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-10 h-10 rounded-lg bg-terra-50 group-hover:bg-terra-100 flex items-center justify-center transition-colors">
-                  <Download className="w-5 h-5 text-terra-600" />
+              <div className="flex flex-col items-center gap-1.5 sm:gap-2">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-terra-50 group-hover:bg-terra-100 flex items-center justify-center transition-colors">
+                  <Download className="w-4 h-4 sm:w-5 sm:h-5 text-terra-600" />
                 </div>
-                <span className="text-[13px] font-semibold text-neutral-800">PDF Report</span>
-                <span className="text-[11px] text-center text-neutral-500">
+                <span className="text-xs sm:text-[13px] font-semibold text-neutral-800">PDF Report</span>
+                <span className="text-[10px] sm:text-[11px] text-center text-neutral-500">
                   Formatted report
                 </span>
               </div>
@@ -1231,7 +1257,7 @@ const RevenueDashboard = () => {
           </div>
         </ModalContent>
         <ModalFooter>
-          <Button variant="ghost" onClick={() => setShowExportOptions(false)}>
+          <Button variant="ghost" onClick={() => setShowExportOptions(false)} className="text-xs sm:text-sm">
             Cancel
           </Button>
         </ModalFooter>
@@ -1240,12 +1266,12 @@ const RevenueDashboard = () => {
       {/* Custom Date Range Picker Dialog */}
       <Modal open={showDatePicker} onClose={() => setShowDatePicker(false)} size="sm">
         <ModalHeader>
-          <ModalTitle>Select Date Range</ModalTitle>
+          <ModalTitle className="text-base sm:text-lg">Select Date Range</ModalTitle>
         </ModalHeader>
         <ModalContent>
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-neutral-400 mb-2">
+              <label className="block text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-neutral-400 mb-1.5 sm:mb-2">
                 Start Date
               </label>
               <input
@@ -1255,11 +1281,11 @@ const RevenueDashboard = () => {
                   ...customDateRange,
                   start: new Date(e.target.value)
                 })}
-                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-[13px] text-neutral-800 focus:border-terra-400 focus:outline-none focus:ring-2 focus:ring-terra-100 transition-colors"
+                className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-neutral-200 text-xs sm:text-[13px] text-neutral-800 focus:border-terra-400 focus:outline-none focus:ring-2 focus:ring-terra-100 transition-colors"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-neutral-400 mb-2">
+              <label className="block text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-neutral-400 mb-1.5 sm:mb-2">
                 End Date
               </label>
               <input
@@ -1270,21 +1296,21 @@ const RevenueDashboard = () => {
                   end: new Date(e.target.value)
                 })}
                 min={customDateRange.start.toISOString().split('T')[0]}
-                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-[13px] text-neutral-800 focus:border-terra-400 focus:outline-none focus:ring-2 focus:ring-terra-100 transition-colors"
+                className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-neutral-200 text-xs sm:text-[13px] text-neutral-800 focus:border-terra-400 focus:outline-none focus:ring-2 focus:ring-terra-100 transition-colors"
               />
             </div>
-            <div className="p-3 rounded-lg bg-terra-50">
-              <p className="text-[13px] text-terra-700 font-medium">
+            <div className="p-2.5 sm:p-3 rounded-lg bg-terra-50">
+              <p className="text-xs sm:text-[13px] text-terra-700 font-medium">
                 Selected range: <span className="font-semibold">{getPeriodDays()} days</span>
               </p>
             </div>
           </div>
         </ModalContent>
         <ModalFooter>
-          <Button variant="ghost" onClick={() => setShowDatePicker(false)}>
+          <Button variant="ghost" onClick={() => setShowDatePicker(false)} className="text-xs sm:text-sm">
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleCustomDateApply}>
+          <Button variant="primary" onClick={handleCustomDateApply} className="text-xs sm:text-sm">
             Apply
           </Button>
         </ModalFooter>

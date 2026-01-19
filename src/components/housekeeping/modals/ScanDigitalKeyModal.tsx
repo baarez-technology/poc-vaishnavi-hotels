@@ -223,25 +223,27 @@ export function ScanDigitalKeyModal({ open, onClose, roomNumber }: ScanDigitalKe
                 stopCamera();
                 setMode('manual');
               }}
-              className={`flex-1 h-10 flex items-center justify-center gap-2 px-4 rounded-lg text-[13px] font-semibold transition-all ${
+              className={`flex-1 h-9 sm:h-10 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 rounded-lg text-[12px] sm:text-[13px] font-semibold transition-all ${
                 mode === 'manual'
                   ? 'bg-terra-500 text-white'
                   : 'border border-neutral-200 text-neutral-700 hover:border-neutral-300'
               }`}
             >
-              <Keyboard className="h-4 w-4" />
-              Manual Input
+              <Keyboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Manual Input</span>
+              <span className="sm:hidden">Manual</span>
             </button>
             <button
               onClick={startCamera}
-              className={`flex-1 h-10 flex items-center justify-center gap-2 px-4 rounded-lg text-[13px] font-semibold transition-all ${
+              className={`flex-1 h-9 sm:h-10 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 rounded-lg text-[12px] sm:text-[13px] font-semibold transition-all ${
                 mode === 'camera'
                   ? 'bg-terra-500 text-white'
                   : 'border border-neutral-200 text-neutral-700 hover:border-neutral-300'
               }`}
             >
-              <Camera className="h-4 w-4" />
-              Camera Scan
+              <Camera className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Camera Scan</span>
+              <span className="sm:hidden">Camera</span>
             </button>
           </div>
         </div>
@@ -278,7 +280,7 @@ export function ScanDigitalKeyModal({ open, onClose, roomNumber }: ScanDigitalKe
             <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
               Camera Preview
             </h4>
-            <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100">
+            <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100">
               <div className="relative bg-black rounded-lg overflow-hidden aspect-square">
                 <video
                   ref={videoRef}
@@ -288,7 +290,7 @@ export function ScanDigitalKeyModal({ open, onClose, roomNumber }: ScanDigitalKe
                 />
                 <canvas ref={canvasRef} className="hidden" />
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-48 h-48 border-2 border-white/50 rounded-lg relative">
+                  <div className="w-36 h-36 sm:w-48 sm:h-48 border-2 border-white/50 rounded-lg relative">
                     <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-terra-500 rounded-tl" />
                     <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-terra-500 rounded-tr" />
                     <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-terra-500 rounded-bl" />
@@ -296,7 +298,7 @@ export function ScanDigitalKeyModal({ open, onClose, roomNumber }: ScanDigitalKe
                   </div>
                 </div>
               </div>
-              <p className="text-[13px] text-center text-neutral-500 mt-3">
+              <p className="text-[12px] sm:text-[13px] text-center text-neutral-500 mt-2 sm:mt-3">
                 Position the QR code within the frame
               </p>
             </div>
@@ -309,45 +311,45 @@ export function ScanDigitalKeyModal({ open, onClose, roomNumber }: ScanDigitalKe
             <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
               Scan Result
             </h4>
-            <div className={`p-4 rounded-lg border ${getResultColor(scanResult.result)}`}>
-              <div className="flex items-start gap-3">
+            <div className={`p-3 sm:p-4 rounded-lg border ${getResultColor(scanResult.result)}`}>
+              <div className="flex items-start gap-2 sm:gap-3">
                 {scanResult.valid ? (
-                  <div className="w-10 h-10 rounded-lg bg-sage-100 flex items-center justify-center flex-shrink-0">
-                    <CheckCircle className="h-5 w-5 text-sage-600" />
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-sage-100 flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-sage-600" />
                   </div>
                 ) : (
-                  <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center flex-shrink-0">
-                    <XCircle className="h-5 w-5 text-rose-600" />
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-rose-100 flex items-center justify-center flex-shrink-0">
+                    <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-rose-600" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-neutral-900 text-[15px]">
+                  <h4 className="font-semibold text-neutral-900 text-[14px] sm:text-[15px]">
                     {scanResult.valid ? 'Valid Digital Key' : 'Invalid Digital Key'}
                   </h4>
-                  <p className="text-[13px] mt-1 text-neutral-600">{scanResult.message}</p>
+                  <p className="text-[12px] sm:text-[13px] mt-1 text-neutral-600">{scanResult.message}</p>
 
                   {scanResult.valid && scanResult.guest_name && (
                     <div className="mt-3 space-y-2">
-                      <div className="flex items-center gap-2 text-[13px] text-neutral-700">
-                        <User className="h-4 w-4 text-neutral-500" />
+                      <div className="flex items-center gap-2 text-[12px] sm:text-[13px] text-neutral-700">
+                        <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-neutral-500" />
                         <span className="font-medium">{scanResult.guest_name}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-[13px] text-neutral-700">
-                        <DoorOpen className="h-4 w-4 text-neutral-500" />
+                      <div className="flex items-center gap-2 text-[12px] sm:text-[13px] text-neutral-700">
+                        <DoorOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-neutral-500" />
                         <span>Room {scanResult.room_number}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-[13px] text-neutral-700">
-                        <CalendarDays className="h-4 w-4 text-neutral-500" />
+                      <div className="flex items-center gap-2 text-[12px] sm:text-[13px] text-neutral-700">
+                        <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-neutral-500" />
                         <span>
                           {new Date(scanResult.check_in_date!).toLocaleDateString()} -{' '}
                           {new Date(scanResult.check_out_date!).toLocaleDateString()}
                         </span>
                       </div>
-                      <div className="flex gap-2 mt-2">
-                        <span className="inline-flex items-center px-2 py-1 rounded-lg text-[11px] font-medium bg-white border border-neutral-200 text-neutral-700">
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <span className="inline-flex items-center px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-medium bg-white border border-neutral-200 text-neutral-700">
                           Key: {scanResult.key_code}
                         </span>
-                        <span className="inline-flex items-center px-2 py-1 rounded-lg text-[11px] font-medium bg-white border border-neutral-200 text-neutral-700">
+                        <span className="inline-flex items-center px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-medium bg-white border border-neutral-200 text-neutral-700">
                           Scans: {scanResult.scan_count}
                         </span>
                       </div>
@@ -355,8 +357,8 @@ export function ScanDigitalKeyModal({ open, onClose, roomNumber }: ScanDigitalKe
                   )}
 
                   {!scanResult.valid && scanResult.result === 'wrong_room' && (
-                    <div className="mt-2 flex items-center gap-2 text-[13px] text-gold-700">
-                      <AlertTriangle className="h-4 w-4" />
+                    <div className="mt-2 flex items-center gap-2 text-[12px] sm:text-[13px] text-gold-700">
+                      <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       <span>Key is for room {scanResult.room_number}, not {expectedRoom}</span>
                     </div>
                   )}

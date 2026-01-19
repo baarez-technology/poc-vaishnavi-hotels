@@ -128,38 +128,39 @@ export default function RoomMapping() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <div className="px-10 py-6 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
         {/* Page Header */}
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
               Room Mapping
             </h1>
-            <p className="text-[13px] text-neutral-500 mt-1">
-              Map your PMS room types to OTA room types for accurate inventory sync
+            <p className="text-xs sm:text-[13px] text-neutral-500 mt-0.5 sm:mt-1">
+              <span className="hidden sm:inline">Map your PMS room types to OTA room types for accurate inventory sync</span>
+              <span className="sm:hidden">Map PMS to OTA room types</span>
             </p>
           </div>
         </header>
 
         {/* KPI Cards */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
           {kpiCards.map((kpi, index) => {
             const colors = accentColors[kpi.accent];
             return (
-              <div key={index} className="rounded-[10px] bg-white p-6">
+              <div key={index} className="rounded-[10px] bg-white p-4 sm:p-6">
                 {/* Header with Icon */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colors.icon}`}>
-                    <kpi.icon className="w-4 h-4" />
+                <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                  <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center ${colors.icon}`}>
+                    <kpi.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+                  <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 truncate">
                     {kpi.title}
                   </p>
                 </div>
 
                 {/* Value */}
-                <p className="text-[28px] font-semibold tracking-tight text-neutral-900">
+                <p className="text-xl sm:text-[28px] font-semibold tracking-tight text-neutral-900">
                   {kpi.value}
                 </p>
               </div>
@@ -169,16 +170,16 @@ export default function RoomMapping() {
 
         {/* Search & Filters */}
         {connectedOTAs.length > 0 && (
-          <section className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <section className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
             {/* Search */}
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400" />
               <input
                 type="text"
                 placeholder="Search room types..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-11 pl-11 pr-4 rounded-lg text-[13px] bg-white border border-neutral-200 text-neutral-700 placeholder:text-neutral-400 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all"
+                className="w-full h-9 sm:h-10 pl-8 sm:pl-10 pr-3 sm:pr-4 rounded-lg text-xs sm:text-[13px] bg-white border border-neutral-200 text-neutral-700 placeholder:text-neutral-400 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all"
               />
             </div>
 
@@ -186,9 +187,9 @@ export default function RoomMapping() {
             <DropdownMenu
               align="end"
               trigger={
-                <button className="h-11 w-[180px] px-4 pr-3 rounded-lg text-[13px] bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all flex items-center justify-between">
-                  <span>{getFilterLabel()}</span>
-                  <ChevronDown className="w-4 h-4 text-neutral-400" />
+                <button className="h-9 sm:h-10 w-full sm:w-[180px] px-3 sm:px-4 pr-2.5 sm:pr-3 rounded-lg text-xs sm:text-[13px] bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all flex items-center justify-between">
+                  <span className="truncate">{getFilterLabel()}</span>
+                  <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400 flex-shrink-0 ml-2" />
                 </button>
               }
             >
@@ -209,27 +210,29 @@ export default function RoomMapping() {
 
         {/* No Connected OTAs */}
         {connectedOTAs.length === 0 && (
-          <div className="rounded-[10px] bg-white p-16 text-center">
-            <div className="w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-5 bg-neutral-50">
-              <Link2 className="w-8 h-8 text-neutral-300" />
+          <div className="rounded-[10px] bg-white p-8 sm:p-16 text-center">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg flex items-center justify-center mx-auto mb-4 sm:mb-5 bg-neutral-50">
+              <Link2 className="w-6 h-6 sm:w-8 sm:h-8 text-neutral-300" />
             </div>
-            <h3 className="text-lg font-semibold text-neutral-900 mb-2">No Connected OTAs</h3>
-            <p className="text-[13px] text-neutral-500 mb-6">
+            <h3 className="text-base sm:text-lg font-semibold text-neutral-900 mb-2">No Connected OTAs</h3>
+            <p className="text-xs sm:text-[13px] text-neutral-500 mb-4 sm:mb-6">
               Connect to an OTA first to start mapping room types
             </p>
             <Button
               variant="primary"
               icon={Link2}
               onClick={() => window.location.href = '/admin/channel-manager/ota'}
+              className="text-xs sm:text-sm"
             >
-              Go to OTA Connections
+              <span className="hidden sm:inline">Go to OTA Connections</span>
+              <span className="sm:hidden">OTA Connections</span>
             </Button>
           </div>
         )}
 
         {/* Mapping Tables */}
         {connectedOTAs.length > 0 && (
-          <section className="space-y-4">
+          <section className="space-y-3 sm:space-y-4">
             {(selectedOTA ? connectedOTAs.filter(o => o.code === selectedOTA) : connectedOTAs).map(ota => (
               <RoomMappingTable
                 key={ota.code}
@@ -245,14 +248,14 @@ export default function RoomMapping() {
       {/* Auto-Map Overlay */}
       {isAutoMapping && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="rounded-[10px] bg-white p-8 text-center max-w-sm mx-4">
-            <div className="w-16 h-16 rounded-lg bg-terra-50 flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-8 h-8 animate-pulse text-terra-600" />
+          <div className="rounded-[10px] bg-white p-6 sm:p-8 text-center max-w-sm mx-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-terra-50 flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 animate-pulse text-terra-600" />
             </div>
-            <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+            <h3 className="text-base sm:text-lg font-semibold text-neutral-900 mb-2">
               Auto-Mapping Rooms
             </h3>
-            <p className="text-[13px] text-neutral-500">
+            <p className="text-xs sm:text-[13px] text-neutral-500">
               AI is analyzing room types and suggesting optimal mappings...
             </p>
           </div>

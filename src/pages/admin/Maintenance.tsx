@@ -312,33 +312,35 @@ export default function Maintenance() {
   };
 
   const tabs = [
-    { id: 'workorders', label: 'Work Orders', icon: ClipboardList },
-    { id: 'preventive', label: 'Preventive Maintenance', icon: Calendar },
-    { id: 'calendar', label: 'Calendar', icon: Calendar },
-    { id: 'inventory', label: 'Inventory', icon: Package }
+    { id: 'workorders', label: 'Work Orders', shortLabel: 'Work Orders', icon: ClipboardList },
+    { id: 'preventive', label: 'Preventive Maintenance', shortLabel: 'PM Tasks', icon: Calendar },
+    { id: 'calendar', label: 'Calendar', shortLabel: 'Calendar', icon: Calendar },
+    { id: 'inventory', label: 'Inventory', shortLabel: 'Inventory', icon: Package }
   ];
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <div className="px-10 py-6 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
       {/* Page Header */}
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
             Maintenance
           </h1>
-          <p className="text-[13px] text-neutral-500 mt-1">
+          <p className="text-[12px] sm:text-[13px] text-neutral-500 mt-1">
             Manage work orders, preventive maintenance, and inventory
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button variant="outline" icon={Download} onClick={handleExportCSV}>
-            Export CSV
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Button variant="outline" icon={Download} onClick={handleExportCSV} className="text-[12px] sm:text-[13px]">
+            <span className="hidden sm:inline">Export CSV</span>
+            <span className="sm:hidden">Export</span>
           </Button>
           <Button
             variant="primary"
             icon={Plus}
+            className="text-[12px] sm:text-[13px]"
             onClick={() => {
               if (activeTab === 'preventive') {
                 setPMModalMode('create');
@@ -349,7 +351,8 @@ export default function Maintenance() {
               }
             }}
           >
-            {activeTab === 'preventive' ? 'Add PM Task' : 'Create Work Order'}
+            <span className="hidden sm:inline">{activeTab === 'preventive' ? 'Add PM Task' : 'Create Work Order'}</span>
+            <span className="sm:hidden">{activeTab === 'preventive' ? 'Add PM' : 'Create WO'}</span>
           </Button>
         </div>
       </header>
@@ -364,19 +367,19 @@ export default function Maintenance() {
 
       {/* Alerts */}
       {(overduePM.length > 0 || workOrders.filter(wo => wo.priority === 'high' && wo.status !== 'completed').length > 0) && (
-        <div className="bg-rose-50 border border-rose-100 rounded-[10px] p-4">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center flex-shrink-0">
-              <AlertTriangle className="w-4 h-4 text-rose-600" />
+        <div className="bg-rose-50 border border-rose-100 rounded-[10px] p-3 sm:p-4">
+          <div className="flex items-start gap-2 sm:gap-3">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-rose-100 flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-600" />
             </div>
             <div>
-              <h3 className="text-[13px] font-semibold text-rose-900">Attention Required</h3>
-              <ul className="mt-1 text-[12px] text-rose-700 space-y-0.5">
+              <h3 className="text-[12px] sm:text-[13px] font-semibold text-rose-900">Attention Required</h3>
+              <ul className="mt-1 text-[11px] sm:text-[12px] text-rose-700 space-y-0.5">
                 {overduePM.length > 0 && (
-                  <li>{overduePM.length} overdue preventive maintenance task{overduePM.length > 1 ? 's' : ''}</li>
+                  <li>{overduePM.length} overdue PM task{overduePM.length > 1 ? 's' : ''}</li>
                 )}
                 {workOrders.filter(wo => wo.priority === 'high' && wo.status !== 'completed').length > 0 && (
-                  <li>{workOrders.filter(wo => wo.priority === 'high' && wo.status !== 'completed').length} high priority work order{workOrders.filter(wo => wo.priority === 'high' && wo.status !== 'completed').length > 1 ? 's' : ''} pending</li>
+                  <li>{workOrders.filter(wo => wo.priority === 'high' && wo.status !== 'completed').length} high priority WO{workOrders.filter(wo => wo.priority === 'high' && wo.status !== 'completed').length > 1 ? 's' : ''} pending</li>
                 )}
               </ul>
             </div>
@@ -388,21 +391,22 @@ export default function Maintenance() {
       <div className="bg-white rounded-[10px] overflow-hidden">
         {/* Tabs */}
         <div className="border-b border-neutral-100">
-          <div className="px-6 pt-4">
-            <div className="flex items-center gap-0.5">
+          <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-6 pt-3 sm:pt-4">
+            <div className="flex items-center gap-0.5 min-w-max">
               {tabs.map(tab => {
                 const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`relative px-4 py-3 text-[13px] font-semibold transition-all duration-150 ${
+                    className={`relative px-3 sm:px-4 py-2.5 sm:py-3 text-[12px] sm:text-[13px] font-semibold transition-all duration-150 whitespace-nowrap ${
                       isActive ? 'text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'
                     }`}
                   >
-                    <span className="flex items-center gap-2">
-                      <tab.icon className="w-4 h-4" />
-                      {tab.label}
+                    <span className="flex items-center gap-1.5 sm:gap-2">
+                      <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline">{tab.label}</span>
+                      <span className="sm:hidden">{tab.shortLabel}</span>
                     </span>
                     {isActive && (
                       <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-terra-500 rounded-t-full" />
@@ -418,7 +422,7 @@ export default function Maintenance() {
         {activeTab === 'workorders' && (
           <>
             {/* Filters */}
-            <div className="px-6 py-4 bg-neutral-50/30 border-b border-neutral-100">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 bg-neutral-50/30 border-b border-neutral-100">
               <WOFilters
                 filters={filters}
                 setFilters={setFilters}
@@ -448,8 +452,8 @@ export default function Maintenance() {
             />
 
             {/* Results count / Pagination area */}
-            <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/30">
-              <p className="text-sm text-neutral-500">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 bg-neutral-50/30">
+              <p className="text-[12px] sm:text-sm text-neutral-500">
                 Showing <span className="font-medium text-neutral-700">{processedWorkOrders.length}</span> of{' '}
                 <span className="font-medium text-neutral-700">{workOrders.length}</span> work orders
               </p>
@@ -458,12 +462,12 @@ export default function Maintenance() {
         )}
 
         {activeTab === 'preventive' && (
-          <div className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-4">
             {/* Upcoming PM Tasks */}
             {upcomingPM.length > 0 && (
-              <div className="bg-neutral-50/50 border border-neutral-100 rounded-lg p-5">
-                <h3 className="font-semibold text-neutral-900 mb-3 text-[14px]">Upcoming Tasks (Next 7 Days)</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="bg-neutral-50/50 border border-neutral-100 rounded-lg p-3 sm:p-5">
+                <h3 className="font-semibold text-neutral-900 mb-3 text-[13px] sm:text-[14px]">Upcoming Tasks (Next 7 Days)</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                   {upcomingPM.map(pm => (
                     <div
                       key={pm.id}
@@ -472,11 +476,11 @@ export default function Maintenance() {
                         setPMModalMode('edit');
                         setShowPMModal(true);
                       }}
-                      className="bg-white rounded-lg p-4 border border-neutral-200 cursor-pointer hover:border-terra-300 hover:shadow-sm transition-all"
+                      className="bg-white rounded-lg p-3 sm:p-4 border border-neutral-200 cursor-pointer hover:border-terra-300 hover:shadow-sm transition-all"
                     >
-                      <p className="font-medium text-neutral-900 text-[13px]">{pm.equipment}</p>
-                      <p className="text-[11px] text-neutral-500 mt-1">Due: {pm.nextDueDate}</p>
-                      <p className="text-[11px] text-neutral-500">{pm.technicianName || 'Unassigned'}</p>
+                      <p className="font-medium text-neutral-900 text-[12px] sm:text-[13px]">{pm.equipment}</p>
+                      <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-1">Due: {pm.nextDueDate}</p>
+                      <p className="text-[10px] sm:text-[11px] text-neutral-500">{pm.technicianName || 'Unassigned'}</p>
                     </div>
                   ))}
                 </div>
@@ -603,7 +607,7 @@ export default function Maintenance() {
         )}
 
         {activeTab === 'calendar' && (
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             <MaintenanceCalendar
               workOrders={workOrders}
               pmTasks={pmTasks}
@@ -613,7 +617,7 @@ export default function Maintenance() {
         )}
 
         {activeTab === 'inventory' && (
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             <InventoryTable
               inventory={inventory}
               onUpdateStock={handleUpdateStock}

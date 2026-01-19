@@ -80,7 +80,7 @@ export default function WOTable({
   };
 
   return (
-    <div className="overflow-hidden">
+    <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>

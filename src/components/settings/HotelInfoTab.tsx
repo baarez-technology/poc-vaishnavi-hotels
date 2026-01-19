@@ -108,14 +108,14 @@ export default function HotelInfoTab() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-neutral-100 gap-3">
         <div>
-          <h2 className="text-[15px] font-semibold text-neutral-900">Hotel Information</h2>
-          <p className="text-[13px] text-neutral-500 mt-0.5">Basic information about your property</p>
+          <h2 className="text-[14px] sm:text-[15px] font-semibold text-neutral-900">Hotel Information</h2>
+          <p className="text-[12px] sm:text-[13px] text-neutral-500 mt-0.5">Basic information about your property</p>
         </div>
         <div className="flex items-center gap-3">
           {saved && (
-            <span className="flex items-center gap-1.5 text-[13px] font-medium text-sage-600">
+            <span className="flex items-center gap-1.5 text-[12px] sm:text-[13px] font-medium text-sage-600">
               <Check className="w-4 h-4" />
               Saved
             </span>

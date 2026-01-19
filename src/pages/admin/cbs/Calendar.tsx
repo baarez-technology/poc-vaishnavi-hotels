@@ -260,7 +260,14 @@ export default function CBSCalendar() {
     const today = new Date().toISOString().split('T')[0];
     const arrivals = bookings.filter(b => b.checkIn === today && b.status !== 'CANCELLED').length;
     const departures = bookings.filter(b => b.checkOut === today && b.status !== 'CANCELLED').length;
-    return { arrivals, departures };
+    // In-house guests: bookings where today is between checkIn and checkOut
+    const inHouseGuests = bookings.filter(b => {
+      if (b.status === 'CANCELLED') return false;
+      return b.checkIn <= today && b.checkOut > today;
+    }).length;
+    // Turnovers: rooms with both checkout and checkin today
+    const turnovers = Math.min(arrivals, departures);
+    return { arrivals, departures, inHouseGuests, turnovers };
   }, [bookings]);
 
   // KPI cards configuration
@@ -474,32 +481,32 @@ export default function CBSCalendar() {
             </div>
           </div>
 
-          {/* Occupancy */}
+          {/* In-House Guests */}
           <div className="col-span-3 rounded-[10px] bg-white p-5 flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-terra-100 flex items-center justify-center">
               <Home className="w-6 h-6 text-terra-600" />
             </div>
             <div>
               <p className="text-2xl font-semibold text-neutral-900 tracking-tight">
-                {stats.occupancyRate}%
+                {todayStats.inHouseGuests}
               </p>
               <p className="text-[11px] text-neutral-400 font-medium uppercase tracking-wider">
-                Occupancy Rate
+                In-House Guests
               </p>
             </div>
           </div>
 
-          {/* Available */}
+          {/* Turnovers */}
           <div className="col-span-3 rounded-[10px] bg-white p-5 flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-gold-100 flex items-center justify-center">
-              <CalendarX className="w-6 h-6 text-gold-600" />
+              <RefreshCw className="w-6 h-6 text-gold-600" />
             </div>
             <div>
               <p className="text-2xl font-semibold text-neutral-900 tracking-tight">
-                {stats.totalAvailable}
+                {todayStats.turnovers}
               </p>
               <p className="text-[11px] text-neutral-400 font-medium uppercase tracking-wider">
-                Rooms Available
+                Turnovers Today
               </p>
             </div>
           </div>

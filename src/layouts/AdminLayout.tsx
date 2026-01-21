@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
-import AIAssistantPanel from '../components/ai/AIAssistantPanel';
-import { useAIAssistant } from '../hooks/useAIAssistant';
+import AIAssistantPanel from '../components/admin-panel/ai/AIAssistantPanel';
+import { useAIAssistant } from '../hooks/admin/useAIAssistant';
 import { Outlet } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function AdminLayout() {
+  // Theme
+  const { isDark } = useTheme();
+
   // Sidebar collapse state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   // Mobile menu state
@@ -22,29 +26,22 @@ export default function AdminLayout() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // AI Assistant hook
+  // AI Assistant hook - admin version with backend AI and real-time voice
   const {
     messages,
     isPanelOpen,
-    isListening,
     isTyping,
-    voiceModalOpen,
     conversationEndRef,
     addUserMessage,
     togglePanel,
     closePanel,
-    toggleListening,
-    handleVoiceInput,
     clearConversation,
     sendQuickAction,
     sendSuggestion,
-    hasMessages
+    hasMessages,
+    confirmAction,
+    cancelAction,
   } = useAIAssistant();
-
-  // Handle AI voice button click - toggles voice recording
-  const handleAIVoiceClick = () => {
-    toggleListening();
-  };
 
   // Handle AI panel toggle
   const handleAIPanelToggle = () => {
@@ -63,9 +60,17 @@ export default function AdminLayout() {
 
   return (
     // Full screen wrapper - centers the frame
-    <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100 overflow-hidden">
+    <div className={`w-screen h-screen flex items-center justify-center overflow-hidden transition-colors ${
+      isDark
+        ? 'bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-800'
+        : 'bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100'
+    }`}>
       {/* Fixed Frame Container - responsive, removes max constraints on mobile */}
-      <div className="relative w-full h-full lg:max-w-[1440px] lg:max-h-[1024px] bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100 overflow-hidden flex flex-col lg:rounded-xl">
+      <div className={`relative w-full h-full lg:max-w-[1440px] lg:max-h-[1024px] overflow-hidden flex flex-col lg:rounded-xl transition-colors ${
+        isDark
+          ? 'bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-800'
+          : 'bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100'
+      }`}>
         {/* Top Row: Sidebar Brand + Header with shared border */}
         <div className="flex flex-shrink-0">
           {/* Sidebar Brand Section - Hidden on mobile, Dynamic Width on desktop */}
@@ -85,7 +90,6 @@ export default function AdminLayout() {
           {/* Header - Takes full width on mobile, remaining width on desktop */}
           <div className="flex-1">
             <Header
-              onAIVoiceClick={handleAIVoiceClick}
               onAIPanelToggle={handleAIPanelToggle}
               onSidebarToggle={handleSidebarToggle}
               isSidebarCollapsed={isSidebarCollapsed}
@@ -111,7 +115,11 @@ export default function AdminLayout() {
           </aside>
 
           {/* Main Content - Scrollable */}
-          <main className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100">
+          <main className={`flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar transition-colors ${
+            isDark
+              ? 'bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-800'
+              : 'bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100'
+          }`}>
             <Outlet />
           </main>
         </div>
@@ -138,22 +146,20 @@ export default function AdminLayout() {
           </div>
         )}
 
-        {/* AI Assistant Panel */}
+        {/* AI Assistant Panel - Admin version with inline real-time voice */}
         <AIAssistantPanel
           isOpen={isPanelOpen}
           onClose={closePanel}
           messages={messages}
           isTyping={isTyping}
-          isListening={isListening}
-          voiceModalOpen={voiceModalOpen}
           conversationEndRef={conversationEndRef}
           onSendMessage={addUserMessage}
           onSuggestionClick={sendSuggestion}
           onQuickActionClick={sendQuickAction}
-          onVoiceClick={toggleListening}
-          onVoiceTranscriptReady={handleVoiceInput}
           onClearConversation={clearConversation}
           hasMessages={hasMessages}
+          onConfirmAction={confirmAction}
+          onCancelAction={cancelAction}
         />
       </div>
     </div>

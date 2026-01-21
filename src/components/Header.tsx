@@ -333,28 +333,24 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed, onMobile
               'flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 rounded-xl',
               isDark ? 'bg-neutral-900/50' : 'bg-neutral-50/80'
             )}>
-              {/* Theme Toggle - hidden on mobile */}
-              <div className="hidden sm:block">
-                <ActionButton
-                  icon={isDark ? Sun : Moon}
-                  label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                  onClick={toggleTheme}
-                />
-              </div>
+              {/* Theme Toggle */}
+              <ActionButton
+                icon={isDark ? Sun : Moon}
+                label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                onClick={toggleTheme}
+              />
 
-              {/* AI Assistant - hidden on mobile */}
-              <div className="hidden md:block">
-                <ActionButton
-                  icon={Sparkles}
-                  label="AI Assistant"
-                  onClick={onAIPanelToggle}
-                  className={isDark
-                    ? 'text-amber-400 hover:text-amber-300 hover:bg-amber-500/15'
-                    : 'text-terra-500 hover:text-terra-600 hover:bg-terra-50'}
-                />
-              </div>
+              {/* AI Assistant */}
+              <ActionButton
+                icon={Sparkles}
+                label="AI Assistant"
+                onClick={onAIPanelToggle}
+                className={isDark
+                  ? 'text-amber-400 hover:text-amber-300 hover:bg-amber-500/15'
+                  : 'text-terra-500 hover:text-terra-600 hover:bg-terra-50'}
+              />
 
-              {/* Notifications - always visible */}
+              {/* Notifications */}
               <ActionButton
                 icon={Bell}
                 label="Notifications"

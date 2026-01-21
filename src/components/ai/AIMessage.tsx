@@ -255,39 +255,39 @@ export default function AIMessage({
   };
 
   return (
-    <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'} mb-4`}>
+    <div className={`flex gap-2 sm:gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'} mb-3 sm:mb-4`}>
       {/* Avatar */}
-      <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
+      <div className={`flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center ${
         isAI ? 'bg-terra-500' : 'bg-neutral-200'
       }`}>
         {isAI ? (
-          <Zap className="w-4 h-4 text-white" />
+          <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
         ) : (
-          <User className="w-4 h-4 text-neutral-600" />
+          <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-600" />
         )}
       </div>
 
       {/* Message bubble */}
-      <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[80%]`}>
+      <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[80%]`}>
         {/* Sender name and time */}
-        <div className="flex items-center gap-2 mb-1 px-1">
-          <span className={`text-[11px] font-semibold ${
+        <div className="flex items-center gap-1.5 sm:gap-2 mb-1 px-1">
+          <span className={`text-[10px] sm:text-[11px] font-semibold ${
             isAI ? 'text-terra-600' : 'text-neutral-600'
           }`}>
             {isAI ? 'Glimmora AI' : 'You'}
           </span>
-          <span className="text-xs text-neutral-400">
+          <span className="text-[10px] sm:text-xs text-neutral-400">
             {formatTime(message.timestamp)}
           </span>
         </div>
 
         {/* Message content */}
-        <div className={`px-4 py-3 rounded-xl ${
+        <div className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl ${
           isAI
             ? 'bg-white border border-neutral-200'
             : 'bg-terra-500 text-white'
         }`}>
-          <div className={`text-sm leading-relaxed ${
+          <div className={`text-[12px] sm:text-sm leading-relaxed ${
             isAI ? 'text-neutral-700' : 'text-white'
           }`}>
             {isAI ? renderMarkdown(message.text) : message.text}
@@ -295,19 +295,19 @@ export default function AIMessage({
 
           {/* Optional structured data display */}
           {message.data && (
-            <div className="mt-3 pt-3 border-t border-neutral-200">
-              <div className="flex items-center gap-4">
+            <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-neutral-200">
+              <div className="flex items-center gap-3 sm:gap-4">
                 {message.data.type === 'revenue' && (
                   <>
                     <div className="text-center">
-                      <div className="text-xs text-neutral-500 mb-1">Revenue</div>
-                      <div className="text-lg font-bold text-terra-600">
+                      <div className="text-[10px] sm:text-xs text-neutral-500 mb-0.5 sm:mb-1">Revenue</div>
+                      <div className="text-base sm:text-lg font-bold text-terra-600">
                         ${message.data.value?.toLocaleString()}
                       </div>
                     </div>
                     <div className="text-center">
-                      <div className="text-xs text-neutral-500 mb-1">Occupancy</div>
-                      <div className="text-lg font-bold text-ocean-600">
+                      <div className="text-[10px] sm:text-xs text-neutral-500 mb-0.5 sm:mb-1">Occupancy</div>
+                      <div className="text-base sm:text-lg font-bold text-ocean-600">
                         {message.data.occupancy}%
                       </div>
                     </div>
@@ -317,14 +317,14 @@ export default function AIMessage({
                 {message.data.type === 'occupancy' && (
                   <>
                     <div className="text-center">
-                      <div className="text-xs text-neutral-500 mb-1">Current</div>
-                      <div className="text-lg font-bold text-terra-600">
+                      <div className="text-[10px] sm:text-xs text-neutral-500 mb-0.5 sm:mb-1">Current</div>
+                      <div className="text-base sm:text-lg font-bold text-terra-600">
                         {message.data.current}%
                       </div>
                     </div>
                     <div className="text-center">
-                      <div className="text-xs text-neutral-500 mb-1">Available</div>
-                      <div className="text-lg font-bold text-sage-600">
+                      <div className="text-[10px] sm:text-xs text-neutral-500 mb-0.5 sm:mb-1">Available</div>
+                      <div className="text-base sm:text-lg font-bold text-sage-600">
                         {message.data.available}
                       </div>
                     </div>
@@ -334,14 +334,14 @@ export default function AIMessage({
                 {message.data.type === 'reviews' && (
                   <>
                     <div className="text-center">
-                      <div className="text-xs text-neutral-500 mb-1">New Reviews</div>
-                      <div className="text-lg font-bold text-terra-600">
+                      <div className="text-[10px] sm:text-xs text-neutral-500 mb-0.5 sm:mb-1">New Reviews</div>
+                      <div className="text-base sm:text-lg font-bold text-terra-600">
                         {message.data.count}
                       </div>
                     </div>
                     <div className="text-center">
-                      <div className="text-xs text-neutral-500 mb-1">Avg Rating</div>
-                      <div className="text-lg font-bold text-ocean-600">
+                      <div className="text-[10px] sm:text-xs text-neutral-500 mb-0.5 sm:mb-1">Avg Rating</div>
+                      <div className="text-base sm:text-lg font-bold text-ocean-600">
                         {message.data.avgRating}/5
                       </div>
                     </div>
@@ -372,14 +372,14 @@ export default function AIMessage({
 
         {/* Suggestions */}
         {isAI && message.suggestions && message.suggestions.length > 0 && onSuggestionClick && (
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-2 sm:mt-3 flex flex-wrap gap-1.5 sm:gap-2">
             {message.suggestions.map((suggestion, index) => (
               <button
                 key={index}
                 onClick={() => onSuggestionClick(suggestion)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-terra-600 bg-terra-50 rounded-lg hover:bg-terra-100 transition-colors border border-terra-100"
+                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-[11px] font-medium text-terra-600 bg-terra-50 rounded-lg hover:bg-terra-100 transition-colors border border-terra-100"
               >
-                <Lightbulb className="w-3 h-3" />
+                <Lightbulb className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 <span>{suggestion}</span>
               </button>
             ))}
@@ -388,16 +388,16 @@ export default function AIMessage({
 
         {/* Action Result */}
         {isAI && message.actionResult && (
-          <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
-            <CheckCircle className="w-4 h-4 text-green-600" />
-            <span className="text-sm text-green-700">Action completed successfully</span>
+          <div className="mt-2 sm:mt-3 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-green-50 border border-green-200 rounded-lg">
+            <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-600" />
+            <span className="text-[11px] sm:text-sm text-green-700">Action completed successfully</span>
           </div>
         )}
 
         {/* Intent & Confidence (debug info - shown subtly) */}
         {isAI && message.intent && message.confidence !== undefined && (
-          <div className="mt-2 flex items-center gap-2 text-xs text-neutral-400">
-            <Database className="w-3 h-3" />
+          <div className="mt-1.5 sm:mt-2 flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-neutral-400">
+            <Database className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
             <span className="capitalize">{message.intent.replace(/_/g, ' ')}</span>
             <span>•</span>
             <span>{Math.round(message.confidence * 100)}% confidence</span>

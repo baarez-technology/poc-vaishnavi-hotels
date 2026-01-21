@@ -231,13 +231,13 @@ export default function OTAConnections() {
               All ({statusCounts.all})
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setStatusFilter('connected')}>
-              Active ({statusCounts.connected})
+              Connecected ({statusCounts.connected})
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setStatusFilter('disconnected')}>
-              Offline ({statusCounts.disconnected})
+              Disconnected ({statusCounts.disconnected})
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setStatusFilter('error')}>
-              Issues ({statusCounts.error})
+              Error ({statusCounts.error})
             </DropdownMenuItem>
           </DropdownMenu>
         </section>

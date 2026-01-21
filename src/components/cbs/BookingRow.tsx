@@ -16,6 +16,7 @@ import {
   CheckCircle,
   Moon
 } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 import SearchHighlight from '../ui2/SearchHighlight';
 import { StatusBadge, Badge } from '../ui2/Badge';
 import { ActionMenu } from '../ui2/DropdownMenu';
@@ -41,17 +42,17 @@ function SourceBadge({ source }) {
 }
 
 // Payment Display
-function PaymentDisplay({ amount, balance }) {
+function PaymentDisplay({ amount, balance, symbol = '$' }) {
   const isPaid = balance === 0 && amount > 0;
 
   return (
     <div className="text-right">
       <span className="text-[13px] font-semibold text-neutral-900 tabular-nums">
-        ${amount.toLocaleString()}
+        {symbol}{amount.toLocaleString()}
       </span>
       {balance > 0 && (
         <span className="block text-[10px] font-semibold text-rose-600 tabular-nums">
-          ${balance.toLocaleString()} due
+          {symbol}{balance.toLocaleString()} due
         </span>
       )}
       {isPaid && (
@@ -78,6 +79,7 @@ export default function BookingRow({
   onSelect,
   animationDelay = 0
 }) {
+  const { symbol } = useCurrency();
   const [isHovered, setIsHovered] = useState(false);
 
   const nights = Math.ceil((new Date(booking.checkOut) - new Date(booking.checkIn)) / (1000 * 60 * 60 * 24));
@@ -222,6 +224,7 @@ export default function BookingRow({
         <PaymentDisplay
           amount={booking.amount}
           balance={booking.balance || 0}
+          symbol={symbol}
         />
       </td>
 

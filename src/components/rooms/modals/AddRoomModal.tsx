@@ -135,7 +135,7 @@ export default function AddRoomModal({ isOpen, onClose, onAdd }) {
             Room Information
           </h4>
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
                   Room Number
@@ -167,7 +167,7 @@ export default function AddRoomModal({ isOpen, onClose, onAdd }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
                   Floor
@@ -206,7 +206,7 @@ export default function AddRoomModal({ isOpen, onClose, onAdd }) {
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Capacity & Pricing
           </h4>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
                 Max Guests
@@ -248,7 +248,7 @@ export default function AddRoomModal({ isOpen, onClose, onAdd }) {
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Amenities
           </h4>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {availableAmenities.map(amenity => {
               const isSelected = formData.amenities.includes(amenity);
               return (

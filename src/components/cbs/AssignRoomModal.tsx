@@ -8,8 +8,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X, Bed, Check, AlertTriangle, ArrowRight,
-  DollarSign, Search, Users, Layers, Crown
+  Search, Users, Layers, Crown
 } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 import { ConfirmModal } from '../ui2/Modal';
 import { Button, IconButton } from '../ui2/Button';
 import { SearchBar } from '../ui2/SearchBar';
@@ -43,6 +44,7 @@ export default function AssignRoomModal({
   onNotifyHousekeeping,
   hideBackdrop = false
 }) {
+  const { formatCurrency, symbol } = useCurrency();
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -141,24 +143,24 @@ export default function AssignRoomModal({
     }
   };
 
-  const formatCurrency = (amount) => `$${amount.toLocaleString()}`;
-
+  
   const roomTypes = ['all', 'Minimalist Studio', 'Coastal Retreat', 'Urban Oasis', 'Sunset Vista', 'Pacific Suite', 'Wellness Suite', 'Family Sanctuary', 'Oceanfront Penthouse'];
 
   if (!isOpen || !booking) return null;
 
   const drawerFooter = (
-    <div className="flex items-center justify-end gap-3">
-      <Button variant="outline" onClick={onClose} className="px-6 py-2.5 text-sm font-semibold border-neutral-200/60 hover:bg-neutral-50">
+    <div className="flex items-center justify-end gap-2 sm:gap-3">
+      <Button variant="outline" onClick={onClose} className="px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold border-neutral-200/60 hover:bg-neutral-50">
         Cancel
       </Button>
       <Button
         variant="primary"
         onClick={handleAssign}
         disabled={!selectedRoom}
-        className="px-6 py-2.5 text-sm font-semibold"
+        className="px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold"
       >
-        Assign Room {selectedRoom && `${selectedRoom.roomNumber}`}
+        <span className="hidden sm:inline">Assign Room {selectedRoom && `${selectedRoom.roomNumber}`}</span>
+        <span className="sm:hidden">Assign {selectedRoom && `#${selectedRoom.roomNumber}`}</span>
         {upgradeFee > 0 && ` (+${formatCurrency(upgradeFee)})`}
       </Button>
     </div>
@@ -175,75 +177,75 @@ export default function AssignRoomModal({
         hideBackdrop={hideBackdrop}
       >
         {/* Fixed Top Section */}
-        <div className="px-6 pt-4 pb-4 bg-white sticky top-0 z-10 border-b border-neutral-100">
+        <div className="px-4 sm:px-6 pt-3 sm:pt-4 pb-3 sm:pb-4 bg-white sticky top-0 z-10 border-b border-neutral-100">
           {/* Header Content */}
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-neutral-900 tracking-tight mb-0.5">
+          <div className="mb-3 sm:mb-4">
+            <h2 className="text-base sm:text-lg font-semibold text-neutral-900 tracking-tight mb-0.5">
               {booking.roomNumber ? 'Change Room' : 'Assign Room'}
             </h2>
-            <p className="text-[13px] text-neutral-500">
+            <p className="text-xs sm:text-[13px] text-neutral-500 truncate">
               {booking.guestName} · {booking.id}
             </p>
           </div>
 
           {/* Booking Summary */}
-          <div className="space-y-3 mb-4">
-            <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">Booking Summary</span>
-            <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
+            <span className="text-[8px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">Booking Summary</span>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               {/* Current Room Card */}
-              <div className="rounded-[10px] border border-neutral-200 bg-white p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-6 h-6 rounded-md bg-terra-50 flex items-center justify-center">
-                    <Bed className="w-3 h-3 text-terra-600" />
+              <div className="rounded-[10px] border border-neutral-200 bg-white p-2 sm:p-3">
+                <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-terra-50 flex items-center justify-center flex-shrink-0">
+                    <Bed className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-terra-600" />
                   </div>
-                  <span className="text-[9px] font-semibold uppercase tracking-widest text-neutral-400">Current</span>
+                  <span className="text-[8px] sm:text-[9px] font-semibold uppercase tracking-widest text-neutral-400">Current</span>
                 </div>
-                <p className="text-lg font-bold text-neutral-900">
+                <p className="text-sm sm:text-lg font-bold text-neutral-900 truncate">
                   {booking.roomNumber || 'None'}
                 </p>
-                <p className="text-[10px] text-neutral-500">{booking.roomType || 'N/A'}</p>
+                <p className="text-[9px] sm:text-[10px] text-neutral-500 truncate">{booking.roomType || 'N/A'}</p>
               </div>
 
               {/* New Room Card */}
-              <div className={`rounded-[10px] border p-3 transition-colors ${
+              <div className={`rounded-[10px] border p-2 sm:p-3 transition-colors ${
                 selectedRoom
                   ? 'border-terra-300 bg-terra-50/50'
                   : 'border-neutral-200 bg-white'
               }`}>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className={`w-6 h-6 rounded-md flex items-center justify-center ${
+                <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                  <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-md flex items-center justify-center flex-shrink-0 ${
                     selectedRoom ? 'bg-ocean-50' : 'bg-neutral-100'
                   }`}>
-                    <ArrowRight className={`w-3 h-3 ${selectedRoom ? 'text-ocean-600' : 'text-neutral-400'}`} />
+                    <ArrowRight className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${selectedRoom ? 'text-ocean-600' : 'text-neutral-400'}`} />
                   </div>
-                  <span className="text-[9px] font-semibold uppercase tracking-widest text-neutral-400">New Room</span>
+                  <span className="text-[8px] sm:text-[9px] font-semibold uppercase tracking-widest text-neutral-400">New</span>
                 </div>
-                <p className={`text-lg font-bold ${selectedRoom ? 'text-terra-600' : 'text-neutral-300'}`}>
+                <p className={`text-sm sm:text-lg font-bold truncate ${selectedRoom ? 'text-terra-600' : 'text-neutral-300'}`}>
                   {selectedRoom ? selectedRoom.roomNumber : 'Select'}
                 </p>
-                <p className={`text-[10px] ${selectedRoom ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                <p className={`text-[9px] sm:text-[10px] truncate ${selectedRoom ? 'text-neutral-500' : 'text-neutral-400'}`}>
                   {selectedRoom?.type || 'Choose below'}
                 </p>
               </div>
 
               {/* Total Card */}
-              <div className="rounded-[10px] border border-neutral-200 bg-white p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-6 h-6 rounded-md bg-gold-50 flex items-center justify-center">
-                    <DollarSign className="w-3 h-3 text-gold-600" />
+              <div className="rounded-[10px] border border-neutral-200 bg-white p-2 sm:p-3">
+                <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-gold-50 flex items-center justify-center flex-shrink-0">
+                    <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-gold-600" />
                   </div>
-                  <span className="text-[9px] font-semibold uppercase tracking-widest text-neutral-400">Total</span>
+                  <span className="text-[8px] sm:text-[9px] font-semibold uppercase tracking-widest text-neutral-400">Total</span>
                 </div>
-                <p className="text-lg font-bold text-neutral-900">{formatCurrency(booking.amount)}</p>
-                <p className="text-[10px] text-neutral-500">{booking.nights} nights</p>
+                <p className="text-sm sm:text-lg font-bold text-neutral-900">{formatCurrency(booking.amount)}</p>
+                <p className="text-[9px] sm:text-[10px] text-neutral-500">{booking.nights} nights</p>
               </div>
             </div>
           </div>
 
           {/* Search and Filters */}
           <div className="space-y-2">
-            <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">Available Rooms</span>
-            <div className="flex items-center gap-3">
+            <span className="text-[8px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">Available Rooms</span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
               <div className="flex-1">
                 <SearchBar
                   value={searchQuery}
@@ -253,39 +255,48 @@ export default function AssignRoomModal({
                   size="sm"
                 />
               </div>
-              <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-neutral-100">
-                {roomTypes.map(type => (
+              <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-neutral-100 overflow-x-auto hide-scrollbar">
+                {roomTypes.slice(0, 4).map(type => (
                   <button
                     key={type}
                     onClick={() => setFilterType(type)}
-                    className={`px-3 py-1.5 text-[11px] font-semibold rounded-md transition-all duration-150 ${
+                    className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-[11px] font-semibold rounded-md transition-all duration-150 whitespace-nowrap ${
                       filterType === type
                         ? 'bg-white text-neutral-900 shadow-sm'
                         : 'text-neutral-500 hover:text-neutral-700'
                     }`}
                   >
-                    {type === 'all' ? 'All' : type}
+                    {type === 'all' ? 'All' : type.split(' ')[0]}
                   </button>
                 ))}
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="sm:hidden px-2 py-1 text-[10px] font-semibold rounded-md bg-neutral-100 text-neutral-600 border-0 focus:ring-0"
+                >
+                  {roomTypes.map(type => (
+                    <option key={type} value={type}>{type === 'all' ? 'All Types' : type}</option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
         </div>
 
         {/* Scrollable Content */}
-        <div className="space-y-4 px-6 py-4">
+        <div className="space-y-3 sm:space-y-4 px-4 sm:px-6 py-3 sm:py-4">
           {/* Conflicting Rooms Warning */}
           {conflictingRooms.length > 0 && (
-            <div className="p-4 rounded-[10px] border border-rose-200 bg-rose-50">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center flex-shrink-0">
-                  <AlertTriangle className="w-5 h-5 text-rose-600" />
+            <div className="p-3 sm:p-4 rounded-[10px] border border-rose-200 bg-rose-50">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-rose-100 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-rose-600" />
                 </div>
-                <div>
-                  <p className="text-[13px] font-semibold text-rose-700">
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-[13px] font-semibold text-rose-700">
                     Rooms with conflicts
                   </p>
-                  <p className="text-[11px] text-rose-600 mt-0.5">
+                  <p className="text-[10px] sm:text-[11px] text-rose-600 mt-0.5 truncate">
                     Booked during selected dates: {conflictingRooms.join(', ')}
                   </p>
                 </div>
@@ -296,12 +307,12 @@ export default function AssignRoomModal({
           {/* Room List */}
           <div className="space-y-2">
             {filteredRooms.length === 0 ? (
-              <div className="p-10 text-center rounded-[10px] border border-neutral-200 bg-white">
-                <div className="w-12 h-12 rounded-lg bg-neutral-100 flex items-center justify-center mx-auto mb-4">
-                  <Bed className="w-6 h-6 text-neutral-400" />
+              <div className="p-6 sm:p-10 text-center rounded-[10px] border border-neutral-200 bg-white">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-neutral-100 flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                  <Bed className="w-5 h-5 sm:w-6 sm:h-6 text-neutral-400" />
                 </div>
-                <p className="text-[13px] font-semibold text-neutral-700">No rooms available</p>
-                <p className="text-[11px] text-neutral-500 mt-1">
+                <p className="text-xs sm:text-[13px] font-semibold text-neutral-700">No rooms available</p>
+                <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-1">
                   Try a different room type or date range
                 </p>
               </div>
@@ -320,54 +331,55 @@ export default function AssignRoomModal({
                         : 'border-neutral-200 bg-white hover:border-terra-300 hover:bg-neutral-50/50'
                     }`}
                   >
-                    <div className="p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-150 flex-shrink-0 ${
+                    <div className="p-3 sm:p-4 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                        <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-150 flex-shrink-0 ${
                           isSelected
                             ? 'bg-terra-500'
                             : 'bg-neutral-100'
                         }`}>
                           {isSelected ? (
-                            <Check className="w-5 h-5 text-white" />
+                            <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                           ) : (
-                            <Bed className="w-5 h-5 text-neutral-500" />
+                            <Bed className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-500" />
                           )}
                         </div>
 
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="text-[13px] font-semibold text-neutral-900">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                            <p className="text-xs sm:text-[13px] font-semibold text-neutral-900">
                               Room {room.roomNumber}
                             </p>
-                            <span className="px-2 py-0.5 text-[10px] font-semibold rounded-md bg-neutral-100 text-neutral-600">
+                            <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold rounded-md bg-neutral-100 text-neutral-600 truncate max-w-[80px] sm:max-w-none">
                               {room.type}
                             </span>
                           </div>
-                          <div className="flex items-center gap-3 mt-1">
-                            <span className="flex items-center gap-1 text-[11px] text-neutral-500">
-                              <Layers className="w-3 h-3" />
-                              Floor {room.floor}
+                          <div className="flex items-center gap-2 sm:gap-3 mt-0.5 sm:mt-1">
+                            <span className="flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-[11px] text-neutral-500">
+                              <Layers className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+                              <span className="hidden sm:inline">Floor</span> {room.floor}
                             </span>
-                            <span className="text-[11px] text-neutral-400">
+                            <span className="text-[10px] sm:text-[11px] text-neutral-400 hidden sm:inline">
                               {room.bedType}
                             </span>
-                            <span className="flex items-center gap-1 text-[11px] text-neutral-400">
-                              <Users className="w-3 h-3" />
+                            <span className="flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-[11px] text-neutral-400">
+                              <Users className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
                               {room.capacity}
                             </span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                         <div className="text-right">
-                          <p className="text-[13px] font-bold text-neutral-900">
+                          <p className="text-xs sm:text-[13px] font-bold text-neutral-900">
                             {formatCurrency(room.price)}
-                            <span className="text-[11px] font-normal text-neutral-400">/night</span>
+                            <span className="text-[9px] sm:text-[11px] font-normal text-neutral-400">/nt</span>
                           </p>
-                          <div className={`inline-flex items-center gap-1 px-2 py-0.5 mt-1 text-[10px] font-semibold rounded-md ${cleaningStatus.bg} ${cleaningStatus.color}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${cleaningStatus.dot}`}></span>
-                            {cleaningStatus.label}
+                          <div className={`inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 mt-0.5 sm:mt-1 text-[9px] sm:text-[10px] font-semibold rounded-md ${cleaningStatus.bg} ${cleaningStatus.color}`}>
+                            <span className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${cleaningStatus.dot}`}></span>
+                            <span className="hidden sm:inline">{cleaningStatus.label}</span>
+                            <span className="sm:hidden">{cleaningStatus.label.split(' ')[0]}</span>
                           </div>
                         </div>
                         {room.cleaning === 'dirty' && (
@@ -378,7 +390,7 @@ export default function AssignRoomModal({
                               e.stopPropagation();
                               handleNotifyHousekeeping(room);
                             }}
-                            className="text-[11px] px-2.5 py-1"
+                            className="text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-0.5 sm:py-1 hidden sm:flex"
                           >
                             Notify
                           </Button>
@@ -393,29 +405,29 @@ export default function AssignRoomModal({
 
           {/* Upgrade Fee Section */}
           {showUpgradeFee && selectedRoom && (
-            <div className="rounded-[10px] border border-gold-200 bg-gold-50 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gold-100 flex items-center justify-center flex-shrink-0">
-                    <Crown className="w-5 h-5 text-gold-600" />
+            <div className="rounded-[10px] border border-gold-200 bg-gold-50 p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gold-100 flex items-center justify-center flex-shrink-0">
+                    <Crown className="w-4 h-4 sm:w-5 sm:h-5 text-gold-600" />
                   </div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-gold-800">Room Upgrade</p>
-                    <p className="text-[11px] text-gold-600 mt-0.5">
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-[13px] font-semibold text-gold-800">Room Upgrade</p>
+                    <p className="text-[10px] sm:text-[11px] text-gold-600 mt-0.5 truncate">
                       {booking.roomType} → {selectedRoom.type}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-semibold text-gold-700">Fee:</span>
+                <div className="flex items-center gap-2 pl-10 sm:pl-0">
+                  <span className="text-[10px] sm:text-[11px] font-semibold text-gold-700">Fee:</span>
                   <div className="relative">
-                    <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
+                    <DollarSign className="absolute left-2 sm:left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-400" />
                     <input
                       type="number"
                       value={upgradeFee}
                       onChange={(e) => setUpgradeFee(Math.max(0, parseInt(e.target.value) || 0))}
                       placeholder="0"
-                      className="w-24 pl-7 pr-2.5 py-2 rounded-lg border border-neutral-200 bg-white text-right text-[13px] font-semibold focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-400"
+                      className="w-20 sm:w-24 pl-6 sm:pl-7 pr-2 sm:pr-2.5 py-1.5 sm:py-2 rounded-lg border border-neutral-200 bg-white text-right text-xs sm:text-[13px] font-semibold focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-400"
                     />
                   </div>
                 </div>

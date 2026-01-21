@@ -15,6 +15,7 @@ import { Drawer } from '../ui2/Drawer';
 import { Input, FormField, Select, Textarea } from '../ui2/Input';
 import { Button } from '../ui2/Button';
 import DatePicker from '../ui2/DatePicker';
+import { useCurrency } from '@/hooks/useCurrency';
 
 const roomTypes = [
   'Minimalist Studio',
@@ -42,6 +43,7 @@ export default function NewBookingDrawer({
   availableRooms = [],
   getRateForBooking
 }) {
+  const { formatCurrency } = useCurrency();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     guestName: '',
@@ -200,7 +202,6 @@ export default function NewBookingDrawer({
     onClose();
   };
 
-  const formatCurrency = (amount) => `$${amount.toLocaleString()}`;
   const today = new Date().toISOString().split('T')[0];
 
   const steps = [
@@ -211,23 +212,24 @@ export default function NewBookingDrawer({
 
   const drawerFooter = (
     <div className="flex items-center justify-between w-full">
-      <p className="text-[11px] font-medium text-neutral-400">
+      <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400">
         Step <span className="text-neutral-600">{step}</span> of <span className="text-neutral-600">3</span>
       </p>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <Button
           variant="outline"
           onClick={step === 1 ? handleClose : handleBack}
-          className="px-4 py-2 text-[13px]"
+          className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-[13px]"
         >
           {step === 1 ? 'Cancel' : 'Back'}
         </Button>
         <Button
           variant="primary"
           onClick={step < 3 ? handleNext : handleSubmit}
-          className="px-4 py-2 text-[13px]"
+          className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-[13px]"
         >
-          {step < 3 ? 'Continue' : 'Create Booking'}
+          <span className="hidden sm:inline">{step < 3 ? 'Continue' : 'Create Booking'}</span>
+          <span className="sm:hidden">{step < 3 ? 'Next' : 'Create'}</span>
         </Button>
       </div>
     </div>
@@ -243,7 +245,7 @@ export default function NewBookingDrawer({
       footer={drawerFooter}
     >
       {/* Progress Stepper - Compact */}
-      <div className="flex items-center justify-between mb-6 pb-5 border-b border-neutral-100">
+      <div className="flex items-center justify-between mb-4 sm:mb-6 pb-4 sm:pb-5 border-b border-neutral-100">
         {steps.map((s, idx) => {
           const isActive = step === s.num;
           const isCompleted = step > s.num;
@@ -251,24 +253,24 @@ export default function NewBookingDrawer({
 
           return (
             <div key={s.num} className="flex items-center flex-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <div
                   className={cn(
-                    "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
+                    "w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all",
                     isCompleted && "bg-terra-500 text-white",
                     isActive && "bg-terra-50 text-terra-600 border border-terra-500",
                     !isActive && !isCompleted && "bg-neutral-100 text-neutral-400"
                   )}
                 >
                   {isCompleted ? (
-                    <Check className="w-4 h-4" strokeWidth={2.5} />
+                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2.5} />
                   ) : (
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   )}
                 </div>
                 <div>
                   <p className={cn(
-                    "text-[13px] font-semibold",
+                    "text-xs sm:text-[13px] font-semibold",
                     (isActive || isCompleted) ? "text-neutral-900" : "text-neutral-400"
                   )}>
                     {s.label}
@@ -276,7 +278,7 @@ export default function NewBookingDrawer({
                 </div>
               </div>
               {idx < steps.length - 1 && (
-                <div className="flex-1 mx-3">
+                <div className="flex-1 mx-2 sm:mx-3">
                   <div className="h-0.5 bg-neutral-200 rounded-full overflow-hidden">
                     <div
                       className={cn(
@@ -294,14 +296,14 @@ export default function NewBookingDrawer({
 
       {/* Step 1 - Guest Details */}
       {step === 1 && (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Contact Information */}
           <div>
-            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">
+            <h3 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3 sm:mb-4">
               Contact Information
             </h3>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <FormField label="Full Name" required error={errors.guestName}>
                 <Input
                   name="guestName"
@@ -313,7 +315,7 @@ export default function NewBookingDrawer({
                 />
               </FormField>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <FormField label="Email Address" required error={errors.guestEmail}>
                   <Input
                     type="email"
@@ -346,38 +348,38 @@ export default function NewBookingDrawer({
 
           {/* Guest Status */}
           <div>
-            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">
+            <h3 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3 sm:mb-4">
               Guest Status
             </h3>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               {/* Regular Guest */}
               <button
                 type="button"
                 onClick={() => handleChange('isVip', false)}
                 className={cn(
-                  'relative p-4 rounded-[10px] border transition-all text-left',
+                  'relative p-3 sm:p-4 rounded-[10px] border transition-all text-left',
                   !formData.isVip
                     ? 'border-terra-500 bg-terra-50'
                     : 'border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50'
                 )}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-2 sm:gap-3">
                   <div className={cn(
-                    'w-10 h-10 rounded-lg flex items-center justify-center',
+                    'w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0',
                     !formData.isVip
                       ? 'bg-terra-500 text-white'
                       : 'bg-neutral-100 text-neutral-500'
                   )}>
-                    <User className="w-5 h-5" />
+                    <User className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-neutral-900">Regular</p>
-                    <p className="text-[11px] text-neutral-500 mt-0.5">Standard guest privileges</p>
+                    <p className="text-xs sm:text-[13px] font-semibold text-neutral-900">Regular</p>
+                    <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-0.5 hidden sm:block">Standard guest privileges</p>
                   </div>
                   {!formData.isVip && (
-                    <div className="w-5 h-5 rounded-full bg-terra-500 flex items-center justify-center flex-shrink-0">
-                      <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-terra-500 flex items-center justify-center flex-shrink-0">
+                      <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" strokeWidth={3} />
                     </div>
                   )}
                 </div>
@@ -388,28 +390,28 @@ export default function NewBookingDrawer({
                 type="button"
                 onClick={() => handleChange('isVip', true)}
                 className={cn(
-                  'relative p-4 rounded-[10px] border transition-all text-left',
+                  'relative p-3 sm:p-4 rounded-[10px] border transition-all text-left',
                   formData.isVip
                     ? 'border-gold-500 bg-gold-50'
                     : 'border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50'
                 )}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-2 sm:gap-3">
                   <div className={cn(
-                    'w-10 h-10 rounded-lg flex items-center justify-center',
+                    'w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0',
                     formData.isVip
                       ? 'bg-gold-500 text-white'
                       : 'bg-neutral-100 text-neutral-500'
                   )}>
-                    <Crown className="w-5 h-5" />
+                    <Crown className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-neutral-900">VIP</p>
-                    <p className="text-[11px] text-neutral-500 mt-0.5">Premium guest benefits</p>
+                    <p className="text-xs sm:text-[13px] font-semibold text-neutral-900">VIP</p>
+                    <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-0.5 hidden sm:block">Premium guest benefits</p>
                   </div>
                   {formData.isVip && (
-                    <div className="w-5 h-5 rounded-full bg-gold-500 flex items-center justify-center flex-shrink-0">
-                      <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gold-500 flex items-center justify-center flex-shrink-0">
+                      <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" strokeWidth={3} />
                     </div>
                   )}
                 </div>
@@ -421,16 +423,16 @@ export default function NewBookingDrawer({
 
       {/* Step 2 - Stay Details */}
       {step === 2 && (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Dates */}
           <div>
-            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">
+            <h3 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3 sm:mb-4">
               Stay Dates
             </h3>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
               <div>
-                <label className="block text-[13px] font-medium text-neutral-700 mb-2">
+                <label className="block text-xs sm:text-[13px] font-medium text-neutral-700 mb-1.5 sm:mb-2">
                   Check-in <span className="text-rose-500">*</span>
                 </label>
                 <DatePicker
@@ -441,14 +443,14 @@ export default function NewBookingDrawer({
                   className="w-full"
                 />
                 {errors.checkIn && (
-                  <p className="text-rose-500 text-[11px] mt-1.5 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
+                  <p className="text-rose-500 text-[10px] sm:text-[11px] mt-1 sm:mt-1.5 flex items-center gap-1">
+                    <AlertCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
                     {errors.checkIn}
                   </p>
                 )}
               </div>
               <div>
-                <label className="block text-[13px] font-medium text-neutral-700 mb-2">
+                <label className="block text-xs sm:text-[13px] font-medium text-neutral-700 mb-1.5 sm:mb-2">
                   Check-out <span className="text-rose-500">*</span>
                 </label>
                 <DatePicker
@@ -459,8 +461,8 @@ export default function NewBookingDrawer({
                   className="w-full"
                 />
                 {errors.checkOut && (
-                  <p className="text-rose-500 text-[11px] mt-1.5 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
+                  <p className="text-rose-500 text-[10px] sm:text-[11px] mt-1 sm:mt-1.5 flex items-center gap-1">
+                    <AlertCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
                     {errors.checkOut}
                   </p>
                 )}
@@ -469,18 +471,18 @@ export default function NewBookingDrawer({
 
             {/* Nights Display */}
             {formData.nights > 0 && (
-              <div className="mt-4 p-4 rounded-[10px] bg-terra-50 border border-terra-200">
-                <div className="flex items-center justify-center gap-2">
-                  <Calendar className="w-5 h-5 text-terra-600" />
-                  <span className="text-2xl font-bold text-terra-600">{formData.nights}</span>
-                  <span className="text-[13px] font-medium text-terra-600">night{formData.nights !== 1 ? 's' : ''}</span>
+              <div className="mt-3 sm:mt-4 p-3 sm:p-4 rounded-[10px] bg-terra-50 border border-terra-200">
+                <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-terra-600" />
+                  <span className="text-xl sm:text-2xl font-bold text-terra-600">{formData.nights}</span>
+                  <span className="text-xs sm:text-[13px] font-medium text-terra-600">night{formData.nights !== 1 ? 's' : ''}</span>
                 </div>
               </div>
             )}
           </div>
 
           {/* Room & Rate */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <FormField label="Room Type">
               <Select
                 value={formData.roomType}
@@ -505,67 +507,67 @@ export default function NewBookingDrawer({
 
           {/* Guests */}
           <div>
-            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">
+            <h3 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3 sm:mb-4">
               Guests
             </h3>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
               {/* Adults */}
-              <div className="p-4 rounded-[10px] bg-neutral-50 border border-neutral-200">
-                <div className="flex items-center justify-between mb-3">
+              <div className="p-3 sm:p-4 rounded-[10px] bg-neutral-50 border border-neutral-200">
+                <div className="flex items-center justify-between mb-2 sm:mb-3">
                   <div>
-                    <p className="text-[13px] font-semibold text-neutral-900">Adults</p>
-                    <p className="text-[10px] text-neutral-500">Age 13+</p>
+                    <p className="text-xs sm:text-[13px] font-semibold text-neutral-900">Adults</p>
+                    <p className="text-[9px] sm:text-[10px] text-neutral-500">Age 13+</p>
                   </div>
-                  <Users className="w-4 h-4 text-neutral-400" />
+                  <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400" />
                 </div>
                 <div className="flex items-center justify-between">
                   <button
                     type="button"
                     onClick={() => handleChange('adults', Math.max(1, formData.adults - 1))}
                     disabled={formData.adults <= 1}
-                    className="w-8 h-8 rounded-lg bg-white border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-50 disabled:opacity-40 transition-all"
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-50 disabled:opacity-40 transition-all"
                   >
-                    <span className="text-lg font-medium">−</span>
+                    <span className="text-base sm:text-lg font-medium">−</span>
                   </button>
-                  <span className="text-xl font-bold text-neutral-900 tabular-nums">{formData.adults}</span>
+                  <span className="text-lg sm:text-xl font-bold text-neutral-900 tabular-nums">{formData.adults}</span>
                   <button
                     type="button"
                     onClick={() => handleChange('adults', Math.min(6, formData.adults + 1))}
                     disabled={formData.adults >= 6}
-                    className="w-8 h-8 rounded-lg bg-terra-500 text-white flex items-center justify-center hover:bg-terra-600 disabled:opacity-40 transition-all"
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-terra-500 text-white flex items-center justify-center hover:bg-terra-600 disabled:opacity-40 transition-all"
                   >
-                    <span className="text-lg font-medium">+</span>
+                    <span className="text-base sm:text-lg font-medium">+</span>
                   </button>
                 </div>
               </div>
 
               {/* Children */}
-              <div className="p-4 rounded-[10px] bg-neutral-50 border border-neutral-200">
-                <div className="flex items-center justify-between mb-3">
+              <div className="p-3 sm:p-4 rounded-[10px] bg-neutral-50 border border-neutral-200">
+                <div className="flex items-center justify-between mb-2 sm:mb-3">
                   <div>
-                    <p className="text-[13px] font-semibold text-neutral-900">Children</p>
-                    <p className="text-[10px] text-neutral-500">Age 0-12</p>
+                    <p className="text-xs sm:text-[13px] font-semibold text-neutral-900">Children</p>
+                    <p className="text-[9px] sm:text-[10px] text-neutral-500">Age 0-12</p>
                   </div>
-                  <Users className="w-4 h-4 text-neutral-400" />
+                  <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400" />
                 </div>
                 <div className="flex items-center justify-between">
                   <button
                     type="button"
                     onClick={() => handleChange('children', Math.max(0, formData.children - 1))}
                     disabled={formData.children <= 0}
-                    className="w-8 h-8 rounded-lg bg-white border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-50 disabled:opacity-40 transition-all"
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white border border-neutral-200 flex items-center justify-center text-neutral-600 hover:bg-neutral-50 disabled:opacity-40 transition-all"
                   >
-                    <span className="text-lg font-medium">−</span>
+                    <span className="text-base sm:text-lg font-medium">−</span>
                   </button>
-                  <span className="text-xl font-bold text-neutral-900 tabular-nums">{formData.children}</span>
+                  <span className="text-lg sm:text-xl font-bold text-neutral-900 tabular-nums">{formData.children}</span>
                   <button
                     type="button"
                     onClick={() => handleChange('children', Math.min(4, formData.children + 1))}
                     disabled={formData.children >= 4}
-                    className="w-8 h-8 rounded-lg bg-terra-500 text-white flex items-center justify-center hover:bg-terra-600 disabled:opacity-40 transition-all"
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-terra-500 text-white flex items-center justify-center hover:bg-terra-600 disabled:opacity-40 transition-all"
                   >
-                    <span className="text-lg font-medium">+</span>
+                    <span className="text-base sm:text-lg font-medium">+</span>
                   </button>
                 </div>
               </div>
@@ -574,10 +576,10 @@ export default function NewBookingDrawer({
 
           {/* Booking Source */}
           <div>
-            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">
+            <h3 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3 sm:mb-4">
               Booking Source
             </h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {sources.map(source => {
                 const Icon = source.icon;
                 const isSelected = formData.source === source.id;
@@ -587,13 +589,13 @@ export default function NewBookingDrawer({
                     type="button"
                     onClick={() => handleChange('source', source.id)}
                     className={cn(
-                      'flex items-center gap-2 py-2 px-3 rounded-lg text-[13px] font-medium transition-all',
+                      'flex items-center gap-1.5 sm:gap-2 py-1.5 sm:py-2 px-2.5 sm:px-3 rounded-lg text-[11px] sm:text-[13px] font-medium transition-all',
                       isSelected
                         ? 'bg-terra-500 text-white'
                         : 'bg-white border border-neutral-200 text-neutral-600 hover:border-terra-300 hover:bg-terra-50'
                     )}
                   >
-                    <Icon className="w-3.5 h-3.5" />
+                    <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
                     {source.label}
                   </button>
                 );
@@ -615,25 +617,25 @@ export default function NewBookingDrawer({
 
       {/* Step 3 - Room Selection */}
       {step === 3 && (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Booking Summary */}
-          <div className="p-4 rounded-[10px] bg-neutral-50 border border-neutral-200">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-lg border border-neutral-200 text-[11px] font-medium text-neutral-600">
-                <Calendar className="w-3 h-3 text-terra-500" />
+          <div className="p-3 sm:p-4 rounded-[10px] bg-neutral-50 border border-neutral-200">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 bg-white rounded-lg border border-neutral-200 text-[10px] sm:text-[11px] font-medium text-neutral-600">
+                <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-terra-500 flex-shrink-0" />
                 {formData.nights} night{formData.nights !== 1 ? 's' : ''}
               </div>
-              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-lg border border-neutral-200 text-[11px] font-medium text-neutral-600">
-                <Users className="w-3 h-3 text-terra-500" />
+              <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 bg-white rounded-lg border border-neutral-200 text-[10px] sm:text-[11px] font-medium text-neutral-600">
+                <Users className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-terra-500 flex-shrink-0" />
                 {formData.adults} Adult{formData.adults !== 1 ? 's' : ''}{formData.children > 0 && `, ${formData.children} Child`}
               </div>
-              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-lg border border-neutral-200 text-[11px] font-medium text-neutral-600">
-                <Bed className="w-3 h-3 text-terra-500" />
-                {formData.roomType}
+              <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 bg-white rounded-lg border border-neutral-200 text-[10px] sm:text-[11px] font-medium text-neutral-600 truncate max-w-[120px] sm:max-w-none">
+                <Bed className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-terra-500 flex-shrink-0" />
+                <span className="truncate">{formData.roomType}</span>
               </div>
               {formData.isVip && (
-                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gold-50 rounded-lg border border-gold-200 text-[11px] font-semibold text-gold-700">
-                  <Crown className="w-3 h-3" />
+                <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 bg-gold-50 rounded-lg border border-gold-200 text-[10px] sm:text-[11px] font-semibold text-gold-700">
+                  <Crown className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
                   VIP
                 </div>
               )}
@@ -642,25 +644,25 @@ export default function NewBookingDrawer({
 
           {/* Room Selection */}
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h3 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
                 Select Room
               </h3>
-              <span className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-neutral-100 text-neutral-600">
+              <span className="text-[9px] sm:text-[10px] font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg bg-neutral-100 text-neutral-600">
                 {filteredRooms.length} available
               </span>
             </div>
 
             {filteredRooms.length === 0 ? (
-              <div className="p-8 rounded-[10px] border border-dashed border-neutral-300 text-center">
-                <div className="w-10 h-10 rounded-lg bg-gold-50 flex items-center justify-center mx-auto mb-3">
-                  <AlertCircle className="w-5 h-5 text-gold-600" />
+              <div className="p-5 sm:p-8 rounded-[10px] border border-dashed border-neutral-300 text-center">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gold-50 flex items-center justify-center mx-auto mb-2 sm:mb-3">
+                  <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-gold-600" />
                 </div>
-                <p className="text-[13px] font-semibold text-neutral-800">No rooms available</p>
-                <p className="text-[11px] text-neutral-500 mt-1">Try selecting a different room type or dates.</p>
+                <p className="text-xs sm:text-[13px] font-semibold text-neutral-800">No rooms available</p>
+                <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-1">Try selecting a different room type or dates.</p>
               </div>
             ) : (
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              <div className="space-y-2 max-h-[250px] sm:max-h-[300px] overflow-y-auto">
                 {filteredRooms.map((room) => {
                   const isSelected = formData.selectedRoom?.id === room.id;
                   const isReady = room.cleaning === 'clean';
@@ -671,29 +673,29 @@ export default function NewBookingDrawer({
                       type="button"
                       onClick={() => handleChange('selectedRoom', room)}
                       className={cn(
-                        'w-full p-4 rounded-[10px] border transition-all text-left',
+                        'w-full p-3 sm:p-4 rounded-[10px] border transition-all text-left',
                         isSelected
                           ? 'border-terra-500 bg-terra-50'
                           : 'border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50'
                       )}
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 sm:gap-4">
                         {/* Room Icon */}
                         <div className={cn(
-                          'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0',
+                          'w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0',
                           isSelected
                             ? 'bg-terra-500 text-white'
                             : 'bg-neutral-100 text-neutral-400'
                         )}>
-                          {isSelected ? <Check className="w-5 h-5" /> : <Bed className="w-5 h-5" />}
+                          {isSelected ? <Check className="w-4 h-4 sm:w-5 sm:h-5" /> : <Bed className="w-4 h-4 sm:w-5 sm:h-5" />}
                         </div>
 
                         {/* Room Info */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[13px] font-semibold text-neutral-900">Room {room.roomNumber}</span>
+                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                            <span className="text-xs sm:text-[13px] font-semibold text-neutral-900">Room {room.roomNumber}</span>
                             <span className={cn(
-                              'text-[10px] px-2 py-0.5 rounded-lg font-semibold uppercase tracking-wider',
+                              'text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-lg font-semibold uppercase tracking-wider',
                               isReady
                                 ? 'bg-sage-50 text-sage-700'
                                 : 'bg-gold-50 text-gold-700'
@@ -701,23 +703,23 @@ export default function NewBookingDrawer({
                               {isReady ? 'Ready' : 'Cleaning'}
                             </span>
                           </div>
-                          <p className="text-[11px] text-neutral-500 mt-0.5">Floor {room.floor} · {room.type}</p>
+                          <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-0.5 truncate">Floor {room.floor} · {room.type}</p>
                         </div>
 
                         {/* Price */}
                         <div className="text-right flex-shrink-0">
-                          <p className="text-[15px] font-bold text-neutral-900">{formatCurrency(room.price)}</p>
-                          <p className="text-[10px] text-neutral-400">per night</p>
+                          <p className="text-sm sm:text-[15px] font-bold text-neutral-900">{formatCurrency(room.price)}</p>
+                          <p className="text-[9px] sm:text-[10px] text-neutral-400">per night</p>
                         </div>
                       </div>
 
                       {/* Amenities (show on selection) */}
                       {isSelected && (
-                        <div className="mt-3 pt-3 border-t border-terra-200">
-                          <div className="flex items-center gap-4 text-[10px] font-medium text-terra-600">
-                            <span className="flex items-center gap-1"><Wifi className="w-3 h-3" /> WiFi</span>
-                            <span className="flex items-center gap-1"><Coffee className="w-3 h-3" /> Mini Bar</span>
-                            <span className="flex items-center gap-1"><Car className="w-3 h-3" /> Parking</span>
+                        <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-terra-200">
+                          <div className="flex items-center gap-3 sm:gap-4 text-[9px] sm:text-[10px] font-medium text-terra-600">
+                            <span className="flex items-center gap-0.5 sm:gap-1"><Wifi className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> WiFi</span>
+                            <span className="flex items-center gap-0.5 sm:gap-1"><Coffee className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Mini Bar</span>
+                            <span className="flex items-center gap-0.5 sm:gap-1"><Car className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Parking</span>
                           </div>
                         </div>
                       )}
@@ -728,8 +730,8 @@ export default function NewBookingDrawer({
             )}
 
             {errors.selectedRoom && (
-              <p className="text-rose-500 text-[11px] mt-3 flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" />
+              <p className="text-rose-500 text-[10px] sm:text-[11px] mt-2 sm:mt-3 flex items-center gap-1">
+                <AlertCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
                 {errors.selectedRoom}
               </p>
             )}
@@ -737,15 +739,15 @@ export default function NewBookingDrawer({
 
           {/* Total */}
           {formData.amount > 0 && (
-            <div className="p-4 rounded-[10px] bg-terra-500 text-white">
+            <div className="p-3 sm:p-4 rounded-[10px] bg-terra-500 text-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[11px] text-terra-200 font-medium">Total Amount</p>
-                  <p className="text-2xl font-bold">{formatCurrency(formData.amount)}</p>
+                  <p className="text-[10px] sm:text-[11px] text-terra-200 font-medium">Total Amount</p>
+                  <p className="text-xl sm:text-2xl font-bold">{formatCurrency(formData.amount)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[11px] text-terra-200">{formData.nights} night{formData.nights !== 1 ? 's' : ''}</p>
-                  <p className="text-[11px] text-terra-200">{formData.ratePlan} Rate</p>
+                  <p className="text-[10px] sm:text-[11px] text-terra-200">{formData.nights} night{formData.nights !== 1 ? 's' : ''}</p>
+                  <p className="text-[10px] sm:text-[11px] text-terra-200">{formData.ratePlan} Rate</p>
                 </div>
               </div>
             </div>

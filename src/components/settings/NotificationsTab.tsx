@@ -89,7 +89,9 @@ export default function NotificationsTab() {
   };
 
   const toggleTriggerChannel = (triggerKey: string, channel: string) => {
-    const currentChannels = notifications.triggers[triggerKey].channels || [];
+    // Ensure channels is always an array
+    const triggerData = notifications.triggers[triggerKey] || { enabled: false, channels: [] };
+    const currentChannels = Array.isArray(triggerData.channels) ? triggerData.channels : [];
     const newChannels = currentChannels.includes(channel)
       ? currentChannels.filter((c: string) => c !== channel)
       : [...currentChannels, channel];
@@ -140,31 +142,31 @@ export default function NotificationsTab() {
   };
 
   return (
-    <div className="max-w-3xl space-y-8">
+    <div className="max-w-3xl space-y-6 sm:space-y-8">
       {/* Header */}
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-neutral-900">Notifications</h1>
-          <p className="text-sm text-neutral-500 mt-1">
+          <h1 className="text-base sm:text-lg font-semibold text-neutral-900">Notifications</h1>
+          <p className="text-[12px] sm:text-sm text-neutral-500 mt-1">
             Manage how and when you receive alerts
           </p>
         </div>
         {saved && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-sage-50 text-sage-600 rounded-lg">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-sage-50 text-sage-600 rounded-lg self-start">
             <Check className="w-4 h-4" />
-            <span className="text-sm font-medium">Saved</span>
+            <span className="text-[12px] sm:text-sm font-medium">Saved</span>
           </div>
         )}
       </header>
 
       {/* Delivery Channels */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <h2 className="text-sm font-medium text-neutral-900">Delivery Channels</h2>
-          <p className="text-xs text-neutral-500 mt-0.5">Choose how you want to receive notifications</p>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">Delivery Channels</h2>
+          <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Choose how you want to receive notifications</p>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {CHANNEL_CONFIG.map((channel, index) => {
             const isEnabled = notifications.channels[channel.key]?.enabled;
             const Icon = channel.icon;
@@ -172,15 +174,15 @@ export default function NotificationsTab() {
             return (
               <div
                 key={channel.key}
-                className={`flex items-center justify-between py-4 border-b border-neutral-100 ${
+                className={`flex items-center justify-between py-3 sm:py-4 border-b border-neutral-100 ${
                   index === CHANNEL_CONFIG.length - 1 ? 'border-0' : ''
                 }`}
               >
-                <div className="flex items-center gap-4">
-                  <Icon className="w-5 h-5 text-neutral-400" />
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-400 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-neutral-900">{channel.label}</p>
-                    <p className="text-xs text-neutral-500 mt-0.5">{channel.description}</p>
+                    <p className="text-[12px] sm:text-sm font-medium text-neutral-900">{channel.label}</p>
+                    <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">{channel.description}</p>
                   </div>
                 </div>
                 <Toggle enabled={isEnabled} onChange={() => toggleChannel(channel.key)} />
@@ -196,22 +198,22 @@ export default function NotificationsTab() {
 
         return (
           <section key={category.key} className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-            <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100 flex items-center justify-between gap-2">
               <div>
-                <h2 className="text-sm font-medium text-neutral-900">{category.label}</h2>
+                <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">{category.label}</h2>
               </div>
               {category.key === 'bookings' && (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <button
                     onClick={enableAllTriggers}
-                    className="text-xs text-neutral-500 hover:text-neutral-900 transition-colors"
+                    className="text-[10px] sm:text-xs text-neutral-500 hover:text-neutral-900 transition-colors"
                   >
                     Enable all
                   </button>
                   <span className="text-neutral-300">|</span>
                   <button
                     onClick={disableAllTriggers}
-                    className="text-xs text-neutral-500 hover:text-neutral-900 transition-colors"
+                    className="text-[10px] sm:text-xs text-neutral-500 hover:text-neutral-900 transition-colors"
                   >
                     Disable all
                   </button>
@@ -219,32 +221,36 @@ export default function NotificationsTab() {
               )}
             </div>
 
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {categoryTriggers.map((trigger, index) => {
-                const config = notifications.triggers[trigger.key] || { enabled: false, channels: [] };
+                const triggerData = notifications.triggers[trigger.key] || { enabled: false, channels: [] };
+                const config = {
+                  enabled: triggerData.enabled || false,
+                  channels: Array.isArray(triggerData.channels) ? triggerData.channels : []
+                };
 
                 return (
                   <div
                     key={trigger.key}
-                    className={`py-4 border-b border-neutral-100 ${
+                    className={`py-3 sm:py-4 border-b border-neutral-100 ${
                       index === categoryTriggers.length - 1 ? 'border-0' : ''
                     }`}
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <div>
-                        <p className="text-sm font-medium text-neutral-900">{trigger.label}</p>
-                        <p className="text-xs text-neutral-500 mt-0.5">{trigger.description}</p>
+                        <p className="text-[12px] sm:text-sm font-medium text-neutral-900">{trigger.label}</p>
+                        <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">{trigger.description}</p>
                       </div>
                       <Toggle enabled={config.enabled} onChange={() => toggleTrigger(trigger.key)} />
                     </div>
 
                     {/* Channel Selection */}
                     {config.enabled && (
-                      <div className="mt-4 flex items-center gap-3">
-                        <span className="text-xs text-neutral-500">Send via:</span>
-                        <div className="flex items-center gap-2">
+                      <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-2 sm:gap-3">
+                        <span className="text-[10px] sm:text-xs text-neutral-500">Send via:</span>
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                           {CHANNEL_CONFIG.map((channel) => {
-                            const isActive = config.channels?.includes(channel.key);
+                            const isActive = config.channels.includes(channel.key);
                             const isChannelEnabled = notifications.channels[channel.key]?.enabled;
 
                             return (
@@ -252,7 +258,7 @@ export default function NotificationsTab() {
                                 key={channel.key}
                                 onClick={() => toggleTriggerChannel(trigger.key, channel.key)}
                                 disabled={!isChannelEnabled}
-                                className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                                className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs rounded-lg border transition-colors ${
                                   isActive
                                     ? 'bg-terra-500 text-white border-terra-500'
                                     : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'
@@ -279,14 +285,14 @@ export default function NotificationsTab() {
 
       {/* Summary */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <h2 className="text-sm font-medium text-neutral-900">Summary</h2>
-          <p className="text-xs text-neutral-500 mt-0.5">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">Summary</h2>
+          <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">
             {Object.values(notifications.triggers).filter((t: { enabled: boolean }) => t.enabled).length} of {TRIGGER_CONFIG.length} alerts enabled
           </p>
         </div>
-        <div className="p-6">
-          <div className="flex items-center gap-6">
+        <div className="p-4 sm:p-6">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
             {CHANNEL_CONFIG.map((channel) => {
               const isEnabled = notifications.channels[channel.key]?.enabled;
               const Icon = channel.icon;
@@ -298,8 +304,8 @@ export default function NotificationsTab() {
                     isEnabled ? 'text-neutral-900' : 'text-neutral-400'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
-                  <span className="text-sm">{channel.label.split(' ')[0]}</span>
+                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="text-[12px] sm:text-sm">{channel.label.split(' ')[0]}</span>
                 </div>
               );
             })}

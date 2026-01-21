@@ -235,12 +235,12 @@ export default function OverbookingSettingsTab() {
   }
 
   return (
-    <div className="max-w-4xl space-y-8">
+    <div className="max-w-4xl space-y-6 sm:space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-neutral-900">Overbooking Controls</h1>
-          <p className="text-sm text-neutral-500 mt-1">
+          <h1 className="text-base sm:text-lg font-semibold text-neutral-900">Overbooking Controls</h1>
+          <p className="text-[12px] sm:text-sm text-neutral-500 mt-1">
             Configure overbooking limits and behavior for your property
           </p>
         </div>
@@ -251,7 +251,7 @@ export default function OverbookingSettingsTab() {
             onClick={handleReset}
             disabled={saving}
           >
-            Reset
+            <span className="hidden sm:inline">Reset</span>
           </Button>
           <Button
             variant="primary"
@@ -259,23 +259,22 @@ export default function OverbookingSettingsTab() {
             onClick={handleSave}
             disabled={saving || !hasChanges}
           >
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? 'Saving...' : 'Save'}
           </Button>
         </div>
       </div>
 
       {/* Info Banner */}
-      <div className="bg-amber-50 border border-amber-100 rounded-[10px] p-4">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-            <Info className="w-4 h-4 text-amber-600" />
+      <div className="bg-amber-50 border border-amber-100 rounded-[10px] p-3 sm:p-4">
+        <div className="flex items-start gap-2 sm:gap-3">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <Info className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600" />
           </div>
           <div>
-            <h3 className="text-[13px] font-semibold text-amber-900">About Overbooking</h3>
-            <p className="text-[12px] text-amber-700 mt-1">
+            <h3 className="text-[12px] sm:text-[13px] font-semibold text-amber-900">About Overbooking</h3>
+            <p className="text-[10px] sm:text-[12px] text-amber-700 mt-1">
               Overbooking allows accepting more reservations than physical rooms available,
-              accounting for expected no-shows and cancellations. Configure limits carefully
-              to balance revenue optimization with guest satisfaction.
+              accounting for expected no-shows and cancellations.
             </p>
           </div>
         </div>
@@ -283,21 +282,21 @@ export default function OverbookingSettingsTab() {
 
       {/* Global Settings Section */}
       <div className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-terra-100 flex items-center justify-center">
-              <Settings className="w-4 h-4 text-terra-600" />
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-terra-100 flex items-center justify-center flex-shrink-0">
+              <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-terra-600" />
             </div>
             <div>
-              <h2 className="text-[14px] font-semibold text-neutral-900">Global Settings</h2>
-              <p className="text-[11px] text-neutral-500">Property-wide overbooking configuration</p>
+              <h2 className="text-[13px] sm:text-[14px] font-semibold text-neutral-900">Global Settings</h2>
+              <p className="text-[10px] sm:text-[11px] text-neutral-500">Property-wide overbooking configuration</p>
             </div>
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Master Toggle */}
-          <div className="bg-white rounded-lg border border-neutral-200 p-4">
+          <div className="bg-white rounded-lg border border-neutral-200 p-3 sm:p-4">
             <ToggleSwitch
               checked={globalConfig?.overbooking_enabled ?? false}
               onChange={(v) => handleGlobalConfigChange('overbooking_enabled', v)}
@@ -309,7 +308,7 @@ export default function OverbookingSettingsTab() {
           {globalConfig?.overbooking_enabled && (
             <>
               {/* Limit Settings */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <FieldGroup
                   label="Default Overbooking Limit (%)"
                   description="Default percentage for room types without custom settings"
@@ -348,7 +347,7 @@ export default function OverbookingSettingsTab() {
               </div>
 
               {/* Dynamic Overbooking */}
-              <div className="bg-white rounded-lg border border-neutral-200 p-4">
+              <div className="bg-white rounded-lg border border-neutral-200 p-3 sm:p-4">
                 <ToggleSwitch
                   checked={globalConfig?.dynamic_overbooking_enabled ?? false}
                   onChange={(v) => handleGlobalConfigChange('dynamic_overbooking_enabled', v)}
@@ -357,7 +356,7 @@ export default function OverbookingSettingsTab() {
                 />
 
                 {globalConfig?.dynamic_overbooking_enabled && (
-                  <div className="mt-4 pt-4 border-t border-neutral-100">
+                  <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-neutral-100">
                     <FieldGroup
                       label="Historical Lookback Period (days)"
                       description="Number of days of historical data to analyze"
@@ -376,7 +375,7 @@ export default function OverbookingSettingsTab() {
               </div>
 
               {/* Alert Thresholds */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <FieldGroup
                   label="Warning Threshold (%)"
                   description="Generate warning alert when overbooking reaches this % of limit"
@@ -416,7 +415,7 @@ export default function OverbookingSettingsTab() {
 
               {/* Behavior Settings */}
               <div className="bg-white rounded-lg border border-neutral-200 divide-y divide-neutral-100">
-                <div className="p-4">
+                <div className="p-3 sm:p-4">
                   <ToggleSwitch
                     checked={globalConfig?.auto_decline_above_critical ?? false}
                     onChange={(v) => handleGlobalConfigChange('auto_decline_above_critical', v)}
@@ -424,7 +423,7 @@ export default function OverbookingSettingsTab() {
                     description="Automatically decline bookings that would exceed critical threshold"
                   />
                 </div>
-                <div className="p-4">
+                <div className="p-3 sm:p-4">
                   <ToggleSwitch
                     checked={globalConfig?.auto_waitlist_when_overbooked ?? false}
                     onChange={(v) => handleGlobalConfigChange('auto_waitlist_when_overbooked', v)}
@@ -441,19 +440,19 @@ export default function OverbookingSettingsTab() {
       {/* Notifications Section */}
       {globalConfig?.overbooking_enabled && (
         <div className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-          <div className="px-6 py-4 border-b border-neutral-100">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                <Bell className="w-4 h-4 text-blue-600" />
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
               </div>
               <div>
-                <h2 className="text-[14px] font-semibold text-neutral-900">Notifications</h2>
-                <p className="text-[11px] text-neutral-500">Configure overbooking alert notifications</p>
+                <h2 className="text-[13px] sm:text-[14px] font-semibold text-neutral-900">Notifications</h2>
+                <p className="text-[10px] sm:text-[11px] text-neutral-500">Configure overbooking alert notifications</p>
               </div>
             </div>
           </div>
 
-          <div className="p-6 space-y-6">
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             <FieldGroup
               label="Notification Emails"
               description="Comma-separated email addresses to receive overbooking alerts"
@@ -468,7 +467,7 @@ export default function OverbookingSettingsTab() {
             </FieldGroup>
 
             <div className="bg-white rounded-lg border border-neutral-200 divide-y divide-neutral-100">
-              <div className="p-4">
+              <div className="p-3 sm:p-4">
                 <ToggleSwitch
                   checked={globalConfig?.notify_on_warning ?? true}
                   onChange={(v) => handleGlobalConfigChange('notify_on_warning', v)}
@@ -476,7 +475,7 @@ export default function OverbookingSettingsTab() {
                   description="Send email notifications when warning threshold is reached"
                 />
               </div>
-              <div className="p-4">
+              <div className="p-3 sm:p-4">
                 <ToggleSwitch
                   checked={globalConfig?.notify_on_critical ?? true}
                   onChange={(v) => handleGlobalConfigChange('notify_on_critical', v)}
@@ -492,14 +491,14 @@ export default function OverbookingSettingsTab() {
       {/* Room Type Settings */}
       {globalConfig?.overbooking_enabled && (
         <div className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-          <div className="px-6 py-4 border-b border-neutral-100">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-emerald-600" />
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />
               </div>
               <div>
-                <h2 className="text-[14px] font-semibold text-neutral-900">Room Type Settings</h2>
-                <p className="text-[11px] text-neutral-500">Configure overbooking per room category</p>
+                <h2 className="text-[13px] sm:text-[14px] font-semibold text-neutral-900">Room Type Settings</h2>
+                <p className="text-[10px] sm:text-[11px] text-neutral-500">Configure overbooking per room category</p>
               </div>
             </div>
           </div>
@@ -515,23 +514,24 @@ export default function OverbookingSettingsTab() {
                   <button
                     type="button"
                     onClick={() => toggleRoomTypeExpanded(rt.id)}
-                    className="w-full px-6 py-4 flex items-center justify-between hover:bg-neutral-50 transition-colors"
+                    className="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between hover:bg-neutral-50 transition-colors gap-3"
                   >
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <p className="text-[13px] font-semibold text-neutral-900 text-left">{rt.name}</p>
-                        <p className="text-[11px] text-neutral-500 text-left">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                      <div className="min-w-0">
+                        <p className="text-[12px] sm:text-[13px] font-semibold text-neutral-900 text-left truncate">{rt.name}</p>
+                        <p className="text-[10px] sm:text-[11px] text-neutral-500 text-left">
                           {rt.total_rooms} rooms
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                       {rt.overbooking_enabled ? (
                         <Badge variant="success" size="sm">
-                          {rt.overbooking_limit_percent}% ({maxOverbook} extra)
+                          <span className="hidden sm:inline">{rt.overbooking_limit_percent}% ({maxOverbook} extra)</span>
+                          <span className="sm:hidden">{rt.overbooking_limit_percent}%</span>
                         </Badge>
                       ) : (
-                        <Badge variant="neutral" size="sm">Disabled</Badge>
+                        <Badge variant="neutral" size="sm">Off</Badge>
                       )}
                       {isExpanded ? (
                         <ChevronUp className="w-4 h-4 text-neutral-400" />
@@ -543,9 +543,9 @@ export default function OverbookingSettingsTab() {
 
                   {/* Expanded Settings */}
                   {isExpanded && (
-                    <div className="px-6 pb-6 pt-2 border-t border-neutral-100 space-y-4">
+                    <div className="px-4 sm:px-6 pb-4 sm:pb-6 pt-2 border-t border-neutral-100 space-y-3 sm:space-y-4">
                       {/* Enable Toggle */}
-                      <div className="bg-neutral-50 rounded-lg p-4">
+                      <div className="bg-neutral-50 rounded-lg p-3 sm:p-4">
                         <ToggleSwitch
                           checked={rt.overbooking_enabled}
                           onChange={(v) => handleRoomTypeChange(rt.id, 'overbooking_enabled', v)}
@@ -557,7 +557,7 @@ export default function OverbookingSettingsTab() {
                       {rt.overbooking_enabled && (
                         <>
                           {/* Limit Settings */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                             <FieldGroup
                               label="Overbooking Limit (%)"
                             >
@@ -590,7 +590,7 @@ export default function OverbookingSettingsTab() {
                           </div>
 
                           {/* Dynamic Settings */}
-                          <div className="bg-neutral-50 rounded-lg p-4">
+                          <div className="bg-neutral-50 rounded-lg p-3 sm:p-4">
                             <ToggleSwitch
                               checked={rt.dynamic_overbooking}
                               onChange={(v) => handleRoomTypeChange(rt.id, 'dynamic_overbooking', v)}
@@ -600,7 +600,7 @@ export default function OverbookingSettingsTab() {
                           </div>
 
                           {rt.dynamic_overbooking && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                               <FieldGroup label="No-Show Rate (%)">
                                 <div className="relative">
                                   <input
@@ -634,10 +634,10 @@ export default function OverbookingSettingsTab() {
                           )}
 
                           {/* Calculated Info */}
-                          <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-                            <div className="flex items-start gap-3">
-                              <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                              <div className="text-[12px] text-blue-700">
+                          <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 sm:p-4">
+                            <div className="flex items-start gap-2 sm:gap-3">
+                              <Info className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                              <div className="text-[10px] sm:text-[12px] text-blue-700">
                                 <p className="font-medium">Effective Capacity</p>
                                 <p className="mt-1">
                                   With {rt.overbooking_limit_percent}% overbooking on {rt.total_rooms} rooms,
@@ -660,9 +660,9 @@ export default function OverbookingSettingsTab() {
 
       {/* Unsaved Changes Warning */}
       {hasChanges && (
-        <div className="fixed bottom-6 right-6 bg-amber-100 border border-amber-200 rounded-lg px-4 py-3 shadow-lg flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-600" />
-          <span className="text-[13px] font-medium text-amber-800">You have unsaved changes</span>
+        <div className="fixed bottom-4 sm:bottom-6 right-4 sm:right-6 left-4 sm:left-auto bg-amber-100 border border-amber-200 rounded-lg px-3 sm:px-4 py-2 sm:py-3 shadow-lg flex items-center gap-2 sm:gap-3">
+          <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 flex-shrink-0" />
+          <span className="text-[11px] sm:text-[13px] font-medium text-amber-800 flex-1">Unsaved changes</span>
           <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
             {saving ? 'Saving...' : 'Save'}
           </Button>

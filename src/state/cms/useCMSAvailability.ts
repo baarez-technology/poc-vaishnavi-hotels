@@ -1,7 +1,7 @@
 /**
  * useCMSAvailability Hook
  * Manages room availability data for the CMS Availability page using real backend APIs
- * Falls back to sample data when backend is unavailable
+ * NO FALLBACK DATA - shows errors when API fails to ensure real issues are visible
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
@@ -14,6 +14,7 @@ import {
   deleteRoomBlock,
   getTodayStats,
   getAIInsights,
+  updateRoomTypePrice,
   type RoomBlock,
   type RoomBlockCreate,
   type RoomBlockUpdate,
@@ -22,7 +23,6 @@ import {
   type BulkAvailabilityUpdate,
   type AIInsightsResponse
 } from '../../api/services/availability.service';
-import { sampleAvailability } from '../../data/cbs/sampleAvailability';
 
 interface DayAvailability {
   totalRooms: number;
@@ -50,64 +50,6 @@ interface RoomTypeConfig {
   [key: string]: { code: string; totalRooms: number; baseRate: number };
 }
 
-// Sample room types configuration for fallback
-const SAMPLE_ROOM_TYPES: RoomTypeData[] = [
-  { id: 1, name: 'Minimalist Studio', slug: 'minimalist-studio', base_price: 150, total_rooms: 10 },
-  { id: 2, name: 'Coastal Retreat', slug: 'coastal-retreat', base_price: 199, total_rooms: 8 },
-  { id: 3, name: 'Urban Oasis', slug: 'urban-oasis', base_price: 245, total_rooms: 8 },
-  { id: 4, name: 'Sunset Vista', slug: 'sunset-vista', base_price: 315, total_rooms: 6 },
-  { id: 5, name: 'Pacific Suite', slug: 'pacific-suite', base_price: 385, total_rooms: 6 },
-  { id: 6, name: 'Wellness Suite', slug: 'wellness-suite', base_price: 425, total_rooms: 4 },
-  { id: 7, name: 'Family Sanctuary', slug: 'family-sanctuary', base_price: 485, total_rooms: 4 },
-  { id: 8, name: 'Oceanfront Penthouse', slug: 'oceanfront-penthouse', base_price: 750, total_rooms: 2 }
-];
-
-// Generate fallback data from sample availability
-function generateFallbackData(): { data: AvailabilityData; config: RoomTypeConfig; roomTypes: RoomTypeData[] } {
-  const data: AvailabilityData = {};
-  const config: RoomTypeConfig = {};
-
-  // Build room type config from sample data
-  SAMPLE_ROOM_TYPES.forEach(rt => {
-    config[rt.name] = {
-      code: rt.slug.toUpperCase().substring(0, 5),
-      totalRooms: rt.total_rooms,
-      baseRate: rt.base_price
-    };
-  });
-
-  // Transform sample availability to UI format
-  Object.entries(sampleAvailability).forEach(([date, roomData]) => {
-    if (!data[date]) {
-      data[date] = {};
-    }
-
-    Object.entries(roomData as Record<string, any>).forEach(([roomType, avail]) => {
-      // Split sold rooms into checked_in and reserved for more realistic data
-      const totalSold = avail.sold || 0;
-      const checkedIn = Math.floor(totalSold * 0.6); // 60% checked in
-      const reserved = totalSold - checkedIn; // 40% reserved
-
-      data[date][roomType] = {
-        totalRooms: avail.totalInventory,
-        sold: checkedIn,
-        reserved: reserved,
-        blocked: 0,
-        remaining: avail.available,
-        isClosed: avail.stopSell || false,
-        restrictions: {
-          minStay: avail.minStay || 1,
-          maxStay: avail.maxStay || 30,
-          CTA: avail.cta || false,
-          CTD: avail.ctd || false
-        },
-        baseRate: avail.rate
-      };
-    });
-  });
-
-  return { data, config, roomTypes: SAMPLE_ROOM_TYPES };
-}
 
 // Helper to convert backend format to UI format
 function transformBackendData(
@@ -162,12 +104,12 @@ export default function useCMSAvailability() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Date range for availability grid (90 days from today)
+  // Date range for availability grid (14 days from today to prevent timeout)
   const [dateRange, setDateRange] = useState(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const endDate = new Date(today);
-    endDate.setDate(endDate.getDate() + 90);
+    endDate.setDate(endDate.getDate() + 14);
 
     return {
       startDate: today.toISOString().split('T')[0],
@@ -178,22 +120,45 @@ export default function useCMSAvailability() {
   // Use ref to track if component is mounted
   const isMounted = useRef(true);
 
+  // Request counter to ensure only the latest request updates state
+  // This handles race conditions from React Strict Mode, rapid re-renders, etc.
+  const requestCounterRef = useRef(0);
+
   useEffect(() => {
+    // Reset isMounted to true on each mount (important for React Strict Mode)
+    isMounted.current = true;
     return () => {
       isMounted.current = false;
     };
   }, []);
 
-  // Fetch availability grid from API with fallback to sample data
+  // Fetch availability grid from API - NO FALLBACK, data must come from database
   const fetchAvailabilityData = useCallback(async () => {
+    // Increment counter and capture this request's ID
+    const thisRequestId = ++requestCounterRef.current;
+
     setIsLoading(true);
     setError(null);
 
     try {
+      console.log('[useCMSAvailability] Fetching from API:', dateRange.startDate, 'to', dateRange.endDate, 'requestId:', thisRequestId);
+
       const gridData = await getAvailabilityGrid(
         dateRange.startDate,
         dateRange.endDate
       );
+
+      // Check if this request is still the latest (ignore stale requests)
+      if (thisRequestId !== requestCounterRef.current) {
+        console.log('[useCMSAvailability] Ignoring stale request:', thisRequestId, 'current:', requestCounterRef.current);
+        return;
+      }
+
+      console.log('[useCMSAvailability] API Response:', {
+        room_types_count: gridData.room_types?.length || 0,
+        availability_count: gridData.availability?.length || 0,
+        room_types: gridData.room_types,
+      });
 
       if (!isMounted.current) return;
 
@@ -207,28 +172,36 @@ export default function useCMSAvailability() {
         setAvailabilityData(data);
         setRoomTypeConfig(config);
         setRoomTypes(gridData.room_types);
-        console.log('[useCMSAvailability] Loaded data from API');
+        setError(null);
+        console.log('[useCMSAvailability] Successfully loaded data from database API');
       } else {
-        // API returned empty data, use fallback
-        console.log('[useCMSAvailability] API returned empty data, using sample data fallback');
-        const fallback = generateFallbackData();
-        setAvailabilityData(fallback.data);
-        setRoomTypeConfig(fallback.config);
-        setRoomTypes(fallback.roomTypes);
+        // API returned empty data - this is an error, not a fallback situation
+        console.error('[useCMSAvailability] API returned empty data - check database connection');
+        setError('No room types found in database. Please check if the database is seeded correctly.');
+        setAvailabilityData({});
+        setRoomTypeConfig({});
+        setRoomTypes([]);
       }
     } catch (err: any) {
-      console.error('Error fetching availability data:', err);
-      // Use fallback sample data on API error - always set fallback regardless of mount state
-      // React 18 handles unmounted setState gracefully
-      console.log('[useCMSAvailability] API error, using sample data fallback');
-      const fallback = generateFallbackData();
-      setAvailabilityData(fallback.data);
-      setRoomTypeConfig(fallback.config);
-      setRoomTypes(fallback.roomTypes);
-      // Clear error since we have fallback data
-      setError(null);
+      // Check if this request is still the latest (ignore stale errors)
+      if (thisRequestId !== requestCounterRef.current) {
+        console.log('[useCMSAvailability] Ignoring stale error for request:', thisRequestId);
+        return;
+      }
+
+      console.error('[useCMSAvailability] API Error:', err);
+      if (!isMounted.current) return;
+
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to fetch availability data';
+      setError(`API Error: ${errorMessage}. Check if backend server is running.`);
+      setAvailabilityData({});
+      setRoomTypeConfig({});
+      setRoomTypes([]);
     } finally {
-      setIsLoading(false);
+      // Only set loading to false if this is still the current request
+      if (thisRequestId === requestCounterRef.current) {
+        setIsLoading(false);
+      }
     }
   }, [dateRange.startDate, dateRange.endDate]);
 
@@ -248,7 +221,7 @@ export default function useCMSAvailability() {
     }
   }, [dateRange.startDate, dateRange.endDate]);
 
-  // Fetch today's stats with fallback
+  // Fetch today's stats - NO FALLBACK, shows real data only
   const fetchTodayStats = useCallback(async () => {
     try {
       const stats = await getTodayStats();
@@ -261,18 +234,14 @@ export default function useCMSAvailability() {
       }
     } catch (err) {
       console.error('Error fetching today stats:', err);
-      // Provide fallback stats
+      // No fallback - set to null so UI knows there's no data
       if (isMounted.current) {
-        setTodayStats({
-          arrivals: 8,
-          departures: 5,
-          in_house: 24
-        });
+        setTodayStats(null);
       }
     }
   }, []);
 
-  // Fetch AI insights with fallback
+  // Fetch AI insights - NO FALLBACK, shows real data only
   const fetchAIInsights = useCallback(async () => {
     try {
       const insights = await getAIInsights(90);
@@ -281,38 +250,9 @@ export default function useCMSAvailability() {
       }
     } catch (err) {
       console.error('Error fetching AI insights:', err);
-      // Provide fallback AI insights
+      // No fallback - set to null so UI knows there's no data
       if (isMounted.current) {
-        setAiInsights({
-          recommendations: [
-            {
-              type: 'pricing',
-              priority: 'high',
-              title: 'Increase Weekend Rates',
-              description: 'Weekend demand is 35% higher than weekdays. Consider a 15% rate premium.',
-              action: 'Apply +15%',
-              impact: '+$2,400/week'
-            },
-            {
-              type: 'inventory',
-              priority: 'medium',
-              title: 'Review Penthouse Availability',
-              description: 'Oceanfront Penthouse has 92% occupancy next 14 days. Consider rate optimization.',
-              action: 'View Details',
-              impact: '+$1,800/week'
-            }
-          ],
-          demand_forecast: [],
-          pricing_suggestions: [],
-          occupancy_trends: {
-            average_occupancy: 68,
-            high_demand_days: 12,
-            low_demand_days: 5,
-            peak_occupancy_date: null,
-            lowest_occupancy_date: null
-          },
-          generated_at: new Date().toISOString()
-        });
+        setAiInsights(null);
       }
     }
   }, []);
@@ -432,6 +372,21 @@ export default function useCMSAvailability() {
       if (hasUpdates) {
         await bulkUpdateAvailability([apiUpdate]);
         console.log('[useCMSAvailability] Availability updated via API');
+      }
+
+      // Handle base rate (price) update separately - this updates the room type's base price
+      if (updates.baseRate !== undefined) {
+        await updateRoomTypePrice(roomTypeData.id, updates.baseRate);
+        console.log('[useCMSAvailability] Room type price updated via API:', roomTypeData.name, updates.baseRate);
+
+        // Also update the local room type config
+        setRoomTypeConfig(prev => ({
+          ...prev,
+          [roomType]: {
+            ...prev[roomType],
+            baseRate: updates.baseRate!
+          }
+        }));
       }
 
       // Refetch to get accurate data

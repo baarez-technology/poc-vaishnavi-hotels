@@ -5,8 +5,10 @@
  */
 
 import { Users, Sparkles, Bed, UsersRound, ChevronRight } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function RoomCard({ room, onClick }) {
+  const { symbol } = useCurrency();
   // Status config with design system colors
   const statusConfig = {
     available: {
@@ -134,7 +136,7 @@ export default function RoomCard({ room, onClick }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`text-lg font-bold ${typeStyle.text}`}>${room.price}</span>
+            <span className={`text-lg font-bold ${typeStyle.text}`}>{symbol}{room.price}</span>
             <span className="text-[11px] text-neutral-400">/night</span>
             <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-terra-500 group-hover:translate-x-0.5 transition-all" />
           </div>

@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import type { MouseEvent } from 'react';
-import { Crown, Eye, Pencil, MoreHorizontal, Bed, XCircle, CalendarX, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
-import { statusConfig, sourceConfig } from '../../data/bookingsData';
+import { Crown, Eye, Pencil, MoreHorizontal, Bed, XCircle, CalendarX, ChevronUp, ChevronDown, ChevronsUpDown, CreditCard } from 'lucide-react';
+import { statusConfig, sourceConfig, paymentStatusConfig } from '../../data/bookingsData';
 import { IconButton } from '../ui2/Button';
 import { StatusBadge } from '../ui2/Badge';
+import { useCurrency } from '@/hooks/useCurrency';
 
 type BookingLike = any;
 type SortConfigLike = { field?: string; direction?: 'asc' | 'desc' } | any;
@@ -15,7 +16,8 @@ export default function BookingsTable({
   onViewBooking,
   onEditBooking,
   onAssignRoom,
-  onCancelBooking
+  onCancelBooking,
+  onManagePayment
 }: {
   bookings: BookingLike[];
   sortConfig: SortConfigLike;
@@ -24,14 +26,13 @@ export default function BookingsTable({
   onEditBooking?: (booking: BookingLike) => void;
   onAssignRoom?: (booking: BookingLike) => void;
   onCancelBooking?: (booking: BookingLike) => void;
+  onManagePayment?: (booking: BookingLike) => void;
 }) {
+  const { formatCurrency } = useCurrency();
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return `$${amount.toLocaleString()}`;
   };
 
   const [openDropdownId, setOpenDropdownId] = useState(null);
@@ -83,6 +84,14 @@ export default function BookingsTable({
     }
   };
 
+  const handleManagePayment = (e: any, booking: BookingLike) => {
+    e.stopPropagation();
+    setOpenDropdownId(null);
+    if (onManagePayment) {
+      onManagePayment(booking);
+    }
+  };
+
   const SortIndicator = ({ field }: { field: string }) => {
     const sorted = sortConfig?.field === field ? sortConfig?.direction : null;
     const Icon = sorted === 'asc' ? ChevronUp : sorted === 'desc' ? ChevronDown : ChevronsUpDown;
@@ -94,14 +103,15 @@ export default function BookingsTable({
       {/* Prevent header wrapping; allow horizontal scroll like CMS */}
       <table className="w-full min-w-[1450px] border-collapse">
         <colgroup>
-          <col style={{ width: '220px' }} />
-          <col style={{ width: '170px' }} />
-          <col style={{ width: '160px' }} />
-          <col style={{ width: '110px' }} />
-          <col style={{ width: '210px' }} />
-          <col style={{ width: '150px' }} />
+          <col style={{ width: '200px' }} />
           <col style={{ width: '150px' }} />
           <col style={{ width: '140px' }} />
+          <col style={{ width: '90px' }} />
+          <col style={{ width: '190px' }} />
+          <col style={{ width: '130px' }} />
+          <col style={{ width: '120px' }} />
+          <col style={{ width: '130px' }} />
+          <col style={{ width: '120px' }} />
           <col style={{ width: '140px' }} />
         </colgroup>
         <thead>
@@ -158,6 +168,14 @@ export default function BookingsTable({
               </span>
             </th>
             <th
+              onClick={() => onSort('paymentStatus')}
+              className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest cursor-pointer hover:text-neutral-600 whitespace-nowrap"
+            >
+              <span className="flex items-center gap-1.5">
+                Payment <SortIndicator field="paymentStatus" />
+              </span>
+            </th>
+            <th
               onClick={() => onSort('amount')}
               className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest cursor-pointer hover:text-neutral-600 whitespace-nowrap"
             >
@@ -174,7 +192,7 @@ export default function BookingsTable({
         <tbody className="divide-y divide-neutral-100">
           {bookings.length === 0 ? (
             <tr>
-              <td colSpan={9} className="px-6 py-16 text-center">
+              <td colSpan={10} className="px-6 py-16 text-center">
                 <div className="flex flex-col items-center">
                   <div className="w-12 h-12 rounded-lg bg-terra-50 flex items-center justify-center mb-4">
                     <CalendarX className="w-5 h-5 text-terra-500" />
@@ -256,6 +274,20 @@ export default function BookingsTable({
                   </span>
                   </td>
 
+                  {/* Payment Status */}
+                  <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
+                  {(() => {
+                    const paymentStatus = booking.paymentStatus || booking.payment_status || 'pending';
+                    const payment = (paymentStatusConfig as any)[paymentStatus] || (paymentStatusConfig as any)['pending'];
+                    return (
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold border ${payment.color}`}>
+                        <span className="mr-1.5">{payment.icon}</span>
+                        {payment.label}
+                      </span>
+                    );
+                  })()}
+                  </td>
+
                   {/* Amount */}
                   <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
                   <span className="text-sm font-bold text-neutral-900">
@@ -292,7 +324,14 @@ export default function BookingsTable({
 
                         {/* Dropdown Menu */}
                         {openDropdownId === booking.id && (
-                          <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-[10px] shadow-lg border border-neutral-200 py-1 z-50">
+                          <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-[10px] shadow-lg border border-neutral-200 py-1 z-50">
+                            <button
+                              onClick={(e) => handleManagePayment(e, booking)}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
+                            >
+                              <CreditCard className="w-4 h-4 text-emerald-600" />
+                              Manage Payment
+                            </button>
                             <button
                               onClick={(e) => handleAssignRoom(e, booking)}
                               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
@@ -300,6 +339,7 @@ export default function BookingsTable({
                               <Bed className="w-4 h-4 text-teal-600" />
                               Assign Room
                             </button>
+                            <div className="border-t border-neutral-100 my-1" />
                             <button
                               onClick={(e) => handleCancel(e, booking)}
                               disabled={booking.status === 'CANCELLED'}

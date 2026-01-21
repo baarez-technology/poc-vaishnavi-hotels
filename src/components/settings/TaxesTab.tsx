@@ -73,30 +73,32 @@ export default function TaxesTab() {
   const fixedFees = fees.filter((f) => f.type === 'fixed');
 
   return (
-    <div className="max-w-4xl space-y-8">
+    <div className="max-w-4xl space-y-6 sm:space-y-8">
       {/* Header */}
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-neutral-900">Taxes & Fees</h1>
-          <p className="text-sm text-neutral-500 mt-1">
+          <h1 className="text-base sm:text-lg font-semibold text-neutral-900">Taxes & Fees</h1>
+          <p className="text-[12px] sm:text-sm text-neutral-500 mt-1">
             Configure taxes and additional charges applied to bookings
           </p>
         </div>
         <Button variant="primary" icon={Plus} onClick={() => setShowAddModal(true)}>
-          Add Tax / Fee
+          <span className="hidden sm:inline">Add Tax / Fee</span>
+          <span className="sm:hidden">Add</span>
         </Button>
       </header>
 
       {/* Percentage-based Taxes */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <h2 className="text-[13px] font-semibold text-neutral-800">Percentage-based Taxes</h2>
-          <p className="text-[11px] text-neutral-500 mt-0.5">Applied as a percentage of the total amount</p>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <h2 className="text-[12px] sm:text-[13px] font-semibold text-neutral-800">Percentage-based Taxes</h2>
+          <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-0.5">Applied as a percentage of the total amount</p>
         </div>
 
         {percentageFees.length > 0 ? (
-          <div className="p-6">
-            <table className="w-full">
+          <div className="p-4 sm:p-6">
+            {/* Desktop Table */}
+            <table className="w-full hidden sm:table">
               <thead>
                 <tr className="border-b border-neutral-200">
                   <th className="text-left pb-3 text-[13px] font-medium text-neutral-600">Name</th>
@@ -154,11 +156,39 @@ export default function TaxesTab() {
                 ))}
               </tbody>
             </table>
+
+            {/* Mobile Card View */}
+            <div className="sm:hidden space-y-3">
+              {percentageFees.map((fee) => (
+                <div key={fee.id} className="bg-white rounded-lg p-3 border border-neutral-100">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12px] font-semibold text-neutral-900">{fee.name}</p>
+                      <p className="text-[10px] text-neutral-500 mt-0.5 line-clamp-2">{fee.description}</p>
+                    </div>
+                    <span className="text-[13px] font-semibold text-terra-600 flex-shrink-0">{fee.value}%</span>
+                  </div>
+                  <div className="flex items-center justify-end gap-1 pt-2 border-t border-neutral-100">
+                    {deleteConfirm === fee.id ? (
+                      <>
+                        <Button variant="outline" size="sm" icon={X} onClick={() => setDeleteConfirm(null)} />
+                        <Button variant="danger" size="sm" icon={Check} onClick={() => handleDeleteFee(fee.id)} />
+                      </>
+                    ) : (
+                      <>
+                        <Button variant="ghost" size="sm" icon={Pencil} onClick={() => setEditingFee(fee)} />
+                        <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setDeleteConfirm(fee.id)} />
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
-          <div className="p-6">
-            <div className="py-12 text-center">
-              <p className="text-sm text-neutral-500">No percentage-based taxes configured</p>
+          <div className="p-4 sm:p-6">
+            <div className="py-8 sm:py-12 text-center">
+              <p className="text-[12px] sm:text-sm text-neutral-500">No percentage-based taxes configured</p>
             </div>
           </div>
         )}
@@ -166,14 +196,15 @@ export default function TaxesTab() {
 
       {/* Fixed Fees */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <h2 className="text-[13px] font-semibold text-neutral-800">Fixed Fees</h2>
-          <p className="text-[11px] text-neutral-500 mt-0.5">Flat rate charges applied to bookings</p>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <h2 className="text-[12px] sm:text-[13px] font-semibold text-neutral-800">Fixed Fees</h2>
+          <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-0.5">Flat rate charges applied to bookings</p>
         </div>
 
         {fixedFees.length > 0 ? (
-          <div className="p-6">
-            <table className="w-full">
+          <div className="p-4 sm:p-6">
+            {/* Desktop Table */}
+            <table className="w-full hidden sm:table">
               <thead>
                 <tr className="border-b border-neutral-200">
                   <th className="text-left pb-3 text-[13px] font-medium text-neutral-600">Name</th>
@@ -231,11 +262,39 @@ export default function TaxesTab() {
                 ))}
               </tbody>
             </table>
+
+            {/* Mobile Card View */}
+            <div className="sm:hidden space-y-3">
+              {fixedFees.map((fee) => (
+                <div key={fee.id} className="bg-white rounded-lg p-3 border border-neutral-100">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12px] font-semibold text-neutral-900">{fee.name}</p>
+                      <p className="text-[10px] text-neutral-500 mt-0.5 line-clamp-2">{fee.description}</p>
+                    </div>
+                    <span className="text-[13px] font-semibold text-terra-600 flex-shrink-0">{formatValue(fee)}</span>
+                  </div>
+                  <div className="flex items-center justify-end gap-1 pt-2 border-t border-neutral-100">
+                    {deleteConfirm === fee.id ? (
+                      <>
+                        <Button variant="outline" size="sm" icon={X} onClick={() => setDeleteConfirm(null)} />
+                        <Button variant="danger" size="sm" icon={Check} onClick={() => handleDeleteFee(fee.id)} />
+                      </>
+                    ) : (
+                      <>
+                        <Button variant="ghost" size="sm" icon={Pencil} onClick={() => setEditingFee(fee)} />
+                        <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setDeleteConfirm(fee.id)} />
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
-          <div className="p-6">
-            <div className="py-12 text-center">
-              <p className="text-sm text-neutral-500">No fixed fees configured</p>
+          <div className="p-4 sm:p-6">
+            <div className="py-8 sm:py-12 text-center">
+              <p className="text-[12px] sm:text-sm text-neutral-500">No fixed fees configured</p>
             </div>
           </div>
         )}

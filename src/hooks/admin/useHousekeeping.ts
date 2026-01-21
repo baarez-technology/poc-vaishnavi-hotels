@@ -109,13 +109,23 @@ export function useHousekeeping() {
           cleaningStatus = 'in_progress';
         }
 
+        // Extract floor from room number if not provided by API
+        // Room numbers like "201", "305", "1102" - first digit(s) before last 2 digits is floor
+        const extractFloorFromNumber = (roomNum: string): number => {
+          if (!roomNum || roomNum.length < 2) return 1;
+          // For room numbers like "201" -> floor 2, "1102" -> floor 11
+          const floorPart = roomNum.slice(0, -2);
+          const parsed = parseInt(floorPart, 10);
+          return isNaN(parsed) || parsed < 1 ? 1 : parsed;
+        };
+
         return {
           id: room.id,
           number: room.number,
           roomNumber: room.number, // Add for consistency with components
           type: room.room_type || 'Standard',
           roomType: room.room_type || 'Standard',
-          floor: room.floor || 1,
+          floor: room.floor || extractFloorFromNumber(room.number),
           status: room.status || 'dirty',
           cleaningStatus,
           priority: task?.priority || 'medium',
@@ -201,31 +211,18 @@ export function useHousekeeping() {
     }
   }, [tasks]);
 
-  // Initial data fetch - fetch rooms first, then staff (staff needs tasks for counts)
+  // Initial data fetch - fetch rooms and staff on mount
   useEffect(() => {
-    const initializeData = async () => {
-      await fetchRooms();
-      // Staff will be fetched by the tasks useEffect after rooms/tasks load
-    };
-    initializeData();
+    fetchRooms();
+    fetchStaff();
   }, []);
 
-  // Fetch staff when tasks are loaded (or re-fetch when tasks change)
-  // Also fetch staff on mount even if tasks are empty (for dropdown availability)
+  // Re-fetch staff when tasks change to update task counts
   useEffect(() => {
-    fetchStaff();
+    if (tasks.length > 0) {
+      fetchStaff();
+    }
   }, [tasks]);
-
-  // Ensure staff is available - fallback fetch if staff is still empty after initial load
-  useEffect(() => {
-    const ensureStaffLoaded = async () => {
-      if (!isLoading && staff.length === 0 && !staffLoading) {
-        console.log('Staff list empty after rooms loaded, fetching staff...');
-        await fetchStaff();
-      }
-    };
-    ensureStaffLoaded();
-  }, [isLoading, staff.length, staffLoading]);
 
   /**
    * STAFF ASSIGNMENT SYSTEM
@@ -251,7 +248,7 @@ export function useHousekeeping() {
       }
 
       // Assign staff to the task
-      const assignResult = await housekeepingService.assignTask(taskId, {
+      await housekeepingService.assignTask(taskId, {
         staff_id: staffId,
         priority: room.priority,
       });
@@ -283,22 +280,10 @@ export function useHousekeeping() {
         return s;
       }));
 
-      // Show warning if task was reassigned from another staff
-      if (assignResult?.warning) {
-        toast.success(`Room ${room.number} assigned to ${staffMember?.name || 'staff'}`, { duration: 3000 });
-        toast(assignResult.warning, { icon: '⚠️', duration: 5000 });
-      } else {
-        toast.success(`Room ${room.number} assigned to ${staffMember?.name || 'staff'}`);
-      }
+      toast.success(`Room ${room.number} assigned to ${staffMember?.name || 'staff'}`);
     } catch (err: any) {
       console.error('Error assigning staff:', err);
-      // Show specific error message for duplicate assignment
-      const errorDetail = err.response?.data?.detail;
-      if (errorDetail && errorDetail.includes('already assigned')) {
-        toast.error(errorDetail, { duration: 5000, icon: '⚠️' });
-      } else {
-        toast.error(errorDetail || 'Failed to assign staff');
-      }
+      toast.error(err.response?.data?.detail || 'Failed to assign staff');
     }
   }, [rooms, staff]);
 
@@ -719,7 +704,6 @@ export function useHousekeeping() {
   /**
    * AUTO-ASSIGN ALGORITHM - Uses backend multi-factor scoring
    * Factors: Workload (30%), Skills (25%), Availability (20%), Performance (15%), Proximity (10%)
-   * Returns detailed assignment results for display
    */
   const runAutoAssign = useCallback(async () => {
     try {
@@ -730,46 +714,16 @@ export function useHousekeeping() {
         // Refresh data to get updated assignments
         await fetchRooms();
 
-        // Build detailed assignments list
-        const detailedAssignments = result.results
-          .filter(r => r.success)
-          .map(r => ({
-            roomId: r.task_id,
-            roomNumber: r.room_number || `Room ${r.task_id}`,
-            staffId: r.assigned_to,
-            staffName: r.assigned_to_name || 'Staff',
-            score: r.score,
-          }));
-
-        // Group assignments by staff for summary
-        const staffAssignments = detailedAssignments.reduce((acc, a) => {
-          if (!acc[a.staffName]) {
-            acc[a.staffName] = [];
-          }
-          acc[a.staffName].push(a.roomNumber);
-          return acc;
-        }, {} as Record<string, string[]>);
-
-        // Build detailed summary message
-        const staffSummary = Object.entries(staffAssignments)
-          .map(([staffName, rooms]) => `${staffName}: ${rooms.join(', ')}`)
-          .join('\n');
-
-        const summary = `Auto-assigned ${result.total_assigned} task(s):\n${staffSummary}`;
-
-        // Show detailed toast with assignment info
-        toast.success(
-          `${result.total_assigned} tasks assigned!\n\n${Object.entries(staffAssignments)
-            .map(([name, rooms]) => `• ${name} → Rooms ${rooms.join(', ')}`)
-            .join('\n')}`,
-          { duration: 6000 }
-        );
+        const summary = `Assigned ${result.total_assigned} task(s) using intelligent matching`;
+        toast.success(summary);
 
         return {
-          success: true,
-          totalAssigned: result.total_assigned,
-          assignments: detailedAssignments,
-          staffAssignments,
+          assignments: result.results.filter(r => r.success).map(r => ({
+            roomId: r.task_id,
+            staffId: r.assigned_to,
+            staffName: r.assigned_to_name,
+            score: r.score,
+          })),
           summary,
           message: summary,
         };
@@ -781,8 +735,7 @@ export function useHousekeeping() {
 
         if (unassignedRooms.length > 0) {
           // Create tasks for rooms that don't have one, then auto-assign
-          const assignedDetails: Array<{ roomNumber: string; staffName: string }> = [];
-
+          let assigned = 0;
           for (const room of unassignedRooms) {
             try {
               const newTask = await housekeepingService.createTask({
@@ -794,10 +747,7 @@ export function useHousekeeping() {
               if (newTask.id) {
                 const assignResult = await housekeepingService.autoAssignTask(newTask.id);
                 if (assignResult.success) {
-                  assignedDetails.push({
-                    roomNumber: room.number || room.roomNumber || `Room ${room.id}`,
-                    staffName: assignResult.assigned_to_name || 'Staff',
-                  });
+                  assigned++;
                 }
               }
             } catch (err) {
@@ -805,38 +755,16 @@ export function useHousekeeping() {
             }
           }
 
-          if (assignedDetails.length > 0) {
+          if (assigned > 0) {
             await fetchRooms();
-
-            // Group by staff
-            const staffAssignments = assignedDetails.reduce((acc, a) => {
-              if (!acc[a.staffName]) acc[a.staffName] = [];
-              acc[a.staffName].push(a.roomNumber);
-              return acc;
-            }, {} as Record<string, string[]>);
-
-            const summary = `Created and assigned ${assignedDetails.length} task(s)`;
-
-            toast.success(
-              `${assignedDetails.length} tasks created & assigned!\n\n${Object.entries(staffAssignments)
-                .map(([name, rooms]) => `• ${name} → Rooms ${rooms.join(', ')}`)
-                .join('\n')}`,
-              { duration: 6000 }
-            );
-
-            return {
-              success: true,
-              totalAssigned: assignedDetails.length,
-              assignments: assignedDetails,
-              staffAssignments,
-              summary,
-              message: summary
-            };
+            const summary = `Created and assigned ${assigned} task(s) using intelligent matching`;
+            toast.success(summary);
+            return { assignments: [], summary, message: summary };
           }
         }
 
         toast.info('No unassigned tasks to process');
-        return { success: false, assignments: [], summary: 'No tasks to assign', message: 'No tasks to assign' };
+        return { assignments: [], summary: 'No tasks to assign', message: 'No tasks to assign' };
       }
     } catch (err: any) {
       console.error('Error in auto-assign:', err);
@@ -849,52 +777,29 @@ export function useHousekeeping() {
 
       if (unassignedRooms.length === 0 || availableStaff.length === 0) {
         toast.error(unassignedRooms.length === 0 ? 'No rooms need assignment' : 'No available staff');
-        return { success: false, assignments: [], message: 'No assignments possible' };
+        return { assignments: [], message: 'No assignments possible' };
       }
 
-      // Simple fallback with tracking
-      const assignedDetails: Array<{ roomNumber: string; staffName: string }> = [];
+      // Simple fallback
       let staffIndex = 0;
-
-      for (const room of unassignedRooms.slice(0, 10)) {
+      let assigned = 0;
+      for (const room of unassignedRooms.slice(0, 10)) { // Limit fallback to 10
         const staffMember = availableStaff[staffIndex % availableStaff.length];
         try {
           await assignStaffToRoom(room.id, staffMember.id);
-          assignedDetails.push({
-            roomNumber: room.number || room.roomNumber || `Room ${room.id}`,
-            staffName: staffMember.name,
-          });
+          assigned++;
           staffIndex++;
         } catch (e) {
           console.warn(`Fallback assign failed for room ${room.number}`);
         }
       }
 
-      if (assignedDetails.length > 0) {
-        const staffAssignments = assignedDetails.reduce((acc, a) => {
-          if (!acc[a.staffName]) acc[a.staffName] = [];
-          acc[a.staffName].push(a.roomNumber);
-          return acc;
-        }, {} as Record<string, string[]>);
-
-        toast.success(
-          `${assignedDetails.length} rooms assigned (fallback mode):\n\n${Object.entries(staffAssignments)
-            .map(([name, rooms]) => `• ${name} → Rooms ${rooms.join(', ')}`)
-            .join('\n')}`,
-          { duration: 6000 }
-        );
-
-        return {
-          success: true,
-          totalAssigned: assignedDetails.length,
-          assignments: assignedDetails,
-          staffAssignments,
-          message: `Fallback assigned ${assignedDetails.length} rooms`
-        };
+      if (assigned > 0) {
+        toast.success(`Assigned ${assigned} rooms (fallback mode)`);
       } else {
         toast.error('Failed to auto-assign rooms');
-        return { success: false, assignments: [], message: 'Failed to assign' };
       }
+      return { assignments: [], message: `Fallback assigned ${assigned} rooms` };
     }
   }, [rooms, staff, assignStaffToRoom, fetchRooms]);
 
@@ -1015,7 +920,6 @@ export function useHousekeeping() {
     error,
     // Data fetching
     refreshData,
-    refreshStaff: fetchStaff,
     // Staff assignment
     assignStaffToRoom,
     bulkAssignRooms,

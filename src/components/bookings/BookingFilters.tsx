@@ -20,21 +20,9 @@ export default function BookingFilters({
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const dropdownRef = useRef(null);
-  const dateInputFocusedRef = useRef(false);
 
   useEffect(() => {
     function handleClickOutside(event) {
-      // Don't close if a date input is focused (user is interacting with native date picker)
-      if (dateInputFocusedRef.current) {
-        return;
-      }
-
-      // Don't close if clicking on a date input element
-      const target = event.target;
-      if (target?.tagName === 'INPUT' && target?.type === 'date') {
-        return;
-      }
-
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setActiveDropdown(null);
       }
@@ -282,12 +270,7 @@ export default function BookingFilters({
                       type="date"
                       value={filters.dateFrom || ''}
                       onChange={(e) => onFilterChange('dateFrom', e.target.value)}
-                      onFocus={() => { dateInputFocusedRef.current = true; }}
-                      onBlur={() => {
-                        // Delay to allow click events to complete before allowing dropdown close
-                        setTimeout(() => { dateInputFocusedRef.current = false; }, 200);
-                      }}
-                      className="w-full h-9 px-3 bg-white border border-neutral-200 rounded-[8px] text-[13px] focus:outline-none focus:ring-2 focus:ring-terra-500/10 focus:border-terra-400 cursor-pointer"
+                      className="w-full h-9 px-3 bg-white border border-neutral-200 rounded-[8px] text-[13px] focus:outline-none focus:ring-2 focus:ring-terra-500/10 focus:border-terra-400"
                     />
                   </div>
                   <div>
@@ -296,32 +279,20 @@ export default function BookingFilters({
                       type="date"
                       value={filters.dateTo || ''}
                       onChange={(e) => onFilterChange('dateTo', e.target.value)}
-                      onFocus={() => { dateInputFocusedRef.current = true; }}
-                      onBlur={() => {
-                        // Delay to allow click events to complete before allowing dropdown close
-                        setTimeout(() => { dateInputFocusedRef.current = false; }, 200);
-                      }}
-                      className="w-full h-9 px-3 bg-white border border-neutral-200 rounded-[8px] text-[13px] focus:outline-none focus:ring-2 focus:ring-terra-500/10 focus:border-terra-400 cursor-pointer"
+                      className="w-full h-9 px-3 bg-white border border-neutral-200 rounded-[8px] text-[13px] focus:outline-none focus:ring-2 focus:ring-terra-500/10 focus:border-terra-400"
                     />
                   </div>
                 </div>
-                <div className="flex gap-2 pt-2">
-                  <button
-                    onClick={() => {
-                      onFilterChange('dateFrom', '');
-                      onFilterChange('dateTo', '');
-                    }}
-                    className="flex-1 px-4 py-2 text-[11px] font-medium text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50 rounded-[6px] transition-colors"
-                  >
-                    Clear dates
-                  </button>
-                  <button
-                    onClick={() => setActiveDropdown(null)}
-                    className="flex-1 px-4 py-2 text-[11px] font-medium text-white bg-terra-600 hover:bg-terra-700 rounded-[6px] transition-colors"
-                  >
-                    Apply
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    onFilterChange('dateFrom', '');
+                    onFilterChange('dateTo', '');
+                    setActiveDropdown(null);
+                  }}
+                  className="w-full px-4 py-2 text-[11px] font-medium text-neutral-500 hover:text-neutral-700 transition-colors"
+                >
+                  Clear dates
+                </button>
               </div>
             </div>
           )}

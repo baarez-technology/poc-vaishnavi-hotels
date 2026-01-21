@@ -35,6 +35,7 @@ function ReputationAIContent() {
     updateFilters,
     updateSettings,
     addReviewResponse,
+    generateAutoReply,
     influenceChurnProbability,
     influenceLTVCurve,
     affectRateRecommendations
@@ -229,6 +230,7 @@ function ReputationAIContent() {
           review={selectedReview}
           onClose={handleCloseDrawer}
           onRespond={handleRespondToReview}
+          generateAutoReply={generateAutoReply}
           guestCRMData={{
             totalStays: Math.floor(Math.random() * 10) + 1,
             ltv: Math.floor(Math.random() * 200000) + 50000,

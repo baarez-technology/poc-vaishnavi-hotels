@@ -6,6 +6,7 @@ import {
   Calendar, ChevronDown, Check
 } from 'lucide-react';
 import { statusConfig, sourceConfig } from '../../data/bookingsData';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function BookingDrawer({
   booking,
@@ -16,6 +17,7 @@ export default function BookingDrawer({
   onAssignRoom,
   onCancelBooking,
 }) {
+  const { formatCurrency } = useCurrency();
   const [showStatusSuccess, setShowStatusSuccess] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -123,10 +125,6 @@ export default function BookingDrawer({
       day: 'numeric',
       year: 'numeric'
     });
-  };
-
-  const formatCurrency = (amount) => {
-    return `$${amount.toLocaleString()}`;
   };
 
   const source = sourceConfig[booking.source];

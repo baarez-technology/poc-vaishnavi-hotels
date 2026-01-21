@@ -1,6 +1,17 @@
 // Sorting utilities for Glimmora Admin Dashboard
 
 /**
+ * Extract numeric part from a string (e.g., "BK-001247" -> 1247)
+ */
+function extractNumericId(value: string | number): number {
+  if (typeof value === 'number') return value;
+  if (typeof value !== 'string') return 0;
+  // Extract all digits from the string and parse as number
+  const digits = value.replace(/\D/g, '');
+  return digits ? parseInt(digits, 10) : 0;
+}
+
+/**
  * Sort data by a specific field and direction
  * @param {Array} data - Array of objects to sort
  * @param {string} field - Field name to sort by
@@ -20,14 +31,21 @@ export function sortData(data, field, direction = 'asc') {
     if (aValue == null) return 1;
     if (bValue == null) return -1;
 
+    // Handle booking IDs (e.g., "BK-001247", "1", "uuid-string")
+    // Sort numerically by extracting the number from the ID
+    if (field === 'id' || field === 'bookingNumber' || field === 'bookingId') {
+      aValue = extractNumericId(aValue);
+      bValue = extractNumericId(bValue);
+    }
+
     // Handle dates
-    if (field === 'checkIn' || field === 'checkOut' || field === 'bookedOn') {
+    if (field === 'checkIn' || field === 'checkOut' || field === 'bookedOn' || field === 'createdAt') {
       aValue = new Date(aValue).getTime();
       bValue = new Date(bValue).getTime();
     }
 
     // Handle numbers
-    if (field === 'nights' || field === 'amount' || field === 'guests') {
+    if (field === 'nights' || field === 'amount' || field === 'guests' || field === 'totalPrice' || field === 'amountPaid') {
       aValue = Number(aValue);
       bValue = Number(bValue);
     }

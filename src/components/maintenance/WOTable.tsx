@@ -80,7 +80,7 @@ export default function WOTable({
   };
 
   return (
-    <div className="overflow-hidden">
+    <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -128,14 +128,6 @@ export default function WOTable({
               onSort={() => handleSort('createdAt')}
             >
               Created
-            </TableHead>
-            <TableHead
-              width="130px"
-              sortable
-              sorted={sortField === 'estimatedCompletion' ? sortDirection : null}
-              onSort={() => handleSort('estimatedCompletion')}
-            >
-              Est. Completion
             </TableHead>
             <TableHead width="80px" align="center">Actions</TableHead>
           </TableRow>
@@ -220,13 +212,6 @@ export default function WOTable({
                 {/* Created */}
                 <TableCell>
                   <span className="text-sm text-neutral-600">{formatDateTime(wo.createdAt)}</span>
-                </TableCell>
-
-                {/* Est. Completion */}
-                <TableCell>
-                  <span className={`text-sm ${wo.estimatedCompletion ? 'text-neutral-600' : 'text-neutral-400'}`}>
-                    {wo.estimatedCompletion ? formatDateTime(wo.estimatedCompletion) : '-'}
-                  </span>
                 </TableCell>
 
                 {/* Actions */}

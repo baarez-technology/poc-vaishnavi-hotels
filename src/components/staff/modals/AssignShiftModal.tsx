@@ -256,7 +256,7 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
           </h4>
 
           {/* Multiple Days Checkbox */}
-          <div className="flex items-center gap-3 p-4 bg-neutral-50 rounded-lg border border-neutral-100 mb-4">
+          <div className="flex items-center gap-3 p-3 sm:p-4 bg-neutral-50 rounded-lg border border-neutral-100 mb-4">
             <input
               type="checkbox"
               id="multipleDays"
@@ -274,7 +274,7 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
           </div>
 
           {/* Date Range */}
-          <div className={`grid ${formData.multipleDays ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
+          <div className={`grid ${formData.multipleDays ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'} gap-3`}>
             <div>
               <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
                 {formData.multipleDays ? 'Start Date' : 'Date'} <span className="text-rose-500">*</span>
@@ -325,7 +325,7 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
           </div>
 
           {/* Time Range */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
                 Start Time <span className="text-rose-500">*</span>
@@ -358,7 +358,7 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Summary
           </h4>
-          <div className="p-4 bg-gold-50 rounded-lg border border-gold-100">
+          <div className="p-3 sm:p-4 bg-gold-50 rounded-lg border border-gold-100">
             <p className="text-[10px] font-medium text-gold-600 mb-1.5">Shift Assignment Details</p>
             <p className="text-[13px] text-neutral-900">
               {formData.multipleDays ? (

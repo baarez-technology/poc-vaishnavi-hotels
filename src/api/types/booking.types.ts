@@ -110,7 +110,6 @@ export interface CreateBookingData {
     infants: number;
   };
   guestInfo: GuestInformation;
-  paymentMethodId?: string;
+  paymentMethodId: string;
   saveCard?: boolean;
-  paymentMethod?: 'card' | 'pay_at_hotel';
 }

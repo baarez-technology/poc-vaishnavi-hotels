@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
-import { defaultSettings } from '../../utils/settings';
+import { defaultSettings, deepMerge } from '../../utils/settings';
 import { Button } from '../ui2/Button';
 import { SelectDropdown } from '../ui2/Input';
 
@@ -13,7 +13,12 @@ export default function StaffPortalSettingsTab() {
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      setStaffPortal(JSON.parse(stored));
+      try {
+        const parsed = JSON.parse(stored);
+        setStaffPortal(deepMerge(defaultSettings.staffPortal, parsed));
+      } catch (e) {
+        console.error('Error parsing staff portal settings from localStorage:', e);
+      }
     }
   }, []);
 
@@ -53,12 +58,12 @@ export default function StaffPortalSettingsTab() {
   ];
 
   return (
-    <div className="max-w-4xl space-y-8">
+    <div className="max-w-4xl space-y-6 sm:space-y-8">
       {/* Header */}
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-neutral-900">Staff Portal</h1>
-          <p className="text-sm text-neutral-500 mt-1">
+          <h1 className="text-base sm:text-lg font-semibold text-neutral-900">Staff Portal</h1>
+          <p className="text-[12px] sm:text-sm text-neutral-500 mt-1">
             Configure shift policies, automation rules, and role permissions
           </p>
         </div>
@@ -66,7 +71,7 @@ export default function StaffPortalSettingsTab() {
           {saved && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-sage-50 text-sage-600 rounded-lg">
               <Check className="w-4 h-4" />
-              <span className="text-sm font-medium">Saved</span>
+              <span className="text-[12px] sm:text-sm font-medium">Saved</span>
             </div>
           )}
           <Button variant="primary" onClick={() => saveStaffPortal(staffPortal)}>
@@ -77,12 +82,12 @@ export default function StaffPortalSettingsTab() {
 
       {/* Shift Policies */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <h2 className="text-sm font-medium text-neutral-900">Shift Policies</h2>
-          <p className="text-xs text-neutral-500 mt-0.5">Working hours and break rules</p>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">Shift Policies</h2>
+          <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Working hours and break rules</p>
         </div>
 
-        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           <div>
             <label className={labelClasses}>Default Shift Duration (hours)</label>
             <input
@@ -174,18 +179,18 @@ export default function StaffPortalSettingsTab() {
 
       {/* Housekeeping Automation */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <h2 className="text-sm font-medium text-neutral-900">Housekeeping Automation</h2>
-          <p className="text-xs text-neutral-500 mt-0.5">Room assignment and efficiency rules</p>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">Housekeeping Automation</h2>
+          <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Room assignment and efficiency rules</p>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Toggle Items */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between py-3 border-b border-neutral-100 last:border-0">
-              <div>
-                <p className="text-sm font-medium text-neutral-900">Auto-Assign Rooms</p>
-                <p className="text-xs text-neutral-500 mt-0.5">Automatically assign rooms to housekeepers based on workload</p>
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex items-center justify-between py-2 sm:py-3 border-b border-neutral-100 last:border-0 gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[12px] sm:text-sm font-medium text-neutral-900">Auto-Assign Rooms</p>
+                <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Automatically assign rooms to housekeepers based on workload</p>
               </div>
               <Toggle
                 enabled={staffPortal.housekeeping.autoAssignRooms}
@@ -193,10 +198,10 @@ export default function StaffPortalSettingsTab() {
               />
             </div>
 
-            <div className="flex items-center justify-between py-3 border-b border-neutral-100 last:border-0">
-              <div>
-                <p className="text-sm font-medium text-neutral-900">Prioritize VIP Rooms</p>
-                <p className="text-xs text-neutral-500 mt-0.5">Clean VIP guest rooms before standard rooms</p>
+            <div className="flex items-center justify-between py-2 sm:py-3 border-b border-neutral-100 last:border-0 gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[12px] sm:text-sm font-medium text-neutral-900">Prioritize VIP Rooms</p>
+                <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Clean VIP guest rooms before standard rooms</p>
               </div>
               <Toggle
                 enabled={staffPortal.housekeeping.priorityVIP}
@@ -204,10 +209,10 @@ export default function StaffPortalSettingsTab() {
               />
             </div>
 
-            <div className="flex items-center justify-between py-3 border-b border-neutral-100 last:border-0">
-              <div>
-                <p className="text-sm font-medium text-neutral-900">Prioritize Checkout Rooms</p>
-                <p className="text-xs text-neutral-500 mt-0.5">Process checkout rooms first for faster turnover</p>
+            <div className="flex items-center justify-between py-2 sm:py-3 border-b border-neutral-100 last:border-0 gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[12px] sm:text-sm font-medium text-neutral-900">Prioritize Checkout Rooms</p>
+                <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Process checkout rooms first for faster turnover</p>
               </div>
               <Toggle
                 enabled={staffPortal.housekeeping.priorityCheckout}
@@ -217,7 +222,7 @@ export default function StaffPortalSettingsTab() {
           </div>
 
           {/* Form Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 pt-3 sm:pt-4">
             <div>
               <label className={labelClasses}>Max Rooms per Shift</label>
               <input
@@ -247,17 +252,17 @@ export default function StaffPortalSettingsTab() {
 
       {/* Maintenance Automation */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <h2 className="text-sm font-medium text-neutral-900">Maintenance Automation</h2>
-          <p className="text-xs text-neutral-500 mt-0.5">Work order and response time rules</p>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">Maintenance Automation</h2>
+          <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Work order and response time rules</p>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Toggle Item */}
-          <div className="flex items-center justify-between py-3 border-b border-neutral-100">
-            <div>
-              <p className="text-sm font-medium text-neutral-900">Auto-Create Work Orders</p>
-              <p className="text-xs text-neutral-500 mt-0.5">Automatically create work orders from housekeeping issue reports</p>
+          <div className="flex items-center justify-between py-2 sm:py-3 border-b border-neutral-100 gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[12px] sm:text-sm font-medium text-neutral-900">Auto-Create Work Orders</p>
+              <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Automatically create work orders from housekeeping issue reports</p>
             </div>
             <Toggle
               enabled={staffPortal.maintenance.autoCreateWorkOrder}
@@ -266,7 +271,7 @@ export default function StaffPortalSettingsTab() {
           </div>
 
           {/* Form Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 pt-2">
             <div>
               <label className={labelClasses}>Urgent Response (min)</label>
               <input
@@ -308,17 +313,17 @@ export default function StaffPortalSettingsTab() {
 
       {/* Runner Operations */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <h2 className="text-sm font-medium text-neutral-900">Runner Operations</h2>
-          <p className="text-xs text-neutral-500 mt-0.5">Delivery SLA and task limits</p>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">Runner Operations</h2>
+          <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Delivery SLA and task limits</p>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Toggle Item */}
-          <div className="flex items-center justify-between py-3 border-b border-neutral-100">
-            <div>
-              <p className="text-sm font-medium text-neutral-900">Prioritize VIP Requests</p>
-              <p className="text-xs text-neutral-500 mt-0.5">VIP guest requests are handled before standard requests</p>
+          <div className="flex items-center justify-between py-2 sm:py-3 border-b border-neutral-100 gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[12px] sm:text-sm font-medium text-neutral-900">Prioritize VIP Requests</p>
+              <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">VIP guest requests are handled before standard requests</p>
             </div>
             <Toggle
               enabled={staffPortal.runner.priorityVIP}
@@ -327,7 +332,7 @@ export default function StaffPortalSettingsTab() {
           </div>
 
           {/* Form Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 pt-2">
             <div>
               <label className={labelClasses}>SLA Warning (minutes)</label>
               <input
@@ -371,19 +376,19 @@ export default function StaffPortalSettingsTab() {
 
       {/* Role Portal Mapping */}
       <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <h2 className="text-sm font-medium text-neutral-900">Role Portal Mapping</h2>
-          <p className="text-xs text-neutral-500 mt-0.5">Default dashboards for each staff role</p>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <h2 className="text-[13px] sm:text-sm font-medium text-neutral-900">Role Portal Mapping</h2>
+          <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Default dashboards for each staff role</p>
         </div>
 
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {Object.entries(staffPortal.roleMapping).map(([role, portal]) => (
-              <div key={role} className="flex items-center justify-between py-3">
-                <span className="text-sm font-medium text-neutral-900 capitalize">
+              <div key={role} className="flex flex-col sm:flex-row sm:items-center justify-between py-2 sm:py-3 gap-2">
+                <span className="text-[12px] sm:text-sm font-medium text-neutral-900 capitalize">
                   {role.replace(/([A-Z])/g, ' $1').trim()}
                 </span>
-                <div style={{ width: '180px' }}>
+                <div className="w-full sm:w-[180px]">
                   <SelectDropdown
                     value={portal as string}
                     onChange={(value) => {

@@ -7,23 +7,32 @@ import { Loader2 } from 'lucide-react';
  */
 
 const VARIANT: Record<string, string> = {
-  primary: 'text-white font-semibold bg-terra-500 hover:bg-terra-600 active:bg-terra-700',
-  secondary: 'text-white font-semibold bg-ocean-500 hover:bg-ocean-600 active:bg-ocean-700',
-  outline: 'text-terra-600 font-semibold bg-white border border-terra-200 hover:bg-terra-50 hover:border-terra-300 active:bg-terra-100',
+  // Primary - uses brand primary color
+  primary: 'text-white font-semibold bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] active:brightness-90',
+  // Secondary - uses brand accent color
+  secondary: 'text-white font-semibold bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] active:brightness-90',
+  // Outline variants - white background with colored border/text
+  outline: 'text-[var(--brand-primary)] font-semibold bg-white border border-[var(--brand-primary)]/30 hover:bg-[var(--brand-primary-50)] hover:border-[var(--brand-primary)]/60 active:bg-[var(--brand-primary-light)]',
+  'outline-secondary': 'text-[var(--brand-accent)] font-semibold bg-white border border-[var(--brand-accent)]/30 hover:bg-[var(--brand-accent-50)] hover:border-[var(--brand-accent)]/60 active:bg-[var(--brand-accent-light)]',
   'outline-neutral': 'text-neutral-600 font-semibold bg-white border border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300 active:bg-neutral-100',
+  'outline-danger': 'text-rose-600 font-semibold bg-white border border-rose-200 hover:bg-rose-50 hover:border-rose-300 active:bg-rose-100',
+  'outline-success': 'text-sage-600 font-semibold bg-white border border-sage-200 hover:bg-sage-50 hover:border-sage-300 active:bg-sage-100',
+  'outline-warning': 'text-gold-700 font-semibold bg-white border border-gold-200 hover:bg-gold-50 hover:border-gold-300 active:bg-gold-100',
+  // Ghost and subtle variants
   ghost: 'text-neutral-600 font-medium bg-transparent hover:bg-neutral-100 hover:text-neutral-900 active:bg-neutral-200',
   subtle: 'text-neutral-700 font-medium bg-neutral-100 hover:bg-neutral-200 hover:text-neutral-900 active:bg-neutral-300',
+  // Solid semantic variants
   danger: 'text-white font-semibold bg-rose-500 hover:bg-rose-600 active:bg-rose-700',
   success: 'text-white font-semibold bg-sage-500 hover:bg-sage-600 active:bg-sage-700',
   warning: 'text-gold-900 font-semibold bg-gold-400 hover:bg-gold-500 active:bg-gold-600',
-  link: 'text-terra-600 font-medium bg-transparent hover:text-terra-700 underline-offset-4 hover:underline',
+  link: 'text-[var(--brand-primary)] font-medium bg-transparent hover:text-[var(--brand-primary-hover)] underline-offset-4 hover:underline',
 };
 
 const SIZE: Record<string, string> = {
-  sm: 'h-8 px-3 text-xs gap-1.5 rounded-lg',
-  default: 'h-9 px-4 text-[13px] gap-2 rounded-lg',
-  lg: 'h-10 px-5 text-sm gap-2 rounded-xl',
-  icon: 'h-9 w-9 rounded-lg',
+  sm: 'h-8 px-3 text-xs gap-1.5 rounded-[var(--brand-radius-sm)]',
+  default: 'h-9 px-4 text-[13px] gap-2 rounded-[var(--brand-radius-md)]',
+  lg: 'h-10 px-5 text-sm gap-2 rounded-[var(--brand-radius-lg)]',
+  icon: 'h-9 w-9 rounded-[var(--brand-radius-md)]',
 };
 
 const ICON_SIZE: Record<string, string> = {
@@ -68,7 +77,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className={`
           inline-flex items-center justify-center whitespace-nowrap
           transition-all duration-150 ease-out
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terra-500/40 focus-visible:ring-offset-2
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/40 focus-visible:ring-offset-2
           disabled:opacity-50 disabled:pointer-events-none
           active:scale-[0.98]
           ${VARIANT[variant] || VARIANT.primary}
@@ -128,9 +137,9 @@ export function IconButton({
       type="button"
       aria-label={label}
       className={`
-        inline-flex items-center justify-center rounded-lg
+        inline-flex items-center justify-center rounded-[var(--brand-radius-md)]
         transition-all duration-150 ease-out
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terra-500/40 focus-visible:ring-offset-2
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/40 focus-visible:ring-offset-2
         disabled:opacity-50 disabled:pointer-events-none
         active:scale-[0.95]
         ${VARIANT[variant] || VARIANT.ghost}
@@ -176,7 +185,7 @@ export function ButtonGroupItem({
         px-4 py-2 text-[13px] font-medium transition-colors
         border-r border-neutral-200 last:border-r-0
         ${isActive
-          ? 'bg-terra-500 text-white'
+          ? 'bg-[var(--brand-primary)] text-white'
           : 'bg-white text-neutral-700 hover:bg-neutral-50'
         }
         ${className}

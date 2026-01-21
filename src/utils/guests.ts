@@ -3,8 +3,6 @@
  * Handles filtering, sorting, CSV export, and guest calculations
  */
 
-import { COUNTRY_NAMES } from './countries';
-
 // Loyalty tier configurations
 export const LOYALTY_TIERS = {
   'Bronze': {
@@ -117,8 +115,29 @@ export const GUEST_TAGS = [
   'Pet Friendly',
 ];
 
-// Country options - comprehensive list from countries.ts (200+ countries)
-export const COUNTRIES = COUNTRY_NAMES;
+// Country options
+export const COUNTRIES = [
+  'United States',
+  'United Kingdom',
+  'Canada',
+  'Australia',
+  'Germany',
+  'France',
+  'Japan',
+  'China',
+  'India',
+  'Brazil',
+  'Mexico',
+  'Spain',
+  'Italy',
+  'Netherlands',
+  'Singapore',
+  'UAE',
+  'South Korea',
+  'Switzerland',
+  'Sweden',
+  'Norway',
+];
 
 // Generate unique guest ID
 export function generateGuestId() {

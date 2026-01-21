@@ -287,12 +287,12 @@ const RuleCard = ({
         } ${!rule.isActive ? 'opacity-60' : ''}`}
       >
         {/* Main Row */}
-        <div className="p-5 flex items-center gap-6">
+        <div className="p-4 sm:p-5 flex items-center gap-3 sm:gap-6">
           {/* Toggle Button */}
           <button
             onClick={handleToggle}
             disabled={isToggling}
-            className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
               rule.isActive
                 ? 'bg-sage-100 text-sage-600 hover:bg-sage-200'
                 : 'bg-neutral-100 text-neutral-400 hover:bg-neutral-200'
@@ -300,92 +300,92 @@ const RuleCard = ({
             title={rule.isActive ? 'Disable' : 'Enable'}
           >
             {isToggling ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
             ) : rule.isActive ? (
-              <Play className="w-4 h-4" />
+              <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             ) : (
-              <Pause className="w-4 h-4" />
+              <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             )}
           </button>
 
           {/* Info */}
           <div className="flex-1 min-w-0" onClick={onClick}>
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <h3 className="text-[14px] font-semibold text-neutral-800 truncate">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
+              <h3 className="text-[13px] sm:text-[14px] font-semibold text-neutral-800 truncate">
                 {rule.name}
               </h3>
               <span
-                className={`px-2 py-0.5 text-[10px] font-bold rounded ${priorityColor.bg} ${priorityColor.text}`}
+                className={`px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold rounded ${priorityColor.bg} ${priorityColor.text}`}
               >
                 P{rule.priority}
               </span>
               {rule.isActive && (
-                <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-sage-50 text-sage-600">
+                <span className="hidden sm:inline-flex px-2 py-0.5 text-[10px] font-semibold rounded bg-sage-50 text-sage-600">
                   Active
                 </span>
               )}
               {getExecutionStatusBadge()}
             </div>
-            <p className="text-[12px] text-neutral-500">{rule.description}</p>
+            <p className="text-[11px] sm:text-[12px] text-neutral-500 line-clamp-1 sm:line-clamp-none">{rule.description}</p>
           </div>
 
-          {/* Quick Stats */}
-          <div className="hidden md:flex items-center gap-8">
+          {/* Quick Stats - Hidden on mobile, visible on larger screens */}
+          <div className="hidden lg:flex items-center gap-6 xl:gap-8">
             <div className="text-center">
-              <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400">
+              <p className="text-[9px] sm:text-[10px] font-medium uppercase tracking-wider text-neutral-400">
                 Triggers
               </p>
-              <p className="text-xl font-bold text-neutral-900">
+              <p className="text-lg sm:text-xl font-bold text-neutral-900">
                 {rule.timesTriggered.toLocaleString()}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400">
+              <p className="text-[9px] sm:text-[10px] font-medium uppercase tracking-wider text-neutral-400">
                 Last Run
               </p>
-              <p className="text-[14px] font-semibold text-neutral-700">
+              <p className="text-[13px] sm:text-[14px] font-semibold text-neutral-700">
                 {formatLastTriggered(rule.lastTriggered)}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400">
+              <p className="text-[9px] sm:text-[10px] font-medium uppercase tracking-wider text-neutral-400">
                 Conditions
               </p>
-              <p className="text-[14px] font-semibold text-neutral-700">
+              <p className="text-[13px] sm:text-[14px] font-semibold text-neutral-700">
                 {rule.conditions.length}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400">
+              <p className="text-[9px] sm:text-[10px] font-medium uppercase tracking-wider text-neutral-400">
                 Actions
               </p>
-              <p className="text-[14px] font-semibold text-neutral-700">
+              <p className="text-[13px] sm:text-[14px] font-semibold text-neutral-700">
                 {rule.actions.length}
               </p>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1">
             <button
               onClick={handleEditClick}
-              className="p-2 text-neutral-400 hover:text-terra-600 hover:bg-terra-50 rounded-lg transition-colors"
+              className="p-1.5 sm:p-2 text-neutral-400 hover:text-terra-600 hover:bg-terra-50 rounded-lg transition-colors"
               title="Edit"
             >
-              <Edit2 className="w-4 h-4" />
+              <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={handleDeleteClick}
               disabled={isDeleting}
-              className={`p-2 text-neutral-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors ${
+              className={`p-1.5 sm:p-2 text-neutral-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors ${
                 isDeleting ? 'opacity-50 cursor-not-allowed' : ''
               }`}
               title="Delete"
             >
               {isDeleting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
               ) : (
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               )}
             </button>
             <button
@@ -393,16 +393,16 @@ const RuleCard = ({
                 e.stopPropagation();
                 setIsExpanded(!isExpanded);
               }}
-              className={`p-2 rounded-lg transition-all ${
+              className={`p-1.5 sm:p-2 rounded-lg transition-all ${
                 isExpanded
                   ? 'text-terra-600 bg-terra-50'
                   : 'text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100'
               }`}
             >
               {isExpanded ? (
-                <ChevronUp className="w-4 h-4" />
+                <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               ) : (
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               )}
             </button>
           </div>
@@ -410,18 +410,38 @@ const RuleCard = ({
 
         {/* Expanded Details */}
         {isExpanded && (
-          <div className="px-5 pb-5 border-t border-neutral-100">
-            <div className="pt-4 grid grid-cols-3 gap-6">
+          <div className="px-4 sm:px-5 pb-4 sm:pb-5 border-t border-neutral-100">
+            {/* Mobile Stats - Only visible on small screens when expanded */}
+            <div className="pt-3 pb-3 grid grid-cols-2 gap-3 lg:hidden border-b border-neutral-100 mb-3">
+              <div className="text-center">
+                <p className="text-[9px] font-medium uppercase tracking-wider text-neutral-400">
+                  Triggers
+                </p>
+                <p className="text-lg font-bold text-neutral-900">
+                  {rule.timesTriggered.toLocaleString()}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-[9px] font-medium uppercase tracking-wider text-neutral-400">
+                  Last Run
+                </p>
+                <p className="text-[13px] font-semibold text-neutral-700">
+                  {formatLastTriggered(rule.lastTriggered)}
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-3 sm:pt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
               {/* Conditions */}
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
                   IF Conditions
                 </p>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1 sm:gap-1.5">
                   {rule.conditions.map((condition, index) => (
                     <span
                       key={index}
-                      className="px-2 py-1 text-[11px] font-medium bg-ocean-50 text-ocean-700 rounded"
+                      className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-medium bg-ocean-50 text-ocean-700 rounded"
                     >
                       {formatCondition(condition)}
                     </span>
@@ -431,14 +451,14 @@ const RuleCard = ({
 
               {/* Actions */}
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
                   THEN Actions
                 </p>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1 sm:gap-1.5">
                   {rule.actions.map((action, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium bg-sage-50 text-sage-700 rounded"
+                      className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-medium bg-sage-50 text-sage-700 rounded"
                     >
                       {getActionIcon(action.type)}
                       {formatAction(action)}
@@ -449,14 +469,14 @@ const RuleCard = ({
 
               {/* Room Types */}
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
                   Applies to
                 </p>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1 sm:gap-1.5">
                   {rule.roomTypes.map((roomType) => (
                     <span
                       key={roomType}
-                      className="px-2 py-1 text-[11px] font-medium bg-neutral-100 text-neutral-600 rounded"
+                      className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-medium bg-neutral-100 text-neutral-600 rounded"
                     >
                       {roomType === 'ALL' ? 'All Rooms' : roomType}
                     </span>
@@ -467,10 +487,10 @@ const RuleCard = ({
 
             {/* Last Execution Info */}
             {rule.lastTriggered && (
-              <div className="mt-4 pt-4 border-t border-neutral-100">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[11px] text-neutral-500">
-                    <Clock className="w-3.5 h-3.5" />
+              <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-neutral-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] text-neutral-500">
+                    <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     <span>
                       Last triggered:{' '}
                       {new Date(rule.lastTriggered).toLocaleString('en-US', {
@@ -482,7 +502,7 @@ const RuleCard = ({
                     </span>
                   </div>
                   {rule.lastExecutionMessage && (
-                    <span className="text-[11px] text-neutral-500 italic">
+                    <span className="text-[10px] sm:text-[11px] text-neutral-500 italic">
                       {rule.lastExecutionMessage}
                     </span>
                   )}
@@ -519,65 +539,65 @@ export const RuleSummary = ({ rules }: RuleSummaryProps) => {
   const avgTriggersPerRule = rules.length > 0 ? Math.round(totalTriggers / rules.length) : 0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div className="rounded-[10px] bg-white p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-terra-50">
-            <Target className="w-4 h-4 text-terra-600" />
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="rounded-[10px] bg-white p-4 sm:p-5">
+        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-terra-50">
+            <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-terra-600" />
           </div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+          <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
             Total Rules
           </p>
         </div>
-        <p className="text-[28px] font-semibold tracking-tight text-neutral-900">{rules.length}</p>
-        <p className="text-[11px] text-sage-600 font-medium mt-1">{activeRules.length} active</p>
+        <p className="text-[22px] sm:text-[28px] font-semibold tracking-tight text-neutral-900">{rules.length}</p>
+        <p className="text-[10px] sm:text-[11px] text-sage-600 font-medium mt-1">{activeRules.length} active</p>
       </div>
 
-      <div className="rounded-[10px] bg-white p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-sage-50">
-            <Activity className="w-4 h-4 text-sage-600" />
+      <div className="rounded-[10px] bg-white p-4 sm:p-5">
+        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-sage-50">
+            <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sage-600" />
           </div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+          <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
             Total Triggers
           </p>
         </div>
-        <p className="text-[28px] font-semibold tracking-tight text-neutral-900">
+        <p className="text-[22px] sm:text-[28px] font-semibold tracking-tight text-neutral-900">
           {totalTriggers.toLocaleString()}
         </p>
       </div>
 
-      <div className="rounded-[10px] bg-white p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-ocean-50">
-            <BarChart3 className="w-4 h-4 text-ocean-600" />
+      <div className="rounded-[10px] bg-white p-4 sm:p-5">
+        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-ocean-50">
+            <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-ocean-600" />
           </div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+          <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
             Avg Triggers
           </p>
         </div>
-        <p className="text-[28px] font-semibold tracking-tight text-neutral-900">
+        <p className="text-[22px] sm:text-[28px] font-semibold tracking-tight text-neutral-900">
           {avgTriggersPerRule}
         </p>
-        <p className="text-[11px] text-neutral-400 font-medium mt-1">per rule</p>
+        <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-1">per rule</p>
       </div>
 
-      <div className="rounded-[10px] bg-white p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gold-50">
-            <Zap className="w-4 h-4 text-gold-600" />
+      <div className="rounded-[10px] bg-white p-4 sm:p-5">
+        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-gold-50">
+            <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gold-600" />
           </div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+          <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
             By Priority
           </p>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 sm:gap-1.5">
           {[1, 2, 3, 4, 5].map((p) => {
             const count = rules.filter((r) => r.priority === p).length;
             return (
               <div
                 key={p}
-                className={`flex-1 h-8 rounded flex items-center justify-center text-[11px] font-bold ${
+                className={`flex-1 h-7 sm:h-8 rounded flex items-center justify-center text-[10px] sm:text-[11px] font-bold ${
                   count > 0
                     ? p === 1
                       ? 'bg-rose-100 text-rose-700'

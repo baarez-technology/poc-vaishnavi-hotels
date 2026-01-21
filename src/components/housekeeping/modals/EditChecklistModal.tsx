@@ -103,18 +103,18 @@ export default function EditChecklistModal({
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Room Details
           </h4>
-          <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100">
+          <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-terra-100 flex items-center justify-center text-terra-600 font-bold text-lg">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-terra-100 flex items-center justify-center text-terra-600 font-bold text-base sm:text-lg">
                 {room.roomNumber}
               </div>
               <div className="flex-1">
                 <p className="text-[13px] font-semibold text-neutral-900">Room {room.roomNumber}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="px-2 py-0.5 bg-white border border-neutral-200 text-neutral-600 rounded text-[11px] font-medium">
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <span className="px-2 py-0.5 bg-white border border-neutral-200 text-neutral-600 rounded text-[10px] sm:text-[11px] font-medium">
                     {room.type}
                   </span>
-                  <span className="px-2 py-0.5 bg-white border border-neutral-200 text-neutral-600 rounded text-[11px] font-medium flex items-center gap-1">
+                  <span className="px-2 py-0.5 bg-white border border-neutral-200 text-neutral-600 rounded text-[10px] sm:text-[11px] font-medium flex items-center gap-1">
                     <MapPin className="w-3 h-3" />
                     Floor {room.floor}
                   </span>
@@ -148,11 +148,11 @@ export default function EditChecklistModal({
             Checklist Items ({checklist.length})
           </h4>
 
-          <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100 space-y-2">
+          <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100 space-y-2">
             {checklist.map((item, index) => (
               <div
                 key={index}
-                className="flex items-center gap-3 p-3 bg-white rounded-lg border border-neutral-200 group hover:border-neutral-300 transition-all"
+                className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-white rounded-lg border border-neutral-200 group hover:border-neutral-300 transition-all"
               >
                 {/* Checkbox */}
                 <button
@@ -190,12 +190,12 @@ export default function EditChecklistModal({
 
             {/* Empty State */}
             {checklist.length === 0 && (
-              <div className="p-8 text-center">
-                <div className="w-12 h-12 bg-white border border-neutral-200 rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <Check className="w-6 h-6 text-neutral-400" />
+              <div className="p-6 sm:p-8 text-center">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white border border-neutral-200 rounded-lg flex items-center justify-center mx-auto mb-3">
+                  <Check className="w-5 h-5 sm:w-6 sm:h-6 text-neutral-400" />
                 </div>
-                <p className="text-[13px] font-semibold text-neutral-900">No tasks in checklist</p>
-                <p className="text-[11px] text-neutral-500 mt-1">Add your first task below</p>
+                <p className="text-[12px] sm:text-[13px] font-semibold text-neutral-900">No tasks in checklist</p>
+                <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-1">Add your first task below</p>
               </div>
             )}
           </div>
@@ -206,7 +206,7 @@ export default function EditChecklistModal({
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Add New Task
           </h4>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={newTaskText}
@@ -223,7 +223,7 @@ export default function EditChecklistModal({
               variant={newTaskText.trim() ? 'primary' : 'outline'}
               onClick={handleAddTask}
               disabled={!newTaskText.trim()}
-              className="px-5 py-2 text-[13px] font-semibold"
+              className="px-5 py-2 text-[13px] font-semibold w-full sm:w-auto"
             >
               Add
             </Button>

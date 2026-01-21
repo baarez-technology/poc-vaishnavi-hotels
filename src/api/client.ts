@@ -14,13 +14,13 @@ interface CacheEntry {
 }
 const responseCache = new Map<string, CacheEntry>();
 
-// Cache TTL configurations (in milliseconds)
+// Cache TTL configurations (in milliseconds) - reduced for better freshness
 const CACHE_TTL = {
-  default: 5000,        // 5 seconds for most endpoints
-  static: 60000,        // 1 minute for static data (room types, etc.)
-  dashboard: 15000,     // 15 seconds for dashboard data
-  ai: 30000,            // 30 seconds for AI insights (expensive)
-  crm: 20000,           // 20 seconds for CRM data
+  default: 2000,        // 2 seconds for most endpoints
+  static: 30000,        // 30 seconds for static data (room types, etc.)
+  dashboard: 5000,      // 5 seconds for dashboard data
+  ai: 10000,            // 10 seconds for AI insights
+  crm: 5000,            // 5 seconds for CRM data
 };
 
 // Stable JSON stringify that sorts object keys for consistent cache keys
@@ -252,6 +252,16 @@ apiClient.interceptors.response.use(
       return cacheAndReturn(response, response);
     }
 
+    // For Reports endpoints, return data as-is
+    if (response.config.url?.includes('/api/v1/reports/')) {
+      return cacheAndReturn(response, response);
+    }
+
+    // For Availability endpoints, return data as-is
+    if (response.config.url?.includes('/api/v1/availability/')) {
+      return cacheAndReturn(response, response);
+    }
+
     // For other endpoints, check if data is wrapped
     if (response.data && typeof response.data === 'object' && 'data' in response.data) {
       const processedResponse = { ...response, data: response.data };
@@ -379,3 +389,32 @@ export const refreshGet = async <T = any>(
   // Make fresh request
   return apiClient.get<T>(url, config);
 };
+
+// ==================== AUTO CACHE CLEARING ====================
+
+/**
+ * Clear all caches - useful when data might be stale
+ */
+export const clearAllCaches = () => {
+  responseCache.clear();
+  inflightRequests.clear();
+  console.log('[API Client] All caches cleared');
+};
+
+// Clear caches when page becomes visible (user returns to tab)
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      // Clear caches when user returns to tab after being away
+      clearAllCaches();
+    }
+  });
+
+  // Also clear on page show (back/forward navigation)
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) {
+      // Page was restored from bfcache
+      clearAllCaches();
+    }
+  });
+}

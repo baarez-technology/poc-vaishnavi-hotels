@@ -97,15 +97,17 @@ export default function AssignRoomModal({
     return labels[status] || status;
   };
 
+  // CRITICAL FIX: Increased z-index to prevent overlap with BookingDrawer (z-50)
+  // Backdrop needs to be above drawer, and modal content above backdrop
   return createPortal(
     <>
       <div
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[70]"
         onClick={onClose}
       />
-      <div className="fixed inset-0 flex items-center justify-center px-4">
+      <div className="fixed inset-0 flex items-center justify-center px-4 z-[80]">
         <div
-          className="bg-white rounded-xl p-6 shadow-xl max-w-3xl w-full z-50"
+          className="bg-white rounded-xl p-6 shadow-xl max-w-3xl w-full"
           role="dialog"
           aria-modal="true"
           onClick={(event) => event.stopPropagation()}

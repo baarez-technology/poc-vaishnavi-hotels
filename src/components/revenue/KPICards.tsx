@@ -1,5 +1,4 @@
 import {
-  DollarSign,
   TrendingUp,
   TrendingDown,
   Percent,
@@ -7,6 +6,7 @@ import {
   Calendar,
   Building2
 } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface KPIData {
   // API format (snake_case)
@@ -33,29 +33,30 @@ interface KPICardsProps {
   data?: KPIData | null;
 }
 
-const formatCurrency = (value: number) => {
-  if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`;
-  }
-  if (value >= 1000) {
-    return `$${(value / 1000).toFixed(0)}K`;
-  }
-  return `$${value.toLocaleString()}`;
-};
-
 export default function KPICards({ data }: KPICardsProps) {
+  const { symbol } = useCurrency();
+
+  const formatCurrencyValue = (value: number) => {
+    if (value >= 1000000) {
+      return `${symbol}${(value / 1000000).toFixed(1)}M`;
+    }
+    if (value >= 1000) {
+      return `${symbol}${(value / 1000).toFixed(0)}K`;
+    }
+    return `${symbol}${value.toLocaleString()}`;
+  };
   // Loading skeleton when no data
   if (!data) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="rounded-[10px] bg-white p-5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-neutral-100 animate-pulse" />
-              <div className="h-3 w-16 bg-neutral-100 rounded animate-pulse" />
+          <div key={i} className="rounded-[10px] bg-white p-3 sm:p-5">
+            <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-neutral-100 animate-pulse" />
+              <div className="h-3 w-14 sm:w-16 bg-neutral-100 rounded animate-pulse" />
             </div>
-            <div className="h-7 w-24 bg-neutral-200 rounded animate-pulse mb-2" />
-            <div className="h-3 w-20 bg-neutral-100 rounded animate-pulse" />
+            <div className="h-6 sm:h-7 w-20 sm:w-24 bg-neutral-200 rounded animate-pulse mb-2" />
+            <div className="h-3 w-16 sm:w-20 bg-neutral-100 rounded animate-pulse" />
           </div>
         ))}
       </div>
@@ -77,8 +78,8 @@ export default function KPICards({ data }: KPICardsProps) {
     {
       id: 'todayRevenue',
       label: "Today's Revenue",
-      value: formatCurrency(todayRevenue),
-      icon: DollarSign,
+      value: formatCurrencyValue(todayRevenue),
+      icon: () => <span className="text-sm font-bold">{symbol}</span>,
       accentColor: 'terra',
       trend: revenueTrend >= 0 ? 'up' : 'down',
       trendValue: revenueTrend
@@ -86,7 +87,7 @@ export default function KPICards({ data }: KPICardsProps) {
     {
       id: 'adr',
       label: 'ADR',
-      value: `$${adr.toLocaleString()}`,
+      value: `${symbol}${adr.toLocaleString()}`,
       icon: Building2,
       accentColor: 'ocean',
       subLabel: 'Avg Daily Rate'
@@ -94,7 +95,7 @@ export default function KPICards({ data }: KPICardsProps) {
     {
       id: 'revpar',
       label: 'RevPAR',
-      value: `$${revpar.toLocaleString()}`,
+      value: `${symbol}${revpar.toLocaleString()}`,
       icon: BarChart3,
       accentColor: 'sage',
       subLabel: 'Revenue Per Room'
@@ -110,7 +111,7 @@ export default function KPICards({ data }: KPICardsProps) {
     {
       id: 'forecast',
       label: '7-Day Forecast',
-      value: formatCurrency(forecastedRevenue),
+      value: formatCurrencyValue(forecastedRevenue),
       icon: Calendar,
       accentColor: 'terra',
       subLabel: 'Projected revenue'
@@ -134,7 +135,7 @@ export default function KPICards({ data }: KPICardsProps) {
   };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
       {kpis.map((kpi, index) => {
         const Icon = kpi.icon;
         const style = accentStyles[kpi.accentColor] || accentStyles.terra;
@@ -142,47 +143,48 @@ export default function KPICards({ data }: KPICardsProps) {
         return (
           <div
             key={kpi.id}
-            className="rounded-[10px] bg-white p-5"
+            className="rounded-[10px] bg-white p-3 sm:p-5"
             style={{ animationDelay: `${index * 50}ms` }}
           >
             {/* Header with Icon and Title */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${style.bg}`}>
-                <Icon className={`w-4 h-4 ${style.icon}`} />
+            <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+              <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center ${style.bg}`}>
+                <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${style.icon}`} />
               </div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+              <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
                 {kpi.label}
               </p>
             </div>
 
             {/* Value */}
-            <p className="text-[22px] font-semibold tracking-tight text-neutral-900 mb-2">
+            <p className="text-lg sm:text-[22px] font-semibold tracking-tight text-neutral-900 mb-1 sm:mb-2">
               {kpi.value}
             </p>
 
             {/* Trend indicator */}
             {kpi.trend && (
-              <div className={`inline-flex items-center gap-1 text-[11px] font-semibold ${
+              <div className={`inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold ${
                 kpi.trend === 'up' ? 'text-sage-600' : 'text-rose-600'
               }`}>
                 {kpi.trend === 'up' ? (
-                  <TrendingUp className="w-3.5 h-3.5" />
+                  <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 ) : (
-                  <TrendingDown className="w-3.5 h-3.5" />
+                  <TrendingDown className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 )}
-                <span>{kpi.trendValue > 0 ? '+' : ''}{kpi.trendValue}% vs yesterday</span>
+                <span className="hidden sm:inline">{kpi.trendValue > 0 ? '+' : ''}{kpi.trendValue}% vs yesterday</span>
+                <span className="sm:hidden">{kpi.trendValue > 0 ? '+' : ''}{kpi.trendValue}%</span>
               </div>
             )}
 
             {/* Sub label */}
             {kpi.subLabel && !kpi.trend && !kpi.progress && (
-              <p className="text-[11px] text-neutral-400 font-medium">{kpi.subLabel}</p>
+              <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">{kpi.subLabel}</p>
             )}
 
             {/* Progress bar for occupancy */}
             {kpi.progress !== undefined && (
               <div className="mt-1">
-                <div className="h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                <div className="h-1 sm:h-1.5 bg-neutral-100 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{
@@ -191,7 +193,7 @@ export default function KPICards({ data }: KPICardsProps) {
                     }}
                   />
                 </div>
-                <p className="text-[11px] text-neutral-400 font-medium mt-1">
+                <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-1">
                   {roomsSold} / {totalRooms} rooms
                 </p>
               </div>

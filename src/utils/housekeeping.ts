@@ -1,7 +1,9 @@
 /**
  * Housekeeping Utility Functions
- * Auto-assign algorithm, cleaning time calculations, KPI calculations, CSV export
+ * Auto-assign algorithm, cleaning time calculations, KPI calculations, CSV/PDF export
  */
+
+import jsPDF from 'jspdf';
 
 // Cleaning time estimates by room type (in minutes)
 export const CLEANING_TIME_ESTIMATES = {
@@ -247,11 +249,11 @@ export function exportHKToCSV(rooms, staff, filename = 'housekeeping_export.csv'
       : '-';
 
     return [
-      room.roomNumber || room.number,
-      room.type || room.roomType,
+      room.roomNumber,
+      room.type,
       room.floor,
       HK_STATUS_CONFIG[room.status]?.label || room.status,
-      room.assignedStaffName || getStaffName(room.assignedTo),
+      getStaffName(room.assignedTo),
       room.priority ? room.priority.charAt(0).toUpperCase() + room.priority.slice(1) : 'Low',
       startTime,
       estimatedFinish,
@@ -279,149 +281,6 @@ export function exportHKToCSV(rooms, staff, filename = 'housekeeping_export.csv'
   URL.revokeObjectURL(url);
 
   return { success: true, message: `Exported ${rooms.length} rooms to CSV` };
-}
-
-/**
- * Export housekeeping data to PDF
- * Creates a printable PDF report with room status summary
- */
-export function exportHKToPDF(rooms, staff, filename = 'housekeeping_report') {
-  if (!rooms || rooms.length === 0) {
-    return { success: false, message: 'No data to export' };
-  }
-
-  const getStaffName = (staffId) => {
-    const staffMember = staff?.find(s => s.id === staffId);
-    return staffMember ? staffMember.name : 'Unassigned';
-  };
-
-  // Calculate summary statistics
-  const summary = {
-    total: rooms.length,
-    dirty: rooms.filter(r => r.status === 'dirty').length,
-    clean: rooms.filter(r => r.status === 'clean').length,
-    inProgress: rooms.filter(r => r.status === 'in_progress').length,
-    inspected: rooms.filter(r => r.status === 'inspected').length,
-    outOfService: rooms.filter(r => r.status === 'out_of_service').length,
-  };
-
-  // Create HTML content for PDF
-  const timestamp = new Date().toLocaleString();
-  const dateStr = new Date().toISOString().split('T')[0];
-
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>Housekeeping Report - ${dateStr}</title>
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #333; padding: 20px; }
-        .header { text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #A57865; }
-        .header h1 { font-size: 24px; color: #A57865; margin-bottom: 5px; }
-        .header p { color: #666; font-size: 12px; }
-        .summary { display: flex; justify-content: space-around; margin: 20px 0; padding: 15px; background: #f9f7f7; border-radius: 8px; }
-        .summary-item { text-align: center; }
-        .summary-item .value { font-size: 24px; font-weight: bold; color: #A57865; }
-        .summary-item .label { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th { background: #A57865; color: white; padding: 10px 8px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-        td { padding: 8px; border-bottom: 1px solid #eee; }
-        tr:nth-child(even) { background: #fafafa; }
-        .status { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; display: inline-block; }
-        .status-dirty { background: #fee2e2; color: #dc2626; }
-        .status-clean { background: #d1fae5; color: #059669; }
-        .status-in_progress { background: #fef3c7; color: #d97706; }
-        .status-inspected { background: #dbeafe; color: #2563eb; }
-        .status-out_of_service { background: #e5e7eb; color: #6b7280; }
-        .priority-high { color: #dc2626; font-weight: bold; }
-        .priority-medium { color: #d97706; }
-        .priority-low { color: #6b7280; }
-        .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #999; padding-top: 15px; border-top: 1px solid #eee; }
-        @media print { body { padding: 10px; } .summary { page-break-inside: avoid; } }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <h1>Housekeeping Status Report</h1>
-        <p>Generated: ${timestamp}</p>
-      </div>
-
-      <div class="summary">
-        <div class="summary-item">
-          <div class="value">${summary.total}</div>
-          <div class="label">Total Rooms</div>
-        </div>
-        <div class="summary-item">
-          <div class="value" style="color: #dc2626;">${summary.dirty}</div>
-          <div class="label">Dirty</div>
-        </div>
-        <div class="summary-item">
-          <div class="value" style="color: #d97706;">${summary.inProgress}</div>
-          <div class="label">In Progress</div>
-        </div>
-        <div class="summary-item">
-          <div class="value" style="color: #059669;">${summary.clean}</div>
-          <div class="label">Clean</div>
-        </div>
-        <div class="summary-item">
-          <div class="value" style="color: #2563eb;">${summary.inspected}</div>
-          <div class="label">Inspected</div>
-        </div>
-      </div>
-
-      <table>
-        <thead>
-          <tr>
-            <th>Room</th>
-            <th>Floor</th>
-            <th>Type</th>
-            <th>Status</th>
-            <th>Assigned To</th>
-            <th>Priority</th>
-            <th>Notes</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rooms.map(room => `
-            <tr>
-              <td><strong>${room.roomNumber || room.number}</strong></td>
-              <td>Floor ${room.floor}</td>
-              <td>${room.type || room.roomType || 'Standard'}</td>
-              <td><span class="status status-${room.status}">${HK_STATUS_CONFIG[room.status]?.label || room.status}</span></td>
-              <td>${room.assignedStaffName || getStaffName(room.assignedTo)}</td>
-              <td class="priority-${room.priority || 'low'}">${room.priority ? room.priority.charAt(0).toUpperCase() + room.priority.slice(1) : 'Low'}</td>
-              <td>${room.notes ? (room.notes.length > 30 ? room.notes.substring(0, 30) + '...' : room.notes) : '-'}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-
-      <div class="footer">
-        <p>Glimmora Hotel Management System - Housekeeping Report</p>
-        <p>Page 1 of 1 | Confidential</p>
-      </div>
-    </body>
-    </html>
-  `;
-
-  // Open print dialog with the HTML content
-  const printWindow = window.open('', '_blank');
-  if (printWindow) {
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-    printWindow.focus();
-
-    // Wait for content to load then print
-    setTimeout(() => {
-      printWindow.print();
-    }, 250);
-
-    return { success: true, message: `PDF report generated for ${rooms.length} rooms` };
-  } else {
-    return { success: false, message: 'Please allow popups to generate PDF report' };
-  }
 }
 
 /**
@@ -457,12 +316,7 @@ export function parseNotes(notesString) {
  */
 export function getStaffPerformanceMetrics(staff, rooms) {
   return staff.map(s => {
-    // Handle ID type mismatch - compare as strings for consistency
-    const assignedRooms = rooms.filter(r => {
-      if (!r.assignedTo && !r.assignedStaff) return false;
-      const roomStaffId = r.assignedStaff?.id ?? r.assignedTo;
-      return roomStaffId === s.id || String(roomStaffId) === String(s.id);
-    });
+    const assignedRooms = rooms.filter(r => r.assignedTo === s.id);
     const completedRooms = assignedRooms.filter(r => r.status === 'clean' || r.status === 'inspected');
 
     // Calculate average cleaning time
@@ -507,4 +361,158 @@ export function generateSparklineData(baseValue, days = 7) {
     data.push(Math.max(0, Math.min(100, baseValue + variance)));
   }
   return data;
+}
+
+/**
+ * Export housekeeping data to PDF
+ */
+export function exportHKToPDF(rooms: any[], staff: any[], filename = 'housekeeping_report.pdf') {
+  if (!rooms || rooms.length === 0) {
+    return { success: false, message: 'No data to export' };
+  }
+
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 20;
+  let yPos = margin;
+
+  // Helper function
+  const addText = (text: string, x: number, y: number, fontSize: number = 10, fontStyle: 'normal' | 'bold' = 'normal') => {
+    doc.setFontSize(fontSize);
+    doc.setFont('helvetica', fontStyle);
+    doc.text(text, x, y);
+    return y + (fontSize * 0.5);
+  };
+
+  // Header
+  doc.setFillColor(165, 120, 101); // Terra color
+  doc.rect(0, 0, pageWidth, 35, 'F');
+
+  doc.setTextColor('#FFFFFF');
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('GLIMMORA', margin, 22);
+
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Housekeeping Report', pageWidth - margin, 22, { align: 'right' });
+
+  yPos = 45;
+
+  // Report date
+  doc.setTextColor('#666666');
+  doc.setFontSize(10);
+  const reportDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  yPos = addText(`Generated: ${reportDate}`, margin, yPos, 10) + 10;
+
+  // Summary Section
+  doc.setTextColor('#000000');
+  yPos = addText('Summary', margin, yPos, 14, 'bold') + 5;
+
+  const dirty = rooms.filter((r: any) => r.status === 'dirty').length;
+  const inProgress = rooms.filter((r: any) => r.status === 'in_progress').length;
+  const clean = rooms.filter((r: any) => r.status === 'clean').length;
+  const inspected = rooms.filter((r: any) => r.status === 'inspected').length;
+  const outOfService = rooms.filter((r: any) => r.status === 'out_of_service').length;
+
+  yPos = addText(`Total Rooms: ${rooms.length}`, margin, yPos, 10) + 3;
+  yPos = addText(`Dirty: ${dirty}  |  In Progress: ${inProgress}  |  Clean: ${clean}  |  Inspected: ${inspected}  |  Out of Service: ${outOfService}`, margin, yPos, 10) + 10;
+
+  // Room Details Section
+  yPos = addText('Room Details', margin, yPos, 14, 'bold') + 5;
+
+  // Table headers
+  const colWidths = [25, 35, 20, 35, 55];
+  const headers = ['Room', 'Type', 'Floor', 'Status', 'Assigned To'];
+  let xPos = margin;
+
+  doc.setFillColor(245, 245, 245);
+  doc.rect(margin, yPos - 4, pageWidth - 2 * margin, 8, 'F');
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor('#333333');
+  headers.forEach((header, i) => {
+    doc.text(header, xPos, yPos);
+    xPos += colWidths[i];
+  });
+  yPos += 8;
+
+  // Table rows
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor('#000000');
+
+  const getStaffName = (staffId: any) => {
+    const staffMember = staff?.find((s: any) => s.id === staffId);
+    return staffMember ? staffMember.name : 'Unassigned';
+  };
+
+  const statusLabels: Record<string, string> = {
+    dirty: 'Dirty',
+    in_progress: 'In Progress',
+    clean: 'Clean',
+    inspected: 'Inspected',
+    out_of_service: 'Out of Service'
+  };
+
+  rooms.slice(0, 40).forEach((room: any, index: number) => {
+    // Check if we need a new page
+    if (yPos > 270) {
+      doc.addPage();
+      yPos = margin;
+    }
+
+    // Alternate row background
+    if (index % 2 === 0) {
+      doc.setFillColor(252, 252, 252);
+      doc.rect(margin, yPos - 4, pageWidth - 2 * margin, 7, 'F');
+    }
+
+    xPos = margin;
+    doc.setFontSize(9);
+
+    const rowData = [
+      room.roomNumber || room.number || '-',
+      room.type || '-',
+      String(room.floor || '-'),
+      statusLabels[room.status] || room.status || '-',
+      getStaffName(room.assignedTo)
+    ];
+
+    rowData.forEach((cell, i) => {
+      const text = String(cell).substring(0, colWidths[i] / 2);
+      doc.text(text, xPos, yPos);
+      xPos += colWidths[i];
+    });
+
+    yPos += 7;
+  });
+
+  if (rooms.length > 40) {
+    yPos += 5;
+    doc.setFontSize(9);
+    doc.setTextColor('#666666');
+    doc.text(`... and ${rooms.length - 40} more rooms. Export to CSV for complete data.`, margin, yPos);
+  }
+
+  // Footer
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor('#999999');
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, 290, { align: 'center' });
+    doc.text('Glimmora Hotel Management', margin, 290);
+  }
+
+  // Save
+  const timestamp = new Date().toISOString().split('T')[0];
+  doc.save(`${filename.replace('.pdf', '')}_${timestamp}.pdf`);
+
+  return { success: true, message: `Exported ${rooms.length} rooms to PDF` };
 }

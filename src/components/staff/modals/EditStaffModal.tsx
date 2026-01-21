@@ -263,7 +263,7 @@ export default function EditStaffModal({ staff, isOpen, onClose, onSave }) {
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Contact Information
           </h4>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
                 Phone Number <span className="text-rose-500">*</span>
@@ -300,7 +300,7 @@ export default function EditStaffModal({ staff, isOpen, onClose, onSave }) {
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Employment Details
           </h4>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
                 Department <span className="text-rose-500">*</span>

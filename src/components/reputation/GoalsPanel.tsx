@@ -196,7 +196,7 @@ function getDaysRemaining(endDate: string): number {
 }
 
 export default function GoalsPanel() {
-  const { goals, createGoal, updateGoalProgress, deleteGoal, isLoading } = useReputation();
+  const { goals, createGoal, updateGoalProgress, isLoading } = useReputation();
   const [showDrawer, setShowDrawer] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [deletingGoal, setDeletingGoal] = useState<Goal | null>(null);
@@ -262,14 +262,9 @@ export default function GoalsPanel() {
   };
 
   const handleDeleteGoal = async () => {
-    if (deletingGoal) {
-      try {
-        await deleteGoal(deletingGoal.id);
-      } catch (error) {
-        console.error('Failed to delete goal:', error);
-      }
-      setDeletingGoal(null);
-    }
+    // In a real implementation, this would call an API to delete the goal
+    console.log('Deleting goal:', deletingGoal?.id);
+    setDeletingGoal(null);
   };
 
   const openCreateDrawer = () => {

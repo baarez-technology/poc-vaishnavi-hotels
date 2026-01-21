@@ -6,12 +6,13 @@ import {
   SOURCE_OPTIONS,
   calculateNights,
   calculateBookingAmount,
-  formatCurrency,
   generateBookingId,
 } from '@/utils/admin/bookings';
 import { SimpleDropdown } from '@/components/ui/Select';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function AddBookingModal({ isOpen, onClose, onSubmit }) {
+  const { formatCurrency } = useCurrency();
   const [formData, setFormData] = useState({
     guestName: '',
     email: '',

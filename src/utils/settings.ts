@@ -433,7 +433,10 @@ export const saveSettings = (settings) => {
 export const deepMerge = (target, source) => {
   const result = { ...target };
   for (const key in source) {
-    if (source[key] instanceof Object && key in target) {
+    // Don't deep merge arrays - just use the source array directly
+    if (Array.isArray(source[key])) {
+      result[key] = source[key];
+    } else if (source[key] instanceof Object && key in target && !Array.isArray(target[key])) {
       result[key] = deepMerge(target[key], source[key]);
     } else {
       result[key] = source[key];

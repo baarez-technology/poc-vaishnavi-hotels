@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState, useEffect } from 'react';
-import { CreditCard, Lock, MapPin, Shield, CheckCircle, Calendar, User, Building2, ArrowRight, ChevronDown, Mail, KeyRound, Banknote, RefreshCw, DollarSign } from 'lucide-react';
+import { CreditCard, Lock, MapPin, Shield, CheckCircle, Calendar, User, Building2, ArrowRight, ChevronDown, Mail, KeyRound } from 'lucide-react';
 import { useBooking } from '@/contexts/BookingContext';
 import { paymentMethodsService } from '@/api/services/payment-methods.service';
 import { bookingService } from '@/api/services/booking.service';
@@ -11,7 +11,6 @@ import { otpService } from '@/api/services/otp.service';
 import { useAuth } from '@/hooks/useAuth';
 import { COUNTRIES } from '@/utils/countries';
 import toast from 'react-hot-toast';
-import { differenceInDays, parseISO } from 'date-fns';
 
 const paymentSchema = z.object({
   cardNumber: z.string().refine((val) => {
@@ -51,16 +50,13 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
   const [selectedCardId, setSelectedCardId] = useState<string>('');
   const [showCardDropdown, setShowCardDropdown] = useState(false);
   
-  // OTP verification state - skip OTP in modify mode (user already verified)
-  const [otpVerified, setOtpVerified] = useState(bookingData.isModifyMode || false);
+  // OTP verification state
+  const [otpVerified, setOtpVerified] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [otpError, setOtpError] = useState('');
-
-  // Payment method selection: 'card' or 'pay_at_hotel'
-  const [paymentMethodType, setPaymentMethodType] = useState<'card' | 'pay_at_hotel'>('card');
 
   const {
     register,
@@ -203,10 +199,10 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
       if (bookingData.isModifyMode && bookingData.originalBooking?.id) {
         console.log('[PaymentStep] UPDATING existing booking:', bookingData.originalBooking.id);
         // Update existing booking instead of creating new one
-        // Note: Don't send roomId for modifications - the backend keeps the original room assignment
         bookingResponse = await bookingService.updateBooking(
           bookingData.originalBooking.id,
           {
+            roomId: String(bookingData.room.id),
             checkIn: bookingData.checkIn,
             checkOut: bookingData.checkOut,
             guests: {
@@ -234,7 +230,6 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
         toast.success('Booking modified successfully!');
       } else {
         console.log('[PaymentStep] CREATING new booking (not in modify mode)');
-        console.log('[PaymentStep] Payment method:', paymentMethodType);
         // Create new booking via API
         bookingResponse = await bookingService.createBooking({
           roomId: String(bookingData.room.id),
@@ -250,24 +245,20 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
             lastName: bookingData.guestInfo.lastName,
             email: bookingData.guestInfo.email,
             phone: bookingData.guestInfo.phone,
-            country: paymentData.country || bookingData.guestInfo.country || 'US',
+            country: paymentData.country || 'US',
             specialRequests: bookingData.guestInfo.specialRequests || '',
           },
-          paymentMethodId: paymentMethodType === 'card' ? (selectedCardId ? String(selectedCardId) : 'new') : undefined,
-          saveCard: false,
-          paymentMethod: paymentMethodType, // 'card' or 'pay_at_hotel'
+          paymentMethodId: selectedCardId ? String(selectedCardId) : 'new',
+          saveCard: false, // Can be set based on user preference
         });
 
         // Update booking data with response
         updateBookingData({
-          payment: paymentMethodType === 'card' ? paymentData : { paymentMethod: 'pay_at_hotel' },
+          payment: paymentData,
           bookingNumber: bookingResponse.bookingNumber || bookingResponse.id || `RES-${bookingResponse.id}`,
         });
 
-        const successMsg = paymentMethodType === 'pay_at_hotel'
-          ? 'Booking confirmed! Payment will be collected at check-in.'
-          : 'Booking created successfully!';
-        toast.success(successMsg);
+        toast.success('Booking created successfully!');
       }
       onNext();
     } catch (error: any) {
@@ -276,100 +267,6 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
         ? 'Failed to modify booking. Please try again.'
         : 'Failed to create booking. Please try again.';
       toast.error(error.response?.data?.detail || error.message || defaultErrorMsg);
-      setIsProcessing(false);
-    }
-  };
-
-  // Handler for Pay at Hotel submissions (bypasses card validation)
-  const handlePayAtHotelSubmit = async () => {
-    setIsProcessing(true);
-
-    try {
-      // Validate booking data
-      if (!bookingData.room || !bookingData.checkIn || !bookingData.checkOut) {
-        toast.error('Missing booking information. Please go back and complete all steps.');
-        setIsProcessing(false);
-        return;
-      }
-
-      if (!bookingData.guestInfo.firstName || !bookingData.guestInfo.lastName || !bookingData.guestInfo.email || !bookingData.guestInfo.phone) {
-        toast.error('Missing guest information. Please go back and complete your details.');
-        setIsProcessing(false);
-        return;
-      }
-
-      let bookingResponse;
-
-      // Check if we're in modification mode
-      if (bookingData.isModifyMode && bookingData.originalBooking?.id) {
-        console.log('[PaymentStep] UPDATING existing booking with Pay at Hotel:', bookingData.originalBooking.id);
-        // Update existing booking instead of creating new one
-        // Note: Don't send roomId for modifications - the backend keeps the original room assignment
-        bookingResponse = await bookingService.updateBooking(
-          bookingData.originalBooking.id,
-          {
-            checkIn: bookingData.checkIn,
-            checkOut: bookingData.checkOut,
-            guests: {
-              adults: bookingData.guests.adults,
-              children: bookingData.guests.children,
-              infants: 0,
-            },
-            guestInfo: {
-              firstName: bookingData.guestInfo.firstName,
-              lastName: bookingData.guestInfo.lastName,
-              email: bookingData.guestInfo.email,
-              phone: bookingData.guestInfo.phone,
-              country: bookingData.guestInfo.country || 'US',
-              specialRequests: bookingData.guestInfo.specialRequests || '',
-            },
-          }
-        );
-
-        // Update booking data with response
-        updateBookingData({
-          payment: { paymentMethod: 'pay_at_hotel' },
-          bookingNumber: bookingResponse.bookingNumber || bookingData.originalBooking.bookingNumber,
-        });
-
-        toast.success('Booking modified successfully!');
-      } else {
-        console.log('[PaymentStep] CREATING new booking with Pay at Hotel');
-        bookingResponse = await bookingService.createBooking({
-          roomId: String(bookingData.room.id),
-          checkIn: bookingData.checkIn,
-          checkOut: bookingData.checkOut,
-          guests: {
-            adults: bookingData.guests.adults,
-            children: bookingData.guests.children,
-            infants: 0,
-          },
-          guestInfo: {
-            firstName: bookingData.guestInfo.firstName,
-            lastName: bookingData.guestInfo.lastName,
-            email: bookingData.guestInfo.email,
-            phone: bookingData.guestInfo.phone,
-            country: bookingData.guestInfo.country || 'US',
-            specialRequests: bookingData.guestInfo.specialRequests || '',
-          },
-          paymentMethod: 'pay_at_hotel',
-        });
-
-        // Update booking data with response
-        updateBookingData({
-          payment: { paymentMethod: 'pay_at_hotel' },
-          bookingNumber: bookingResponse.bookingNumber || bookingResponse.id || `RES-${bookingResponse.id}`,
-        });
-
-        toast.success('Booking confirmed! Payment will be collected at check-in.');
-      }
-      onNext();
-    } catch (error: any) {
-      console.error('Booking error:', error);
-      const errorMsg = bookingData.isModifyMode
-        ? 'Failed to modify booking. Please try again.'
-        : 'Failed to create booking. Please try again.';
-      toast.error(error.response?.data?.detail || error.message || errorMsg);
       setIsProcessing(false);
     }
   };
@@ -388,18 +285,13 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
     return value && value.length > 0 && !errors[fieldName as keyof typeof errors];
   };
 
-  // Auto-send OTP when component mounts if email is available (skip in modify mode)
+  // Auto-send OTP when component mounts if email is available
   useEffect(() => {
-    // Skip OTP in modify mode - user is already verified from original booking
-    if (bookingData.isModifyMode) {
-      setOtpVerified(true);
-      return;
-    }
     const email = bookingData.guestInfo?.email || user?.email;
     if (email && !otpSent && !otpVerified) {
       handleSendOTP();
     }
-  }, [bookingData.isModifyMode]);
+  }, []);
 
   const handleSendOTP = async () => {
     const email = bookingData.guestInfo?.email || user?.email;
@@ -452,73 +344,6 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
       toast.error('Invalid verification code');
     } finally {
       setVerifyingOtp(false);
-    }
-  };
-
-  // Calculate balance for modification mode
-  const calculateNewTotal = () => {
-    if (!bookingData.room?.price || !bookingData.checkIn || !bookingData.checkOut) return 0;
-    const nights = differenceInDays(parseISO(bookingData.checkOut), parseISO(bookingData.checkIn));
-    if (nights <= 0) return 0;
-    const subtotal = bookingData.room.price * nights;
-    const taxes = subtotal * 0.12;
-    const serviceFee = subtotal * 0.05;
-    return subtotal + taxes + serviceFee;
-  };
-
-  const newTotal = calculateNewTotal();
-  const originalTotal = bookingData.originalBooking?.totalPrice || 0;
-  const balanceAmount = bookingData.isModifyMode ? newTotal - originalTotal : 0;
-  const needsPayment = balanceAmount > 0;
-  const isRefund = balanceAmount < 0;
-
-  // Handler for modification without additional payment (refund or same price)
-  const handleModifyWithoutPayment = async () => {
-    setIsProcessing(true);
-    try {
-      if (!bookingData.originalBooking?.id) {
-        toast.error('Original booking not found');
-        setIsProcessing(false);
-        return;
-      }
-
-      console.log('[PaymentStep] UPDATING booking without additional payment:', bookingData.originalBooking.id);
-      // Note: Don't send roomId for modifications - the backend keeps the original room assignment
-      const bookingResponse = await bookingService.updateBooking(
-        bookingData.originalBooking.id,
-        {
-          checkIn: bookingData.checkIn,
-          checkOut: bookingData.checkOut,
-          guests: {
-            adults: bookingData.guests.adults,
-            children: bookingData.guests.children,
-            infants: 0,
-          },
-          guestInfo: {
-            firstName: bookingData.guestInfo.firstName,
-            lastName: bookingData.guestInfo.lastName,
-            email: bookingData.guestInfo.email,
-            phone: bookingData.guestInfo.phone,
-            country: bookingData.guestInfo.country || 'US',
-            specialRequests: bookingData.guestInfo.specialRequests || '',
-          },
-        }
-      );
-
-      updateBookingData({
-        payment: { paymentMethod: 'modification_no_payment' },
-        bookingNumber: bookingResponse.bookingNumber || bookingData.originalBooking.bookingNumber,
-      });
-
-      const message = isRefund
-        ? `Booking modified! A refund of $${Math.abs(balanceAmount).toFixed(2)} will be processed.`
-        : 'Booking modified successfully!';
-      toast.success(message);
-      onNext();
-    } catch (error: any) {
-      console.error('Modification error:', error);
-      toast.error(error.response?.data?.detail || error.message || 'Failed to modify booking');
-      setIsProcessing(false);
     }
   };
 
@@ -617,120 +442,6 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
     );
   }
 
-  // Show simplified modification UI when no additional payment is needed (refund or same price)
-  if (bookingData.isModifyMode && !needsPayment) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl p-8 sm:p-10 border border-neutral-200 shadow-lg"
-      >
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center shadow-md ${
-              isRefund ? 'bg-green-600' : 'bg-blue-600'
-            }`}>
-              {isRefund ? (
-                <DollarSign className="w-6 h-6 text-white" strokeWidth={2.5} />
-              ) : (
-                <RefreshCw className="w-6 h-6 text-white" strokeWidth={2.5} />
-              )}
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-neutral-900">
-                {isRefund ? 'Confirm Modification & Refund' : 'Confirm Modification'}
-              </h2>
-              <p className="text-neutral-600">
-                {isRefund
-                  ? 'Your booking will be updated and a refund will be processed'
-                  : 'Review your changes and confirm the modification'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          {/* Modification Summary */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
-            <h3 className="font-semibold text-blue-900 mb-3">Booking Changes</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-blue-700">Original Booking</span>
-                <span className="font-medium text-blue-900">#{bookingData.originalBooking?.bookingNumber}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-blue-700">Original Total</span>
-                <span className="font-medium text-blue-900">${originalTotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-blue-700">New Total</span>
-                <span className="font-medium text-blue-900">${newTotal.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Refund Info */}
-          {isRefund && (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-5">
-              <div className="flex items-center gap-3">
-                <DollarSign className="w-6 h-6 text-green-600" />
-                <div>
-                  <p className="font-semibold text-green-900">Refund Amount</p>
-                  <p className="text-2xl font-bold text-green-700">${Math.abs(balanceAmount).toFixed(2)}</p>
-                  <p className="text-sm text-green-600 mt-1">
-                    Will be refunded to your original payment method within 5-7 business days
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* No Change Info */}
-          {!isRefund && balanceAmount === 0 && (
-            <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-5">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-6 h-6 text-neutral-600" />
-                <div>
-                  <p className="font-semibold text-neutral-900">No Payment Required</p>
-                  <p className="text-sm text-neutral-600">
-                    The total remains the same. No additional charges or refunds.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Confirm Button */}
-          <motion.button
-            type="button"
-            onClick={handleModifyWithoutPayment}
-            disabled={isProcessing}
-            whileHover={{ scale: isProcessing ? 1 : 1.01 }}
-            whileTap={{ scale: isProcessing ? 1 : 0.99 }}
-            className={`w-full py-5 font-bold text-lg rounded-lg transition-all shadow-lg flex items-center justify-center gap-3 ${
-              isRefund
-                ? 'bg-green-600 hover:bg-green-700 text-white'
-                : 'bg-primary-600 hover:bg-primary-700 text-white'
-            } ${isProcessing ? 'opacity-75 cursor-not-allowed' : ''}`}
-          >
-            {isProcessing ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>Processing...</span>
-              </>
-            ) : (
-              <>
-                <CheckCircle className="w-5 h-5" strokeWidth={2.5} />
-                <span>{isRefund ? 'Confirm & Process Refund' : 'Confirm Modification'}</span>
-                <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
-              </>
-            )}
-          </motion.button>
-        </div>
-      </motion.div>
-    );
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -778,99 +489,9 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
         </motion.div>
       </div>
 
-      {/* Payment Method Selection */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-6"
-      >
-        <label className="block text-sm font-semibold text-neutral-900 mb-3">
-          Choose Payment Method
-        </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Pay Now with Card */}
-          <button
-            type="button"
-            onClick={() => setPaymentMethodType('card')}
-            className={`relative flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 ${
-              paymentMethodType === 'card'
-                ? 'border-primary-600 bg-primary-50 shadow-md'
-                : 'border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50'
-            }`}
-          >
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-              paymentMethodType === 'card' ? 'bg-primary-600' : 'bg-neutral-100'
-            }`}>
-              <CreditCard className={`w-6 h-6 ${paymentMethodType === 'card' ? 'text-white' : 'text-neutral-600'}`} />
-            </div>
-            <div className="text-left flex-1">
-              <p className={`font-semibold ${paymentMethodType === 'card' ? 'text-primary-900' : 'text-neutral-900'}`}>
-                Pay Now
-              </p>
-              <p className={`text-sm ${paymentMethodType === 'card' ? 'text-primary-700' : 'text-neutral-500'}`}>
-                Secure card payment
-              </p>
-            </div>
-            {paymentMethodType === 'card' && (
-              <CheckCircle className="w-5 h-5 text-primary-600" />
-            )}
-          </button>
-
-          {/* Pay at Hotel */}
-          <button
-            type="button"
-            onClick={() => setPaymentMethodType('pay_at_hotel')}
-            className={`relative flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 ${
-              paymentMethodType === 'pay_at_hotel'
-                ? 'border-amber-500 bg-amber-50 shadow-md'
-                : 'border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50'
-            }`}
-          >
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-              paymentMethodType === 'pay_at_hotel' ? 'bg-amber-500' : 'bg-neutral-100'
-            }`}>
-              <Banknote className={`w-6 h-6 ${paymentMethodType === 'pay_at_hotel' ? 'text-white' : 'text-neutral-600'}`} />
-            </div>
-            <div className="text-left flex-1">
-              <p className={`font-semibold ${paymentMethodType === 'pay_at_hotel' ? 'text-amber-900' : 'text-neutral-900'}`}>
-                Pay at Hotel
-              </p>
-              <p className={`text-sm ${paymentMethodType === 'pay_at_hotel' ? 'text-amber-700' : 'text-neutral-500'}`}>
-                Pay during check-in
-              </p>
-            </div>
-            {paymentMethodType === 'pay_at_hotel' && (
-              <CheckCircle className="w-5 h-5 text-amber-600" />
-            )}
-          </button>
-        </div>
-      </motion.div>
-
-      {/* Pay at Hotel Info */}
-      {paymentMethodType === 'pay_at_hotel' && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl"
-        >
-          <div className="flex items-start gap-3">
-            <Banknote className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-amber-900">Pay at Hotel Selected</p>
-              <p className="text-sm text-amber-700 mt-1">
-                Your booking will be confirmed immediately. Payment will be collected at the hotel during check-in.
-                Please bring a valid ID and payment method.
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Card Payment Form - only shown when Pay Now is selected */}
-      {paymentMethodType === 'card' && (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Saved Cards Dropdown */}
-          {savedCards.length > 0 && (
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* Saved Cards Dropdown */}
+        {savedCards.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1375,64 +996,19 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
           )}
         </motion.button>
 
-          {/* Terms & Conditions */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="text-center"
-          >
-            <p className="text-sm text-neutral-600 font-medium">
-              By completing this booking, you agree to our{' '}
-              <span className="text-primary-600 font-semibold">Terms & Conditions</span>
-            </p>
-          </motion.div>
-        </form>
-      )}
-
-      {/* Pay at Hotel Submit Button - shown when Pay at Hotel is selected */}
-      {paymentMethodType === 'pay_at_hotel' && (
-        <div className="space-y-6">
-          <motion.button
-            type="button"
-            onClick={handlePayAtHotelSubmit}
-            disabled={isProcessing}
-            whileHover={{ scale: isProcessing ? 1 : 1.01 }}
-            whileTap={{ scale: isProcessing ? 1 : 0.99 }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`w-full py-5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-lg rounded-lg transition-all shadow-lg flex items-center justify-center gap-3 group ${
-              isProcessing ? 'opacity-75 cursor-not-allowed' : ''
-            }`}
-          >
-            {isProcessing ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>Confirming Booking...</span>
-              </>
-            ) : (
-              <>
-                <Banknote className="w-5 h-5 group-hover:scale-110 transition-transform" strokeWidth={2.5} />
-                <span>Confirm Booking - Pay at Hotel</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
-              </>
-            )}
-          </motion.button>
-
-          {/* Terms & Conditions */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-center"
-          >
-            <p className="text-sm text-neutral-600 font-medium">
-              By completing this booking, you agree to our{' '}
-              <span className="text-primary-600 font-semibold">Terms & Conditions</span>
-            </p>
-          </motion.div>
-        </div>
-      )}
+        {/* Terms & Conditions */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="text-center"
+        >
+          <p className="text-sm text-neutral-600 font-medium">
+            By completing this booking, you agree to our{' '}
+            <span className="text-primary-600 font-semibold">Terms & Conditions</span>
+          </p>
+        </motion.div>
+      </form>
     </motion.div>
   );
 }

@@ -60,6 +60,7 @@ function ReputationAIContent() {
     updateFilters,
     updateSettings,
     addReviewResponse,
+    generateAutoReply,
     influenceChurnProbability,
     influenceLTVCurve,
     affectRateRecommendations,
@@ -170,10 +171,10 @@ function ReputationAIContent() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#FAF7F4]">
+      <div className="flex-1 flex items-center justify-center bg-[#FAF7F4] px-4">
         <div className="text-center">
-          <RefreshCw className="w-8 h-8 text-[#A57865] animate-spin mx-auto mb-2" />
-          <p className="text-neutral-600">Loading reputation data...</p>
+          <RefreshCw className="w-6 h-6 sm:w-8 sm:h-8 text-[#A57865] animate-spin mx-auto mb-2" />
+          <p className="text-sm sm:text-base text-neutral-600">Loading reputation data...</p>
         </div>
       </div>
     );
@@ -181,14 +182,14 @@ function ReputationAIContent() {
 
   if (error) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#FAF7F4]">
-        <div className="text-center max-w-md">
-          <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-neutral-900 mb-2">Failed to Load Data</h3>
-          <p className="text-neutral-600 mb-4">{error}</p>
+      <div className="flex-1 flex items-center justify-center bg-[#FAF7F4] px-4">
+        <div className="text-center max-w-md w-full">
+          <AlertTriangle className="w-10 h-10 sm:w-12 sm:h-12 text-amber-500 mx-auto mb-3 sm:mb-4" />
+          <h3 className="text-base sm:text-lg font-semibold text-neutral-900 mb-2">Failed to Load Data</h3>
+          <p className="text-sm sm:text-base text-neutral-600 mb-4">{error}</p>
           <button
             onClick={handleRefresh}
-            className="px-4 py-2 bg-[#A57865] text-white rounded-lg hover:bg-[#A57865]/90 transition-colors"
+            className="px-4 py-2 bg-[#A57865] text-white rounded-lg hover:bg-[#A57865]/90 transition-colors text-sm sm:text-base"
           >
             Try Again
           </button>
@@ -198,147 +199,165 @@ function ReputationAIContent() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#FAF7F4]">
-      <div className="max-w-[1600px] mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-start justify-between">
+    <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
+        {/* Page Header */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-xl bg-[#A57865] flex items-center justify-center">
-                <MessageSquare className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-neutral-900">Reputation AI</h1>
-                <p className="text-sm text-neutral-500">
-                  Review intelligence, sentiment analysis & automated responses
-                </p>
-              </div>
-            </div>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
+              Reputation AI
+            </h1>
+            <p className="text-[12px] sm:text-[13px] text-neutral-500 mt-1">
+              <span className="hidden sm:inline">Review intelligence, sentiment analysis & automated responses</span>
+              <span className="sm:hidden">Review intelligence & sentiment</span>
+            </p>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-neutral-400">
-              Last updated: {lastUpdated.toLocaleTimeString()}
-            </span>
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className={`flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors ${isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+              className={`flex items-center gap-1.5 sm:gap-2 h-8 sm:h-9 px-3 sm:px-4 bg-white border border-neutral-200 rounded-lg text-[12px] sm:text-[13px] font-medium text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 transition-colors ${
+                isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              Refresh AI Analysis
+              <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Refresh</span>
             </button>
             <button
               onClick={handleExportCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-[#A57865] hover:bg-[#A57865]/90 text-white rounded-xl text-sm font-semibold transition-colors"
+              className="flex items-center gap-1.5 sm:gap-2 h-8 sm:h-9 px-3 sm:px-4 bg-terra-500 hover:bg-terra-600 text-white rounded-lg text-[12px] sm:text-[13px] font-semibold transition-colors"
             >
-              <Download className="w-4 h-4" />
-              Export CSV
+              <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Export CSV</span>
+              <span className="sm:hidden">Export</span>
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* Tab Navigation */}
-        <div className="bg-white rounded-xl border border-neutral-200 p-1 flex gap-1">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            const badgeCount = tab.id === 'alerts' ? activeAlertCount :
-              tab.id === 'approvals' ? pendingApprovalCount : 0;
+        {/* KPI Cards */}
+        <SentimentSummary metrics={metrics} />
 
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${isActive
-                  ? 'bg-[#A57865] text-white'
-                  : 'text-neutral-600 hover:bg-neutral-50'
-                  }`}
-              >
-                <Icon className="w-4 h-4" />
-                {tab.label}
-                {badgeCount > 0 && (
-                  <span className={`ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-full ${isActive ? 'bg-white text-[#A57865]' : 'bg-red-500 text-white'
-                    }`}>
-                    {badgeCount}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        {/* Main Content Card */}
+        <div className="bg-white rounded-[10px] overflow-hidden">
+          {/* Tabs */}
+          <div className="border-b border-neutral-100">
+            <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-6 pt-3 sm:pt-4">
+              <div className="flex items-center gap-0.5 min-w-max">
+                {TABS.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  const badgeCount = tab.id === 'alerts' ? activeAlertCount :
+                                    tab.id === 'approvals' ? pendingApprovalCount : 0;
 
-        {/* Tab Content */}
-        {activeTab === 'overview' && (
-          <>
-            {/* Filters Bar */}
-            <FiltersBar filters={filters} onFilterChange={updateFilters} />
-
-            {/* Sentiment Summary KPIs */}
-            <SentimentSummary metrics={metrics} />
-
-            {/* Main Charts Row */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <SentimentTrendChart data={sentiment} />
-              <OTAScoreChart data={otaRatings} />
-            </div>
-
-            {/* Secondary Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <KeywordFrequency data={keywords} />
-              <div className="lg:col-span-2">
-                <ReviewFeed reviews={filteredReviews} onReviewClick={handleReviewClick} />
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`relative px-3 sm:px-4 py-2.5 sm:py-3 text-[12px] sm:text-[13px] font-semibold transition-all duration-150 whitespace-nowrap ${
+                        isActive ? 'text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5 sm:gap-2">
+                        <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline">{tab.label}</span>
+                        {badgeCount > 0 && (
+                          <span className="min-w-[16px] h-[16px] sm:min-w-[18px] sm:h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] sm:text-[11px] font-semibold flex items-center justify-center">
+                            {badgeCount}
+                          </span>
+                        )}
+                      </span>
+                      {isActive && (
+                        <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-terra-500 rounded-t-full" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
-
-            {/* AI Integration Row */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <ImpactOnRevenue
-                sentimentData={sentiment}
-                recommendations={affectRateRecommendations}
-              />
-              <CRMGuestImpact
-                review={selectedReview}
-                influenceChurnProbability={influenceChurnProbability}
-                influenceLTVCurve={influenceLTVCurve}
-              />
-            </div>
-
-            {/* Engine Stats Footer */}
-            <EngineStats compact />
-          </>
-        )}
-
-        {activeTab === 'alerts' && (
-          <AlertsPanel />
-        )}
-
-        {activeTab === 'goals' && (
-          <GoalsPanel />
-        )}
-
-        {activeTab === 'categories' && (
-          <CategoryManager />
-        )}
-
-        {activeTab === 'approvals' && (
-          <ApprovalQueue />
-        )}
-
-        {activeTab === 'settings' && (
-          <div className="space-y-6">
-            {/* Auto-Reply Engine */}
-            <AutoReplies settings={settings} onSettingsChange={updateSettings} />
-
-            {/* Templates Manager */}
-            <TemplatesManager />
-
-            {/* Engine Stats (full version) */}
-            <EngineStats />
           </div>
-        )}
+
+          {/* Tab Content */}
+          {activeTab === 'overview' && (
+            <>
+              {/* Filters */}
+              <div className="px-4 sm:px-6 py-3 sm:py-4 bg-neutral-50/30 border-b border-neutral-100">
+                <FiltersBar filters={filters} onFilterChange={updateFilters} />
+              </div>
+
+              {/* Overview Content */}
+              <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+                {/* Main Charts Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                  <SentimentTrendChart data={sentiment} />
+                  <OTAScoreChart data={otaRatings} />
+                </div>
+
+                {/* Secondary Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
+                  <KeywordFrequency data={keywords} />
+                  <div className="lg:col-span-2">
+                    <ReviewFeed reviews={filteredReviews} onReviewClick={handleReviewClick} />
+                  </div>
+                </div>
+
+                {/* AI Integration Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                  <ImpactOnRevenue
+                    sentimentData={sentiment}
+                    recommendations={affectRateRecommendations}
+                  />
+                  <CRMGuestImpact
+                    review={selectedReview}
+                    influenceChurnProbability={influenceChurnProbability}
+                    influenceLTVCurve={influenceLTVCurve}
+                  />
+                </div>
+
+                {/* Engine Stats Footer */}
+                <EngineStats compact />
+              </div>
+            </>
+          )}
+
+          {activeTab === 'alerts' && (
+            <div className="p-4 sm:p-6">
+              <AlertsPanel />
+            </div>
+          )}
+
+          {activeTab === 'goals' && (
+            <div className="p-4 sm:p-6">
+              <GoalsPanel />
+            </div>
+          )}
+
+          {activeTab === 'categories' && (
+            <div className="p-4 sm:p-6">
+              <CategoryManager />
+            </div>
+          )}
+
+          {activeTab === 'approvals' && (
+            <div className="p-4 sm:p-6">
+              <ApprovalQueue />
+            </div>
+          )}
+
+          {activeTab === 'settings' && (
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+              {/* Auto-Reply Engine */}
+              <AutoReplies settings={settings} onSettingsChange={updateSettings} />
+
+              {/* Templates Manager */}
+              <TemplatesManager />
+
+              {/* Engine Stats (full version) */}
+              <EngineStats />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Review Detail Drawer */}
@@ -347,6 +366,7 @@ function ReputationAIContent() {
           review={selectedReview}
           onClose={handleCloseDrawer}
           onRespond={handleRespondToReview}
+          generateAutoReply={generateAutoReply}
           guestCRMData={{
             totalStays: selectedReview.guest_stays || 1,
             ltv: selectedReview.guest_ltv || 50000,

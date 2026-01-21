@@ -121,68 +121,17 @@ export default function Staff() {
     }
   };
 
-  const handleAssignShift = async (id, shiftData) => {
+  const handleAssignShift = (id, shiftData) => {
     // Handle multiple days if it's an array
     if (Array.isArray(shiftData)) {
-      let newCount = 0;
-      let updateCount = 0;
-      let duplicateCount = 0;
-      let warnings: string[] = [];
-
       // Assign each day individually
-      for (const dayData of shiftData) {
-        const result = await assignShift(id, dayData);
-        if (result.isDuplicate) {
-          duplicateCount++;
-        } else if (result.isUpdate) {
-          updateCount++;
-          if (result.warning) warnings.push(result.warning);
-        } else if (result.success) {
-          newCount++;
-          if (result.warning) warnings.push(result.warning);
-        }
-      }
-
-      // Show appropriate message based on results
-      if (duplicateCount > 0) {
-        toast.error(`${duplicateCount} shift(s) skipped - already assigned with same details`, { duration: 5000, icon: '⚠️' });
-      }
-      if (updateCount > 0 && newCount > 0) {
-        toast.info(`${newCount} new shift(s) assigned, ${updateCount} existing shift(s) updated`);
-      } else if (updateCount > 0) {
-        toast.info(`${updateCount} existing shift(s) updated`);
-      } else if (newCount > 0) {
-        toast.success(`Shift assigned for ${newCount} days`);
-      }
+      shiftData.forEach(dayData => {
+        assignShift(id, dayData);
+      });
+      toast.success(`Shift assigned for ${shiftData.length} days`);
     } else {
-      const result = await assignShift(id, shiftData);
-
-      // Handle duplicate/error
-      if (result.isDuplicate) {
-        toast.error(result.error || 'This exact shift is already assigned', { duration: 5000, icon: '⚠️' });
-        return;
-      }
-
-      if (!result.success && result.error) {
-        toast.error(result.error);
-        return;
-      }
-
-      if (result.isUpdate) {
-        // Format the date for display
-        const dateStr = new Date(shiftData.date).toLocaleDateString('en-US', {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric'
-        });
-        toast.info(`Shift for ${dateStr} has been updated`);
-        // Show warning if there was a previous shift
-        if (result.warning) {
-          toast(result.warning, { icon: '⚠️', duration: 5000 });
-        }
-      } else {
-        toast.success('Shift assigned successfully');
-      }
+      assignShift(id, shiftData);
+      toast.success('Shift assigned successfully');
     }
   };
 
@@ -202,25 +151,9 @@ export default function Staff() {
     toast.success('Staff member added successfully');
   };
 
-  const handleEditStaff = async (id, updates) => {
-    const result = await editStaff(id, updates);
-
-    if (result?.success === false) {
-      toast.error(result.error || 'Failed to update staff');
-      return;
-    }
-
+  const handleEditStaff = (id, updates) => {
+    editStaff(id, updates);
     toast.success('Staff details updated');
-
-    // Show warning if there are floor assignment conflicts
-    if (result?.warning) {
-      toast(result.warning, {
-        icon: '⚠️',
-        duration: 6000,
-        style: { background: '#FEF3C7', border: '1px solid #F59E0B' }
-      });
-    }
-
     // Update drawer if currently viewing this staff
     if (selectedStaff && selectedStaff.id === id) {
       setSelectedStaff(prev => ({ ...prev, ...updates }));
@@ -296,41 +229,44 @@ export default function Staff() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <div className="px-10 py-6 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Page Header */}
-        <header className="flex items-center justify-between">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
               Staff Management
             </h1>
-            <p className="text-[13px] text-neutral-500 mt-1">
+            <p className="text-[12px] sm:text-[13px] text-neutral-500 mt-1">
               Manage your hotel staff, assign shifts, and monitor performance
             </p>
           </div>
 
           {/* Quick Actions */}
-          <div className="flex items-center gap-3">
-            <Button variant="outline" icon={Download} onClick={handleExport}>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Button variant="outline" icon={Download} onClick={handleExport} className="hidden sm:flex">
               Export
             </Button>
             <Button variant="primary" icon={UserPlus} onClick={() => setIsAddModalOpen(true)}>
-              Add Staff
+              <span className="hidden sm:inline">Add Staff</span>
+              <span className="sm:hidden">Add</span>
             </Button>
           </div>
         </header>
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 p-1.5 bg-white rounded-lg w-fit">
-          <StaffTabs
-            activeTab={activeDepartment}
-            onTabChange={setActiveDepartment}
-            counts={departmentCounts}
-          />
+        <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+          <div className="flex items-center gap-1 p-1.5 bg-white rounded-lg w-fit">
+            <StaffTabs
+              activeTab={activeDepartment}
+              onTabChange={setActiveDepartment}
+              counts={departmentCounts}
+            />
+          </div>
         </div>
 
         {/* Search and Filters */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="w-[400px]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="w-full sm:w-[400px]">
             <StaffSearch value={searchQuery} onChange={setSearchQuery} />
           </div>
           <StaffFilters
@@ -351,7 +287,7 @@ export default function Staff() {
 
         {/* Pagination */}
         {staff.length > 0 && (
-          <div className="bg-white rounded-[10px] px-6 py-4">
+          <div className="bg-white rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
             <Pagination
               currentPage={pagination.currentPage}
               totalPages={pagination.totalPages}

@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function EditFeeModal({ fee, onClose, onSave }) {
+  const { symbol } = useCurrency();
   const [form, setForm] = useState({
     name: '',
     type: 'percentage',
@@ -126,7 +128,7 @@ export default function EditFeeModal({ fee, onClose, onSave }) {
                   : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
               }`}
             >
-              Fixed Amount ($)
+              Fixed Amount ({symbol})
             </button>
           </div>
         </div>
@@ -134,7 +136,7 @@ export default function EditFeeModal({ fee, onClose, onSave }) {
         {/* Value */}
         <div>
           <label className={labelClass}>
-            {form.type === 'percentage' ? 'Rate (%)' : 'Amount ($)'} <span className="text-rose-500">*</span>
+            {form.type === 'percentage' ? 'Rate (%)' : `Amount (${symbol})`} <span className="text-rose-500">*</span>
           </label>
           <input
             type="number"

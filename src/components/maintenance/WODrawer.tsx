@@ -249,10 +249,10 @@ export default function WODrawer({
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Issue Details
           </h4>
-          <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-100">
-            <p className="text-[14px] font-semibold text-neutral-900">{workOrder.issue}</p>
+          <div className="p-3 sm:p-4 bg-neutral-50 rounded-lg border border-neutral-100">
+            <p className="text-[13px] sm:text-[14px] font-semibold text-neutral-900">{workOrder.issue}</p>
             {workOrder.description && (
-              <p className="text-[13px] text-neutral-600 mt-2 leading-relaxed">{workOrder.description}</p>
+              <p className="text-[12px] sm:text-[13px] text-neutral-600 mt-2 leading-relaxed">{workOrder.description}</p>
             )}
           </div>
         </div>
@@ -262,53 +262,53 @@ export default function WODrawer({
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Details
           </h4>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-lg border border-neutral-100">
-              <div className="w-8 h-8 rounded-lg bg-terra-100 flex items-center justify-center">
-                <MapPin className="w-4 h-4 text-terra-600" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-neutral-50 rounded-lg border border-neutral-100">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-terra-100 flex items-center justify-center flex-shrink-0">
+                <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-terra-600" />
               </div>
-              <div>
-                <p className="text-[11px] text-neutral-500 uppercase tracking-wide">Room</p>
-                <p className="text-[13px] font-semibold text-neutral-900">
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-[11px] text-neutral-500 uppercase tracking-wide">Room</p>
+                <p className="text-[12px] sm:text-[13px] font-semibold text-neutral-900 truncate">
                   {workOrder.roomNumber || 'Common Area'}
                 </p>
                 {workOrder.roomType && (
-                  <p className="text-[11px] text-neutral-400">{workOrder.roomType}</p>
+                  <p className="text-[10px] sm:text-[11px] text-neutral-400 truncate">{workOrder.roomType}</p>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-lg border border-neutral-100">
-              <div className="w-8 h-8 rounded-lg bg-sage-100 flex items-center justify-center">
-                <Tag className="w-4 h-4 text-sage-600" />
+            <div className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-neutral-50 rounded-lg border border-neutral-100">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-sage-100 flex items-center justify-center flex-shrink-0">
+                <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sage-600" />
               </div>
-              <div>
-                <p className="text-[11px] text-neutral-500 uppercase tracking-wide">Category</p>
-                <p className="text-[13px] font-semibold text-neutral-900">{categoryLabel}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-[11px] text-neutral-500 uppercase tracking-wide">Category</p>
+                <p className="text-[12px] sm:text-[13px] font-semibold text-neutral-900 truncate">{categoryLabel}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-lg border border-neutral-100">
-              <div className="w-8 h-8 rounded-lg bg-terra-100 flex items-center justify-center">
-                <User className="w-4 h-4 text-terra-600" />
+            <div className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-neutral-50 rounded-lg border border-neutral-100">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-terra-100 flex items-center justify-center flex-shrink-0">
+                <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-terra-600" />
               </div>
-              <div>
-                <p className="text-[11px] text-neutral-500 uppercase tracking-wide">Assigned To</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-[11px] text-neutral-500 uppercase tracking-wide">Assigned To</p>
                 {workOrder.technicianName ? (
-                  <p className="text-[13px] font-semibold text-neutral-900">{workOrder.technicianName}</p>
+                  <p className="text-[12px] sm:text-[13px] font-semibold text-neutral-900 truncate">{workOrder.technicianName}</p>
                 ) : (
-                  <p className="text-[13px] text-neutral-400 italic">Unassigned</p>
+                  <p className="text-[12px] sm:text-[13px] text-neutral-400 italic">Unassigned</p>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-lg border border-neutral-100">
-              <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                <Clock className="w-4 h-4 text-blue-600" />
+            <div className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-neutral-50 rounded-lg border border-neutral-100">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
               </div>
-              <div>
-                <p className="text-[11px] text-neutral-500 uppercase tracking-wide">Created</p>
-                <p className="text-[13px] font-semibold text-neutral-900">{formatDateTime(workOrder.createdAt)}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-[11px] text-neutral-500 uppercase tracking-wide">Created</p>
+                <p className="text-[12px] sm:text-[13px] font-semibold text-neutral-900 truncate">{formatDateTime(workOrder.createdAt)}</p>
               </div>
             </div>
           </div>
@@ -322,25 +322,25 @@ export default function WODrawer({
             </h4>
             <div className="space-y-2">
               {workOrder.estimatedCompletion && (
-                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Clock className="w-4 h-4 text-blue-600" />
+                <div className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-blue-50 rounded-lg border border-blue-100">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
                   </div>
-                  <div>
-                    <p className="text-[11px] text-blue-600 font-medium uppercase tracking-wide">Est. Completion</p>
-                    <p className="text-[13px] font-semibold text-neutral-900">{formatDateTime(workOrder.estimatedCompletion)}</p>
+                  <div className="min-w-0">
+                    <p className="text-[10px] sm:text-[11px] text-blue-600 font-medium uppercase tracking-wide">Est. Completion</p>
+                    <p className="text-[12px] sm:text-[13px] font-semibold text-neutral-900 truncate">{formatDateTime(workOrder.estimatedCompletion)}</p>
                   </div>
                 </div>
               )}
 
               {workOrder.completedAt && (
-                <div className="flex items-center gap-3 p-3 bg-sage-50 rounded-lg border border-sage-100">
-                  <div className="w-8 h-8 rounded-lg bg-sage-100 flex items-center justify-center">
-                    <CheckCircle className="w-4 h-4 text-sage-600" />
+                <div className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-sage-50 rounded-lg border border-sage-100">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-sage-100 flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sage-600" />
                   </div>
-                  <div>
-                    <p className="text-[11px] text-sage-600 font-medium uppercase tracking-wide">Completed</p>
-                    <p className="text-[13px] font-semibold text-neutral-900">{formatDateTime(workOrder.completedAt)}</p>
+                  <div className="min-w-0">
+                    <p className="text-[10px] sm:text-[11px] text-sage-600 font-medium uppercase tracking-wide">Completed</p>
+                    <p className="text-[12px] sm:text-[13px] font-semibold text-neutral-900 truncate">{formatDateTime(workOrder.completedAt)}</p>
                   </div>
                 </div>
               )}
@@ -354,8 +354,8 @@ export default function WODrawer({
             <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
               Notes
             </h4>
-            <div className="p-4 bg-gold-50 rounded-lg border border-gold-100">
-              <p className="text-[13px] text-neutral-700 whitespace-pre-wrap leading-relaxed">{workOrder.notes}</p>
+            <div className="p-3 sm:p-4 bg-gold-50 rounded-lg border border-gold-100">
+              <p className="text-[12px] sm:text-[13px] text-neutral-700 whitespace-pre-wrap leading-relaxed">{workOrder.notes}</p>
             </div>
           </div>
         )}
@@ -366,18 +366,18 @@ export default function WODrawer({
             <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
               Activity Log
             </h4>
-            <div className="bg-neutral-50 rounded-lg border border-neutral-100 p-4 space-y-3">
+            <div className="bg-neutral-50 rounded-lg border border-neutral-100 p-3 sm:p-4 space-y-2.5 sm:space-y-3">
               {workOrder.activityLog.slice().reverse().map((log, index) => (
                 <div
                   key={log.id || index}
-                  className="relative pl-4 border-l-2 border-neutral-200"
+                  className="relative pl-3 sm:pl-4 border-l-2 border-neutral-200"
                 >
                   <div className="absolute -left-1 top-1.5 w-2 h-2 rounded-full bg-terra-400" />
-                  <p className="text-[13px] text-neutral-900">{log.action}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[11px] text-neutral-500">{formatDateTime(log.timestamp)}</span>
-                    <span className="text-[11px] text-neutral-300">•</span>
-                    <span className="text-[11px] text-neutral-500">{log.user}</span>
+                  <p className="text-[12px] sm:text-[13px] text-neutral-900">{log.action}</p>
+                  <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 flex-wrap">
+                    <span className="text-[10px] sm:text-[11px] text-neutral-500">{formatDateTime(log.timestamp)}</span>
+                    <span className="text-[10px] sm:text-[11px] text-neutral-300">•</span>
+                    <span className="text-[10px] sm:text-[11px] text-neutral-500">{log.user}</span>
                   </div>
                 </div>
               ))}

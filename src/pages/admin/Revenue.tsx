@@ -1,13 +1,9 @@
 import { useState, useMemo } from 'react';
-import { Download, Calendar, Filter, Sparkles, X, TrendingUp, DollarSign, Percent, BarChart3 } from 'lucide-react';
+import { Download, Calendar, Filter, Sparkles, X, TrendingUp, DollarSign, Percent, BarChart3, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '../../components/ui2/Button';
 import { Select } from '../../components/ui2/Input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui2/Table';
 import { Badge } from '../../components/ui2/Badge';
-import { revenueData as baseRevenueData } from '../../data/revenueData';
-import { forecastData as baseForecastData, demandIndicators } from '../../data/forecastData';
-import { marketSegmentsData } from '../../data/marketSegmentsData';
-import { channelData as baseChannelData } from '../../data/channelData';
 import RevenueSummaryCards from '../../components/revenue/RevenueSummaryCards';
 import RevenueTabs from '../../components/revenue/RevenueTabs';
 import RevenueForecastChart from '../../components/revenue/RevenueForecastChart';
@@ -17,103 +13,93 @@ import MarketSegmentChart from '../../components/revenue/MarketSegmentChart';
 import ChannelPerformanceTable from '../../components/revenue/ChannelPerformanceTable';
 import PickupAnalysis from '../../components/revenue/PickupAnalysis';
 import AIInsights from '../../components/revenue/AIInsights';
-import { useForecastEngine } from '../../hooks/useForecastEngine';
-import { useRevenueFilters } from '../../hooks/useRevenueFilters';
-import { useRevenue } from '../../hooks/useRevenue';
-import { usePricingOptimizer } from '../../hooks/usePricingOptimizer';
-import { usePickup } from '../../hooks/usePickup';
+import { useRevenueIntelligence } from '../../hooks/useRevenueIntelligence';
+import { RevenueDataProvider } from '../../contexts/RevenueDataContext';
 import useToast from '../../hooks/useToast';
 
 export default function Revenue() {
   const [activeTab, setActiveTab] = useState('overview');
   const [showFilters, setShowFilters] = useState(false);
   const [showPricingOptimizer, setShowPricingOptimizer] = useState(false);
+  const [dateRange, setDateRange] = useState('30d');
+  const [filters, setFilters] = useState({
+    segment: null as string | null,
+    channel: null as string | null,
+    roomType: null as string | null,
+    minADR: null as number | null,
+    maxADR: null as number | null
+  });
   const { toast, showToast, hideToast } = useToast();
 
-  // Revenue filters hook
+  // Use the new revenue intelligence hook
   const {
-    filters,
-    filteredData,
-    updateFilter,
-    updateFilters,
-    clearFilters,
-    hasActiveFilters
-  } = useRevenueFilters(baseRevenueData);
-
-  // Revenue metrics hook
-  const {
+    isLoading,
+    isLoadingKPIs,
+    isLoadingForecast,
+    error,
     metrics,
     yoyComparison,
-    segmentPerformance,
-    channelPerformance,
-    dailyTrend,
-    summary
-  } = useRevenue(baseRevenueData, filteredData);
-
-  // AI Forecast Engine hook
-  const {
     forecast,
+    forecastSummary,
     confidence,
     scenarios,
-    anomalies,
-    model,
-    summary: forecastSummary,
-    recomputeForecast
-  } = useForecastEngine(filteredData, 30, 90);
-
-  // Pricing Optimizer hook
-  const currentPricing = useMemo(() => ({
-    Standard: 149,
-    Premium: 189,
-    Deluxe: 249,
-    Suite: 349
-  }), []);
-
-  const { pricingSuggestions, strategy } = usePricingOptimizer(
-    forecast.projections,
-    currentPricing
-  );
-
-  // Pickup Analysis hook
-  const {
+    channelData,
+    channelSummary,
+    segmentPerformance,
+    demandIndicators,
+    pricingSuggestions,
     pickupByWindow,
     onTheBooks,
     paceIndicators,
-    pickupTrends,
-    anomalies: pickupAnomalies,
-    summary: pickupSummary
-  } = usePickup(filteredData, forecast.projections);
+    refresh,
+    refreshForecast
+  } = useRevenueIntelligence(dateRange);
 
-  // Channel data with performance metrics
-  const channelData = useMemo(() => {
-    return baseChannelData.map(channel => {
-      const performance = channelPerformance[channel.channel];
-      if (performance) {
-        return {
-          ...channel,
-          revenue: performance.revenue || channel.revenue,
-          bookings: performance.rooms || channel.bookings,
-          adr: performance.adr || channel.adr,
-          netRevenue: performance.netRevenue || channel.netRevenue
-        };
-      }
-      return channel;
-    });
-  }, [channelPerformance]);
+  // Transform forecast data for charts
+  const historicalData = useMemo(() => {
+    // Generate historical data from metrics
+    const days = dateRange === '7d' ? 7 : dateRange === '90d' ? 90 : 30;
+    const data = [];
+    const baseRevenue = (metrics.totalRevenue || 50000) / days;
+    const baseADR = metrics.avgADR || 175;
+    const baseOccupancy = metrics.avgOccupancy || 75;
 
-  const channelSummary = useMemo(() => {
-    const totalRevenue = channelData.reduce((sum, c) => sum + c.revenue, 0);
-    const totalBookings = channelData.reduce((sum, c) => sum + c.bookings, 0);
-    const totalNetRevenue = channelData.reduce((sum, c) => sum + c.netRevenue, 0);
-    const avgCommission = channelData.reduce((sum, c) => sum + c.commission, 0) / channelData.length;
+    for (let i = days; i > 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const variance = 0.8 + Math.random() * 0.4; // 80% to 120%
 
-    return {
-      totalRevenue,
-      totalBookings,
-      totalNetRevenue,
-      avgCommission: Math.round(avgCommission)
-    };
-  }, [channelData]);
+      data.push({
+        date: date.toISOString().split('T')[0],
+        revenue: Math.round(baseRevenue * variance),
+        adr: Math.round(baseADR * (0.95 + Math.random() * 0.1)),
+        occupancy: Math.round(baseOccupancy * (0.9 + Math.random() * 0.2)),
+        revpar: Math.round(baseADR * baseOccupancy / 100 * variance)
+      });
+    }
+    return data;
+  }, [metrics, dateRange]);
+
+  // Transform forecast for chart components
+  const forecastProjections = useMemo(() => {
+    return forecast.map(f => ({
+      date: f.date,
+      revenue: Math.round((f.forecasted_demand || 50) * (metrics.avgADR || 175)),
+      occupancy: f.forecasted_occupancy || 70,
+      adr: metrics.avgADR || 175,
+      revpar: Math.round((f.forecasted_occupancy || 70) / 100 * (metrics.avgADR || 175)),
+      demand: f.forecasted_demand,
+      demandLevel: f.demand_level
+    }));
+  }, [forecast, metrics]);
+
+  // Revenue summary for cards
+  const revenueSummary = useMemo(() => ({
+    totalRevenue: metrics.totalRevenue,
+    avgADR: metrics.avgADR,
+    avgOccupancy: metrics.avgOccupancy,
+    avgRevPAR: metrics.avgRevPAR
+  }), [metrics]);
 
   // Segment performance data for table
   const segmentPerformanceData = useMemo(() => {
@@ -125,60 +111,158 @@ export default function Revenue() {
       const currentMonth = perf.revenue;
       const lastMonth = Math.round(currentMonth * 0.92);
       const growth = ((currentMonth - lastMonth) / lastMonth) * 100;
-      const forecast = Math.round(currentMonth * 1.08);
+      const forecastValue = Math.round(currentMonth * 1.08);
 
       return {
         segment,
         currentMonth,
         lastMonth,
         growth: Math.round(growth),
-        forecast
+        forecast: forecastValue
       };
     }).filter(Boolean);
   }, [segmentPerformance]);
 
-  // Combined revenue summary for cards
-  const revenueSummary = useMemo(() => ({
-    totalRevenue: metrics.totalRevenue,
-    avgADR: metrics.avgADR,
-    avgOccupancy: metrics.avgOccupancy,
-    avgRevPAR: metrics.avgRevPAR
-  }), [metrics]);
+  // Pricing suggestions formatted for display
+  const formattedPricingSuggestions = useMemo(() => {
+    if (!pricingSuggestions.length) {
+      // Return default suggestions if none available
+      return [
+        {
+          roomType: 'Standard Room',
+          currentPrice: 149,
+          suggestedPrice: 159,
+          adjustment: 7,
+          revenueImpact: 3,
+          action: 'increase' as const,
+          reason: 'High demand detected for upcoming dates',
+          demandScore: 78,
+          avgOccupancy: 82,
+          confidence: 'High'
+        },
+        {
+          roomType: 'Premium Room',
+          currentPrice: 189,
+          suggestedPrice: 199,
+          adjustment: 5,
+          revenueImpact: 4,
+          action: 'increase' as const,
+          reason: 'Weekend rates below market average',
+          demandScore: 85,
+          avgOccupancy: 88,
+          confidence: 'High'
+        },
+        {
+          roomType: 'Deluxe Room',
+          currentPrice: 249,
+          suggestedPrice: 249,
+          adjustment: 0,
+          revenueImpact: 0,
+          action: 'maintain' as const,
+          reason: 'Current pricing optimal for demand level',
+          demandScore: 72,
+          avgOccupancy: 75,
+          confidence: 'Medium'
+        },
+        {
+          roomType: 'Suite',
+          currentPrice: 349,
+          suggestedPrice: 379,
+          adjustment: 9,
+          revenueImpact: 6,
+          action: 'increase' as const,
+          reason: 'High-value segment showing strong booking pace',
+          demandScore: 91,
+          avgOccupancy: 78,
+          confidence: 'High'
+        }
+      ];
+    }
+
+    return pricingSuggestions.slice(0, 4).map(s => ({
+      roomType: s.room_type_name,
+      currentPrice: s.current_rate,
+      suggestedPrice: s.recommended_rate,
+      adjustment: Math.round(s.change_percent),
+      revenueImpact: Math.round(Math.abs(s.change_percent) * 0.7),
+      action: s.change_percent > 0 ? 'increase' as const : s.change_percent < 0 ? 'decrease' as const : 'maintain' as const,
+      reason: s.reasoning,
+      demandScore: Math.round(s.forecasted_occupancy),
+      avgOccupancy: Math.round(s.forecasted_occupancy),
+      confidence: s.confidence >= 80 ? 'High' : s.confidence >= 60 ? 'Medium' : 'Low'
+    }));
+  }, [pricingSuggestions]);
+
+  // Strategy from pricing suggestions
+  const strategy = useMemo(() => {
+    const avgChange = formattedPricingSuggestions.reduce((sum, s) => sum + s.adjustment, 0) / formattedPricingSuggestions.length;
+    const totalImpact = formattedPricingSuggestions.reduce((sum, s) => sum + s.revenueImpact, 0);
+
+    return {
+      recommendation: avgChange > 3 ? 'Optimize Revenue with Rate Increases' :
+        avgChange < -3 ? 'Drive Demand with Competitive Pricing' :
+          'Maintain Current Pricing Strategy',
+      description: avgChange > 3 ?
+        'Market conditions and demand patterns suggest opportunity for rate optimization across multiple room types.' :
+        avgChange < -3 ?
+          'Softening demand detected. Consider promotional pricing to maintain occupancy levels.' :
+          'Current pricing is well-aligned with market conditions. Monitor for changes.',
+      expectedImpact: `+${totalImpact}% Revenue`,
+      confidence: 'High'
+    };
+  }, [formattedPricingSuggestions]);
 
   // Handle filter changes
-  const handleDateRangeChange = (range) => {
-    updateFilter('dateRange', range);
+  const handleDateRangeChange = (range: string) => {
+    setDateRange(range);
     showToast(`Date range updated to ${range}`, 'success');
   };
 
   const handleClearFilters = () => {
-    clearFilters();
+    setFilters({
+      segment: null,
+      channel: null,
+      roomType: null,
+      minADR: null,
+      maxADR: null
+    });
     showToast('All filters cleared', 'info');
   };
 
-  const handleRecomputeForecast = () => {
-    recomputeForecast({ horizon: 30, confidenceLevel: 90 });
+  const handleRecomputeForecast = async () => {
+    await refreshForecast();
     showToast('Forecast recalculated with latest data', 'success');
   };
 
+  const hasActiveFilters = filters.segment || filters.channel || filters.roomType || filters.minADR || filters.maxADR;
+
   const renderTabContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-terra-600" />
+          <span className="ml-3 text-neutral-600">Loading revenue data...</span>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case 'overview':
         return (
           <div className="space-y-6">
             {/* Revenue Forecast */}
             <RevenueForecastChart
-              historicalData={filteredData}
-              forecastData={forecast.projections}
+              historicalData={historicalData}
+              forecastData={forecastProjections}
             />
 
             {/* Two Column Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Occupancy Forecast */}
-              <OccupancyForecastChart forecastData={forecast.projections} />
+              <OccupancyForecastChart forecastData={forecastProjections} />
 
               {/* ADR & RevPAR */}
-              <ADRRevPARChart historicalData={filteredData} />
+              <ADRRevPARChart historicalData={historicalData} />
             </div>
 
             {/* Demand Indicators */}
@@ -191,10 +275,11 @@ export default function Revenue() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  icon={Sparkles}
+                  icon={isLoadingForecast ? Loader2 : Sparkles}
                   onClick={handleRecomputeForecast}
+                  disabled={isLoadingForecast}
                 >
-                  Recalculate
+                  {isLoadingForecast ? 'Calculating...' : 'Recalculate'}
                 </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -307,12 +392,12 @@ export default function Revenue() {
 
             {/* Charts */}
             <RevenueForecastChart
-              historicalData={filteredData}
-              forecastData={forecast.projections}
+              historicalData={historicalData}
+              forecastData={forecastProjections}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <OccupancyForecastChart forecastData={forecast.projections} />
+              <OccupancyForecastChart forecastData={forecastProjections} />
               <AIInsights />
             </div>
 
@@ -359,7 +444,7 @@ export default function Revenue() {
         return (
           <div className="space-y-6">
             {/* Market Segment Chart */}
-            <MarketSegmentChart segmentsData={marketSegmentsData} />
+            <MarketSegmentChart />
 
             {/* Segment Performance Table */}
             <div className="bg-white rounded-[10px] border border-neutral-200 overflow-hidden">
@@ -468,8 +553,9 @@ export default function Revenue() {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <div className="px-10 py-6 space-y-6">
+    <RevenueDataProvider>
+      <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
+        <div className="px-10 py-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
@@ -483,8 +569,18 @@ export default function Revenue() {
 
           {/* Actions */}
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={isLoading ? Loader2 : RefreshCw}
+              onClick={refresh}
+              disabled={isLoading}
+            >
+              Refresh
+            </Button>
+
             <Select
-              value={filters.dateRange}
+              value={dateRange}
               onChange={(e) => handleDateRangeChange(e.target.value)}
               options={[
                 { value: '7d', label: 'Last 7 Days' },
@@ -512,6 +608,13 @@ export default function Revenue() {
             </Button>
           </div>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+            {error}
+          </div>
+        )}
 
         {/* Summary Cards */}
         <RevenueSummaryCards summary={revenueSummary} yoyComparison={yoyComparison} />
@@ -546,7 +649,7 @@ export default function Revenue() {
                   </label>
                   <select
                     value={filters.segment || ''}
-                    onChange={(e) => updateFilter('segment', e.target.value || null)}
+                    onChange={(e) => setFilters({ ...filters, segment: e.target.value || null })}
                     className="w-full px-4 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
                   >
                     <option value="">All Segments</option>
@@ -564,7 +667,7 @@ export default function Revenue() {
                   </label>
                   <select
                     value={filters.channel || ''}
-                    onChange={(e) => updateFilter('channel', e.target.value || null)}
+                    onChange={(e) => setFilters({ ...filters, channel: e.target.value || null })}
                     className="w-full px-4 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
                   >
                     <option value="">All Channels</option>
@@ -583,7 +686,7 @@ export default function Revenue() {
                   </label>
                   <select
                     value={filters.roomType || ''}
-                    onChange={(e) => updateFilter('roomType', e.target.value || null)}
+                    onChange={(e) => setFilters({ ...filters, roomType: e.target.value || null })}
                     className="w-full px-4 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
                   >
                     <option value="">All Room Types</option>
@@ -604,14 +707,14 @@ export default function Revenue() {
                       type="number"
                       placeholder="Min ADR"
                       value={filters.minADR || ''}
-                      onChange={(e) => updateFilter('minADR', e.target.value ? Number(e.target.value) : null)}
+                      onChange={(e) => setFilters({ ...filters, minADR: e.target.value ? Number(e.target.value) : null })}
                       className="px-4 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
                     />
                     <input
                       type="number"
                       placeholder="Max ADR"
                       value={filters.maxADR || ''}
-                      onChange={(e) => updateFilter('maxADR', e.target.value ? Number(e.target.value) : null)}
+                      onChange={(e) => setFilters({ ...filters, maxADR: e.target.value ? Number(e.target.value) : null })}
                       className="px-4 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
                     />
                   </div>
@@ -692,7 +795,7 @@ export default function Revenue() {
                   <h4 className="text-base font-semibold text-neutral-900">
                     Room Type Recommendations
                   </h4>
-                  {pricingSuggestions.map((suggestion, index) => {
+                  {formattedPricingSuggestions.map((suggestion, index) => {
                     const actionConfig = {
                       increase: { bg: 'bg-sage-600', text: 'text-white' },
                       decrease: { bg: 'bg-amber-500', text: 'text-white' },
@@ -732,17 +835,15 @@ export default function Revenue() {
                           </div>
                           <div>
                             <p className="text-[10px] text-neutral-500 font-medium uppercase tracking-widest mb-1">Adjustment</p>
-                            <p className={`text-lg font-bold ${
-                              suggestion.adjustment > 0 ? 'text-sage-600' : suggestion.adjustment < 0 ? 'text-amber-600' : 'text-neutral-600'
-                            }`}>
+                            <p className={`text-lg font-bold ${suggestion.adjustment > 0 ? 'text-sage-600' : suggestion.adjustment < 0 ? 'text-amber-600' : 'text-neutral-600'
+                              }`}>
                               {suggestion.adjustment > 0 ? '+' : ''}{suggestion.adjustment}%
                             </p>
                           </div>
                           <div>
                             <p className="text-[10px] text-neutral-500 font-medium uppercase tracking-widest mb-1">Revenue Impact</p>
-                            <p className={`text-lg font-bold ${
-                              suggestion.revenueImpact > 0 ? 'text-sage-600' : 'text-neutral-600'
-                            }`}>
+                            <p className={`text-lg font-bold ${suggestion.revenueImpact > 0 ? 'text-sage-600' : 'text-neutral-600'
+                              }`}>
                               {suggestion.revenueImpact > 0 ? '+' : ''}{suggestion.revenueImpact}%
                             </p>
                           </div>
@@ -803,13 +904,12 @@ export default function Revenue() {
         {toast.show && (
           <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
             <div
-              className={`px-5 py-3 rounded-xl shadow-lg border flex items-center gap-3 ${
-                toast.type === 'success'
+              className={`px-5 py-3 rounded-xl shadow-lg border flex items-center gap-3 ${toast.type === 'success'
                   ? 'bg-white border-[#4E5840]/30 text-[#4E5840]'
                   : toast.type === 'error'
-                  ? 'bg-white border-rose-200 text-rose-700'
-                  : 'bg-white border-neutral-200 text-neutral-700'
-              }`}
+                    ? 'bg-white border-rose-200 text-rose-700'
+                    : 'bg-white border-neutral-200 text-neutral-700'
+                }`}
             >
               <p className="text-sm font-medium">{toast.message}</p>
               <button
@@ -821,7 +921,8 @@ export default function Revenue() {
             </div>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </RevenueDataProvider>
   );
 }

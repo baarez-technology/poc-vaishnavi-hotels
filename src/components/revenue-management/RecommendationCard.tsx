@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   TrendingUp,
   TrendingDown,
@@ -315,9 +315,11 @@ export const RecommendationsPanel = ({
   const [isApplyingAll, setIsApplyingAll] = useState(false);
 
   // Update local state when props change
-  if (recommendations !== localRecommendations && !isLoading) {
-    setLocalRecommendations(recommendations);
-  }
+  useEffect(() => {
+    if (!isLoading) {
+      setLocalRecommendations(recommendations);
+    }
+  }, [recommendations, isLoading]);
 
   const displayRecommendations = showAll ? localRecommendations : localRecommendations.slice(0, limit);
 

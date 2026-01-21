@@ -16,7 +16,7 @@ function transformApiGuest(apiGuest: ApiGuest): any {
     displayStatus = 'vip';
   }
 
-  // Map emotion - supports: positive, neutral, negative (for display)
+  // Map emotion - supports: positive, neutral, negative
   let displayEmotion = 'neutral';
   const emotion = apiGuest.emotion || (apiGuest as any).sentiment;
   if (emotion === 'happy' || emotion === 'positive') {
@@ -48,13 +48,9 @@ function transformApiGuest(apiGuest: ApiGuest): any {
     lastStay: apiGuest.last_visit || (apiGuest as any).updated_at || new Date().toISOString(),
     vipStatus: apiGuest.vip_status || false,
     // Map status for GuestRow component - supports: vip, normal, review, blacklisted
-    displayStatus: displayStatus,
-    // Preserve original status for editing - supports: Active, Inactive, VIP, Blacklisted
-    status: apiGuest.status || 'Active',
+    status: displayStatus,
     // Map emotion for GuestRow component - supports: positive, neutral, negative
-    displayEmotion: displayEmotion,
-    // Preserve original emotion for editing - supports: happy, neutral, unhappy
-    emotion: apiGuest.emotion || 'neutral',
+    emotion: displayEmotion,
     notes: [],
     tags: apiGuest.tags || [],
     preferences: apiGuest.preferences || {},
@@ -172,57 +168,27 @@ export function useGuests() {
   // Guest update function - calls API and updates local state
   const updateGuest = useCallback(async (id: string | number, updates: any) => {
     try {
-      // Transform to API format - use undefined checks instead of falsy checks
-      // to properly handle empty strings and allow clearing fields
+      // Transform to API format
       const apiUpdates: GuestUpdate = {};
-
-      // Handle name fields - check both camelCase and snake_case
-      if (updates.firstName !== undefined || updates.first_name !== undefined) {
-        apiUpdates.first_name = updates.firstName ?? updates.first_name ?? '';
-      }
-      if (updates.lastName !== undefined || updates.last_name !== undefined) {
-        apiUpdates.last_name = updates.lastName ?? updates.last_name ?? '';
-      }
-
-      // Handle contact/address fields
-      if (updates.email !== undefined) apiUpdates.email = updates.email;
-      if (updates.phone !== undefined) apiUpdates.phone = updates.phone;
-      if (updates.country !== undefined) apiUpdates.country = updates.country;
-      if (updates.city !== undefined) apiUpdates.city = updates.city;
-      if (updates.address !== undefined) apiUpdates.address = updates.address;
-      if (updates.postalCode !== undefined || updates.postal_code !== undefined) {
-        apiUpdates.postal_code = updates.postalCode ?? updates.postal_code ?? '';
-      }
-
+      if (updates.firstName || updates.first_name) apiUpdates.first_name = updates.firstName || updates.first_name;
+      if (updates.lastName || updates.last_name) apiUpdates.last_name = updates.lastName || updates.last_name;
+      if (updates.email) apiUpdates.email = updates.email;
+      if (updates.phone) apiUpdates.phone = updates.phone;
+      if (updates.country) apiUpdates.country = updates.country;
+      if (updates.city) apiUpdates.city = updates.city;
+      if (updates.address) apiUpdates.address = updates.address;
+      if (updates.postalCode || updates.postal_code) apiUpdates.postal_code = updates.postalCode || updates.postal_code;
       // Handle status updates (e.g., for blacklisting)
-      if (updates.status !== undefined) apiUpdates.status = updates.status;
+      if (updates.status) apiUpdates.status = updates.status;
       if (updates.vipStatus !== undefined || updates.vip_status !== undefined) {
-        apiUpdates.vip_status = updates.vipStatus ?? updates.vip_status;
+        apiUpdates.vip_status = updates.vipStatus !== undefined ? updates.vipStatus : updates.vip_status;
       }
-
       // Handle emotion/sentiment updates
-      if (updates.emotion !== undefined) apiUpdates.emotion = updates.emotion;
-
+      if (updates.emotion) apiUpdates.emotion = updates.emotion;
       // Handle tags updates
-      if (updates.tags !== undefined) apiUpdates.tags = updates.tags;
+      if (updates.tags) apiUpdates.tags = updates.tags;
 
-      // Handle preferences updates - convert array to dict format if needed
-      if (updates.preferences !== undefined) {
-        // Backend expects a dictionary, so wrap array in an object
-        if (Array.isArray(updates.preferences)) {
-          // Only send if there are actual preferences
-          if (updates.preferences.length > 0) {
-            apiUpdates.preferences = { items: updates.preferences };
-          }
-          // Skip sending empty preferences to avoid validation issues
-        } else if (updates.preferences && typeof updates.preferences === 'object') {
-          apiUpdates.preferences = updates.preferences;
-        }
-      }
-
-      console.log('[useGuests.updateGuest] Sending apiUpdates:', apiUpdates);
       const updatedGuest = await guestsService.update(String(id), apiUpdates);
-      console.log('[useGuests.updateGuest] Received:', updatedGuest);
       const transformedGuest = transformApiGuest(updatedGuest);
 
       // Update local state with transformed guest
@@ -248,16 +214,11 @@ export function useGuests() {
         postal_code: guestData.postalCode || guestData.postal_code,
       };
 
-      console.log('[AddGuest] Sending API data:', apiData);
       const newGuest = await guestsService.create(apiData);
-      console.log('[AddGuest] API response:', newGuest);
       const transformedGuest = transformApiGuest(newGuest);
-      console.log('[AddGuest] Transformed guest:', transformedGuest);
       setGuests(prev => [transformedGuest, ...prev]);
-    } catch (err: any) {
-      console.error('[AddGuest] Failed:', err);
-      console.error('[AddGuest] Error response:', err?.response?.data);
-      console.error('[AddGuest] Error status:', err?.response?.status);
+    } catch (err) {
+      console.error('Failed to add guest via API:', err);
       throw err; // Propagate error instead of silent fallback
     }
   }, []);

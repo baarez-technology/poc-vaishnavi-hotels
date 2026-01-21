@@ -354,15 +354,15 @@ export default function CBSBookings() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <main className="px-10 py-6">
+      <main className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6">
 
         {/* Page Header */}
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
               Bookings
             </h1>
-            <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
+            <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">
               Manage reservations and room assignments
             </p>
           </div>
@@ -371,8 +371,10 @@ export default function CBSBookings() {
             size="md"
             icon={Plus}
             onClick={handleNewBooking}
+            className="text-[12px] sm:text-[13px]"
           >
-            New Booking
+            <span className="hidden sm:inline">New Booking</span>
+            <span className="sm:hidden">New</span>
           </Button>
         </header>
 

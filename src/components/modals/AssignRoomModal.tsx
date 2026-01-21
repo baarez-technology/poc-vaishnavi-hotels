@@ -204,9 +204,8 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
   const availableRooms = useMemo(() => {
     if (!rooms || rooms.length === 0) return [];
 
-    // FIX: Use string keys for consistent comparison (room.id is string, rec.room_id is number)
     const recommendationMap = new Map(
-      recommendations.map(r => [String(r.room_id), r])
+      recommendations.map(r => [r.room_id, r])
     );
 
     return rooms.filter(room => {
@@ -226,8 +225,8 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
 
       return true;
     }).map(room => {
-      // Merge recommendation data if available - use String(room.id) for consistent lookup
-      const rec = recommendationMap.get(String(room.id));
+      // Merge recommendation data if available
+      const rec = recommendationMap.get(room.id);
       return {
         ...room,
         match_score: rec?.match_score || null,
@@ -437,14 +436,12 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
             </h3>
             <div className="grid grid-cols-5 gap-2">
               {recommendations.slice(0, 5).map((rec, idx) => {
-                // Convert both IDs to strings for comparison (room.id is string, rec.room_id is number)
-                const isSelected = String(selectedRoom?.id) === String(rec.room_id);
+                const isSelected = selectedRoom?.id === rec.room_id;
                 return (
                   <button
                     key={rec.room_id}
                     onClick={() => {
-                      // FIX: Convert to same type for comparison - room.id is string, rec.room_id is number
-                      const room = rooms.find(r => String(r.id) === String(rec.room_id));
+                      const room = rooms.find(r => r.id === rec.room_id);
                       if (room) setSelectedRoom(room);
                     }}
                     className={`p-2 rounded-lg border-2 text-center transition-all ${

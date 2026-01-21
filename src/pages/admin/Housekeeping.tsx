@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { ArrowUpDown, Plus, Wand2, Download, RefreshCw, Loader2, QrCode, AlertTriangle, ChevronDown, FileSpreadsheet, FileText } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { ArrowUpDown, Plus, Wand2, Download, RefreshCw, Loader2, QrCode, AlertTriangle } from 'lucide-react';
 import { Button } from '../../components/ui2/Button';
 import { Select } from '../../components/ui2/Input';
 import { useHousekeeping } from '../../hooks/admin/useHousekeeping';
@@ -27,6 +27,7 @@ import { ForceAssignModal } from '../../components/common/ForceAssignModal';
 import { StaffAvailabilityAlert } from '../../components/common/StaffAvailabilityAlert';
 import Toast from '../../components/common/Toast';
 import AutoAssignResultsModal from '../../components/housekeeping/modals/AutoAssignResultsModal';
+import ExportOptionsModal from '../../components/housekeeping/modals/ExportOptionsModal';
 import Pagination from '../../components/bookings/Pagination';
 import { SORTABLE_FIELDS } from '../../utils/housekeepingSort';
 import { api } from '../../lib/api';
@@ -38,7 +39,6 @@ export default function Housekeeping() {
     staff,
     staffLoading,
     refreshData,
-    refreshStaff,
     assignStaffToRoom,
     bulkAssignRooms,
     unassignStaff,
@@ -109,8 +109,16 @@ export default function Housekeeping() {
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
   const [isScanKeyModalOpen, setIsScanKeyModalOpen] = useState(false);
   const [isForceAssignModalOpen, setIsForceAssignModalOpen] = useState(false);
+  const [isAutoAssignResultsOpen, setIsAutoAssignResultsOpen] = useState(false);
+  const [autoAssignResults, setAutoAssignResults] = useState<{
+    assignments: Array<{ roomId: number; roomNumber?: string; staffId: number; staffName: string; score?: number }>;
+    summary: string;
+    totalAssigned: number;
+    failed?: number;
+  } | null>(null);
   const [taskForForceAssign, setTaskForForceAssign] = useState(null);
   const [roomForAction, setRoomForAction] = useState(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Staff availability state
   const [staffAvailability, setStaffAvailability] = useState({
@@ -196,16 +204,27 @@ export default function Housekeeping() {
 
   // Auto-assign with intelligent matching
   const [isAutoAssigning, setIsAutoAssigning] = useState(false);
-  const [autoAssignResults, setAutoAssignResults] = useState(null);
-  const [isAutoAssignResultsOpen, setIsAutoAssignResultsOpen] = useState(false);
 
   const handleAutoAssign = async () => {
     setIsAutoAssigning(true);
     try {
       const result = await runAutoAssign();
-      // Store results and open the modal to show details
-      if (result) {
-        setAutoAssignResults(result);
+      // Toast is already shown by runAutoAssign
+
+      // Show detailed results modal if there are assignments
+      if (result && result.assignments && result.assignments.length > 0) {
+        // Enrich assignments with room numbers
+        const enrichedAssignments = result.assignments.map((a: { roomId: number; staffId: number; staffName: string; score?: number }) => ({
+          ...a,
+          roomNumber: rooms.find(r => r.id === a.roomId)?.number
+        }));
+
+        setAutoAssignResults({
+          assignments: enrichedAssignments,
+          summary: result.summary || `${result.assignments.length} rooms assigned`,
+          totalAssigned: result.assignments.length,
+          failed: 0
+        });
         setIsAutoAssignResultsOpen(true);
       }
     } catch (err) {
@@ -314,23 +333,6 @@ export default function Housekeeping() {
     }
   };
 
-  // Export state
-  const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
-  const exportDropdownRef = useRef(null);
-
-  // Close export dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (exportDropdownRef.current && !exportDropdownRef.current.contains(e.target)) {
-        setIsExportDropdownOpen(false);
-      }
-    };
-    if (isExportDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isExportDropdownOpen]);
-
   // Export handlers
   const handleExportCSV = () => {
     const result = exportHKToCSV(rooms, staff);
@@ -339,7 +341,6 @@ export default function Housekeeping() {
     } else {
       showToast(result.message, 'error');
     }
-    setIsExportDropdownOpen(false);
   };
 
   const handleExportPDF = () => {
@@ -349,7 +350,6 @@ export default function Housekeeping() {
     } else {
       showToast(result.message, 'error');
     }
-    setIsExportDropdownOpen(false);
   };
 
   // Refresh
@@ -402,51 +402,24 @@ export default function Housekeeping() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <div className="px-10 py-6 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Page Header */}
-        <header className="flex items-center justify-between">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
               Housekeeping
             </h1>
-            <p className="text-[13px] text-neutral-500 mt-1">
+            <p className="text-[12px] sm:text-[13px] text-neutral-500 mt-1">
               Monitor room cleanliness, assign tasks, and verify inspections
             </p>
           </div>
 
           {/* Quick Actions */}
-          <div className="flex items-center gap-3">
-            {/* Export Dropdown */}
-            <div className="relative" ref={exportDropdownRef}>
-              <Button
-                variant="outline"
-                icon={Download}
-                onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
-              >
-                Export
-                <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isExportDropdownOpen ? 'rotate-180' : ''}`} />
-              </Button>
-
-              {isExportDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-44 bg-white rounded-lg border border-neutral-200 shadow-lg z-50 overflow-hidden">
-                  <button
-                    onClick={handleExportCSV}
-                    className="w-full px-4 py-2.5 text-[13px] text-left hover:bg-neutral-50 transition-colors flex items-center gap-2 text-neutral-700"
-                  >
-                    <FileSpreadsheet className="w-4 h-4 text-sage-600" />
-                    Export as CSV
-                  </button>
-                  <button
-                    onClick={handleExportPDF}
-                    className="w-full px-4 py-2.5 text-[13px] text-left hover:bg-neutral-50 transition-colors flex items-center gap-2 text-neutral-700"
-                  >
-                    <FileText className="w-4 h-4 text-terra-600" />
-                    Export as PDF
-                  </button>
-                </div>
-              )}
-            </div>
-            <Button variant="outline" icon={ArrowUpDown} onClick={() => setIsBulkAssignModalOpen(true)}>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <Button variant="outline" icon={Download} onClick={() => setIsExportModalOpen(true)} className="hidden sm:flex">
+              Export
+            </Button>
+            <Button variant="outline" icon={ArrowUpDown} onClick={() => setIsBulkAssignModalOpen(true)} className="hidden sm:flex">
               Bulk Assign
             </Button>
             <Button
@@ -456,57 +429,39 @@ export default function Housekeeping() {
               disabled={isAutoAssigning}
               className={isAutoAssigning ? '[&>svg]:animate-spin' : ''}
             >
-              {isAutoAssigning ? 'Assigning...' : 'Auto-Assign'}
+              <span className="hidden sm:inline">{isAutoAssigning ? 'Assigning...' : 'Auto-Assign'}</span>
+              <span className="sm:hidden">{isAutoAssigning ? '...' : 'Auto'}</span>
             </Button>
             <Button variant="primary" icon={Plus} onClick={() => setIsAddTaskModalOpen(true)}>
-              Add Task
+              <span className="hidden sm:inline">Add Task</span>
+              <span className="sm:hidden">Add</span>
             </Button>
           </div>
         </header>
 
         {/* KPI Summary Cards */}
-        <HKKPI
-          rooms={rooms}
-          staff={staff}
-          onStatusClick={(filter) => {
-            // Switch to 'all' tab when clicking KPI cards to see filtered results
-            setActiveTab('all');
-            // Apply the filter based on type
-            if (filter.type === 'status') {
-              updateFilter('status', filter.value);
-            } else if (filter.type === 'priority') {
-              updateFilter('priority', filter.value);
-            }
-            showToast(`Filtering by ${filter.value}`, 'info');
-          }}
-        />
+        <HKKPI rooms={rooms} staff={staff} />
 
         {/* Main Housekeeping Card (CMS-consistent) */}
         <div className="bg-white rounded-[10px] overflow-hidden">
           {/* Tabs */}
           <div className="border-b border-neutral-100">
-            <div className="px-6 pt-4">
+            <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-6 pt-4">
               <HousekeepingTabs
                 activeTab={activeTab}
-                onTabChange={(tabId) => {
-                  setActiveTab(tabId);
-                  // Reset filters when clicking "All Rooms" tab
-                  if (tabId === 'all') {
-                    clearFilters();
-                  }
-                }}
+                onTabChange={setActiveTab}
                 counts={counts}
               />
             </div>
           </div>
 
           {/* Search & Filters Row */}
-          <div className="px-6 py-4 bg-neutral-50/30 border-b border-neutral-100">
-            <div className="flex items-center gap-3">
-              <div className="flex-1 max-w-md">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 bg-neutral-50/30 border-b border-neutral-100">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="w-full sm:flex-1 sm:max-w-md">
                 <HousekeepingSearch value={searchQuery} onChange={setSearchQuery} />
               </div>
-              <div className="flex-1" />
+              <div className="hidden sm:block sm:flex-1" />
               <HousekeepingFilters
                 filters={filters}
                 onFilterChange={updateFilter}
@@ -522,7 +477,7 @@ export default function Housekeeping() {
 
           {/* Pagination */}
           {sortedRooms.length > 0 && (
-            <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/30">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 bg-neutral-50/30">
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
@@ -539,21 +494,8 @@ export default function Housekeeping() {
           )}
         </div>
 
-        {/* Staff Performance Panel */}
-        {staff.length > 0 && (
-          <HKStaffPerformance
-            staff={staff}
-            rooms={rooms}
-            onStaffClick={(staffMember) => {
-              // Filter rooms by this staff member
-              setActiveTab('all');
-              updateFilter('staff', staffMember.id);
-              showToast(`Showing rooms assigned to ${staffMember.name}`, 'info');
-              // Scroll to the rooms table
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-          />
-        )}
+        {/* Staff Performance Panel - Hidden temporarily (no backend support yet) */}
+        {/* <HKStaffPerformance staff={staff} rooms={rooms} /> */}
       </div>
 
       {/* Room Drawer */}
@@ -596,7 +538,6 @@ export default function Housekeeping() {
         onBulkAssign={handleBulkAssign}
         housekeepers={staff}
         isLoading={staffLoading}
-        onRefreshStaff={refreshStaff}
       />
 
       {/* Edit Checklist Modal */}
@@ -668,6 +609,14 @@ export default function Housekeeping() {
           setAutoAssignResults(null);
         }}
         results={autoAssignResults}
+      />
+
+      {/* Export Options Modal */}
+      <ExportOptionsModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        onExportCSV={handleExportCSV}
+        onExportPDF={handleExportPDF}
       />
 
       {/* Toast Notifications */}

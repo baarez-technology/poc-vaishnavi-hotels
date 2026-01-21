@@ -68,75 +68,6 @@ function CustomSelect({ value, onChange, options, placeholder = 'Select...' }) {
   );
 }
 
-// Searchable Country Select Component - allows typing to filter
-function SearchableCountrySelect({ value, onChange, options, placeholder = 'Search country...' }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const selectedOption = options.find(opt => opt.value === value);
-
-  // Filter options based on search query
-  const filteredOptions = searchQuery
-    ? options.filter(opt => opt.label.toLowerCase().includes(searchQuery.toLowerCase()))
-    : options;
-
-  // When dropdown opens, show current value in search if selected
-  const handleFocus = () => {
-    setIsOpen(true);
-    setSearchQuery('');
-  };
-
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue);
-    setSearchQuery('');
-    setIsOpen(false);
-  };
-
-  return (
-    <div className="relative">
-      <input
-        type="text"
-        value={isOpen ? searchQuery : (selectedOption?.label || '')}
-        onChange={(e) => {
-          setSearchQuery(e.target.value);
-          if (!isOpen) setIsOpen(true);
-        }}
-        onFocus={handleFocus}
-        placeholder={placeholder}
-        className={`w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border transition-all duration-150 focus:outline-none ${
-          isOpen
-            ? 'border-terra-400 ring-2 ring-terra-500/10'
-            : 'border-neutral-200 hover:border-neutral-300'
-        }`}
-      />
-
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 z-[80]" onClick={() => setIsOpen(false)} />
-          <div className="absolute z-[90] w-full mt-1 bg-white rounded-lg border border-neutral-200 shadow-lg overflow-hidden max-h-60 overflow-y-auto">
-            {filteredOptions.length === 0 ? (
-              <div className="px-3.5 py-2.5 text-[13px] text-neutral-500">No countries found</div>
-            ) : (
-              filteredOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleSelect(option.value)}
-                  className={`w-full px-3.5 py-2.5 text-[13px] text-left hover:bg-neutral-50 transition-colors ${
-                    value === option.value ? 'bg-terra-50 text-terra-700' : 'text-neutral-700'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSaving }) {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -247,7 +178,7 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
   const loyaltyTier = guest ? calculateLoyaltyTier(guest.totalStays, guest.totalSpent) : 'Bronze';
   const tierConfig = LOYALTY_TIERS[loyaltyTier];
 
-  const isFormValid = formData.firstName.trim() && formData.email.trim();
+  const isFormValid = formData.firstName.trim() && formData.lastName.trim() && formData.email.trim();
 
   // Options for dropdowns
   const countryOptions = COUNTRIES.map(country => ({
@@ -306,7 +237,7 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
             Personal Information
           </h3>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="block text-[13px] font-medium text-neutral-700">
                   First Name <span className="text-rose-500">*</span>
@@ -322,19 +253,20 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
               </div>
               <div className="space-y-2">
                 <label className="block text-[13px] font-medium text-neutral-700">
-                  Last Name
+                  Last Name <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleChange}
+                  required
                   className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="block text-[13px] font-medium text-neutral-700">
                   Email <span className="text-rose-500">*</span>
@@ -363,16 +295,16 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="block text-[13px] font-medium text-neutral-700">
                   Country
                 </label>
-                <SearchableCountrySelect
+                <CustomSelect
                   value={formData.country}
                   onChange={(value) => setFormData(prev => ({ ...prev, country: value }))}
                   options={countryOptions}
-                  placeholder="Type to search country..."
+                  placeholder="Select country"
                 />
               </div>
 

@@ -37,7 +37,7 @@ function CustomSelect({ value, onChange, options, placeholder = 'Select...' }) {
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "w-full h-9 px-3.5 rounded-lg text-sm bg-white border transition-all duration-150 text-left flex items-center justify-between focus:outline-none",
+          "w-full h-9 sm:h-10 px-3 sm:px-3.5 rounded-lg text-xs sm:text-sm bg-white border transition-all duration-150 text-left flex items-center justify-between focus:outline-none",
           isOpen
             ? "border-terra-400 ring-2 ring-terra-500/10"
             : "border-neutral-200 hover:border-neutral-300"
@@ -46,11 +46,11 @@ function CustomSelect({ value, onChange, options, placeholder = 'Select...' }) {
         <span className={selectedOption ? 'text-neutral-900' : 'text-neutral-400'}>
           {selectedOption?.label || placeholder}
         </span>
-        <ChevronDown className={cn("w-4 h-4 text-neutral-400 transition-transform", isOpen && "rotate-180")} />
+        <ChevronDown className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400 transition-transform", isOpen && "rotate-180")} />
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white rounded-lg border border-neutral-200 shadow-lg overflow-hidden max-h-60 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-white rounded-lg border border-neutral-200 shadow-lg overflow-hidden max-h-48 sm:max-h-60 overflow-y-auto">
           {options.map((option) => (
             <button
               key={option.value}
@@ -60,12 +60,12 @@ function CustomSelect({ value, onChange, options, placeholder = 'Select...' }) {
                 setIsOpen(false);
               }}
               className={cn(
-                "w-full px-3.5 py-2.5 text-sm text-left flex items-center justify-between hover:bg-neutral-50 transition-colors",
+                "w-full px-3 sm:px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm text-left flex items-center justify-between hover:bg-neutral-50 transition-colors",
                 value === option.value && "bg-terra-50 text-terra-700"
               )}
             >
               <span>{option.label}</span>
-              {value === option.value && <Check className="w-4 h-4 text-terra-600" />}
+              {value === option.value && <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-terra-600" />}
             </button>
           ))}
         </div>
@@ -74,7 +74,8 @@ function CustomSelect({ value, onChange, options, placeholder = 'Select...' }) {
   );
 }
 
-const PROMOTION_TYPES = [
+// Default promotion types - can be overridden via props
+const DEFAULT_PROMOTION_TYPES = [
   { value: 'Early Bird', label: 'Early Bird' },
   { value: 'Last Minute', label: 'Last Minute' },
   { value: 'Long Stay', label: 'Long Stay' },
@@ -121,8 +122,11 @@ export default function NewPromotionModal({
   isOpen,
   onClose,
   onSubmit,
-  roomTypes = DEFAULT_ROOM_TYPES
+  roomTypes = DEFAULT_ROOM_TYPES,
+  promotionTypes = DEFAULT_PROMOTION_TYPES
 }) {
+  // Use the passed promotionTypes or fall back to defaults
+  const PROMOTION_TYPES = promotionTypes;
   const getDefaultDates = () => {
     const today = new Date();
     const stayStart = new Date(today);
@@ -273,9 +277,9 @@ export default function NewPromotionModal({
   const allRoomsSelected = roomTypes.every(r => formData.eligibleRooms.includes(r.id));
 
   const drawerFooter = (
-    <div className="flex items-center justify-end gap-3 w-full">
-      <Button variant="outline" onClick={handleClose}>Cancel</Button>
-      <Button variant="primary" onClick={handleSubmit}>Create Promotion</Button>
+    <div className="flex items-center justify-end gap-2 sm:gap-3 w-full">
+      <Button variant="outline" onClick={handleClose} className="text-xs sm:text-sm h-9 sm:h-10 px-3 sm:px-4">Cancel</Button>
+      <Button variant="primary" onClick={handleSubmit} className="text-xs sm:text-sm h-9 sm:h-10 px-3 sm:px-4">Create Promotion</Button>
     </div>
   );
 
@@ -288,24 +292,25 @@ export default function NewPromotionModal({
       maxWidth="max-w-2xl"
       footer={drawerFooter}
     >
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
 
         {/* Basic Info */}
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">
+          <h3 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3 sm:mb-4">
             Basic Information
           </h3>
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <FormField label="Promotion Name" required error={errors.name}>
               <Input
                 value={formData.name}
                 onChange={(e) => handleChange('name', e.target.value)}
                 placeholder="e.g., Summer Early Bird 20%"
                 error={errors.name}
+                className="h-9 sm:h-10 text-xs sm:text-sm"
               />
             </FormField>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <FormField label="Promotion Type">
                 <CustomSelect
                   value={formData.type}
@@ -331,6 +336,7 @@ export default function NewPromotionModal({
                 onChange={(e) => handleChange('description', e.target.value)}
                 placeholder="Terms and conditions..."
                 rows={2}
+                className="text-xs sm:text-sm"
               />
             </FormField>
           </div>
@@ -338,11 +344,11 @@ export default function NewPromotionModal({
 
         {/* Discount Type */}
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">
+          <h3 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3 sm:mb-4">
             Discount Configuration
           </h3>
 
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
             {DISCOUNT_TYPES.map(type => {
               const Icon = type.icon;
               const isSelected = formData.discountType === type.value;
@@ -352,22 +358,22 @@ export default function NewPromotionModal({
                   type="button"
                   onClick={() => handleChange('discountType', type.value)}
                   className={cn(
-                    'p-3 rounded-lg border transition-all text-left',
+                    'p-2 sm:p-3 rounded-lg border transition-all text-left',
                     isSelected
                       ? 'border-terra-400 bg-terra-50 ring-2 ring-terra-500/10'
                       : 'border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50'
                   )}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <div className={cn(
-                      'w-9 h-9 rounded-lg flex items-center justify-center',
+                      'w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0',
                       isSelected ? 'bg-terra-500 text-white' : 'bg-neutral-100 text-neutral-400'
                     )}>
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </div>
-                    <div>
-                      <p className="text-[13px] font-semibold text-neutral-900">{type.label}</p>
-                      <p className="text-[10px] text-neutral-500">{type.desc}</p>
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-[13px] font-semibold text-neutral-900 truncate">{type.label}</p>
+                      <p className="text-[9px] sm:text-[10px] text-neutral-500 truncate">{type.desc}</p>
                     </div>
                   </div>
                 </button>
@@ -376,7 +382,7 @@ export default function NewPromotionModal({
           </div>
 
           {/* Discount Value Inputs */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {formData.discountType === 'percentage' && (
               <FormField label="Discount %" required error={errors.discountValue}>
                 <Input
@@ -433,14 +439,14 @@ export default function NewPromotionModal({
 
         {/* Validity Period */}
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">
+          <h3 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3 sm:mb-4">
             Validity Period
           </h3>
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div>
-              <p className="text-[13px] font-medium text-neutral-700 mb-2">Stay Dates</p>
-              <div className="grid grid-cols-2 gap-4">
+              <p className="text-xs sm:text-[13px] font-medium text-neutral-700 mb-2">Stay Dates</p>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <FormField label="From">
                   <DatePicker
                     value={formData.stayStart}
@@ -462,8 +468,8 @@ export default function NewPromotionModal({
             </div>
 
             <div>
-              <p className="text-[13px] font-medium text-neutral-700 mb-2">Booking Window</p>
-              <div className="grid grid-cols-2 gap-4">
+              <p className="text-xs sm:text-[13px] font-medium text-neutral-700 mb-2">Booking Window</p>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <FormField label="From">
                   <DatePicker
                     value={formData.bookingStart}
@@ -488,18 +494,19 @@ export default function NewPromotionModal({
 
         {/* Restrictions */}
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">
+          <h3 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3 sm:mb-4">
             Restrictions
           </h3>
 
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <FormField label="Min Stay (nights)">
                 <Input
                   type="number"
                   value={formData.minLos}
                   onChange={(e) => handleChange('minLos', parseInt(e.target.value) || 1)}
                   min={1}
+                  className="h-9 sm:h-10 text-xs sm:text-sm"
                 />
               </FormField>
               <FormField label="Max Stay (nights)">
@@ -508,12 +515,13 @@ export default function NewPromotionModal({
                   value={formData.maxLos}
                   onChange={(e) => handleChange('maxLos', parseInt(e.target.value) || 30)}
                   min={1}
+                  className="h-9 sm:h-10 text-xs sm:text-sm"
                 />
               </FormField>
             </div>
 
             {/* Toggle Options */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
               {[
                 { key: 'cta', label: 'CTA', desc: 'Closed to Arrival' },
                 { key: 'ctd', label: 'CTD', desc: 'Closed to Departure' },
@@ -524,29 +532,29 @@ export default function NewPromotionModal({
                   type="button"
                   onClick={() => handleChange(toggle.key, !formData[toggle.key])}
                   className={cn(
-                    'p-3 rounded-lg border transition-all text-left',
+                    'p-2 sm:p-3 rounded-lg border transition-all text-left',
                     formData[toggle.key]
                       ? 'border-terra-400 bg-terra-50 ring-2 ring-terra-500/10'
                       : 'border-neutral-200 hover:border-neutral-300'
                   )}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[12px] font-semibold text-neutral-900">{toggle.label}</span>
+                  <div className="flex items-center justify-between mb-0.5 sm:mb-1">
+                    <span className="text-[10px] sm:text-[12px] font-semibold text-neutral-900">{toggle.label}</span>
                     <div className={cn(
-                      'w-4 h-4 rounded flex items-center justify-center',
+                      'w-3.5 h-3.5 sm:w-4 sm:h-4 rounded flex items-center justify-center flex-shrink-0',
                       formData[toggle.key] ? 'bg-terra-500 text-white' : 'border border-neutral-300 bg-white'
                     )}>
-                      {formData[toggle.key] && <Check className="w-3 h-3" strokeWidth={3} />}
+                      {formData[toggle.key] && <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3" strokeWidth={3} />}
                     </div>
                   </div>
-                  <p className="text-[10px] text-neutral-500">{toggle.desc}</p>
+                  <p className="text-[8px] sm:text-[10px] text-neutral-500 truncate">{toggle.desc}</p>
                 </button>
               ))}
             </div>
 
             {/* Blackout Dates */}
             <div>
-              <p className="text-[13px] font-medium text-neutral-700 mb-2">Blackout Dates</p>
+              <p className="text-xs sm:text-[13px] font-medium text-neutral-700 mb-2">Blackout Dates</p>
               <div className="flex gap-2 items-center">
                 <DatePicker
                   value={blackoutInput}
@@ -554,18 +562,18 @@ export default function NewPromotionModal({
                   placeholder="Select date"
                   className="flex-1"
                 />
-                <Button type="button" variant="outline" onClick={handleAddBlackout}>Add</Button>
+                <Button type="button" variant="outline" onClick={handleAddBlackout} className="text-xs sm:text-sm h-9 sm:h-10 px-3 sm:px-4">Add</Button>
               </div>
               {formData.blackoutDates.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2 sm:mt-3">
                   {formData.blackoutDates.map(date => (
                     <span
                       key={date}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200"
+                      className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[10px] sm:text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200"
                     >
                       {date}
                       <button type="button" onClick={() => handleRemoveBlackout(date)} className="hover:opacity-70">
-                        <X className="w-3 h-3" />
+                        <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                       </button>
                     </span>
                   ))}
@@ -577,27 +585,27 @@ export default function NewPromotionModal({
 
         {/* Room Eligibility */}
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
               Room Types
             </h3>
             <button
               type="button"
               onClick={handleSelectAllRooms}
-              className="text-[12px] text-terra-500 hover:text-terra-600 font-medium"
+              className="text-[10px] sm:text-[12px] text-terra-500 hover:text-terra-600 font-medium"
             >
               {allRoomsSelected ? 'Deselect All' : 'Select All'}
             </button>
           </div>
 
           {errors.eligibleRooms && (
-            <p className="text-rose-500 text-[11px] mb-3 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />
+            <p className="text-rose-500 text-[10px] sm:text-[11px] mb-2 sm:mb-3 flex items-center gap-1">
+              <AlertCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
               {errors.eligibleRooms}
             </p>
           )}
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
             {roomTypes.map(room => {
               const isSelected = formData.eligibleRooms.includes(room.id);
               return (
@@ -606,19 +614,19 @@ export default function NewPromotionModal({
                   type="button"
                   onClick={() => handleRoomToggle(room.id)}
                   className={cn(
-                    'flex items-center gap-3 p-3 rounded-lg border transition-all text-left',
+                    'flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-lg border transition-all text-left',
                     isSelected
                       ? 'border-terra-400 bg-terra-50 ring-2 ring-terra-500/10'
                       : 'border-neutral-200 hover:border-neutral-300'
                   )}
                 >
                   <div className={cn(
-                    'w-5 h-5 rounded flex items-center justify-center flex-shrink-0',
+                    'w-4 h-4 sm:w-5 sm:h-5 rounded flex items-center justify-center flex-shrink-0',
                     isSelected ? 'bg-terra-500 text-white' : 'border border-neutral-300 bg-white'
                   )}>
-                    {isSelected && <Check className="w-3 h-3" strokeWidth={3} />}
+                    {isSelected && <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3" strokeWidth={3} />}
                   </div>
-                  <span className="text-[13px] font-medium text-neutral-700">{room.name}</span>
+                  <span className="text-xs sm:text-[13px] font-medium text-neutral-700 truncate">{room.name}</span>
                 </button>
               );
             })}
@@ -627,21 +635,21 @@ export default function NewPromotionModal({
 
         {/* Channel Distribution */}
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">
+          <h3 className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3 sm:mb-4">
             Channel Distribution
           </h3>
 
           {errors.channels && (
-            <p className="text-rose-500 text-[11px] mb-3 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />
+            <p className="text-rose-500 text-[10px] sm:text-[11px] mb-2 sm:mb-3 flex items-center gap-1">
+              <AlertCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
               {errors.channels}
             </p>
           )}
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div>
-              <p className="text-[12px] font-medium text-neutral-600 mb-2">Direct Channels</p>
-              <div className="flex flex-wrap gap-2">
+              <p className="text-[10px] sm:text-[12px] font-medium text-neutral-600 mb-2">Direct Channels</p>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {CHANNELS.filter(c => c.type === 'direct').map(channel => {
                   const isSelected = formData.channels.includes(channel.id);
                   return (
@@ -650,13 +658,13 @@ export default function NewPromotionModal({
                       type="button"
                       onClick={() => handleChannelToggle(channel.id)}
                       className={cn(
-                        'flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-medium transition-all',
+                        'flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-[12px] font-medium transition-all',
                         isSelected
                           ? 'bg-terra-500 text-white'
                           : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
                       )}
                     >
-                      {isSelected && <Check className="w-3 h-3" />}
+                      {isSelected && <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
                       {channel.name}
                     </button>
                   );
@@ -665,8 +673,8 @@ export default function NewPromotionModal({
             </div>
 
             <div>
-              <p className="text-[12px] font-medium text-neutral-600 mb-2">OTA Channels</p>
-              <div className="flex flex-wrap gap-2">
+              <p className="text-[10px] sm:text-[12px] font-medium text-neutral-600 mb-2">OTA Channels</p>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {CHANNELS.filter(c => c.type === 'ota').map(channel => {
                   const isSelected = formData.channels.includes(channel.id);
                   return (
@@ -675,13 +683,13 @@ export default function NewPromotionModal({
                       type="button"
                       onClick={() => handleChannelToggle(channel.id)}
                       className={cn(
-                        'flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-medium transition-all',
+                        'flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-[12px] font-medium transition-all',
                         isSelected
                           ? 'bg-terra-500 text-white'
                           : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
                       )}
                     >
-                      {isSelected && <Check className="w-3 h-3" />}
+                      {isSelected && <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
                       {channel.name}
                     </button>
                   );

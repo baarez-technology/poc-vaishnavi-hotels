@@ -32,6 +32,9 @@ export interface Review {
   rating: number;
   title?: string;
   content: string;
+  comment?: string;  // Legacy field
+  review_date?: string;  // Legacy field
+  date?: string;  // Legacy field
   sentiment_score: number;
   sentiment_label: string;
   keywords: string[];
@@ -39,6 +42,19 @@ export interface Review {
   responded: boolean;
   response_text?: string;
   response_date?: string;
+}
+
+export interface ResponseTemplate {
+  id: number;
+  name: string;
+  content: string;
+  sentiment: string;  // positive, neutral, negative
+  tone: string;  // professional, friendly, etc.
+  language?: string;
+  is_default: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
 }
 
 export interface ReputationDashboard {
@@ -590,56 +606,88 @@ class ReputationService {
   }
 
   // ========================
+  // AI-POWERED FEATURES
+  // ========================
+
+  async getAIInsights(): Promise<{
+    insights: Array<{
+      title: string;
+      description: string;
+      type: 'opportunity' | 'warning' | 'trend' | 'recommendation';
+      priority: 'high' | 'medium' | 'low';
+      action: string;
+    }>;
+    summary: string;
+    health_score: number;
+    focus_areas: string[];
+  }> {
+    const response = await api.get(`${this.baseUrl}/ai/insights`);
+    return response.data.data || response.data;
+  }
+
+  async getAIThemeAnalysis(limit: number = 50): Promise<{
+    positive_themes: Array<{ theme: string; count: number; examples: string[] }>;
+    negative_themes: Array<{ theme: string; count: number; examples: string[] }>;
+    improvement_areas: string[];
+    strengths: string[];
+    summary: string;
+  }> {
+    const response = await api.get(`${this.baseUrl}/ai/themes`, {
+      params: { limit }
+    });
+    return response.data.data || response.data;
+  }
+
+  async getAIResponseSuggestions(reviewId: number): Promise<{
+    review_id: number;
+    review_summary: {
+      rating: number;
+      sentiment: string;
+      comment_preview: string | null;
+    };
+    suggestions: Array<{
+      tone: string;
+      response: string;
+      is_ai_generated: boolean;
+    }>;
+    ai_available: boolean;
+  }> {
+    const response = await api.get(`${this.baseUrl}/reviews/${reviewId}/ai-suggestions`);
+    return response.data.data || response.data;
+  }
+
+  // ========================
   // TEMPLATES
   // ========================
 
-  async getResponseTemplates(): Promise<Array<{
-    id: number;
-    name: string;
-    template_text: string;
-    sentiment_type: string;
-    language: string;
-    is_default: boolean;
-    created_at: string;
-  }>> {
-    const response = await api.get(`${this.baseUrl}/templates`);
+  async getResponseTemplates(tone?: string, sentiment?: string): Promise<ResponseTemplate[]> {
+    const params: Record<string, string> = {};
+    if (tone) params.tone = tone;
+    if (sentiment) params.sentiment = sentiment;
+
+    const response = await api.get(`${this.baseUrl}/templates`, { params });
     return response.data.data || response.data;
   }
 
   async createResponseTemplate(data: {
     name: string;
-    template_text: string;
-    sentiment_type: string;
-    language?: string;
+    content: string;
+    sentiment: string;
+    tone?: string;
     is_default?: boolean;
-  }): Promise<{
-    id: number;
-    name: string;
-    template_text: string;
-    sentiment_type: string;
-    language: string;
-    is_default: boolean;
-    created_at: string;
-  }> {
+  }): Promise<ResponseTemplate> {
     const response = await api.post(`${this.baseUrl}/templates`, data);
     return response.data.data || response.data;
   }
 
   async updateResponseTemplate(id: number, data: {
     name?: string;
-    template_text?: string;
-    sentiment_type?: string;
-    language?: string;
+    content?: string;
+    sentiment?: string;
+    tone?: string;
+    is_active?: boolean;
     is_default?: boolean;
-  }): Promise<{
-    id: number;
-    name: string;
-    template_text: string;
-    sentiment_type: string;
-    language: string;
-    is_default: boolean;
-    created_at: string;
-  }> {
+  }): Promise<ResponseTemplate> {
     const response = await api.patch(`${this.baseUrl}/templates/${id}`, data);
     return response.data.data || response.data;
   }

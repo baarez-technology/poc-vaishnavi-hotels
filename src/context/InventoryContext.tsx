@@ -2,8 +2,6 @@
  * INVENTORY CONTEXT
  * React Context for the Unified Inventory Engine
  * Provides inventory state and operations to all PMS components
- *
- * Now integrated with backend API for persistence.
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
@@ -18,12 +16,11 @@ import {
   generateRateGrid,
   generateRestrictionGrid
 } from '../data/inventory/sampleInventoryData';
-import inventoryService from '../api/services/inventory.service';
 
 // Create context
 const InventoryContext = createContext(null);
 
-// Storage key for persistence (fallback)
+// Storage key for persistence
 const STORAGE_KEY = 'glimmora_inventory_state';
 
 /**
@@ -61,11 +58,6 @@ export function InventoryProvider({ children }) {
   // State from engine
   const [state, setState] = useState(() => engineRef.current.getState());
 
-  // Backend loading state
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState(null);
-  const [isBackendAvailable, setIsBackendAvailable] = useState(false);
-
   // Sync status
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(null);
@@ -86,105 +78,24 @@ export function InventoryProvider({ children }) {
   }, []);
 
   /**
-   * Load state from backend API on mount
-   * Falls back to localStorage if backend unavailable
+   * Load persisted state on mount
    */
   useEffect(() => {
-    const loadFromBackend = async () => {
-      try {
-        setIsLoading(true);
-        setLoadError(null);
-
-        // Fetch inventory state from backend
-        const backendState = await inventoryService.getInventoryState();
-
-        // Update engine with backend data
-        if (backendState.room_types && backendState.room_types.length > 0) {
-          // Transform backend format to engine format
-          const transformedRoomTypes = backendState.room_types.map(rt => ({
-            id: rt.id.toString(),
-            name: rt.name,
-            slug: rt.slug,
-            category: rt.category || 'standard',
-            description: rt.description,
-            basePrice: Math.round(rt.base_price * 100), // Convert to cents
-            maxGuests: rt.max_guests,
-            totalRooms: rt.total_rooms,
-            amenities: rt.amenities || [],
-            images: rt.images || [],
-            isActive: rt.is_active
-          }));
-
-          const transformedRatePlans = backendState.rate_plans.map(rp => ({
-            id: rp.code.toLowerCase(),
-            code: rp.code,
-            name: rp.name,
-            description: rp.description || '',
-            planType: rp.plan_type,
-            currency: rp.currency,
-            isActive: rp.is_active
-          }));
-
-          const transformedPromotions = backendState.promotions.map(p => ({
-            id: p.code.toLowerCase(),
-            code: p.code,
-            name: p.name,
-            description: p.description || '',
-            discountType: p.discount_type,
-            discountValue: p.discount_value,
-            validFrom: p.valid_from,
-            validUntil: p.valid_until,
-            usageCount: p.usage_count,
-            usageLimit: p.usage_limit,
-            isActive: p.is_active
-          }));
-
-          const transformedOtaMappings = backendState.ota_channels.map(ota => ({
-            otaCode: ota.code,
-            name: ota.name,
-            logoUrl: ota.logo_url,
-            isConnected: ota.is_connected,
-            syncEnabled: ota.sync_enabled,
-            lastSyncAt: ota.last_sync_at,
-            commissionPercent: ota.commission_percent
-          }));
-
-          engineRef.current.updateState({
-            roomTypes: transformedRoomTypes,
-            ratePlans: transformedRatePlans,
-            promotions: transformedPromotions,
-            otaMappings: transformedOtaMappings
-          });
-
-          setIsBackendAvailable(true);
-          console.log('[InventoryContext] Loaded state from backend API');
+    try {
+      const savedState = localStorage.getItem(STORAGE_KEY);
+      if (savedState) {
+        const parsed = JSON.parse(savedState);
+        // Only restore certain parts of state to avoid stale data issues
+        if (parsed.promotions) {
+          engineRef.current.updateState({ promotions: parsed.promotions });
         }
-      } catch (error) {
-        console.warn('[InventoryContext] Backend unavailable, using local data:', error);
-        setLoadError(error);
-        setIsBackendAvailable(false);
-
-        // Fallback to localStorage
-        try {
-          const savedState = localStorage.getItem(STORAGE_KEY);
-          if (savedState) {
-            const parsed = JSON.parse(savedState);
-            if (parsed.promotions) {
-              engineRef.current.updateState({ promotions: parsed.promotions });
-            }
-            if (parsed.overbookingAlerts) {
-              engineRef.current.updateState({ overbookingAlerts: parsed.overbookingAlerts });
-            }
-          }
-        } catch (localError) {
-          console.warn('Failed to load from localStorage:', localError);
+        if (parsed.overbookingAlerts) {
+          engineRef.current.updateState({ overbookingAlerts: parsed.overbookingAlerts });
         }
-      } finally {
-        setIsLoading(false);
       }
-    };
-
-    loadFromBackend();
+    } catch (error) {
+      console.warn('Failed to load inventory state:', error);
+    }
   }, []);
 
   /**
@@ -541,11 +452,6 @@ export function InventoryProvider({ children }) {
     overbookingAlerts: state.overbookingAlerts,
     syncQueue: state.syncQueue,
     syncLogs: state.syncLogs,
-
-    // Backend integration status
-    isLoading,
-    loadError,
-    isBackendAvailable,
 
     // Sync status
     isSyncing,

@@ -113,10 +113,6 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
     [formState.checkIn, formState.checkOut]
   );
 
-  // Check if booking is confirmed or beyond - sensitive fields should be read-only
-  const isBookingConfirmed = booking &&
-    ['confirmed', 'checked_in', 'checked_out', 'completed', 'in_house', 'CONFIRMED', 'CHECKED_IN', 'CHECKED_OUT', 'COMPLETED', 'IN_HOUSE'].includes(booking.status);
-
   const isFormValid =
     formState.guest.trim() &&
     formState.email.trim() &&
@@ -172,21 +168,6 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
       footer={drawerFooter}
     >
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Notice for confirmed bookings */}
-        {isBookingConfirmed && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-            <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <div>
-              <p className="text-sm font-medium text-amber-800">Booking Confirmed</p>
-              <p className="text-xs text-amber-700 mt-1">
-                Guest contact information (email, phone) and special requests cannot be modified after booking confirmation for security and audit purposes.
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* Guest Information */}
         <section>
           <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">
@@ -207,19 +188,14 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
               </div>
               <div className="space-y-2">
                 <label className="block text-[13px] font-medium text-neutral-700">
-                  Email {isBookingConfirmed && <span className="text-xs text-amber-600">(Locked)</span>}
+                  Email
                 </label>
                 <input
                   name="email"
                   type="email"
                   value={formState.email}
                   onChange={handleChange}
-                  readOnly={isBookingConfirmed}
-                  className={`w-full h-9 px-3.5 rounded-lg text-[13px] border transition-all duration-150 focus:outline-none ${
-                    isBookingConfirmed
-                      ? 'bg-neutral-100 text-neutral-500 border-neutral-200 cursor-not-allowed'
-                      : 'bg-white border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10'
-                  }`}
+                  className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
                 />
               </div>
             </div>
@@ -227,19 +203,14 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="block text-[13px] font-medium text-neutral-700">
-                  Phone {isBookingConfirmed && <span className="text-xs text-amber-600">(Locked)</span>}
+                  Phone
                 </label>
                 <input
                   name="phone"
                   type="tel"
                   value={formState.phone}
                   onChange={handleChange}
-                  readOnly={isBookingConfirmed}
-                  className={`w-full h-9 px-3.5 rounded-lg text-[13px] border transition-all duration-150 focus:outline-none ${
-                    isBookingConfirmed
-                      ? 'bg-neutral-100 text-neutral-500 border-neutral-200 cursor-not-allowed'
-                      : 'bg-white border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10'
-                  }`}
+                  className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
                 />
               </div>
               <div className="space-y-2">
@@ -312,20 +283,15 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
           </h3>
           <div className="space-y-2">
             <label className="block text-[13px] font-medium text-neutral-700">
-              Special Requests {isBookingConfirmed && <span className="text-xs text-amber-600">(Locked)</span>}
+              Special Requests
             </label>
             <textarea
               name="notes"
               value={formState.notes}
               onChange={handleChange}
-              readOnly={isBookingConfirmed}
               rows={3}
               placeholder="Any special requirements..."
-              className={`w-full px-3.5 py-2.5 rounded-lg text-[13px] border transition-all duration-150 focus:outline-none resize-none ${
-                isBookingConfirmed
-                  ? 'bg-neutral-100 text-neutral-500 border-neutral-200 cursor-not-allowed'
-                  : 'bg-white border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10'
-              }`}
+              className="w-full px-3.5 py-2.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150 resize-none"
             />
           </div>
         </section>

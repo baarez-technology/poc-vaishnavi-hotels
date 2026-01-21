@@ -1,6 +1,6 @@
 /**
- * Glimmora Design System - Base Drawer Component
- * Reusable drawer/modal component following luxury design principles
+ * Glimmora Design System v5.0 - Base Drawer Component
+ * Reusable drawer/modal component with dynamic branding
  */
 
 import { useEffect } from 'react';
@@ -85,21 +85,21 @@ export function Drawer({
             size="sm"
             label="Close"
             onClick={onClose}
-            className="absolute top-5 right-5 z-30 hover:bg-neutral-100 rounded-lg transition-all duration-200"
+            className="absolute top-4 right-4 sm:top-5 sm:right-5 z-30 hover:bg-neutral-100 rounded-[var(--brand-radius-md)] transition-all duration-200"
           />
         )}
 
         {/* Header - title/subtitle or custom header */}
         {(title || subtitle) && !header && (
-          <div className="relative px-6 py-5 pr-14 border-b border-neutral-100 bg-white flex-shrink-0 z-10">
+          <div className="relative px-4 sm:px-6 py-4 sm:py-5 pr-12 sm:pr-14 border-b border-neutral-100 bg-white flex-shrink-0 z-10">
             <div className="flex-1 min-w-0">
               {title && (
-                <h2 className="text-lg font-semibold text-neutral-900 tracking-tight">
+                <h2 className="text-base sm:text-lg font-semibold text-neutral-900 tracking-tight">
                   {title}
                 </h2>
               )}
               {subtitle && (
-                <p className="text-[11px] text-neutral-400 font-medium mt-1">
+                <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5 sm:mt-1">
                   {subtitle}
                 </p>
               )}
@@ -109,19 +109,19 @@ export function Drawer({
 
         {/* Custom Header */}
         {header && (
-          <div className="relative px-6 py-5 pr-14 border-b border-neutral-100 bg-white flex-shrink-0 z-20 overflow-visible">
+          <div className="relative px-4 sm:px-6 py-4 sm:py-5 pr-12 sm:pr-14 border-b border-neutral-100 bg-white flex-shrink-0 z-20 overflow-visible">
             {header}
           </div>
         )}
 
         {/* Content */}
-        <div className={cn("flex-1 overflow-y-auto bg-white z-10", noPadding ? "" : "px-6 py-6")}>
+        <div className={cn("flex-1 overflow-y-auto bg-white z-10", noPadding ? "" : "px-4 sm:px-6 py-4 sm:py-6")}>
           {children}
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className="px-6 py-5 border-t border-neutral-100 bg-neutral-50/50 flex-shrink-0 z-10">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-t border-neutral-100 bg-neutral-50/50 flex-shrink-0 z-10">
             {footer}
           </div>
         )}
@@ -160,9 +160,14 @@ export function ConfirmDrawer({
       buttonVariant: 'primary'
     },
     primary: {
-      iconBg: 'bg-terra-50',
-      iconColor: 'text-terra-600',
+      iconBg: 'bg-[var(--brand-primary-50)]',
+      iconColor: 'text-[var(--brand-primary)]',
       buttonVariant: 'primary'
+    },
+    secondary: {
+      iconBg: 'bg-[var(--brand-accent-50)]',
+      iconColor: 'text-[var(--brand-accent)]',
+      buttonVariant: 'secondary'
     }
   };
 
@@ -180,7 +185,7 @@ export function ConfirmDrawer({
         {/* Content */}
         <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 text-center">
           {/* Icon */}
-          <div className={cn('w-16 h-16 rounded-2xl flex items-center justify-center mb-6', config.iconBg)}>
+          <div className={cn('w-16 h-16 rounded-[var(--brand-radius-card)] flex items-center justify-center mb-6', config.iconBg)}>
             <IconComponent className={cn('w-8 h-8', config.iconColor)} />
           </div>
 

@@ -4,6 +4,7 @@ import {
   CalendarX, ChevronUp, ChevronDown, ChevronsUpDown,
   Mail, Phone, Clock, ArrowRight, Sparkles, User
 } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 
 /**
  * Premium Bookings Table
@@ -22,6 +23,7 @@ export default function PremiumBookingsTable({
   onSelectAll,
   viewDensity = 'comfortable'
 }) {
+  const { formatCurrency } = useCurrency();
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [hoveredRow, setHoveredRow] = useState(null);
   const dropdownRef = useRef(null);
@@ -45,8 +47,6 @@ export default function PremiumBookingsTable({
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
   };
-
-  const formatCurrency = (amount) => `$${amount.toLocaleString()}`;
 
   const getStatusConfig = (status) => {
     const configs = {

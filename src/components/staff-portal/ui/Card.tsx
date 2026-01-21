@@ -21,7 +21,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={`
-          bg-white rounded-[14px] shadow-sm border border-neutral-300
+          bg-white rounded-[var(--brand-radius-card)] shadow-sm border border-neutral-300
           ${paddingStyles[padding]}
           ${hover ? 'transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-pointer' : ''}
           ${onClick ? 'cursor-pointer' : ''}
@@ -178,7 +178,7 @@ export function StatCard({
   return (
     <div
       className={`
-        relative overflow-hidden rounded-[10px] bg-white p-4 sm:p-6 transition-all
+        relative overflow-hidden rounded-[var(--brand-radius-card)] bg-white p-4 sm:p-6 transition-all
         ${onClick ? 'cursor-pointer' : ''}
         ${className}
       `}

@@ -87,7 +87,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         className={`
-          relative z-[51] bg-white rounded-[10px] w-full overflow-hidden
+          relative z-[51] bg-white rounded-[var(--brand-radius-card)] w-full overflow-hidden
           max-h-[90vh] flex flex-col
           border border-neutral-200 shadow-xl shadow-neutral-900/10
           ${sizeStyles[size]}
@@ -156,7 +156,8 @@ export function ConfirmModal({
   const variantConfig: Record<string, { iconBg: string; iconColor: string }> = {
     danger: { iconBg: 'bg-rose-50', iconColor: 'text-rose-600' },
     warning: { iconBg: 'bg-gold-50', iconColor: 'text-gold-600' },
-    primary: { iconBg: 'bg-terra-50', iconColor: 'text-terra-600' },
+    primary: { iconBg: 'bg-[var(--brand-primary-50)]', iconColor: 'text-[var(--brand-primary)]' },
+    secondary: { iconBg: 'bg-[var(--brand-accent-50)]', iconColor: 'text-[var(--brand-accent)]' },
     success: { iconBg: 'bg-sage-50', iconColor: 'text-sage-600' }
   };
 

@@ -6,13 +6,15 @@ import { Button } from '../ui2/Button';
 const STORAGE_KEY = 'glimmora_branding';
 
 const PRIMARY_COLORS = [
-  '#A57865', '#4E5840', '#5C9BA4', '#CDB261', '#C8B29D',
-  '#8B5CF6', '#EC4899', '#F97316', '#14B8A6', '#6366F1'
+  '#A57865', '#4E5840', '#5C9BA4', '#CDB261',
+  // '#C8B29D',
+  // '#8B5CF6', '#EC4899', '#F97316', '#14B8A6', '#6366F1'
 ];
 
 const ACCENT_COLORS = [
-  '#8E6554', '#3D4731', '#4A8A99', '#B5A051', '#B09D8A',
-  '#7C3AED', '#DB2777', '#EA580C', '#0D9488', '#4F46E5'
+  '#8E6554', '#3D4731', '#4A8A99', '#B5A051',
+  // '#B09D8A',
+  // '#7C3AED', '#DB2777', '#EA580C', '#0D9488', '#4F46E5'
 ];
 
 const BUTTON_STYLES = [
@@ -41,6 +43,8 @@ export default function BrandingTab() {
   const saveBranding = (newBranding: typeof branding) => {
     setBranding(newBranding);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newBranding));
+    // Dispatch custom event to notify BrandingContext of changes
+    window.dispatchEvent(new CustomEvent('branding-updated'));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -63,12 +67,12 @@ export default function BrandingTab() {
   const selectedFont = FONT_FAMILIES.find(f => f.value === branding.fontFamily) || FONT_FAMILIES[0];
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="max-w-4xl space-y-4 sm:space-y-6">
       {/* Header */}
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-neutral-900">Branding & Theme</h1>
-          <p className="text-sm text-neutral-500 mt-1">
+          <h1 className="text-base sm:text-lg font-semibold text-neutral-900">Branding & Theme</h1>
+          <p className="text-[12px] sm:text-sm text-neutral-500 mt-1">
             Customize colors, fonts, and visual style
           </p>
         </div>
@@ -76,7 +80,7 @@ export default function BrandingTab() {
           {saved && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-sage-50 text-sage-600 rounded-lg">
               <Check className="w-4 h-4" />
-              <span className="text-sm font-medium">Saved</span>
+              <span className="text-[12px] sm:text-sm font-medium">Saved</span>
             </div>
           )}
           <Button variant="primary" onClick={() => saveBranding(branding)}>
@@ -85,23 +89,23 @@ export default function BrandingTab() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Settings Column */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           {/* Primary Color */}
           <div className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-            <div className="px-6 py-4 border-b border-neutral-100">
-              <h2 className="text-[13px] font-semibold text-neutral-800">Primary Color</h2>
-              <p className="text-[11px] text-neutral-500 mt-0.5">Main brand color used across the interface</p>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+              <h2 className="text-[12px] sm:text-[13px] font-semibold text-neutral-800">Primary Color</h2>
+              <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-0.5">Main brand color used across the interface</p>
             </div>
-            <div className="p-6">
-              <div className="flex items-center gap-4">
+            <div className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                 <div className="flex gap-2 flex-wrap">
                   {PRIMARY_COLORS.map((color) => (
                     <button
                       key={color}
                       onClick={() => handleChange('primaryColor', color)}
-                      className={`w-8 h-8 rounded-lg border-2 transition-all ${
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg border-2 transition-all ${
                         branding.primaryColor === color
                           ? 'border-terra-500'
                           : 'border-transparent hover:border-neutral-300'
@@ -110,18 +114,18 @@ export default function BrandingTab() {
                     />
                   ))}
                 </div>
-                <div className="flex items-center gap-2 ml-auto">
+                <div className="flex items-center gap-2 sm:ml-auto">
                   <input
                     type="color"
                     value={branding.primaryColor}
                     onChange={(e) => handleChange('primaryColor', e.target.value)}
-                    className="w-10 h-10 rounded-lg cursor-pointer border border-neutral-200 hover:border-neutral-300 transition-colors"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg cursor-pointer border border-neutral-200 hover:border-neutral-300 transition-colors"
                   />
                   <input
                     type="text"
                     value={branding.primaryColor}
                     onChange={(e) => handleChange('primaryColor', e.target.value)}
-                    className="w-24 h-10 px-3 rounded-lg border border-neutral-200 text-sm text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:ring-2 focus:ring-terra-500/20 focus:ring-0 focus:outline-none transition-colors font-mono"
+                    className="w-20 sm:w-24 h-9 sm:h-10 px-2 sm:px-3 rounded-lg border border-neutral-200 text-[12px] sm:text-sm text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:ring-2 focus:ring-terra-500/20 focus:ring-0 focus:outline-none transition-colors font-mono"
                   />
                 </div>
               </div>
@@ -130,18 +134,18 @@ export default function BrandingTab() {
 
           {/* Accent Color */}
           <div className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-            <div className="px-6 py-4 border-b border-neutral-100">
-              <h2 className="text-[13px] font-semibold text-neutral-800">Accent Color</h2>
-              <p className="text-[11px] text-neutral-500 mt-0.5">Secondary color for highlights and accents</p>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+              <h2 className="text-[12px] sm:text-[13px] font-semibold text-neutral-800">Accent Color</h2>
+              <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-0.5">Secondary color for highlights and accents</p>
             </div>
-            <div className="p-6">
-              <div className="flex items-center gap-4">
+            <div className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                 <div className="flex gap-2 flex-wrap">
                   {ACCENT_COLORS.map((color) => (
                     <button
                       key={color}
                       onClick={() => handleChange('accentColor', color)}
-                      className={`w-8 h-8 rounded-lg border-2 transition-all ${
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg border-2 transition-all ${
                         branding.accentColor === color
                           ? 'border-terra-500'
                           : 'border-transparent hover:border-neutral-300'
@@ -150,18 +154,18 @@ export default function BrandingTab() {
                     />
                   ))}
                 </div>
-                <div className="flex items-center gap-2 ml-auto">
+                <div className="flex items-center gap-2 sm:ml-auto">
                   <input
                     type="color"
                     value={branding.accentColor}
                     onChange={(e) => handleChange('accentColor', e.target.value)}
-                    className="w-10 h-10 rounded-lg cursor-pointer border border-neutral-200 hover:border-neutral-300 transition-colors"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg cursor-pointer border border-neutral-200 hover:border-neutral-300 transition-colors"
                   />
                   <input
                     type="text"
                     value={branding.accentColor}
                     onChange={(e) => handleChange('accentColor', e.target.value)}
-                    className="w-24 h-10 px-3 rounded-lg border border-neutral-200 text-sm text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:ring-2 focus:ring-terra-500/20 focus:ring-0 focus:outline-none transition-colors font-mono"
+                    className="w-20 sm:w-24 h-9 sm:h-10 px-2 sm:px-3 rounded-lg border border-neutral-200 text-[12px] sm:text-sm text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:ring-2 focus:ring-terra-500/20 focus:ring-0 focus:outline-none transition-colors font-mono"
                   />
                 </div>
               </div>
@@ -170,11 +174,11 @@ export default function BrandingTab() {
 
           {/* Font Family */}
           <div className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-            <div className="px-6 py-4 border-b border-neutral-100">
-              <h2 className="text-[13px] font-semibold text-neutral-800">Font Family</h2>
-              <p className="text-[11px] text-neutral-500 mt-0.5">Typography used throughout the application</p>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+              <h2 className="text-[12px] sm:text-[13px] font-semibold text-neutral-800">Font Family</h2>
+              <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-0.5">Typography used throughout the application</p>
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">Select Font</label>
               <div className="relative">
                 <button
@@ -213,27 +217,27 @@ export default function BrandingTab() {
 
           {/* Button Style */}
           <div className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-            <div className="px-6 py-4 border-b border-neutral-100">
-              <h2 className="text-[13px] font-semibold text-neutral-800">Button Style</h2>
-              <p className="text-[11px] text-neutral-500 mt-0.5">Corner radius style for buttons</p>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+              <h2 className="text-[12px] sm:text-[13px] font-semibold text-neutral-800">Button Style</h2>
+              <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-0.5">Corner radius style for buttons</p>
             </div>
-            <div className="p-6">
-              <div className="grid grid-cols-3 gap-3">
+            <div className="p-4 sm:p-6">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 {BUTTON_STYLES.map((style) => (
                   <button
                     key={style.value}
                     onClick={() => handleChange('buttonStyle', style.value)}
-                    className={`p-4 rounded-lg border transition-colors ${
+                    className={`p-2 sm:p-4 rounded-lg border transition-colors ${
                       branding.buttonStyle === style.value
                         ? 'border-terra-500 bg-neutral-50'
                         : 'border-neutral-200 hover:border-neutral-300'
                     }`}
                   >
                     <div
-                      className={`w-full h-8 ${style.preview}`}
+                      className={`w-full h-6 sm:h-8 ${style.preview}`}
                       style={{ backgroundColor: branding.primaryColor }}
                     />
-                    <p className="text-xs text-neutral-600 mt-2 text-center">{style.label}</p>
+                    <p className="text-[10px] sm:text-xs text-neutral-600 mt-1.5 sm:mt-2 text-center">{style.label}</p>
                   </button>
                 ))}
               </div>
@@ -242,25 +246,25 @@ export default function BrandingTab() {
 
           {/* Logo & Favicon */}
           <div className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-            <div className="px-6 py-4 border-b border-neutral-100">
-              <h2 className="text-[13px] font-semibold text-neutral-800">Logo & Favicon</h2>
-              <p className="text-[11px] text-neutral-500 mt-0.5">Brand assets for your property</p>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+              <h2 className="text-[12px] sm:text-[13px] font-semibold text-neutral-800">Logo & Favicon</h2>
+              <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-0.5">Brand assets for your property</p>
             </div>
-            <div className="p-6">
-              <div className="grid grid-cols-2 gap-6">
+            <div className="p-4 sm:p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 {/* Logo */}
                 <div>
-                  <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">Logo</label>
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-lg border border-neutral-200 flex items-center justify-center bg-neutral-50 overflow-hidden">
+                  <label className="block text-[12px] sm:text-[13px] font-medium text-neutral-600 mb-1.5">Logo</label>
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg border border-neutral-200 flex items-center justify-center bg-neutral-50 overflow-hidden flex-shrink-0">
                       {branding.logo ? (
                         <img src={branding.logo} alt="Logo" className="w-full h-full object-contain" />
                       ) : (
-                        <span className="text-neutral-400 text-xs">Logo</span>
+                        <span className="text-neutral-400 text-[10px] sm:text-xs">Logo</span>
                       )}
                     </div>
                     <label className="cursor-pointer">
-                      <span className="inline-flex items-center justify-center whitespace-nowrap h-9 px-4 text-sm gap-2 rounded-lg text-terra-600 font-semibold bg-white border border-terra-200 hover:bg-terra-50 hover:border-terra-300 active:bg-terra-100 transition-all duration-150 ease-out">
+                      <span className="inline-flex items-center justify-center whitespace-nowrap h-8 sm:h-9 px-3 sm:px-4 text-[12px] sm:text-sm gap-2 rounded-lg text-terra-600 font-semibold bg-white border border-terra-200 hover:bg-terra-50 hover:border-terra-300 active:bg-terra-100 transition-all duration-150 ease-out">
                         Upload
                       </span>
                       <input
@@ -275,17 +279,17 @@ export default function BrandingTab() {
 
                 {/* Favicon */}
                 <div>
-                  <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">Favicon</label>
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg border border-neutral-200 flex items-center justify-center bg-neutral-50 overflow-hidden">
+                  <label className="block text-[12px] sm:text-[13px] font-medium text-neutral-600 mb-1.5">Favicon</label>
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg border border-neutral-200 flex items-center justify-center bg-neutral-50 overflow-hidden flex-shrink-0">
                       {branding.favicon ? (
                         <img src={branding.favicon} alt="Favicon" className="w-full h-full object-contain" />
                       ) : (
-                        <span className="text-neutral-400 text-[10px]">ICO</span>
+                        <span className="text-neutral-400 text-[9px] sm:text-[10px]">ICO</span>
                       )}
                     </div>
                     <label className="cursor-pointer">
-                      <span className="inline-flex items-center justify-center whitespace-nowrap h-9 px-4 text-sm gap-2 rounded-lg text-terra-600 font-semibold bg-white border border-terra-200 hover:bg-terra-50 hover:border-terra-300 active:bg-terra-100 transition-all duration-150 ease-out">
+                      <span className="inline-flex items-center justify-center whitespace-nowrap h-8 sm:h-9 px-3 sm:px-4 text-[12px] sm:text-sm gap-2 rounded-lg text-terra-600 font-semibold bg-white border border-terra-200 hover:bg-terra-50 hover:border-terra-300 active:bg-terra-100 transition-all duration-150 ease-out">
                         Upload
                       </span>
                       <input
@@ -304,13 +308,13 @@ export default function BrandingTab() {
 
         {/* Preview Column */}
         <div className="lg:col-span-1">
-          <div className="sticky top-6">
+          <div className="lg:sticky lg:top-6">
             <div className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-              <div className="px-6 py-4 border-b border-neutral-100">
-                <h2 className="text-[13px] font-semibold text-neutral-800">Preview</h2>
-                <p className="text-[11px] text-neutral-500 mt-0.5">Live preview of your changes</p>
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+                <h2 className="text-[12px] sm:text-[13px] font-semibold text-neutral-800">Preview</h2>
+                <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-0.5">Live preview of your changes</p>
               </div>
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {/* Sidebar Preview */}
                 <div
                   className="rounded-lg p-4 mb-5"

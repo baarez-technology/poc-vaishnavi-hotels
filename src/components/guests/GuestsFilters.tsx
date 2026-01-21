@@ -32,7 +32,7 @@ function FilterSelect({ value, onChange, options, placeholder, icon: Icon }) {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`h-9 px-3.5 rounded-[8px] text-[13px] bg-white border transition-all duration-150 flex items-center gap-2 focus:outline-none min-w-[140px] ${
+        className={`h-9 px-2.5 sm:px-3.5 rounded-[8px] text-xs sm:text-[13px] bg-white border transition-all duration-150 flex items-center gap-1.5 sm:gap-2 focus:outline-none w-full sm:min-w-[140px] ${
           isOpen
             ? 'border-terra-400 ring-2 ring-terra-500/10'
             : value !== 'all'
@@ -40,8 +40,8 @@ function FilterSelect({ value, onChange, options, placeholder, icon: Icon }) {
             : 'border-neutral-200 hover:border-neutral-300'
         }`}
       >
-        {Icon && <Icon className={`w-4 h-4 ${value !== 'all' ? 'text-terra-500' : 'text-neutral-400'}`} />}
-        <span className={value !== 'all' ? 'text-terra-700 font-medium' : 'text-neutral-600'}>
+        {Icon && <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 ${value !== 'all' ? 'text-terra-500' : 'text-neutral-400'}`} />}
+        <span className={`truncate ${value !== 'all' ? 'text-terra-700 font-medium' : 'text-neutral-600'}`}>
           {displayLabel}
         </span>
         <svg className={`w-4 h-4 ml-auto transition-transform ${isOpen ? 'rotate-180' : ''} ${value !== 'all' ? 'text-terra-500' : 'text-neutral-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -102,42 +102,49 @@ export default function GuestsFilters({ filters, onFilterChange, onClearFilters,
   ];
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
       {/* Country Filter */}
-      <FilterSelect
-        value={filters.country}
-        onChange={(value) => onFilterChange('country', value)}
-        options={countryOptions}
-        placeholder="All Countries"
-        icon={Globe}
-      />
+      <div className="w-[calc(50%-4px)] sm:w-auto">
+        <FilterSelect
+          value={filters.country}
+          onChange={(value) => onFilterChange('country', value)}
+          options={countryOptions}
+          placeholder="All Countries"
+          icon={Globe}
+        />
+      </div>
 
       {/* Emotion Filter */}
-      <FilterSelect
-        value={filters.emotion}
-        onChange={(value) => onFilterChange('emotion', value)}
-        options={emotionOptions}
-        placeholder="All Emotions"
-        icon={Heart}
-      />
+      <div className="w-[calc(50%-4px)] sm:w-auto">
+        <FilterSelect
+          value={filters.emotion}
+          onChange={(value) => onFilterChange('emotion', value)}
+          options={emotionOptions}
+          placeholder="All Emotions"
+          icon={Heart}
+        />
+      </div>
 
       {/* Status Filter */}
-      <FilterSelect
-        value={filters.status}
-        onChange={(value) => onFilterChange('status', value)}
-        options={statusOptions}
-        placeholder="All Statuses"
-        icon={UserCheck}
-      />
+      <div className="w-full sm:w-auto">
+        <FilterSelect
+          value={filters.status}
+          onChange={(value) => onFilterChange('status', value)}
+          options={statusOptions}
+          placeholder="All Statuses"
+          icon={UserCheck}
+        />
+      </div>
 
       {/* Clear All Filters */}
       {hasActiveFilters && (
         <button
           onClick={onClearFilters}
-          className="h-9 px-3 flex items-center gap-1.5 text-[13px] font-medium text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-[8px] transition-colors"
+          className="h-9 px-2 sm:px-3 flex items-center gap-1 sm:gap-1.5 text-xs sm:text-[13px] font-medium text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-[8px] transition-colors"
         >
-          <X className="w-4 h-4" />
-          Clear All
+          <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden xs:inline">Clear</span>
+          <span className="hidden sm:inline">All</span>
         </button>
       )}
     </div>

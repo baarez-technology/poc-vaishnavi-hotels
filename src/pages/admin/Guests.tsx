@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useGuests } from '../../hooks/admin/useGuests';
 import { usePagination } from '../../hooks/usePagination';
 import { useDrawer } from '../../hooks/useDrawer';
 import { useModal } from '../../hooks/useModal';
 import { useAdminSafe } from '../../contexts/AdminContext';
-import { useToast } from '../../hooks/useToast';
 import GuestsTabs from '../../components/guests/GuestsTabs';
 import GuestsSearch from '../../components/guests/GuestsSearch';
 import GuestsFilters from '../../components/guests/GuestsFilters';
@@ -24,7 +24,6 @@ import {
   removeNoteFromGuest,
   calculateLoyaltyTier,
 } from '../../utils/guests';
-import Toast from '../../components/common/Toast';
 
 export default function Guests() {
   const navigate = useNavigate();
@@ -61,9 +60,6 @@ export default function Guests() {
   const editModal = useModal();
   const messageModal = useModal();
   const deleteModal = useModal();
-
-  // Toast notifications
-  const { toast, showToast, hideToast } = useToast();
 
   // Loading states
   const [isAdding, setIsAdding] = useState(false);
@@ -108,25 +104,9 @@ export default function Guests() {
     setIsDeleting(true);
     try {
       if (deleteGuest) {
-        await deleteGuest(guestId);
+        deleteGuest(guestId);
       }
       deleteModal.closeModal();
-      showToast('Guest deleted successfully', 'success');
-    } catch (error: any) {
-      console.error('Failed to delete guest:', error);
-      // Extract specific error message from API response
-      // Handle both string detail and Pydantic validation error array format
-      const detail = error?.response?.data?.detail;
-      let errorMessage = 'Failed to delete guest. Please try again.';
-      if (typeof detail === 'string') {
-        errorMessage = detail;
-      } else if (Array.isArray(detail) && detail.length > 0) {
-        // Pydantic validation errors: [{type, loc, msg, input}]
-        errorMessage = detail.map(e => e.msg || e.message).join(', ');
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-      showToast(errorMessage, 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -136,29 +116,11 @@ export default function Guests() {
     setIsSaving(true);
     try {
       await updateGuest(guestId, updates);
+      toast.success('Guest updated successfully');
       editModal.closeModal();
-      showToast('Guest updated successfully', 'success');
     } catch (error: any) {
       console.error('Failed to update guest:', error);
-      console.error('Error response data:', error?.response?.data);
-      // Extract specific error message from API response
-      // Handle both string detail and Pydantic validation error array format
-      const detail = error?.response?.data?.detail;
-      let errorMessage = 'Failed to update guest. Please try again.';
-      if (typeof detail === 'string') {
-        errorMessage = detail;
-      } else if (Array.isArray(detail) && detail.length > 0) {
-        // Pydantic validation errors: [{type, loc, msg, input}]
-        // Include field location for better debugging
-        errorMessage = detail.map(e => {
-          const field = e.loc ? e.loc.join('.') : '';
-          const msg = e.msg || e.message || 'Unknown error';
-          return field ? `${field}: ${msg}` : msg;
-        }).join(', ');
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-      showToast(errorMessage, 'error');
+      toast.error(error?.response?.data?.detail || 'Failed to update guest. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -179,41 +141,19 @@ export default function Guests() {
     try {
       if (addGuest) {
         await addGuest(guestData);
+        toast.success(`Guest "${guestData.name}" added successfully`);
       }
       addModal.closeModal();
-      showToast('Guest added successfully', 'success');
     } catch (error: any) {
       console.error('Failed to add guest:', error);
-      // Extract specific error message from API response
-      // Handle both string detail and Pydantic validation error array format
-      const detail = error?.response?.data?.detail;
-      let errorMessage = 'Failed to add guest. Please try again.';
-      if (typeof detail === 'string') {
-        errorMessage = detail;
-      } else if (Array.isArray(detail) && detail.length > 0) {
-        // Pydantic validation errors: [{type, loc, msg, input}]
-        errorMessage = detail.map(e => e.msg || e.message).join(', ');
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-      showToast(errorMessage, 'error');
+      toast.error(error?.response?.data?.detail || 'Failed to add guest. Please try again.');
     } finally {
       setIsAdding(false);
     }
   };
 
   const handleExportGuests = () => {
-    try {
-      if (!guests || guests.length === 0) {
-        showToast('No guests to export', 'error');
-        return;
-      }
-      exportGuestsToCSV(guests, `guests_export_${new Date().toISOString().split('T')[0]}.csv`);
-      showToast(`Exported ${guests.length} guests successfully`, 'success');
-    } catch (error) {
-      console.error('Failed to export guests:', error);
-      showToast('Failed to export guests. Please try again.', 'error');
-    }
+    exportGuestsToCSV(guests, `guests_export_${new Date().toISOString().split('T')[0]}.csv`);
   };
 
   const handleViewProfile = (guest) => {
@@ -247,12 +187,12 @@ export default function Guests() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <div className="px-10 py-6 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Page Header */}
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">Guests</h1>
-            <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">Guests</h1>
+            <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">
               Manage your guest database and communication.
             </p>
           </div>
@@ -263,7 +203,7 @@ export default function Guests() {
         <div className="bg-white rounded-[10px] overflow-hidden">
           {/* Tabs */}
           <div className="border-b border-neutral-100">
-            <div className="px-6 pt-4 flex items-center justify-between">
+            <div className="px-3 sm:px-6 pt-3 sm:pt-4 flex items-center justify-between overflow-x-auto">
               <GuestsTabs
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
@@ -278,12 +218,12 @@ export default function Guests() {
           </div>
 
           {/* Search & Filters Row */}
-          <div className="px-6 py-4 bg-neutral-50/30 border-b border-neutral-100">
-            <div className="flex items-center gap-3">
-              <div className="flex-1 max-w-md">
+          <div className="px-3 sm:px-6 py-3 sm:py-4 bg-neutral-50/30 border-b border-neutral-100">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="w-full sm:flex-1 sm:max-w-md">
                 <GuestsSearch value={searchQuery} onChange={setSearchQuery} />
               </div>
-              <div className="flex-1" />
+              <div className="hidden sm:block sm:flex-1" />
               <GuestsFilters
                 filters={filters}
                 onFilterChange={updateFilter}
@@ -308,7 +248,7 @@ export default function Guests() {
 
           {/* Pagination */}
           {guests.length > 0 && (
-            <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/30">
+            <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 bg-neutral-50/30">
               <Pagination
                 currentPage={pagination.currentPage}
                 totalPages={pagination.totalPages}
@@ -383,15 +323,6 @@ export default function Guests() {
           confirmText="Blacklist"
           cancelText="Cancel"
         />
-
-        {/* Toast Notifications */}
-        {toast && (
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            onClose={hideToast}
-          />
-        )}
       </div>
     </div>
   );

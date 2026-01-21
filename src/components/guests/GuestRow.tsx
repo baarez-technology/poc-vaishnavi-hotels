@@ -27,10 +27,8 @@ export default function GuestRow({ guest, onClick, onEdit, onMessage, onDelete }
     blacklisted: { color: 'bg-rose-50 text-rose-700 border-rose-200', label: '🚫 Blocked' }
   };
 
-  // Use displayEmotion and displayStatus for UI display (mapped values like 'positive', 'vip')
-  // The original 'emotion' and 'status' fields contain API values for editing
-  const emotion = emotionConfig[guest.displayEmotion] || emotionConfig.neutral;
-  const status = statusConfig[guest.displayStatus] || statusConfig.normal;
+  const emotion = emotionConfig[guest.emotion] || emotionConfig.neutral;
+  const status = statusConfig[guest.status] || statusConfig.normal;
 
   const handleActionClick = (e, action) => {
     e.stopPropagation();

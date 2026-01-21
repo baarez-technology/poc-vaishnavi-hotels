@@ -7,6 +7,22 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 import App from './App';
 import './styles/globals.css';
 
+// Clear React Query cache when page becomes visible (user returns to tab)
+// This ensures fresh data after the user has been away
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    // Invalidate all queries to trigger refetch
+    queryClient.invalidateQueries();
+  }
+});
+
+// Also handle bfcache restoration (back/forward navigation)
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) {
+    queryClient.invalidateQueries();
+  }
+});
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>

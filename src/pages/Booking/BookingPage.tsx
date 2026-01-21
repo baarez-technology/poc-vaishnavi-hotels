@@ -13,25 +13,12 @@ import { BookingSummary } from './components/BookingSummary';
 import toast from 'react-hot-toast';
 import { differenceInDays, parseISO } from 'date-fns';
 
-// Steps will be dynamically generated based on modify mode
-const allSteps = [
+const steps = [
   { id: 1, name: 'Dates & Guests', component: DatesStep },
   { id: 2, name: 'Your Information', component: GuestInfoStep },
   { id: 3, name: 'Payment', component: PaymentStep },
   { id: 4, name: 'Confirmation', component: ConfirmationStep },
 ];
-
-// In modify mode, skip the "Your Information" step since guest info is already available
-const getSteps = (isModifyMode: boolean) => {
-  if (isModifyMode) {
-    return [
-      { id: 1, name: 'Dates & Guests', component: DatesStep },
-      { id: 2, name: 'Payment', component: PaymentStep },
-      { id: 3, name: 'Confirmation', component: ConfirmationStep },
-    ];
-  }
-  return allSteps;
-};
 
 interface OriginalBooking {
   id: string;
@@ -54,9 +41,6 @@ export function BookingPage() {
   // Modification mode state (from context for PaymentStep access)
   const isModifyMode = bookingData.isModifyMode || false;
   const originalBooking = bookingData.originalBooking || null;
-
-  // Get dynamic steps based on modify mode
-  const steps = getSteps(isModifyMode);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
@@ -278,9 +262,9 @@ export function BookingPage() {
               </button>
             )}
 
-            {/* Progress Steps - show all steps except Confirmation */}
+            {/* Progress Steps */}
             <div className="hidden md:flex items-center gap-3">
-              {steps.slice(0, -1).map((step, index) => (
+              {steps.slice(0, 3).map((step, index) => (
                 <React.Fragment key={step.id}>
                   <div className="flex items-center gap-3">
                     <div
@@ -309,7 +293,7 @@ export function BookingPage() {
                       )}
                     </div>
                   </div>
-                  {index < steps.length - 2 && (
+                  {index < 2 && (
                     <div className="relative w-20 h-1 bg-neutral-200 rounded-full overflow-hidden">
                       <div
                         className={`absolute inset-y-0 left-0 bg-gradient-to-r from-green-400 to-green-500 rounded-full transition-all duration-500 ${

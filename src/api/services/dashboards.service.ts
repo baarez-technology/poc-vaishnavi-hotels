@@ -3,6 +3,7 @@ import type { ApiResponse } from '../types/common.types';
 
 export interface AdminDashboardKPIs {
   occupancy_rate: number;
+  avg_occupancy_30d: number;
   adr: number;
   revpar: number;
   total_rooms: number;
@@ -13,8 +14,12 @@ export interface AdminDashboardKPIs {
   checkins_today: number;
   checkouts_today: number;
   bookings_this_week: number;
+  total_completed_bookings: number;
   revenue_week: number;
   revenue_today: number;
+  revenue_mtd: number;
+  revenue_ytd: number;
+  revenue_last_month: number;
   total_guests: number;
   vip_guests: number;
 }
@@ -42,6 +47,7 @@ export interface AdminDashboardTrends {
   adr: number;
   revpar: number;
   bookings: number;
+  revenue_mtd: number;
   checkins: number;
   checkouts: number;
   available_rooms: number;
@@ -57,6 +63,8 @@ export interface RecentBooking {
   status: string;
   source: string;
   totalAmount: number;
+  paymentStatus?: string;
+  amountPaid?: number;
 }
 
 export interface RecentReview {

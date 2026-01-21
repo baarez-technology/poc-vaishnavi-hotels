@@ -1,21 +1,24 @@
 import { useMemo } from 'react';
 import {
-  CalendarCheck, Clock, XCircle, DollarSign,
+  CalendarCheck, Clock, XCircle,
   TrendingUp, Users, ArrowUpRight, ArrowDownRight,
   Sparkles
 } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 
 /**
  * Enhanced Booking KPIs - Midnight Editorial Style
  * Dramatic dark theme with jewel tones and sophisticated typography
  */
 export default function EnhancedBookingKPIs({ bookings = [] }) {
+  const { formatCurrency, symbol } = useCurrency();
   const stats = useMemo(() => {
     const total = bookings.length;
-    const confirmed = bookings.filter(b => b.status === 'CONFIRMED').length;
-    const pending = bookings.filter(b => b.status === 'PENDING').length;
-    const checkedIn = bookings.filter(b => b.status === 'CHECKED-IN').length;
-    const cancelled = bookings.filter(b => b.status === 'CANCELLED').length;
+    // Use case-insensitive comparison (API returns lowercase, e.g. 'confirmed', 'checked-in')
+    const confirmed = bookings.filter(b => b.status?.toLowerCase() === 'confirmed').length;
+    const pending = bookings.filter(b => b.status?.toLowerCase() === 'pending').length;
+    const checkedIn = bookings.filter(b => b.status?.toLowerCase() === 'checked-in').length;
+    const cancelled = bookings.filter(b => b.status?.toLowerCase() === 'cancelled').length;
     const totalRevenue = bookings.reduce((sum, b) => sum + (b.amount || 0), 0);
     const avgADR = total > 0 ? Math.round(totalRevenue / bookings.reduce((sum, b) => sum + (b.nights || 1), 0)) : 0;
 
@@ -78,8 +81,8 @@ export default function EnhancedBookingKPIs({ bookings = [] }) {
     {
       id: 'revenue',
       label: 'Revenue',
-      value: `$${stats.totalRevenue.toLocaleString()}`,
-      icon: DollarSign,
+      value: formatCurrency(stats.totalRevenue),
+      icon: () => <span className="text-lg font-bold">{symbol}</span>,
       trend: '+24%',
       trendUp: true,
       color: 'gold',
@@ -89,7 +92,7 @@ export default function EnhancedBookingKPIs({ bookings = [] }) {
     {
       id: 'adr',
       label: 'Avg. ADR',
-      value: `$${stats.avgADR}`,
+      value: formatCurrency(stats.avgADR),
       icon: TrendingUp,
       trend: '+5%',
       trendUp: true,

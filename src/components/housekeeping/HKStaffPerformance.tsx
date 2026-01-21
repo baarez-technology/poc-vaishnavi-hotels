@@ -1,15 +1,9 @@
 import { useMemo } from 'react';
-import { Star, Clock, AlertTriangle, Users, Eye } from 'lucide-react';
+import { Star, Clock, AlertTriangle, Users } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { getStaffPerformanceMetrics, generateSparklineData } from '../../utils/housekeeping';
 
-interface HKStaffPerformanceProps {
-  staff: any[];
-  rooms: any[];
-  onStaffClick?: (staffMember: any) => void;
-}
-
-export default function HKStaffPerformance({ staff, rooms, onStaffClick }: HKStaffPerformanceProps) {
+export default function HKStaffPerformance({ staff, rooms }) {
   // Calculate metrics
   const staffMetrics = useMemo(() => {
     return getStaffPerformanceMetrics(staff, rooms);
@@ -43,16 +37,11 @@ export default function HKStaffPerformance({ staff, rooms, onStaffClick }: HKSta
               <th className="px-6 py-4 text-center text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Delays</th>
               <th className="px-6 py-4 text-center text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Rating</th>
               <th className="px-6 py-4 text-center text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Trend</th>
-              <th className="px-6 py-4 text-center text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
             {staffMetrics.map((member) => (
-              <tr
-                key={member.id}
-                className={`hover:bg-neutral-50 transition-colors ${onStaffClick ? 'cursor-pointer' : ''}`}
-                onClick={() => onStaffClick && onStaffClick(member)}
-              >
+              <tr key={member.id} className="hover:bg-neutral-50 transition-colors">
                 {/* Name */}
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
@@ -60,7 +49,7 @@ export default function HKStaffPerformance({ staff, rooms, onStaffClick }: HKSta
                       {member.avatar}
                     </div>
                     <div>
-                      <p className={`font-semibold text-neutral-900 text-[13px] ${onStaffClick ? 'group-hover:text-terra-600' : ''}`}>{member.name}</p>
+                      <p className="font-semibold text-neutral-900 text-[13px]">{member.name}</p>
                       <p className="text-[10px] text-neutral-500 font-medium capitalize">{member.shift} shift</p>
                     </div>
                   </div>
@@ -140,21 +129,6 @@ export default function HKStaffPerformance({ staff, rooms, onStaffClick }: HKSta
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
-                </td>
-
-                {/* Actions */}
-                <td className="px-6 py-4 text-center">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onStaffClick && onStaffClick(member);
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-terra-600 bg-terra-50 hover:bg-terra-100 rounded-lg transition-colors"
-                    title={`View ${member.name}'s assigned rooms`}
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    View Rooms
-                  </button>
                 </td>
               </tr>
             ))}

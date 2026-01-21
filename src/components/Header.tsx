@@ -6,14 +6,16 @@ import {
   Sun,
   Moon,
   ChevronRight,
-  Home
+  Home,
+  Menu
 } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLocation, Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { NotificationsDrawer } from './notifications/NotificationsDrawer';
 import { useAuth } from '@/hooks/useAuth';
+import { notificationsService } from '@/api/services/notifications.service';
 
 /**
  * Glimmora Design System v4.0 - Header
@@ -21,52 +23,39 @@ import { useAuth } from '@/hooks/useAuth';
  * "Warm Enterprise" aesthetic - clean borders, no shadows
  */
 
-// Storage key must match NotificationsDrawer
-const NOTIFICATIONS_STORAGE_KEY = 'glimmora_notifications_data';
-
-// Helper to get unread count from localStorage
-const getUnreadCountFromStorage = (): number => {
-  try {
-    const stored = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
-    if (stored) {
-      const notifications = JSON.parse(stored);
-      return notifications.filter((n: { read: boolean }) => !n.read).length;
-    }
-  } catch (error) {
-    console.error('Failed to get notification count:', error);
-  }
-  return 3; // Default count for first load
-};
-
-const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed }) => {
+const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed, onMobileMenuToggle }) => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [unreadNotificationCount, setUnreadNotificationCount] = useState(getUnreadCountFromStorage);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const { theme, toggleTheme, isDark } = useTheme();
   const location = useLocation();
   const profileMenuRef = useRef(null);
   const { user, logout } = useAuth();
 
-  // Update notification count when drawer closes or on storage change
-  useEffect(() => {
-    const updateCount = () => {
-      setUnreadNotificationCount(getUnreadCountFromStorage());
-    };
-
-    // Update count when notifications drawer closes
-    if (!isNotificationsOpen) {
-      updateCount();
-    }
-
-    // Listen for storage changes (in case another tab updates)
-    window.addEventListener('storage', updateCount);
-    return () => window.removeEventListener('storage', updateCount);
-  }, [isNotificationsOpen]);
-
   const handleLogout = () => {
     setIsProfileMenuOpen(false);
     logout();
   };
+
+  // Fetch initial unread count
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const result = await notificationsService.getUnreadCount();
+      setUnreadCount(result.unread_count);
+    } catch (err) {
+      console.error('Failed to fetch unread count:', err);
+    }
+  }, []);
+
+  // Fetch unread count on mount
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
+
+  // Handle unread count updates from drawer
+  const handleUnreadCountChange = useCallback((count: number) => {
+    setUnreadCount(count);
+  }, []);
 
   // Close menus on click outside
   useEffect(() => {
@@ -237,25 +226,40 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed }) => {
         ? 'bg-neutral-950 border-b border-neutral-800'
         : 'bg-white border-b border-neutral-100'
     )}>
-      <div className="px-6 py-3">
+      <div className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3">
         <div className="flex items-center justify-between">
-          {/* Left Section: Breadcrumb Navigation */}
-          <nav className="flex items-center gap-2" aria-label="Breadcrumb">
-            {/* Check if on main dashboard - only show heading, no Home icon */}
-            {(location.pathname === '/admin' || location.pathname === '/admin/dashboard') ? (
+          {/* Left Section: Mobile Menu + Breadcrumb Navigation */}
+          <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={onMobileMenuToggle}
+              className={cn(
+                'lg:hidden flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl transition-all duration-200 flex-shrink-0',
+                isDark
+                  ? 'text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800/80'
+                  : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100/80'
+              )}
+              aria-label="Toggle mobile menu"
+            >
+              <Menu className="w-5 h-5" strokeWidth={1.75} />
+            </button>
+
+            <nav className="flex items-center gap-1 sm:gap-2 min-w-0" aria-label="Breadcrumb">
+              {/* Check if on main dashboard - only show heading, no Home icon */}
+              {(location.pathname === '/admin' || location.pathname === '/admin/dashboard') ? (
               <h1 className={cn(
-                'text-lg font-semibold tracking-tight',
+                'text-base sm:text-lg font-semibold tracking-tight truncate',
                 isDark ? 'text-neutral-100' : 'text-neutral-900'
               )}>
                 Dashboard
               </h1>
             ) : (
               <>
-                {/* Home Icon */}
+                {/* Home Icon - hidden on mobile */}
                 <Link
                   to="/admin"
                   className={cn(
-                    'flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200',
+                    'hidden sm:flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200',
                     isDark
                       ? 'text-neutral-500 hover:text-neutral-100 hover:bg-neutral-800'
                       : 'text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100'
@@ -266,17 +270,26 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed }) => {
 
                 {breadcrumbItems.length > 0 && (
                   <ChevronRight className={cn(
-                    'w-4 h-4',
+                    'hidden sm:block w-4 h-4',
                     isDark ? 'text-neutral-600' : 'text-neutral-300'
                   )} />
                 )}
 
+                {/* On mobile, show only the last breadcrumb item as page title */}
+                <span className={cn(
+                  'sm:hidden text-base font-semibold truncate',
+                  isDark ? 'text-neutral-100' : 'text-neutral-900'
+                )}>
+                  {breadcrumbItems.length > 0 ? breadcrumbItems[breadcrumbItems.length - 1].label : 'Dashboard'}
+                </span>
+
+                {/* On desktop, show full breadcrumb */}
                 {breadcrumbItems.map((item, index) => {
                   const isLastItem = index === breadcrumbItems.length - 1;
                   const isClickable = !isLastItem && item.path;
 
                   return (
-                    <div key={index} className="flex items-center gap-2">
+                    <div key={index} className="hidden sm:flex items-center gap-2">
                       {index > 0 && (
                         <ChevronRight className={cn(
                           'w-4 h-4',
@@ -310,21 +323,22 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed }) => {
                 })}
               </>
             )}
-          </nav>
+            </nav>
+          </div>
 
           {/* Right Section: Actions */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-shrink-0">
             {/* Action Buttons Group */}
             <div className={cn(
-              'flex items-center gap-1 p-1 rounded-xl',
+              'flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 rounded-xl',
               isDark ? 'bg-neutral-900/50' : 'bg-neutral-50/80'
             )}>
-              {/* Theme Toggle - Hidden until dark mode is fully implemented */}
-              {/* <ActionButton
+              {/* Theme Toggle */}
+              <ActionButton
                 icon={isDark ? Sun : Moon}
                 label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                 onClick={toggleTheme}
-              /> */}
+              />
 
               {/* AI Assistant */}
               <ActionButton
@@ -341,13 +355,13 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed }) => {
                 icon={Bell}
                 label="Notifications"
                 onClick={() => setIsNotificationsOpen(true)}
-                badge={unreadNotificationCount > 0 ? String(unreadNotificationCount) : undefined}
+                badge={unreadCount > 0 ? String(unreadCount) : undefined}
               />
             </div>
 
-            {/* Divider */}
+            {/* Divider - hidden on mobile */}
             <div className={cn(
-              'w-px h-8 mx-2',
+              'hidden sm:block w-px h-8 mx-1 sm:mx-2',
               isDark ? 'bg-neutral-800' : 'bg-neutral-200'
             )} />
 
@@ -356,7 +370,7 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed }) => {
               <button
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                 className={cn(
-                  'flex items-center gap-3 pl-1 pr-3 py-1 rounded-xl transition-all duration-200',
+                  'flex items-center gap-2 sm:gap-3 p-0.5 sm:pl-1 sm:pr-3 sm:py-1 rounded-xl transition-all duration-200',
                   isDark
                     ? 'hover:bg-neutral-800/80'
                     : 'hover:bg-neutral-100/80',
@@ -366,7 +380,7 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed }) => {
                 )}
               >
                 <div className={cn(
-                  'w-9 h-9 rounded-xl overflow-hidden ring-2 ring-offset-2 transition-all',
+                  'w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl overflow-hidden ring-2 ring-offset-1 sm:ring-offset-2 transition-all',
                   isDark
                     ? 'ring-neutral-700 ring-offset-neutral-950'
                     : 'ring-neutral-200 ring-offset-white',
@@ -493,6 +507,7 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed }) => {
       <NotificationsDrawer
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
+        onUnreadCountChange={handleUnreadCountChange}
       />
     </header>
   );

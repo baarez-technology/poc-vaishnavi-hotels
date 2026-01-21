@@ -1,100 +1,157 @@
 import { useMemo } from 'react';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import {
+  TrendingUp,
+  TrendingDown,
+  Smile,
+  Frown,
+  Meh,
+  Star,
+  MessageSquarePlus,
+  Activity,
+  BarChart3
+} from 'lucide-react';
 
-export default function SentimentSummary({ metrics }) {
+interface SentimentSummaryProps {
+  metrics: {
+    overallSentiment: number;
+    positivePercent: number;
+    negativePercent: number;
+    neutralPercent: number;
+    avgOTARating: number;
+    newReviewsToday: number;
+    reviewVolumeTrend: number;
+  };
+}
+
+export default function SentimentSummary({ metrics }: SentimentSummaryProps) {
   const kpis = useMemo(() => [
     {
       id: 'overall',
-      label: 'Overall Sentiment',
+      title: 'Overall Sentiment',
       value: metrics.overallSentiment,
       suffix: '/100',
-      change: null,
-      trend: null
+      icon: Activity,
+      iconBgColor: 'bg-terra-50',
+      iconColor: 'text-terra-600',
+      trend: metrics.overallSentiment >= 70 ? 'up' : 'down',
+      trendValue: metrics.overallSentiment >= 70 ? 'Good' : 'Needs work',
+      trendColor: metrics.overallSentiment >= 70 ? 'text-sage-600' : 'text-rose-600'
     },
     {
       id: 'positive',
-      label: 'Positive',
+      title: 'Positive',
       value: metrics.positivePercent,
       suffix: '%',
-      change: 2.3,
-      trend: 'up'
+      icon: Smile,
+      iconBgColor: 'bg-sage-50',
+      iconColor: 'text-sage-600',
+      trend: 'up',
+      trendValue: '+2.3%',
+      trendColor: 'text-sage-600'
     },
     {
       id: 'negative',
-      label: 'Negative',
+      title: 'Negative',
       value: metrics.negativePercent,
       suffix: '%',
-      change: -1.2,
-      trend: 'down'
+      icon: Frown,
+      iconBgColor: 'bg-rose-50',
+      iconColor: 'text-rose-600',
+      trend: 'down',
+      trendValue: '-1.2%',
+      trendColor: 'text-sage-600'
     },
     {
       id: 'neutral',
-      label: 'Neutral',
+      title: 'Neutral',
       value: metrics.neutralPercent,
       suffix: '%',
-      change: 0,
-      trend: 'stable'
+      icon: Meh,
+      iconBgColor: 'bg-neutral-100',
+      iconColor: 'text-neutral-500',
+      trend: 'neutral',
+      trendValue: '0%',
+      trendColor: 'text-neutral-500'
     },
     {
       id: 'ota',
-      label: 'OTA Rating',
+      title: 'OTA Rating',
       value: metrics.avgOTARating,
       suffix: '/5',
-      change: 0.1,
-      trend: 'up'
+      icon: Star,
+      iconBgColor: 'bg-gold-50',
+      iconColor: 'text-gold-600',
+      trend: 'up',
+      trendValue: '+0.1',
+      trendColor: 'text-sage-600'
     },
     {
       id: 'new',
-      label: 'New Today',
+      title: 'New Today',
       value: metrics.newReviewsToday,
       suffix: '',
-      change: null,
-      trend: null
+      icon: MessageSquarePlus,
+      iconBgColor: 'bg-ocean-50',
+      iconColor: 'text-ocean-600',
+      trend: 'neutral',
+      trendValue: 'reviews',
+      trendColor: 'text-neutral-500'
     },
     {
       id: 'trend',
-      label: '7-Day Trend',
+      title: '7-Day Trend',
       value: metrics.reviewVolumeTrend > 0 ? `+${metrics.reviewVolumeTrend}` : metrics.reviewVolumeTrend,
       suffix: '',
-      change: null,
-      trend: metrics.reviewVolumeTrend >= 0 ? 'up' : 'down'
+      icon: BarChart3,
+      iconBgColor: metrics.reviewVolumeTrend >= 0 ? 'bg-sage-50' : 'bg-rose-50',
+      iconColor: metrics.reviewVolumeTrend >= 0 ? 'text-sage-600' : 'text-rose-600',
+      trend: metrics.reviewVolumeTrend >= 0 ? 'up' : 'down',
+      trendValue: metrics.reviewVolumeTrend >= 0 ? 'vs last week' : 'vs last week',
+      trendColor: metrics.reviewVolumeTrend >= 0 ? 'text-sage-600' : 'text-rose-600'
     }
   ], [metrics]);
 
-  const TrendIcon = ({ trend }: { trend: string | null }) => {
-    if (trend === 'up') return <TrendingUp className="w-3.5 h-3.5 text-sage-600" />;
-    if (trend === 'down') return <TrendingDown className="w-3.5 h-3.5 text-gold-600" />;
-    return <Minus className="w-3.5 h-3.5 text-neutral-400" />;
-  };
-
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
-      {kpis.map((kpi) => (
-        <div
-          key={kpi.id}
-          className="bg-white rounded-[10px] p-5"
-        >
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
-            {kpi.label}
-          </p>
-          <div className="flex items-baseline gap-1">
-            <span className="text-[28px] font-semibold tracking-tight text-neutral-900">
-              {kpi.value}
-            </span>
-            {kpi.suffix && (
-              <span className="text-[13px] text-neutral-400">{kpi.suffix}</span>
-            )}
-          </div>
-          {kpi.change !== null && (
-            <div className="flex items-center gap-1.5 mt-2">
-              <TrendIcon trend={kpi.trend} />
-              <span className={`text-[12px] font-medium ${kpi.change >= 0 ? 'text-sage-600' : 'text-gold-600'}`}>
-                {kpi.change >= 0 ? '+' : ''}{kpi.change.toFixed(1)}%
-              </span>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
+      {kpis.map((kpi) => {
+        const Icon = kpi.icon;
+        const TrendIcon = kpi.trend === 'up' ? TrendingUp : kpi.trend === 'down' ? TrendingDown : null;
+
+        return (
+          <div
+            key={kpi.id}
+            className="bg-white rounded-[10px] p-4 sm:p-5"
+          >
+            {/* Header with Icon and Title */}
+            <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+              <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${kpi.iconBgColor}`}>
+                <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${kpi.iconColor}`} />
+              </div>
+              <p className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 truncate">
+                {kpi.title}
+              </p>
             </div>
-          )}
-        </div>
-      ))}
+
+            {/* Value + Trend Row */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-baseline gap-0.5">
+                <p className="text-xl sm:text-[28px] font-semibold tracking-tight text-neutral-900">
+                  {kpi.value}
+                </p>
+                {kpi.suffix && (
+                  <span className="text-[11px] sm:text-[13px] text-neutral-400">{kpi.suffix}</span>
+                )}
+              </div>
+              <p className={`text-[10px] sm:text-[11px] font-medium ${kpi.trendColor} flex items-center gap-1`}>
+                {TrendIcon && (
+                  <TrendIcon className="w-3 h-3" />
+                )}
+                <span className="hidden sm:inline">{kpi.trendValue}</span>
+              </p>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

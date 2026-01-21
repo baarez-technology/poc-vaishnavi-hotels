@@ -35,11 +35,11 @@ const QUICK_STATS = [
 export default function ReportsHome() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <div className="px-10 py-6 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Header */}
         <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
               Reports
             </h1>
             <p className="text-[13px] text-neutral-500 mt-1">
@@ -53,30 +53,30 @@ export default function ReportsHome() {
           to="/admin/analytics"
           className="block group"
         >
-          <div className="relative overflow-hidden bg-gradient-to-r from-sage-600 via-sage-500 to-sage-600 rounded-[10px] p-6">
+          <div className="relative overflow-hidden bg-gradient-to-r from-sage-600 via-sage-500 to-sage-600 rounded-[10px] p-4 sm:p-6">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
 
-            <div className="relative flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                  <Brain className="w-6 h-6 text-white" />
+            <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-sm flex-shrink-0">
+                  <Brain className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                    Advanced Analytics
+                  <h2 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2 flex-wrap">
+                    <span>Advanced Analytics</span>
                     <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider bg-gold-100 text-gold-700">
                       AI-Powered
                     </span>
                   </h2>
-                  <p className="text-white/80 text-[13px] mt-0.5">
+                  <p className="text-white/80 text-[12px] sm:text-[13px] mt-0.5">
                     Natural language BI, predictive insights, and AI-generated reports
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-6">
-                <div className="hidden md:flex items-center gap-4 text-white/70 text-[12px]">
+              <div className="flex items-center gap-4 sm:gap-6">
+                <div className="hidden lg:flex items-center gap-4 text-white/70 text-[12px]">
                   <div className="flex items-center gap-1.5">
                     <Zap className="w-4 h-4" />
                     <span>Predictions</span>
@@ -99,13 +99,13 @@ export default function ReportsHome() {
         </Link>
 
         {/* Quick Stats */}
-        <section className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+        <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6">
           {QUICK_STATS.map((stat, index) => (
             <div
               key={index}
-              className="rounded-[10px] bg-white p-6"
+              className="rounded-[10px] bg-white p-4 sm:p-6"
             >
-              <p className="text-[28px] font-semibold tracking-tight text-neutral-900">{stat.value}</p>
+              <p className="text-xl sm:text-[28px] font-semibold tracking-tight text-neutral-900">{stat.value}</p>
               <div className="flex items-center gap-2 mt-1">
                 <p className="text-[11px] text-neutral-400 font-medium">{stat.label}</p>
                 {stat.trend && (
@@ -124,10 +124,10 @@ export default function ReportsHome() {
 
         {/* Report Cards Grid */}
         <section>
-          <h2 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">
+          <h2 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3 sm:mb-4">
             Available Reports
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {REPORTS.map((report, index) => (
               <ReportCard key={index} {...report} />
             ))}
@@ -135,9 +135,9 @@ export default function ReportsHome() {
         </section>
 
         {/* Recent Activity */}
-        <section className="rounded-[10px] bg-white p-6">
+        <section className="rounded-[10px] bg-white p-4 sm:p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-sage-100 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-sage-100 flex items-center justify-center flex-shrink-0">
               <TrendingUp className="w-4 h-4 text-sage-600" />
             </div>
             <div>
@@ -155,11 +155,11 @@ export default function ReportsHome() {
             ].map((activity, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between py-3 border-b border-neutral-100 last:border-b-0"
+                className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-neutral-100 last:border-b-0 gap-1 sm:gap-0"
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-2 h-2 rounded-full ${
+                    className={`w-2 h-2 rounded-full flex-shrink-0 ${
                       activity.type === 'export'
                         ? 'bg-sage-500'
                         : activity.type === 'view'
@@ -169,9 +169,9 @@ export default function ReportsHome() {
                         : 'bg-gold-500'
                     }`}
                   />
-                  <span className="text-[13px] text-neutral-700">{activity.action}</span>
+                  <span className="text-[12px] sm:text-[13px] text-neutral-700">{activity.action}</span>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 ml-5 sm:ml-0">
                   <span className="text-[11px] text-neutral-500 font-medium">{activity.user}</span>
                   <span className="text-[11px] text-neutral-400">{activity.time}</span>
                 </div>

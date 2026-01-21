@@ -143,7 +143,7 @@ export default function StaffFilters({ filters, onFilterChange, onClearFilters, 
   ];
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
       {/* Role Filter */}
       <FilterSelect
         value={filters.role}
@@ -172,10 +172,11 @@ export default function StaffFilters({ filters, onFilterChange, onClearFilters, 
       {hasActiveFilters && (
         <button
           onClick={onClearFilters}
-          className="h-9 px-3 flex items-center gap-1.5 text-[13px] font-medium text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-[8px] transition-colors"
+          className="h-9 px-2 sm:px-3 flex items-center gap-1.5 text-[13px] font-medium text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-[8px] transition-colors"
         >
           <X className="w-4 h-4" />
-          Clear All
+          <span className="hidden sm:inline">Clear All</span>
+          <span className="sm:hidden">Clear</span>
         </button>
       )}
     </div>

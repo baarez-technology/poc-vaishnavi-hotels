@@ -11,7 +11,8 @@ import reputationService, {
   AutomationConfig,
   EngineStats,
   ReputationSettings,
-  RoutingRule
+  RoutingRule,
+  ResponseTemplate
 } from '../api/services/reputation.service';
 
 interface ReputationContextType {
@@ -38,6 +39,7 @@ interface ReputationContextType {
   pendingApprovals: ResponseDraft[];
   engineStats: EngineStats | null;
   userSettings: ReputationSettings | null;
+  templates: ResponseTemplate[];
 
   // Computed/Derived (backward compatibility)
   reviews: Review[];
@@ -111,6 +113,25 @@ interface ReputationContextType {
     confidence_score: number;
   }>;
 
+  // Template Functions
+  loadTemplates: (tone?: string, sentiment?: string) => Promise<void>;
+  createTemplate: (data: {
+    name: string;
+    content: string;
+    sentiment: string;
+    tone?: string;
+    is_default?: boolean;
+  }) => Promise<void>;
+  updateTemplate: (id: number, data: {
+    name?: string;
+    content?: string;
+    sentiment?: string;
+    tone?: string;
+    is_active?: boolean;
+    is_default?: boolean;
+  }) => Promise<void>;
+  deleteTemplate: (id: number) => Promise<void>;
+
   // Approval Workflow Functions
   loadPendingApprovals: () => Promise<void>;
   submitForReview: (draftId: number) => Promise<void>;
@@ -130,6 +151,7 @@ interface ReputationContextType {
   detectKeywords: (text: string) => Array<{ keyword: string; sentiment: string }>;
   computeOTAScore: number;
   computeTrend: number;
+  generateAutoReply: (review: { sentiment: number; guest: string }) => string;
 
   // CRM Integration
   updateCRMGuestSentiment: (guestEmail: string, sentimentScore: number, reviewId: number) => any;
@@ -181,6 +203,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   const [pendingApprovals, setPendingApprovals] = useState<ResponseDraft[]>([]);
   const [engineStats, setEngineStats] = useState<EngineStats | null>(null);
   const [userSettings, setUserSettings] = useState<ReputationSettings | null>(null);
+  const [templates, setTemplates] = useState<ResponseTemplate[]>([]);
 
   // Filter state
   const [filters, setFilters] = useState({
@@ -322,6 +345,15 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
+  const loadTemplates = useCallback(async (tone?: string, sentiment?: string) => {
+    try {
+      const data = await reputationService.getResponseTemplates(tone, sentiment);
+      setTemplates(data || []);
+    } catch (err: any) {
+      console.error('Error fetching templates:', err);
+    }
+  }, []);
+
   const loadReputation = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -337,7 +369,8 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
         loadAutomationConfig(),
         loadPendingApprovals(),
         loadEngineStats(),
-        loadUserSettings()
+        loadUserSettings(),
+        loadTemplates()
       ]);
     } catch (err: any) {
       setError(err.message || 'Failed to load reputation data');
@@ -355,7 +388,8 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     loadAutomationConfig,
     loadPendingApprovals,
     loadEngineStats,
-    loadUserSettings
+    loadUserSettings,
+    loadTemplates
   ]);
 
   // Load on mount
@@ -562,6 +596,53 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
       throw err;
     }
   }, []);
+
+  // ========================
+  // TEMPLATES
+  // ========================
+
+  const createTemplate = useCallback(async (data: {
+    name: string;
+    content: string;
+    sentiment: string;
+    tone?: string;
+    is_default?: boolean;
+  }) => {
+    try {
+      await reputationService.createResponseTemplate(data);
+      await loadTemplates();
+    } catch (err: any) {
+      console.error('Error creating template:', err);
+      throw err;
+    }
+  }, [loadTemplates]);
+
+  const updateTemplate = useCallback(async (id: number, data: {
+    name?: string;
+    content?: string;
+    sentiment?: string;
+    tone?: string;
+    is_active?: boolean;
+    is_default?: boolean;
+  }) => {
+    try {
+      await reputationService.updateResponseTemplate(id, data);
+      await loadTemplates();
+    } catch (err: any) {
+      console.error('Error updating template:', err);
+      throw err;
+    }
+  }, [loadTemplates]);
+
+  const deleteTemplate = useCallback(async (id: number) => {
+    try {
+      await reputationService.deleteResponseTemplate(id);
+      await loadTemplates();
+    } catch (err: any) {
+      console.error('Error deleting template:', err);
+      throw err;
+    }
+  }, [loadTemplates]);
 
   // ========================
   // APPROVAL WORKFLOW
@@ -838,6 +919,22 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     return trends.sentiment_change || 0;
   }, [trends]);
 
+  // UI helper from REMOTE - generates auto-reply based on sentiment
+  const generateAutoReply = useCallback((review: { sentiment: number; guest: string }) => {
+    const { sentiment: score, guest } = review;
+    let template;
+
+    if (score < 40) {
+      template = settings.autoReply.templates.negative;
+    } else if (score <= 70) {
+      template = settings.autoReply.templates.neutral;
+    } else {
+      template = settings.autoReply.templates.positive;
+    }
+
+    return template.replace('{guest}', guest.split(' ')[0]);
+  }, [settings.autoReply.templates]);
+
   // ========================
   // CRM INTEGRATION
   // ========================
@@ -1019,6 +1116,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     pendingApprovals,
     engineStats,
     userSettings,
+    templates,
 
     // Derived
     reviews,
@@ -1065,6 +1163,12 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     updateAutomationConfig,
     testAutoResponse,
 
+    // Template Functions
+    loadTemplates,
+    createTemplate,
+    updateTemplate,
+    deleteTemplate,
+
     // Approval Workflow Functions
     loadPendingApprovals,
     submitForReview,
@@ -1084,6 +1188,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     detectKeywords,
     computeOTAScore,
     computeTrend,
+    generateAutoReply,
 
     // CRM Integration
     updateCRMGuestSentiment,

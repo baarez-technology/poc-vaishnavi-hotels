@@ -4,22 +4,22 @@ import { cn } from '../../lib/utils';
 import { Search, Eye, EyeOff, X, ChevronDown, Calendar, Check } from 'lucide-react';
 
 /**
- * Glimmora Design System v4.0 - Input Components
- * Form inputs with consistent styling and focus states
+ * Glimmora Design System v5.0 - Input Components
+ * Form inputs with dynamic branding and consistent styling
  */
 
 const SIZE = {
-  sm: 'h-8 px-3 text-xs rounded-lg',
-  md: 'h-9 px-3.5 text-sm rounded-lg',
-  lg: 'h-10 px-4 text-sm rounded-xl',
-  xl: 'h-12 px-4 text-base rounded-xl',
+  sm: 'h-8 px-3 text-xs rounded-[var(--brand-radius-sm)]',
+  md: 'h-9 px-3.5 text-sm rounded-[var(--brand-radius-md)]',
+  lg: 'h-10 px-4 text-sm rounded-[var(--brand-radius-lg)]',
+  xl: 'h-12 px-4 text-base rounded-[var(--brand-radius-xl)]',
 };
 
 const baseStyles = `
   w-full bg-white border border-neutral-200
   text-neutral-900 placeholder:text-neutral-400
   transition-all duration-150
-  focus:outline-none focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10
+  focus:outline-none focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/10
   disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed
   hover:border-neutral-300
 `;
@@ -190,10 +190,10 @@ export const Textarea = forwardRef(function Textarea({
       ref={ref}
       rows={rows}
       className={cn(
-        'w-full bg-white border border-neutral-200 rounded-xl px-3.5 py-2.5',
+        'w-full bg-white border border-neutral-200 rounded-[var(--brand-radius-card)] px-3.5 py-2.5',
         'text-sm text-neutral-900 placeholder:text-neutral-400',
         'transition-all duration-150 resize-none',
-        'focus:outline-none focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10',
+        'focus:outline-none focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/10',
         'disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed',
         'hover:border-neutral-300',
         error && 'border-rose-300 focus:border-rose-400 focus:ring-rose-500/10',
@@ -224,9 +224,9 @@ export const Checkbox = forwardRef(function Checkbox({
         <div className={cn(
           'w-4 h-4 rounded border-2 border-neutral-300 bg-white',
           'transition-all duration-150',
-          'peer-hover:border-terra-400',
-          'peer-focus:ring-2 peer-focus:ring-terra-500/20',
-          'peer-checked:bg-terra-500 peer-checked:border-terra-500',
+          'peer-hover:border-[var(--brand-primary)]',
+          'peer-focus:ring-2 peer-focus:ring-[var(--brand-primary)]/20',
+          'peer-checked:bg-[var(--brand-primary)] peer-checked:border-[var(--brand-primary)]',
           'peer-disabled:opacity-50 peer-disabled:cursor-not-allowed',
           error && 'border-rose-300'
         )} />
@@ -261,12 +261,12 @@ export const Radio = forwardRef(function Radio({
         <div className={cn(
           'w-4 h-4 rounded-full border-2 border-neutral-300 bg-white',
           'transition-all duration-150',
-          'peer-hover:border-terra-400',
-          'peer-focus:ring-2 peer-focus:ring-terra-500/20',
-          'peer-checked:border-terra-500',
+          'peer-hover:border-[var(--brand-primary)]',
+          'peer-focus:ring-2 peer-focus:ring-[var(--brand-primary)]/20',
+          'peer-checked:border-[var(--brand-primary)]',
           'peer-disabled:opacity-50 peer-disabled:cursor-not-allowed'
         )} />
-        <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-terra-500 scale-0 peer-checked:scale-100 transition-transform" />
+        <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-[var(--brand-primary)] scale-0 peer-checked:scale-100 transition-transform" />
       </div>
       {(label || description) && (
         <div className="flex-1">
@@ -465,13 +465,13 @@ export function SelectDropdown({
         onClick={handleToggle}
         disabled={disabled}
         className={cn(
-          'w-full bg-white border border-neutral-200 rounded-lg',
+          'w-full bg-white border border-neutral-200 rounded-[var(--brand-radius-md)]',
           'flex items-center justify-between gap-2',
           'transition-all duration-150',
-          'focus:outline-none focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10',
+          'focus:outline-none focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/10',
           'hover:border-neutral-300',
           'disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed',
-          open && 'border-terra-400 ring-2 ring-terra-500/10',
+          open && 'border-[var(--brand-primary)] ring-2 ring-[var(--brand-primary)]/10',
           sizeClasses[size],
           className
         )}
@@ -499,7 +499,7 @@ export function SelectDropdown({
             zIndex: 9999,
           }}
           className={cn(
-            'bg-white rounded-lg',
+            'bg-white rounded-[var(--brand-radius-md)]',
             'border border-neutral-200',
             'shadow-lg shadow-neutral-900/10',
             'overflow-hidden',

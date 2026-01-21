@@ -6,7 +6,7 @@ import { bookingService } from '@/api/services/booking.service';
 import toast from 'react-hot-toast';
 import { BookingDetailsPanel } from '@/components/booking/BookingDetailsPanel';
 
-type BookingStatus = 'all' | 'upcoming' | 'active' | 'past' | 'cancelled';
+type BookingStatus = 'all' | 'upcoming' | 'past' | 'cancelled';
 
 interface Booking {
   id: string;
@@ -15,7 +15,7 @@ interface Booking {
   checkIn: Date;
   checkOut: Date;
   guests: number;
-  status: 'confirmed' | 'completed' | 'cancelled' | 'active';
+  status: 'confirmed' | 'completed' | 'cancelled';
   totalAmount: number;
 }
 
@@ -33,7 +33,6 @@ export function BookingsTab() {
         const statusMap: Record<BookingStatus, string | undefined> = {
           all: undefined,
           upcoming: 'upcoming',
-          active: 'active',
           past: 'past',
           cancelled: 'cancelled',
         };
@@ -48,9 +47,8 @@ export function BookingsTab() {
           checkIn: new Date(b.checkIn),
           checkOut: new Date(b.checkOut),
           guests: (b.guests?.adults || 0) + (b.guests?.children || 0),
-          status: b.status === 'checked_in' || b.status === 'checked-in' ? 'active' :
-                 b.status === 'confirmed' ? 'confirmed' :
-                 b.status === 'checked_out' || b.status === 'checked-out' || b.status === 'completed' ? 'completed' :
+          status: b.status === 'confirmed' ? 'confirmed' : 
+                 b.status === 'checked-out' || b.status === 'completed' ? 'completed' : 
                  b.status === 'cancelled' ? 'cancelled' : 'confirmed',
           totalAmount: b.totalPrice || 0,
         })));
@@ -136,54 +134,11 @@ export function BookingsTab() {
       checkIn: new Date(b.checkIn),
       checkOut: new Date(b.checkOut),
       guests: (b.guests?.adults || 0) + (b.guests?.children || 0),
-      status: b.status === 'checked_in' || b.status === 'checked-in' ? 'active' :
-             b.status === 'confirmed' ? 'confirmed' :
-             b.status === 'checked_out' || b.status === 'checked-out' || b.status === 'completed' ? 'completed' :
+      status: b.status === 'confirmed' ? 'confirmed' : 
+             b.status === 'checked-out' || b.status === 'completed' ? 'completed' : 
              b.status === 'cancelled' ? 'cancelled' : 'confirmed',
       totalAmount: b.totalPrice || 0,
     })));
-  };
-
-  const handleDownload = async (booking: Booking) => {
-    try {
-      // Get token from localStorage with correct key
-      const token = localStorage.getItem('glimmora_access_token');
-      if (!token) {
-        toast.error('Please log in to download');
-        return;
-      }
-
-      const response = await fetch(`/api/v1/bookings/${booking.id}/download`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Download error:', response.status, errorText);
-        throw new Error('Failed to download');
-      }
-
-      const blob = await response.blob();
-      if (blob.size === 0) {
-        throw new Error('Empty PDF received');
-      }
-
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `booking_confirmation_${booking.bookingNumber}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast.success('Booking confirmation downloaded');
-    } catch (error) {
-      console.error('Download failed:', error);
-      toast.error('Failed to download booking confirmation');
-    }
   };
 
   const filteredBookings = bookings || [];
@@ -192,7 +147,6 @@ export function BookingsTab() {
     confirmed: 'bg-green-100 text-green-700',
     completed: 'bg-blue-100 text-blue-700',
     cancelled: 'bg-red-100 text-red-700',
-    active: 'bg-amber-100 text-amber-700',
   };
 
   return (
@@ -203,7 +157,7 @@ export function BookingsTab() {
         animate={{ opacity: 1, y: 0 }}
         className="flex gap-2 flex-wrap"
       >
-        {(['all', 'upcoming', 'active', 'past', 'cancelled'] as BookingStatus[]).map((status) => (
+        {(['all', 'upcoming', 'past', 'cancelled'] as BookingStatus[]).map((status) => (
           <button
             key={status}
             onClick={() => setFilter(status)}
@@ -303,10 +257,7 @@ export function BookingsTab() {
                   <Eye className="w-4 h-4" />
                   View Details
                 </button>
-                <button
-                  onClick={() => handleDownload(booking)}
-                  className="px-4 py-2.5 bg-white border border-neutral-300 hover:border-neutral-400 text-neutral-900 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
-                >
+                <button className="px-4 py-2.5 bg-white border border-neutral-300 hover:border-neutral-400 text-neutral-900 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
                   <Download className="w-4 h-4" />
                   Download
                 </button>

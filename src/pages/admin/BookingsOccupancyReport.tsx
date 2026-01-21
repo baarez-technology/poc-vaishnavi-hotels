@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback } from 'react';
-import { ArrowLeft, Download, RefreshCw, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { ArrowLeft, Download, RefreshCw, ChevronDown, Sparkles, AlertCircle, TrendingUp, Lightbulb, Target } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   LineChart,
@@ -16,21 +16,7 @@ import {
   ResponsiveContainer,
   Legend
 } from 'recharts';
-import bookingsData from '../../data/dummy/reports/bookings.json';
-import occupancyData from '../../data/dummy/reports/occupancy.json';
-
-// Helper function to download CSV
-const downloadCSV = (content: string, filename: string) => {
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  const url = URL.createObjectURL(blob);
-  link.setAttribute('href', url);
-  link.setAttribute('download', filename);
-  link.style.visibility = 'hidden';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
+import { reportsService, BookingsOccupancyReport as ReportData, AIInsight, ExportFormat } from '../../api/services/reports.service';
 
 const formatCurrency = (value: number) => {
   if (value >= 1000000) {
@@ -42,149 +28,167 @@ const formatCurrency = (value: number) => {
   return `$${value.toLocaleString()}`;
 };
 
-// Generate CSV content for export
-const generateExportCSV = (bookings: any[], occupancy: any[], roomTypes: any[]) => {
-  const lines: string[] = [];
-
-  lines.push('=== BOOKINGS & OCCUPANCY REPORT ===');
-  lines.push(`Generated: ${new Date().toLocaleString()}`);
-  lines.push('');
-
-  lines.push('--- Daily Bookings ---');
-  lines.push('Date,Direct,OTA,Corporate,Walk-in,Total');
-  bookings.forEach(d => {
-    lines.push(`${d.date},${d.direct},${d.ota},${d.corporate},${d.walkin},${d.total}`);
-  });
-  lines.push('');
-
-  lines.push('--- Daily Occupancy ---');
-  lines.push('Date,Occupancy %,ADR,RevPAR,Revenue');
-  occupancy.forEach(d => {
-    lines.push(`${d.date},${d.occupancy},${d.adr},${d.revpar},${d.revenue}`);
-  });
-  lines.push('');
-
-  lines.push('--- Room Type Performance ---');
-  lines.push('Room Type,Bookings,Revenue,Occupancy %');
-  roomTypes.forEach(r => {
-    lines.push(`${r.name},${r.bookings},${r.revenue},${r.occupancy}`);
-  });
-
-  return lines.join('\n');
-};
-
-const SOURCE_COLORS = {
-  Direct: '#4E5840',
-  OTA: '#5C9BA4',
-  Corporate: '#CDB261',
-  'Walk-in': '#A57865'
-};
-
 const DATE_RANGES = [
-  { value: 'today', label: 'Today' },
-  { value: 'yesterday', label: 'Yesterday' },
-  { value: 'this_week', label: 'This Week' },
-  { value: 'last_week', label: 'Last Week' },
-  { value: 'this_month', label: 'This Month' },
-  { value: 'last_month', label: 'Last Month' },
-  { value: 'last_30_days', label: 'Last 30 Days' },
-  { value: 'ytd', label: 'Year to Date' }
+  { value: 'today', label: 'Today', shortLabel: 'Today' },
+  { value: 'yesterday', label: 'Yesterday', shortLabel: 'Yest.' },
+  { value: 'this_week', label: 'This Week', shortLabel: 'Week' },
+  { value: 'last_week', label: 'Last Week', shortLabel: 'Last Wk' },
+  { value: 'this_month', label: 'This Month', shortLabel: 'Month' },
+  { value: 'last_month', label: 'Last Month', shortLabel: 'Last Mo' },
+  { value: 'last_30_days', label: 'Last 30 Days', shortLabel: '30 Days' },
+  { value: 'ytd', label: 'Year to Date', shortLabel: 'YTD' }
+];
+
+// Helper to get icon and colors for AI insight type
+const getInsightStyle = (type: string) => {
+  switch (type) {
+    case 'warning':
+      return {
+        bg: 'bg-rose-50',
+        border: 'border-rose-200',
+        iconBg: 'bg-rose-100',
+        iconColor: 'text-rose-600',
+        titleColor: 'text-rose-800',
+        Icon: AlertCircle,
+      };
+    case 'opportunity':
+      return {
+        bg: 'bg-sage-50',
+        border: 'border-sage-200',
+        iconBg: 'bg-sage-100',
+        iconColor: 'text-sage-600',
+        titleColor: 'text-sage-800',
+        Icon: TrendingUp,
+      };
+    default:
+      return {
+        bg: 'bg-ocean-50',
+        border: 'border-ocean-200',
+        iconBg: 'bg-ocean-100',
+        iconColor: 'text-ocean-600',
+        titleColor: 'text-ocean-800',
+        Icon: Lightbulb,
+      };
+  }
+};
+
+const EXPORT_OPTIONS: { value: ExportFormat; label: string; icon: string }[] = [
+  { value: 'csv', label: 'CSV Spreadsheet', icon: '📄' },
+  { value: 'excel', label: 'Excel Workbook', icon: '📊' },
+  { value: 'pdf', label: 'PDF Document', icon: '📑' },
 ];
 
 export default function BookingsOccupancyReport() {
   const navigate = useNavigate();
   const [dateRange, setDateRange] = useState('last_30_days');
   const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
+  const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Calculate stats
-  const stats = useMemo(() => {
-    const totalBookings = bookingsData.reduce((sum, d) => sum + (d.total || 0), 0);
-    const totalRevenue = occupancyData.reduce((sum, d) => sum + (d.revenue || 0), 0);
-    const avgOccupancy = Math.round(
-      occupancyData.reduce((sum, d) => sum + (d.occupancy || 0), 0) / occupancyData.length
+  // Fetch report data
+  const fetchReport = useCallback(async () => {
+    try {
+      setError(null);
+      const data = await reportsService.getBookingsOccupancyReport(dateRange);
+      setReportData(data);
+    } catch (err) {
+      console.error('Failed to fetch report:', err);
+      setError('Failed to load report data. Please try again.');
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, [dateRange]);
+
+  useEffect(() => {
+    setIsLoading(true);
+    fetchReport();
+  }, [fetchReport]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchReport();
+  };
+
+  const handleExport = async (format: ExportFormat) => {
+    try {
+      setIsExporting(true);
+      setExportDropdownOpen(false);
+      await reportsService.getBookingsOccupancyReport(dateRange, format);
+    } catch (err) {
+      console.error('Failed to export report:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F9F7F7' }}>
+        <div className="flex flex-col items-center gap-4">
+          <RefreshCw className="w-10 h-10 text-terra-500 animate-spin" />
+          <p className="text-neutral-500 font-medium">Loading report...</p>
+        </div>
+      </div>
     );
-    const avgADR = Math.round(
-      occupancyData.reduce((sum, d) => sum + (d.adr || 0), 0) / occupancyData.length
+  }
+
+  if (error || !reportData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F9F7F7' }}>
+        <div className="flex flex-col items-center gap-4 text-center">
+          <AlertCircle className="w-10 h-10 text-rose-500" />
+          <p className="text-neutral-700 font-medium">{error || 'Failed to load report'}</p>
+          <button
+            onClick={handleRefresh}
+            className="px-4 py-2 bg-terra-500 text-white rounded-lg text-sm font-medium"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
     );
-    const avgRevPAR = Math.round(
-      occupancyData.reduce((sum, d) => sum + (d.revpar || 0), 0) / occupancyData.length
-    );
-    const directBookings = bookingsData.reduce((sum, d) => sum + (d.direct || 0), 0);
-    const directPercent = totalBookings > 0 ? Math.round((directBookings / totalBookings) * 100) : 0;
+  }
 
-    return { totalBookings, totalRevenue, avgOccupancy, avgADR, avgRevPAR, directPercent };
-  }, []);
-
-  // Booking source distribution
-  const bookingSourceData = useMemo(() => {
-    const totals = bookingsData.reduce(
-      (acc, d) => ({
-        direct: acc.direct + (d.direct || 0),
-        ota: acc.ota + (d.ota || 0),
-        corporate: acc.corporate + (d.corporate || 0),
-        walkin: acc.walkin + (d.walkin || 0)
-      }),
-      { direct: 0, ota: 0, corporate: 0, walkin: 0 }
-    );
-
-    return [
-      { name: 'Direct', value: totals.direct, color: SOURCE_COLORS.Direct },
-      { name: 'OTA', value: totals.ota, color: SOURCE_COLORS.OTA },
-      { name: 'Corporate', value: totals.corporate, color: SOURCE_COLORS.Corporate },
-      { name: 'Walk-in', value: totals.walkin, color: SOURCE_COLORS['Walk-in'] }
-    ];
-  }, []);
-
-  const totalSourceBookings = bookingSourceData.reduce((sum, s) => sum + s.value, 0);
-
-  // Room type performance
-  const roomTypeData = useMemo(() => {
-    return [
-      { name: 'Deluxe', bookings: 145, revenue: 1523000, occupancy: 82 },
-      { name: 'Suite', bookings: 89, revenue: 1876000, occupancy: 78 },
-      { name: 'Premium', bookings: 112, revenue: 1245000, occupancy: 85 },
-      { name: 'Standard', bookings: 178, revenue: 890000, occupancy: 91 }
-    ];
-  }, []);
-
-  // Export handler
-  const handleExport = useCallback(() => {
-    const csvContent = generateExportCSV(bookingsData, occupancyData, roomTypeData);
-    const filename = `bookings_occupancy_report_${new Date().toISOString().split('T')[0]}.csv`;
-    downloadCSV(csvContent, filename);
-  }, [roomTypeData]);
+  const { summary, comparisons, daily_occupancy, daily_bookings, booking_sources, room_type_performance, ai_insights } = reportData;
+  const totalSourceBookings = booking_sources.reduce((sum, s) => sum + s.value, 0);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <div className="px-10 py-8 space-y-8">
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6 lg:space-y-8">
         {/* Header */}
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <button
               onClick={() => navigate('/admin/reports')}
-              className="w-9 h-9 rounded-lg flex items-center justify-center bg-white border border-neutral-200"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center bg-white border border-neutral-200 flex-shrink-0"
             >
               <ArrowLeft className="w-4 h-4 text-neutral-600" />
             </button>
             <div>
-              <h1 className="text-xl font-semibold text-neutral-900">Bookings & Occupancy</h1>
-              <p className="text-[13px] text-neutral-500">Booking trends and occupancy analytics</p>
+              <h1 className="text-lg sm:text-xl font-semibold text-neutral-900">Bookings & Occupancy</h1>
+              <p className="text-[12px] sm:text-[13px] text-neutral-500">Booking trends and occupancy analytics</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="relative">
               <button
                 onClick={() => setDateDropdownOpen(!dateDropdownOpen)}
-                className="h-9 px-4 pr-9 rounded-lg bg-white border border-neutral-200 text-[13px] font-medium text-neutral-700 cursor-pointer flex items-center gap-2 hover:border-neutral-300 transition-colors"
+                className="h-8 sm:h-9 min-w-[70px] sm:min-w-[120px] px-3 sm:px-4 pr-8 sm:pr-9 rounded-lg bg-white border border-neutral-200 text-[12px] sm:text-[13px] font-medium text-neutral-700 cursor-pointer flex items-center hover:border-neutral-300 transition-colors"
               >
-                {DATE_RANGES.find(r => r.value === dateRange)?.label}
-                <ChevronDown className={`w-4 h-4 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2 transition-transform ${dateDropdownOpen ? 'rotate-180' : ''}`} />
+                <span className="hidden sm:inline truncate">{DATE_RANGES.find(r => r.value === dateRange)?.label}</span>
+                <span className="sm:hidden truncate">{DATE_RANGES.find(r => r.value === dateRange)?.shortLabel}</span>
+                <ChevronDown className={`w-4 h-4 text-neutral-400 absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 transition-transform flex-shrink-0 ${dateDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
               {dateDropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setDateDropdownOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-neutral-200 rounded-lg shadow-lg py-1 z-50">
+                  <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-1 w-44 bg-white border border-neutral-200 rounded-lg shadow-lg py-1 z-50">
                     {DATE_RANGES.map(range => (
                       <button
                         key={range.value}
@@ -206,65 +210,157 @@ export default function BookingsOccupancyReport() {
               )}
             </div>
             <button
-              onClick={() => window.location.reload()}
-              className="w-9 h-9 rounded-lg flex items-center justify-center bg-white border border-neutral-200"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center bg-white border border-neutral-200 disabled:opacity-50"
             >
-              <RefreshCw className="w-4 h-4 text-neutral-500" />
+              <RefreshCw className={`w-4 h-4 text-neutral-500 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
-            <button
-              onClick={handleExport}
-              className="h-9 px-4 rounded-lg bg-terra-500 text-white text-[13px] font-medium flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Export
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
+                disabled={isExporting}
+                className="h-8 sm:h-9 px-3 sm:px-4 pr-8 sm:pr-9 rounded-lg bg-terra-500 text-white text-[12px] sm:text-[13px] font-medium flex items-center gap-2 hover:bg-terra-600 transition-colors disabled:opacity-50"
+              >
+                <Download className={`w-4 h-4 ${isExporting ? 'animate-pulse' : ''}`} />
+                <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export'}</span>
+                <ChevronDown className={`w-4 h-4 absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 transition-transform ${exportDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {exportDropdownOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setExportDropdownOpen(false)} />
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-neutral-200 rounded-lg shadow-lg py-1 z-50">
+                    {EXPORT_OPTIONS.map(option => (
+                      <button
+                        key={option.value}
+                        onClick={() => handleExport(option.value)}
+                        className="w-full px-3 py-2 text-left text-[13px] font-medium text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                      >
+                        <span>{option.icon}</span>
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </header>
 
         {/* Stats Grid */}
-        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div className="bg-white rounded-xl p-5">
-            <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Total Bookings</p>
-            <p className="text-2xl font-semibold text-neutral-900">{stats.totalBookings.toLocaleString()}</p>
-            <p className="text-[11px] text-sage-600 font-medium mt-1">+8.2% vs last period</p>
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+          <div className="bg-white rounded-xl p-4 sm:p-5">
+            <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Total Bookings</p>
+            <p className="text-xl sm:text-2xl font-semibold text-neutral-900">{summary.total_bookings.toLocaleString()}</p>
+            <p className={`text-[10px] sm:text-[11px] font-medium mt-1 ${comparisons.bookings_change >= 0 ? 'text-sage-600' : 'text-rose-600'}`}>
+              {comparisons.bookings_change >= 0 ? '+' : ''}{comparisons.bookings_change}% vs last period
+            </p>
           </div>
-          <div className="bg-white rounded-xl p-5">
-            <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Avg Occupancy</p>
-            <p className="text-2xl font-semibold text-neutral-900">{stats.avgOccupancy}%</p>
-            <p className="text-[11px] text-sage-600 font-medium mt-1">+5.1% vs last period</p>
+          <div className="bg-white rounded-xl p-4 sm:p-5">
+            <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Avg Occupancy</p>
+            <p className="text-xl sm:text-2xl font-semibold text-neutral-900">{summary.avg_occupancy}%</p>
+            <p className={`text-[10px] sm:text-[11px] font-medium mt-1 ${comparisons.occupancy_change >= 0 ? 'text-sage-600' : 'text-rose-600'}`}>
+              {comparisons.occupancy_change >= 0 ? '+' : ''}{comparisons.occupancy_change}% vs last period
+            </p>
           </div>
-          <div className="bg-white rounded-xl p-5">
-            <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Avg ADR</p>
-            <p className="text-2xl font-semibold text-neutral-900">${stats.avgADR.toLocaleString()}</p>
-            <p className="text-[11px] text-sage-600 font-medium mt-1">+3.4% vs last period</p>
+          <div className="bg-white rounded-xl p-4 sm:p-5">
+            <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Avg ADR</p>
+            <p className="text-xl sm:text-2xl font-semibold text-neutral-900">${summary.avg_adr.toLocaleString()}</p>
+            <p className={`text-[10px] sm:text-[11px] font-medium mt-1 ${comparisons.adr_change >= 0 ? 'text-sage-600' : 'text-rose-600'}`}>
+              {comparisons.adr_change >= 0 ? '+' : ''}{comparisons.adr_change}% vs last period
+            </p>
           </div>
-          <div className="bg-white rounded-xl p-5">
-            <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Avg RevPAR</p>
-            <p className="text-2xl font-semibold text-neutral-900">${stats.avgRevPAR.toLocaleString()}</p>
-            <p className="text-[11px] text-sage-600 font-medium mt-1">+6.8% vs last period</p>
+          <div className="bg-white rounded-xl p-4 sm:p-5">
+            <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Avg RevPAR</p>
+            <p className="text-xl sm:text-2xl font-semibold text-neutral-900">${summary.avg_revpar.toLocaleString()}</p>
+            <p className={`text-[10px] sm:text-[11px] font-medium mt-1 ${comparisons.revpar_change >= 0 ? 'text-sage-600' : 'text-rose-600'}`}>
+              {comparisons.revpar_change >= 0 ? '+' : ''}{comparisons.revpar_change}% vs last period
+            </p>
           </div>
-          <div className="bg-white rounded-xl p-5">
-            <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Total Revenue</p>
-            <p className="text-2xl font-semibold text-neutral-900">{formatCurrency(stats.totalRevenue)}</p>
-            <p className="text-[11px] text-sage-600 font-medium mt-1">+12.3% vs last period</p>
+          <div className="bg-white rounded-xl p-4 sm:p-5">
+            <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Total Revenue</p>
+            <p className="text-xl sm:text-2xl font-semibold text-neutral-900">{formatCurrency(summary.total_revenue)}</p>
+            <p className={`text-[10px] sm:text-[11px] font-medium mt-1 ${comparisons.revenue_change >= 0 ? 'text-sage-600' : 'text-rose-600'}`}>
+              {comparisons.revenue_change >= 0 ? '+' : ''}{comparisons.revenue_change}% vs last period
+            </p>
           </div>
-          <div className="bg-white rounded-xl p-5">
-            <p className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Direct Bookings</p>
-            <p className="text-2xl font-semibold text-neutral-900">{stats.directPercent}%</p>
-            <p className="text-[11px] text-sage-600 font-medium mt-1">+2.1% vs last period</p>
+          <div className="bg-white rounded-xl p-4 sm:p-5">
+            <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Direct Bookings</p>
+            <p className="text-xl sm:text-2xl font-semibold text-neutral-900">{summary.direct_percent}%</p>
+            <p className={`text-[10px] sm:text-[11px] font-medium mt-1 ${comparisons.direct_change >= 0 ? 'text-sage-600' : 'text-rose-600'}`}>
+              {comparisons.direct_change >= 0 ? '+' : ''}{comparisons.direct_change}% vs last period
+            </p>
           </div>
         </section>
 
+        {/* AI Insights Section */}
+        {ai_insights && ai_insights.length > 0 && (
+          <section className="rounded-[10px] bg-white overflow-hidden">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 flex items-center gap-3 border-b border-neutral-100">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-100">
+                <Sparkles className="w-4 h-4 text-purple-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-neutral-800">AI-Powered Insights</h3>
+                <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
+                  Intelligent recommendations based on booking patterns
+                </p>
+              </div>
+            </div>
+            <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+              {ai_insights.map((insight: AIInsight, idx: number) => {
+                const style = getInsightStyle(insight.type);
+                const { Icon } = style;
+                return (
+                  <div
+                    key={idx}
+                    className={`rounded-lg border p-3 sm:p-4 ${style.bg} ${style.border}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${style.iconBg}`}>
+                        <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${style.iconColor}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <h4 className={`text-[12px] sm:text-[13px] font-semibold ${style.titleColor}`}>
+                            {insight.title}
+                          </h4>
+                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                            insight.priority === 'high'
+                              ? 'bg-rose-100 text-rose-700'
+                              : insight.priority === 'medium'
+                                ? 'bg-gold-100 text-gold-700'
+                                : 'bg-neutral-100 text-neutral-600'
+                          }`}>
+                            {insight.priority} priority
+                          </span>
+                        </div>
+                        <p className="text-[11px] sm:text-[12px] text-neutral-600 mb-2">{insight.message}</p>
+                        <div className="flex items-center gap-2">
+                          <Target className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                          <span className="text-[10px] sm:text-[11px] font-medium text-neutral-500">
+                            Recommended Action: {insight.action}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {/* Charts Row 1 - Line Charts */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Occupancy Trend */}
-          <div className="bg-white rounded-xl p-6">
+          <div className="bg-white rounded-xl p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1">Occupancy Trend</h3>
             <p className="text-[12px] text-neutral-500 mb-4">Daily occupancy rate over time</p>
 
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={occupancyData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                <LineChart data={daily_occupancy} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                   <XAxis
                     dataKey="date"
@@ -310,13 +406,13 @@ export default function BookingsOccupancyReport() {
           </div>
 
           {/* ADR & RevPAR Trend */}
-          <div className="bg-white rounded-xl p-6">
+          <div className="bg-white rounded-xl p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1">ADR & RevPAR Trend</h3>
             <p className="text-[12px] text-neutral-500 mb-4">Average daily rate and revenue per available room</p>
 
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={occupancyData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                <LineChart data={daily_occupancy} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                   <XAxis
                     dataKey="date"
@@ -363,26 +459,26 @@ export default function BookingsOccupancyReport() {
         </section>
 
         {/* Charts Row 2 */}
-        <section className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <section className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6">
           {/* Booking Sources Pie Chart */}
-          <div className="lg:col-span-2 bg-white rounded-xl p-6">
+          <div className="lg:col-span-2 bg-white rounded-xl p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1">Booking Sources</h3>
             <p className="text-[12px] text-neutral-500 mb-4">Distribution by channel</p>
 
-            <div className="flex items-center gap-6">
-              <div className="w-40 h-40">
+            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+              <div className="w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={bookingSourceData}
+                      data={booking_sources}
                       cx="50%"
                       cy="50%"
-                      innerRadius={45}
-                      outerRadius={70}
+                      innerRadius={35}
+                      outerRadius={55}
                       paddingAngle={2}
                       dataKey="value"
                     >
-                      {bookingSourceData.map((entry, index) => (
+                      {booking_sources.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -390,16 +486,16 @@ export default function BookingsOccupancyReport() {
                 </ResponsiveContainer>
               </div>
 
-              <div className="flex-1 space-y-3">
-                {bookingSourceData.map((item) => (
+              <div className="flex-1 space-y-2 sm:space-y-3 w-full">
+                {booking_sources.map((item) => (
                   <div key={item.name} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span className="text-[13px] text-neutral-600">{item.name}</span>
+                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="text-[12px] sm:text-[13px] text-neutral-600">{item.name}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[13px] font-medium text-neutral-900">{item.value}</span>
-                      <span className="text-[11px] text-neutral-400 w-10 text-right">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <span className="text-[12px] sm:text-[13px] font-medium text-neutral-900">{item.value}</span>
+                      <span className="text-[10px] sm:text-[11px] text-neutral-400 w-8 sm:w-10 text-right">
                         {totalSourceBookings > 0 ? ((item.value / totalSourceBookings) * 100).toFixed(0) : 0}%
                       </span>
                     </div>
@@ -410,13 +506,13 @@ export default function BookingsOccupancyReport() {
           </div>
 
           {/* Daily Bookings Bar Chart */}
-          <div className="lg:col-span-3 bg-white rounded-xl p-6">
+          <div className="lg:col-span-3 bg-white rounded-xl p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1">Daily Bookings</h3>
             <p className="text-[12px] text-neutral-500 mb-4">New bookings per day</p>
 
-            <div className="h-52">
+            <div className="h-44 sm:h-52">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={bookingsData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                <BarChart data={daily_bookings} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                   <XAxis
                     dataKey="date"
@@ -455,9 +551,9 @@ export default function BookingsOccupancyReport() {
         </section>
 
         {/* Room Type Performance Table */}
-        <section className="bg-white rounded-xl p-6">
+        <section className="bg-white rounded-xl p-4 sm:p-6">
           <h3 className="text-sm font-semibold text-neutral-900 mb-1">Room Type Performance</h3>
-          <p className="text-[12px] text-neutral-500 mb-4">Bookings and revenue by room category</p>
+          <p className="text-[12px] text-neutral-500 mb-3 sm:mb-4">Bookings and revenue by room category</p>
 
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -470,7 +566,7 @@ export default function BookingsOccupancyReport() {
                 </tr>
               </thead>
               <tbody>
-                {roomTypeData.map((room, index) => (
+                {room_type_performance.map((room, index) => (
                   <tr key={index} className="border-b border-neutral-50 last:border-0">
                     <td className="py-3 text-[13px] font-medium text-neutral-900">{room.name}</td>
                     <td className="py-3 text-[13px] text-neutral-600 text-right">{room.bookings}</td>

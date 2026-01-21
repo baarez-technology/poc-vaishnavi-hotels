@@ -92,18 +92,6 @@ export default function EditWOModal({ isOpen, onClose, onSubmit, workOrder, tech
 
   useEffect(() => {
     if (workOrder) {
-      // Safely parse date - handle invalid or empty date strings
-      const parseDate = (dateStr) => {
-        if (!dateStr || dateStr === 'null' || dateStr === 'undefined') return '';
-        try {
-          const date = new Date(dateStr);
-          if (isNaN(date.getTime())) return '';
-          return date.toISOString().split('T')[0];
-        } catch {
-          return '';
-        }
-      };
-
       setFormData({
         roomNumber: workOrder.roomNumber || '',
         roomId: workOrder.roomId || '',
@@ -116,7 +104,8 @@ export default function EditWOModal({ isOpen, onClose, onSubmit, workOrder, tech
         assignedTo: workOrder.assignedTo || '',
         technicianName: workOrder.technicianName || '',
         isOOO: workOrder.isOOO || false,
-        estimatedCompletion: parseDate(workOrder.scheduledDate) || parseDate(workOrder.estimatedCompletion),
+        estimatedCompletion: (workOrder.scheduledDate || workOrder.estimatedCompletion) ?
+          new Date(workOrder.scheduledDate || workOrder.estimatedCompletion).toISOString().split('T')[0] : '',
         notes: workOrder.notes || ''
       });
       setErrors({});

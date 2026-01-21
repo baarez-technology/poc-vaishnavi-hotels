@@ -4,19 +4,18 @@
  * Side drawer following CMS pattern
  */
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   ROOM_TYPES,
   calculateNights,
   calculateBookingAmount,
-  formatCurrency,
   generateBookingId,
 } from '../../utils/bookings';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 import { Input, FormField, Textarea } from '../ui2/Input';
 import DatePicker from '../ui2/DatePicker';
-import { apiClient } from '@/api/client';
+import { useCurrency } from '@/hooks/useCurrency';
 
 const SOURCE_OPTIONS = [
   { value: 'Website', label: 'Website' },
@@ -77,6 +76,7 @@ function CustomSelect({ value, onChange, options, placeholder = 'Select...' }) {
 }
 
 export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating = false }) {
+  const { formatCurrency } = useCurrency();
   const [formData, setFormData] = useState({
     guestName: '',
     email: '',
@@ -93,73 +93,6 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
   });
 
   const [errors, setErrors] = useState({});
-  const [isLookingUp, setIsLookingUp] = useState(false);
-  const [guestFound, setGuestFound] = useState(false);
-  const lookupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Guest lookup function
-  const lookupGuest = useCallback(async (email?: string, phone?: string) => {
-    if (!email && !phone) return;
-
-    // Only lookup if email looks valid or phone has enough digits
-    if (email && !email.includes('@')) return;
-    if (phone && phone.replace(/\D/g, '').length < 7) return;
-
-    setIsLookingUp(true);
-    try {
-      const params = new URLSearchParams();
-      if (email) params.append('email', email);
-      else if (phone) params.append('phone', phone);
-
-      const response = await apiClient.get(`/api/v1/guests/lookup?${params.toString()}`);
-      const data = response.data;
-
-      if (data.found && data.guest) {
-        const guest = data.guest;
-        setFormData(prev => ({
-          ...prev,
-          guestName: `${guest.first_name} ${guest.last_name}`.trim(),
-          email: guest.email || prev.email,
-          phone: guest.phone || prev.phone,
-          nationality: guest.country || prev.nationality,
-        }));
-        setGuestFound(true);
-      } else {
-        setGuestFound(false);
-      }
-    } catch (error) {
-      console.error('Guest lookup failed:', error);
-      setGuestFound(false);
-    } finally {
-      setIsLookingUp(false);
-    }
-  }, []);
-
-  // Debounced lookup when email changes
-  const handleEmailBlur = useCallback(() => {
-    if (formData.email && formData.email.includes('@')) {
-      // Clear any existing timeout
-      if (lookupTimeoutRef.current) {
-        clearTimeout(lookupTimeoutRef.current);
-      }
-      lookupTimeoutRef.current = setTimeout(() => {
-        lookupGuest(formData.email, undefined);
-      }, 300);
-    }
-  }, [formData.email, lookupGuest]);
-
-  // Debounced lookup when phone changes
-  const handlePhoneBlur = useCallback(() => {
-    if (formData.phone && formData.phone.replace(/\D/g, '').length >= 7 && !formData.email) {
-      // Only lookup by phone if email is not provided
-      if (lookupTimeoutRef.current) {
-        clearTimeout(lookupTimeoutRef.current);
-      }
-      lookupTimeoutRef.current = setTimeout(() => {
-        lookupGuest(undefined, formData.phone);
-      }, 300);
-    }
-  }, [formData.phone, formData.email, lookupGuest]);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -179,18 +112,8 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
         rateOverride: '',
       });
       setErrors({});
-      setGuestFound(false);
     }
   }, [isOpen]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (lookupTimeoutRef.current) {
-        clearTimeout(lookupTimeoutRef.current);
-      }
-    };
-  }, []);
 
   // Calculate booking details
   const bookingCalc = useMemo(() => {
@@ -339,26 +262,17 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
                 <label className="block text-[13px] font-medium text-neutral-700">
                   Email
                   <span className="text-rose-500 ml-0.5">*</span>
-                  {isLookingUp && (
-                    <span className="ml-2 text-[11px] text-neutral-400">Looking up...</span>
-                  )}
-                  {guestFound && !isLookingUp && (
-                    <span className="ml-2 text-[11px] text-emerald-600">Guest found - details auto-filled</span>
-                  )}
                 </label>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  onBlur={handleEmailBlur}
                   placeholder="john@example.com"
                   className={`w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border transition-all duration-150 focus:outline-none ${
                     errors.email
                       ? 'border-rose-400 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/10'
-                      : guestFound
-                        ? 'border-emerald-400 bg-emerald-50/30 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10'
-                        : 'border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10'
+                      : 'border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10'
                   }`}
                 />
                 {errors.email && (
@@ -375,13 +289,8 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  onBlur={handlePhoneBlur}
                   placeholder="+1 (555) 123-4567"
-                  className={`w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border transition-all duration-150 focus:outline-none ${
-                    guestFound
-                      ? 'border-emerald-400 bg-emerald-50/30 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10'
-                      : 'border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10'
-                  }`}
+                  className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
                 />
               </div>
             </div>

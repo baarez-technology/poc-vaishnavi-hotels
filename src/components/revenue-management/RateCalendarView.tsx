@@ -33,7 +33,8 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
   const { success, error: showError, info } = useToast();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedRoomType, setSelectedRoomType] = useState('STD');
+  // Initialize with first room type ID from API, or empty string as fallback
+  const [selectedRoomType, setSelectedRoomType] = useState(() => roomTypes?.[0]?.id || '');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [isRecalculating, setIsRecalculating] = useState(false);
@@ -70,6 +71,17 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
   useEffect(() => {
     fetchCalendarData();
   }, [fetchCalendarData]);
+
+  // Update selectedRoomType when roomTypes are loaded from API
+  useEffect(() => {
+    if (roomTypes && roomTypes.length > 0) {
+      // If no room type selected, or current selection doesn't exist in new room types
+      const currentExists = roomTypes.some((r) => r.id === selectedRoomType);
+      if (!selectedRoomType || !currentExists) {
+        setSelectedRoomType(roomTypes[0].id);
+      }
+    }
+  }, [roomTypes, selectedRoomType]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -358,23 +370,24 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
 
   // Loading skeleton
   const renderLoadingSkeleton = () => (
-    <div className="p-4">
-      <div className="grid grid-cols-7 gap-2 mb-3">
+    <div className="p-2 sm:p-4 overflow-x-auto">
+      <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 sm:mb-3 min-w-[500px] sm:min-w-0">
         {dayNames.map(day => (
-          <div key={day} className="text-center text-[11px] font-semibold text-neutral-400 uppercase tracking-wider py-2">
-            {day}
+          <div key={day} className="text-center text-[9px] sm:text-[11px] font-semibold text-neutral-400 uppercase tracking-wider py-1.5 sm:py-2">
+            <span className="hidden sm:inline">{day}</span>
+            <span className="sm:hidden">{day.charAt(0)}</span>
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-1 sm:gap-2 min-w-[500px] sm:min-w-0">
         {Array.from({ length: 35 }).map((_, i) => (
-          <div key={i} className="min-h-[130px] rounded-lg border border-neutral-100 bg-neutral-50/50 animate-pulse">
-            <div className="px-2.5 py-1.5 bg-white border-b border-neutral-100 rounded-t-lg">
-              <div className="h-4 w-6 bg-neutral-200 rounded" />
+          <div key={i} className="min-h-[80px] sm:min-h-[130px] rounded-lg border border-neutral-100 bg-neutral-50/50 animate-pulse">
+            <div className="px-1.5 sm:px-2.5 py-1 sm:py-1.5 bg-white border-b border-neutral-100 rounded-t-lg">
+              <div className="h-3 sm:h-4 w-5 sm:w-6 bg-neutral-200 rounded" />
             </div>
-            <div className="p-3 space-y-2">
-              <div className="h-5 w-16 bg-neutral-200 rounded" />
-              <div className="h-3 w-12 bg-neutral-100 rounded" />
+            <div className="p-2 sm:p-3 space-y-1.5 sm:space-y-2">
+              <div className="h-4 sm:h-5 w-12 sm:w-16 bg-neutral-200 rounded" />
+              <div className="h-2.5 sm:h-3 w-10 sm:w-12 bg-neutral-100 rounded" />
             </div>
           </div>
         ))}
@@ -385,30 +398,30 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
   return (
     <div className="bg-white rounded-[10px] overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b border-neutral-100 bg-white space-y-5">
+      <div className="p-4 sm:p-6 border-b border-neutral-100 bg-white space-y-4 sm:space-y-5">
         {/* Top Row: Month Navigation + Primary Actions */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           {/* Month Navigation */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center sm:justify-start gap-2 sm:gap-3">
             <button
               onClick={handlePrevMonth}
-              className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-lg transition-colors"
+              className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-neutral-100 rounded-lg transition-colors"
             >
-              <ChevronLeft className="w-5 h-5 text-neutral-500" />
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-500" />
             </button>
-            <h2 className="text-lg font-semibold text-neutral-900 min-w-[180px] text-center">
+            <h2 className="text-base sm:text-lg font-semibold text-neutral-900 min-w-[140px] sm:min-w-[180px] text-center">
               {formatMonthYear(currentMonth)}
             </h2>
             <button
               onClick={handleNextMonth}
-              className="w-8 h-8 flex items-center justify-center hover:bg-neutral-100 rounded-lg transition-colors"
+              className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-neutral-100 rounded-lg transition-colors"
             >
-              <ChevronRight className="w-5 h-5 text-neutral-500" />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-500" />
             </button>
           </div>
 
           {/* Primary Action Buttons */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-3">
             {/* Undo/Redo Buttons */}
             <div className="flex items-center gap-1 px-1 py-1 bg-neutral-50 rounded-lg border border-neutral-200">
               <button
@@ -419,10 +432,10 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
                   }
                 }}
                 disabled={!canUndo}
-                className="p-1.5 text-neutral-600 hover:text-terra-600 hover:bg-white rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-neutral-600 disabled:hover:bg-transparent"
+                className="p-1 sm:p-1.5 text-neutral-600 hover:text-terra-600 hover:bg-white rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-neutral-600 disabled:hover:bg-transparent"
                 title={`Undo ${canUndo ? '(Ctrl+Z)' : ''}`}
               >
-                <Undo2 className="w-4 h-4" />
+                <Undo2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
               <button
                 onClick={() => {
@@ -432,16 +445,16 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
                   }
                 }}
                 disabled={!canRedo}
-                className="p-1.5 text-neutral-600 hover:text-terra-600 hover:bg-white rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-neutral-600 disabled:hover:bg-transparent"
+                className="p-1 sm:p-1.5 text-neutral-600 hover:text-terra-600 hover:bg-white rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-neutral-600 disabled:hover:bg-transparent"
                 title={`Redo ${canRedo ? '(Ctrl+Shift+Z)' : ''}`}
               >
-                <Redo2 className="w-4 h-4" />
+                <Redo2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             </div>
 
             <button
               onClick={() => setShowKeyboardHelp(!showKeyboardHelp)}
-              className="p-2 text-neutral-400 hover:text-terra-600 hover:bg-terra-50 rounded-lg transition-colors"
+              className="hidden sm:block p-2 text-neutral-400 hover:text-terra-600 hover:bg-terra-50 rounded-lg transition-colors"
               title="Keyboard shortcuts (?)"
             >
               <HelpCircle className="w-5 h-5" />
@@ -449,7 +462,7 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
 
             <button
               onClick={() => setCurrentMonth(new Date())}
-              className="px-3 py-1.5 text-[13px] font-medium text-terra-600 hover:bg-terra-50 rounded-lg transition-colors"
+              className="px-2.5 sm:px-3 py-1.5 text-xs sm:text-[13px] font-medium text-terra-600 hover:bg-terra-50 rounded-lg transition-colors"
             >
               Today
             </button>
@@ -458,67 +471,69 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
             <button
               onClick={handleRunAllRules}
               disabled={isRunningRules}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-sage-700 bg-sage-50 border border-sage-200 rounded-lg hover:bg-sage-100 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-[13px] font-medium text-sage-700 bg-sage-50 border border-sage-200 rounded-lg hover:bg-sage-100 transition-colors disabled:opacity-50"
             >
               {isRunningRules ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
               ) : (
-                <Play className="w-4 h-4" />
+                <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               )}
-              {isRunningRules ? 'Running...' : 'Run All Rules'}
+              <span className="hidden sm:inline">{isRunningRules ? 'Running...' : 'Run All Rules'}</span>
+              <span className="sm:hidden">{isRunningRules ? 'Running' : 'Run Rules'}</span>
             </button>
 
             <button
               onClick={handleRecalculate}
               disabled={isRecalculating}
-              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-terra-500 rounded-lg hover:bg-terra-600 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-[13px] font-medium text-white bg-terra-500 rounded-lg hover:bg-terra-600 transition-colors disabled:opacity-50"
             >
-              <RefreshCw className={`w-4 h-4 ${isRecalculating ? 'animate-spin' : ''}`} />
-              {isRecalculating ? 'Recalculating...' : 'Recalculate'}
+              <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isRecalculating ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{isRecalculating ? 'Recalculating...' : 'Recalculate'}</span>
+              <span className="sm:hidden">{isRecalculating ? 'Calc...' : 'Calc'}</span>
             </button>
           </div>
         </div>
 
         {/* Bottom Row: Legend + Filters */}
-        <div className="flex items-center justify-between">
-          {/* Legend */}
-          <div className="flex items-center gap-5 text-[11px]">
-            <div className="flex items-center gap-1.5 whitespace-nowrap">
-              <div className="w-3 h-3 rounded bg-white border border-neutral-200" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          {/* Legend - Scrollable on mobile */}
+          <div className="flex items-center gap-3 sm:gap-5 text-[10px] sm:text-[11px] overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
+            <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap flex-shrink-0">
+              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-white border border-neutral-200" />
               <span className="text-neutral-600">Available</span>
             </div>
-            <div className="flex items-center gap-1.5 whitespace-nowrap">
-              <div className="w-3 h-3 rounded bg-gold-50 border border-gold-200" />
-              <span className="text-neutral-600">Low Inventory</span>
+            <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap flex-shrink-0">
+              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-gold-50 border border-gold-200" />
+              <span className="text-neutral-600">Low</span>
             </div>
-            <div className="flex items-center gap-1.5 whitespace-nowrap">
-              <div className="w-3 h-3 rounded bg-terra-50 border border-terra-200" />
+            <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap flex-shrink-0">
+              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-terra-50 border border-terra-200" />
               <span className="text-neutral-600">Very Low</span>
             </div>
-            <div className="flex items-center gap-1.5 whitespace-nowrap">
-              <div className="w-3 h-3 rounded bg-ocean-50 border border-ocean-200" />
-              <span className="text-neutral-600">CTA Active</span>
+            <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap flex-shrink-0">
+              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-ocean-50 border border-ocean-200" />
+              <span className="text-neutral-600">CTA</span>
             </div>
-            <div className="flex items-center gap-1.5 whitespace-nowrap">
-              <div className="w-3 h-3 rounded bg-rose-50 border border-rose-200" />
+            <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap flex-shrink-0">
+              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-rose-50 border border-rose-200" />
               <span className="text-neutral-600">Stop Sell</span>
             </div>
           </div>
 
           {/* Filters and Insights */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Room Type Selector - Custom Dropdown */}
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative flex-1 sm:flex-none" ref={dropdownRef}>
               <button
                 onClick={() => setIsRoomDropdownOpen(!isRoomDropdownOpen)}
-                className="flex items-center justify-between gap-3 px-4 py-2 text-[13px] font-medium border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/40 bg-white hover:bg-neutral-50 transition-colors min-w-[180px]"
+                className="w-full sm:w-auto flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-[13px] font-medium border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/40 bg-white hover:bg-neutral-50 transition-colors sm:min-w-[180px]"
               >
-                <span>{roomTypes.find(r => r.id === selectedRoomType)?.name || 'Select Room'}</span>
-                <ChevronDown className={`w-4 h-4 text-neutral-500 transition-transform ${isRoomDropdownOpen ? 'rotate-180' : ''}`} />
+                <span className="truncate">{roomTypes.find(r => r.id === selectedRoomType)?.name || 'Select Room'}</span>
+                <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-500 transition-transform flex-shrink-0 ${isRoomDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {isRoomDropdownOpen && (
-                <div className="absolute top-full left-0 mt-2 w-full bg-white border border-neutral-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                <div className="absolute top-full left-0 mt-2 w-full sm:min-w-[180px] bg-white border border-neutral-200 rounded-lg shadow-lg z-50 overflow-hidden">
                   {roomTypes.map(room => (
                     <button
                       key={room.id}
@@ -526,13 +541,13 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
                         setSelectedRoomType(room.id);
                         setIsRoomDropdownOpen(false);
                       }}
-                      className={`w-full flex items-center justify-between px-4 py-2.5 text-[13px] text-left hover:bg-neutral-50 transition-colors ${
+                      className={`w-full flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-[13px] text-left hover:bg-neutral-50 transition-colors ${
                         selectedRoomType === room.id ? 'bg-terra-50 text-terra-600 font-medium' : 'text-neutral-700'
                       }`}
                     >
-                      <span>{room.name}</span>
+                      <span className="truncate">{room.name}</span>
                       {selectedRoomType === room.id && (
-                        <Check className="w-4 h-4 text-terra-600" />
+                        <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-terra-600 flex-shrink-0" />
                       )}
                     </button>
                   ))}
@@ -542,9 +557,10 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
 
             {/* AI Suggestions Badge */}
             {visibleSuggestions.length > 0 && (
-              <button className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-gold-700 bg-gold-50 border border-gold-200 rounded-lg hover:bg-gold-100 transition-colors whitespace-nowrap">
-                <Sparkles className="w-4 h-4" />
-                {visibleSuggestions.length} AI Suggestions
+              <button className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-[13px] font-medium text-gold-700 bg-gold-50 border border-gold-200 rounded-lg hover:bg-gold-100 transition-colors whitespace-nowrap">
+                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">{visibleSuggestions.length} AI Suggestions</span>
+                <span className="sm:hidden">{visibleSuggestions.length} AI</span>
               </button>
             )}
           </div>
@@ -555,18 +571,19 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
       {isLoading ? (
         renderLoadingSkeleton()
       ) : (
-        <div className="p-4">
+        <div className="p-2 sm:p-4 overflow-x-auto">
           {/* Day Headers */}
-          <div className="grid grid-cols-7 gap-2 mb-3">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 sm:mb-3 min-w-[500px] sm:min-w-0">
             {dayNames.map(day => (
-              <div key={day} className="text-center text-[11px] font-semibold text-neutral-400 uppercase tracking-wider py-2">
-                {day}
+              <div key={day} className="text-center text-[9px] sm:text-[11px] font-semibold text-neutral-400 uppercase tracking-wider py-1.5 sm:py-2">
+                <span className="hidden sm:inline">{day}</span>
+                <span className="sm:hidden">{day.charAt(0)}</span>
               </div>
             ))}
           </div>
 
           {/* Calendar Days */}
-          <div ref={calendarRef} className="grid grid-cols-7 gap-2">
+          <div ref={calendarRef} className="grid grid-cols-7 gap-1 sm:gap-2 min-w-[500px] sm:min-w-0">
             {calendarDays.map(({ date, isCurrentMonth }, index) => {
               const dateStr = date.toISOString().split('T')[0];
               const calendarData = rateCalendar[dateStr];
@@ -583,26 +600,26 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
                 <div
                   key={index}
                   data-calendar-cell
-                  className={`min-h-[130px] rounded-lg border border-neutral-100 bg-neutral-50/50 transition-all ${!isCurrentMonth ? 'opacity-30' : ''} ${isPast ? 'opacity-50 bg-neutral-100' : ''} ${
+                  className={`min-h-[80px] sm:min-h-[130px] rounded-lg border border-neutral-100 bg-neutral-50/50 transition-all ${!isCurrentMonth ? 'opacity-30' : ''} ${isPast ? 'opacity-50 bg-neutral-100' : ''} ${
                     bulkEditMode && isSelected ? 'ring-2 ring-terra-500 bg-terra-50/30' : ''
                   } ${isFocused ? 'ring-2 ring-ocean-500 shadow-md scale-[1.02]' : ''}`}
                   onClick={bulkEditMode && !isPast ? () => onDateSelect?.(dateStr) : undefined}
                   style={{ cursor: bulkEditMode && !isPast ? 'pointer' : 'default' }}
                 >
                   {/* Date Header */}
-                  <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-t-lg ${isToday ? 'bg-terra-500 text-white' : 'bg-white border-b border-neutral-100'}`}>
-                    <span className={`text-[12px] font-semibold ${isToday ? 'text-white' : 'text-neutral-600'}`}>
+                  <div className={`flex items-center justify-between px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-t-lg ${isToday ? 'bg-terra-500 text-white' : 'bg-white border-b border-neutral-100'}`}>
+                    <span className={`text-[10px] sm:text-[12px] font-semibold ${isToday ? 'text-white' : 'text-neutral-600'}`}>
                       {date.getDate()}
                     </span>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-0.5 sm:gap-1">
                       {isUpdating && (
-                        <Loader2 className="w-3 h-3 text-terra-500 animate-spin" />
+                        <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-terra-500 animate-spin" />
                       )}
                       {hasSuggestion && (
-                        <Sparkles className="w-3 h-3 text-gold-500" />
+                        <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-gold-500" />
                       )}
                       {calendarData?.event && (
-                        <span className="text-[9px] font-medium text-sage-700 bg-sage-50 px-1.5 py-0.5 rounded truncate max-w-[70px]">
+                        <span className="hidden sm:inline text-[9px] font-medium text-sage-700 bg-sage-50 px-1.5 py-0.5 rounded truncate max-w-[70px]">
                           {calendarData.event}
                         </span>
                       )}
@@ -622,7 +639,7 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
                       isUpdating={isUpdating}
                     />
                   ) : (
-                    <div className="p-3 text-center text-[11px] text-neutral-400">
+                    <div className="p-2 sm:p-3 text-center text-[9px] sm:text-[11px] text-neutral-400">
                       {isPast ? 'Past' : 'No data'}
                     </div>
                   )}
@@ -635,101 +652,101 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
 
       {/* Keyboard Help Overlay */}
       {showKeyboardHelp && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowKeyboardHelp(false)}>
-          <div className="bg-white rounded-[10px] shadow-xl max-w-2xl w-full p-8" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-neutral-900">Keyboard Shortcuts</h3>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-4" onClick={() => setShowKeyboardHelp(false)}>
+          <div className="bg-white rounded-[10px] shadow-xl max-w-2xl w-full p-4 sm:p-8 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className="text-base sm:text-xl font-semibold text-neutral-900">Keyboard Shortcuts</h3>
               <button
                 onClick={() => setShowKeyboardHelp(false)}
-                className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
+                className="p-1.5 sm:p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {/* Navigation */}
               <div>
-                <h4 className="text-sm font-bold text-neutral-500 uppercase tracking-wider mb-3">Navigation</h4>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-neutral-700">Arrow keys</span>
-                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Arrow Keys</kbd>
+                <h4 className="text-xs sm:text-sm font-bold text-neutral-500 uppercase tracking-wider mb-2 sm:mb-3">Navigation</h4>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Arrow keys</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Arrow Keys</kbd>
                   </div>
-                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-neutral-700">Select date</span>
-                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Enter</kbd>
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Select date</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Enter</kbd>
                   </div>
-                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-neutral-700">Clear focus</span>
-                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Esc</kbd>
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Clear focus</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Esc</kbd>
                   </div>
                 </div>
               </div>
 
               {/* Month Controls */}
               <div>
-                <h4 className="text-sm font-bold text-neutral-500 uppercase tracking-wider mb-3">Month Controls</h4>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-neutral-700">Previous month</span>
-                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + Left</kbd>
+                <h4 className="text-xs sm:text-sm font-bold text-neutral-500 uppercase tracking-wider mb-2 sm:mb-3">Month Controls</h4>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Previous month</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + Left</kbd>
                   </div>
-                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-neutral-700">Next month</span>
-                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + Right</kbd>
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Next month</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + Right</kbd>
                   </div>
-                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-neutral-700">Go to today</span>
-                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">T</kbd>
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Go to today</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">T</kbd>
                   </div>
                 </div>
               </div>
 
               {/* Actions */}
               <div>
-                <h4 className="text-sm font-bold text-neutral-500 uppercase tracking-wider mb-3">Actions</h4>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-neutral-700">Undo change</span>
-                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + Z</kbd>
+                <h4 className="text-xs sm:text-sm font-bold text-neutral-500 uppercase tracking-wider mb-2 sm:mb-3">Actions</h4>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Undo change</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + Z</kbd>
                   </div>
-                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-neutral-700">Redo change</span>
-                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + Shift + Z</kbd>
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Redo change</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded"><span className="hidden sm:inline">Ctrl + Shift + Z</span><span className="sm:hidden">Ctrl+⇧+Z</span></kbd>
                   </div>
-                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-neutral-700">Recalculate rates</span>
-                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">R</kbd>
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Recalculate rates</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">R</kbd>
                   </div>
-                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-neutral-700">Show this help</span>
-                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">?</kbd>
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Show this help</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">?</kbd>
                   </div>
                 </div>
               </div>
 
               {/* Rate Editing */}
               <div>
-                <h4 className="text-sm font-bold text-neutral-500 uppercase tracking-wider mb-3">Rate Editing</h4>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-neutral-700">Save rate</span>
-                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Enter</kbd>
+                <h4 className="text-xs sm:text-sm font-bold text-neutral-500 uppercase tracking-wider mb-2 sm:mb-3">Rate Editing</h4>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Save rate</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Enter</kbd>
                   </div>
-                  <div className="flex items-center justify-between py-2 px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-neutral-700">Cancel editing</span>
-                    <kbd className="px-2 py-1 text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Esc</kbd>
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Cancel editing</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Esc</kbd>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="mt-6 pt-6 border-t border-neutral-200">
-              <p className="text-sm text-neutral-500 text-center">
-                Press <kbd className="px-1.5 py-0.5 text-xs font-semibold text-neutral-600 bg-neutral-100 border border-neutral-300 rounded">Esc</kbd> or click outside to close
+            <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-neutral-200">
+              <p className="text-xs sm:text-sm text-neutral-500 text-center">
+                Press <kbd className="px-1 sm:px-1.5 py-0.5 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-neutral-100 border border-neutral-300 rounded">Esc</kbd> or click outside to close
               </p>
             </div>
           </div>

@@ -18,9 +18,21 @@ export function formatPercentage(value) {
   return `${value.toFixed(1)}%`;
 }
 
-// Get today's date string
+// Get today's date string in local timezone (YYYY-MM-DD format)
 export function getTodayString() {
-  return new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Get a date string in local timezone (YYYY-MM-DD format)
+export function getLocalDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 // Calculate Occupancy Percentage
@@ -75,7 +87,7 @@ export function countCheckInsToday(bookings) {
   if (!bookings || bookings.length === 0) return 0;
   const today = getTodayString();
   return bookings.filter(b => b.checkIn === today &&
-    (b.status === 'CHECKED-IN' || b.status === 'CONFIRMED')).length;
+    (b.status?.toLowerCase() === 'checked-in' || b.status?.toLowerCase() === 'confirmed')).length;
 }
 
 // Count check-outs today
@@ -146,7 +158,7 @@ export function generateOccupancyForecast(rooms, bookings) {
   for (let i = 0; i < 7; i++) {
     const date = new Date(today);
     date.setDate(date.getDate() + i);
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = getLocalDateString(date);
     const dayLabel = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
     // Count expected occupancy from bookings
@@ -190,7 +202,7 @@ export function generateRevenueTrend(bookings) {
   for (let i = 13; i >= 0; i--) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = getLocalDateString(date);
     const dayLabel = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
     // Calculate revenue from bookings for that date

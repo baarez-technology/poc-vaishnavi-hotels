@@ -3,12 +3,12 @@
  * 30-day horizontal calendar grid with room type rows - Glimmora Design
  */
 
-import { useState, useRef, forwardRef, useImperativeHandle } from 'react';
+import { useState, useRef, forwardRef, useImperativeHandle, useMemo } from 'react';
 import {
   ChevronLeft, ChevronRight, Ban, Calendar,
   DollarSign, AlertTriangle, Bed, Clock,
   TrendingUp, RotateCcw, Unlock, CheckCircle,
-  AlertCircle, XCircle
+  AlertCircle, XCircle, Filter, X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip } from '../ui2/Tooltip';
@@ -16,9 +16,10 @@ import { Button, IconButton } from '../ui2/Button';
 import { Drawer } from '../ui2/Drawer';
 import { Input, FormField } from '../ui2/Input';
 import { Badge } from '../ui2/Badge';
+import DatePicker from '../ui2/DatePicker';
 
-// Room types matching database
-const roomTypes = [
+// Default room types (fallback if not provided via props)
+const defaultRoomTypes = [
   'Minimalist Studio',
   'Coastal Retreat',
   'Urban Oasis',
@@ -125,26 +126,64 @@ const baseRates = {
 
 const AvailabilityCalendar = forwardRef(({
   availability,
-  dates,
+  dates: allDates,
   onUpdateAvailability,
-  onBulkUpdate
+  onBulkUpdate,
+  roomTypes: propRoomTypes
 }, ref) => {
+  // Use room types from props if provided, otherwise use defaults
+  const roomTypes = propRoomTypes && propRoomTypes.length > 0 ? propRoomTypes : defaultRoomTypes;
   const [selectedCell, setSelectedCell] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editData, setEditData] = useState({});
   const [originalData, setOriginalData] = useState({});
   const [validationErrors, setValidationErrors] = useState([]);
-  const scrollContainerRef = useRef(null);
+  const contentScrollRef = useRef(null);
+
+  // Date range filter state
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
+
+  // Filter dates based on selected range
+  const dates = useMemo(() => {
+    if (!filterStartDate && !filterEndDate) {
+      return allDates;
+    }
+
+    return allDates.filter(dateInfo => {
+      const date = new Date(dateInfo.date);
+      const start = filterStartDate ? new Date(filterStartDate) : null;
+      const end = filterEndDate ? new Date(filterEndDate) : null;
+
+      if (start && end) {
+        return date >= start && date <= end;
+      } else if (start) {
+        return date >= start;
+      } else if (end) {
+        return date <= end;
+      }
+      return true;
+    });
+  }, [allDates, filterStartDate, filterEndDate]);
+
+  // Clear date filter
+  const handleClearFilter = () => {
+    setFilterStartDate('');
+    setFilterEndDate('');
+  };
+
+  // Check if filter is active
+  const isFilterActive = filterStartDate || filterEndDate;
 
   // Expose scrollToToday method to parent
   useImperativeHandle(ref, () => ({
     scrollToToday: () => {
-      if (scrollContainerRef.current) {
+      if (contentScrollRef.current) {
         const todayIndex = dates.findIndex(d => d.isToday);
         if (todayIndex !== -1) {
           const cellWidth = 112; // w-28 = 7rem = 112px
           const scrollPosition = todayIndex * cellWidth - 200; // Center it
-          scrollContainerRef.current.scrollTo({
+          contentScrollRef.current.scrollTo({
             left: Math.max(0, scrollPosition),
             behavior: 'smooth'
           });
@@ -235,9 +274,10 @@ const AvailabilityCalendar = forwardRef(({
   };
 
   const scrollCalendar = (direction) => {
-    if (scrollContainerRef.current) {
+    // Scroll the content area (which will sync the header)
+    if (contentScrollRef.current) {
       const scrollAmount = 200;
-      scrollContainerRef.current.scrollBy({
+      contentScrollRef.current.scrollBy({
         left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
       });
@@ -257,211 +297,273 @@ const AvailabilityCalendar = forwardRef(({
     return 'bg-sage-50 text-sage-700 border border-sage-200/60 font-semibold';
   };
 
+  // Default color scheme for room types not in predefined list
+  const defaultColors = {
+    bg: 'bg-neutral-50',
+    border: 'border-neutral-300',
+    text: 'text-neutral-700',
+    icon: 'bg-neutral-100 text-neutral-600',
+    gradient: 'from-neutral-400 to-neutral-500',
+    accent: 'neutral',
+    rowBg: 'bg-neutral-50/40',
+    hoverBg: 'hover:bg-neutral-200'
+  };
+
+  const getRoomTypeColors = (roomType) => {
+    return roomTypeColors[roomType] || defaultColors;
+  };
+
+  const getRoomTypeBaseRate = (roomType) => {
+    return baseRates[roomType] || 200;
+  };
+
 
   return (
     <div className="bg-white rounded-[10px] overflow-hidden">
       {/* Calendar Header */}
-      <div className="px-6 py-5 flex items-center justify-between">
+      <div className="px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-neutral-800">Availability Calendar</h3>
-          <p className="text-[11px] text-neutral-400 font-medium mt-0.5">Click any cell to edit rates & restrictions</p>
+          <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
+            {isFilterActive ? (
+              <span className="text-terra-600">Showing {dates.length} of {allDates.length} days</span>
+            ) : (
+              'Click any cell to edit rates & restrictions'
+            )}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <IconButton
-            onClick={() => scrollCalendar('left')}
-            icon={ChevronLeft}
-            variant="outline"
-            size="md"
-            label="Scroll left"
-          />
-          <IconButton
-            onClick={() => scrollCalendar('right')}
-            icon={ChevronRight}
-            variant="outline"
-            size="md"
-            label="Scroll right"
-          />
+        <div className="flex items-center gap-3">
+          {/* Date Range Filter */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-neutral-50 rounded-lg border border-neutral-200">
+              <Filter className="w-3.5 h-3.5 text-neutral-400" />
+              <DatePicker
+                value={filterStartDate}
+                onChange={setFilterStartDate}
+                placeholder="From"
+                minDate={new Date().toISOString().split('T')[0]}
+                className="w-28"
+              />
+              <span className="text-neutral-300">—</span>
+              <DatePicker
+                value={filterEndDate}
+                onChange={setFilterEndDate}
+                placeholder="To"
+                minDate={filterStartDate || new Date().toISOString().split('T')[0]}
+                className="w-28"
+              />
+            </div>
+            {isFilterActive && (
+              <button
+                onClick={handleClearFilter}
+                className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-medium text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
+              >
+                <X className="w-3 h-3" />
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Scroll Navigation */}
+          <div className="flex items-center gap-2 pl-2 border-l border-neutral-200">
+            <IconButton
+              onClick={() => scrollCalendar('left')}
+              icon={ChevronLeft}
+              variant="outline"
+              size="md"
+              label="Scroll left"
+            />
+            <IconButton
+              onClick={() => scrollCalendar('right')}
+              icon={ChevronRight}
+              variant="outline"
+              size="md"
+              label="Scroll right"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Calendar Grid */}
-      <div className="flex">
-        {/* Room Type Labels */}
-        <div className="flex-shrink-0 border-r border-neutral-200/40 bg-white">
-          {/* Corner cell */}
-          <div className="h-16 bg-neutral-50 border-b border-neutral-200/40 flex items-center justify-center">
-            <Calendar className="w-5 h-5 text-neutral-400" />
-          </div>
-
-          {/* Room type rows */}
-          {roomTypes.map(roomType => {
-            const colors = roomTypeColors[roomType];
-            return (
-              <div key={roomType} className="border-b border-neutral-200/40 last:border-b-0">
-                {/* Room Type Header */}
-                <div className={`h-14 px-5 flex items-center gap-3 border-l-4 ${colors.bg} ${colors.border} bg-gradient-to-r ${colors.bg} to-white`}>
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shadow-sm ${colors.icon}`}>
-                    <Bed className={`w-5 h-5`} />
-                  </div>
-                  <span className={`font-semibold text-sm whitespace-nowrap ${colors.text}`}>{roomType}</span>
-                </div>
-                {/* Metric rows */}
-                {['Availability', 'Rate', 'Min Stay', 'Restrictions'].map((metric, idx) => (
-                  <div key={metric} className={`h-11 px-5 flex items-center border-t border-neutral-200/40 ${idx % 2 === 0 ? 'bg-neutral-50/30' : 'bg-white'}`}>
-                    <span className="text-xs whitespace-nowrap font-semibold uppercase tracking-[0.05em] text-neutral-500">{metric}</span>
-                  </div>
-                ))}
+      {/* Calendar Grid - Single scroll container with sticky positioning */}
+      <div
+        ref={contentScrollRef}
+        className="overflow-auto relative"
+        style={{ height: '520px', scrollbarWidth: 'thin' }}
+      >
+        <div className="inline-block min-w-full">
+          {/* Table-like structure with sticky header and column */}
+          <div className="flex">
+            {/* Sticky Left Column (Room Type Labels) */}
+            <div className="sticky left-0 z-20 bg-white flex-shrink-0 w-52">
+              {/* Corner cell - sticky both ways */}
+              <div className="sticky top-0 z-30 h-16 bg-neutral-50 border-b border-r border-neutral-200/40 flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-neutral-400" />
               </div>
-            );
-          })}
-        </div>
 
-        {/* Scrollable Dates */}
-        <div
-          ref={scrollContainerRef}
-          className="flex-1 overflow-x-auto"
-          style={{ scrollbarWidth: 'thin' }}
-        >
-          <div className="inline-flex min-w-full">
-            {dates.map(dateInfo => (
-              <div key={dateInfo.date} className="flex-shrink-0 w-28 border-r border-neutral-200/40 last:border-r-0">
-                {/* Date Header */}
-                <div className={`h-16 flex flex-col items-center justify-center transition-all duration-200 border-b border-neutral-200/40 ${
-                  dateInfo.isToday
-                    ? 'bg-terra-500 text-white shadow-md shadow-terra-500/20'
-                    : dateInfo.isWeekend
-                      ? 'bg-gold-50 border-l-2 border-gold-200'
-                      : 'bg-white'
-                }`}>
-                  <span className={`text-xs font-semibold uppercase tracking-wider ${dateInfo.isToday ? 'text-white/90' : dateInfo.isWeekend ? 'text-gold-700' : 'text-neutral-500'}`}>
-                    {dateInfo.dayOfWeek}
-                  </span>
-                  <span className={`text-xl font-bold tracking-tight ${dateInfo.isToday ? 'text-white' : dateInfo.isWeekend ? 'text-gold-800' : 'text-neutral-900'}`}>
-                    {dateInfo.dayOfMonth}
-                  </span>
-                  <span className={`text-[10px] font-medium uppercase tracking-wider ${dateInfo.isToday ? 'text-white/80' : dateInfo.isWeekend ? 'text-gold-600/80' : 'text-neutral-400'}`}>
-                    {dateInfo.month}
-                  </span>
-                </div>
-
-                {/* Room type cells */}
-                {roomTypes.map(roomType => {
-                  const cellData = availability[dateInfo.date]?.[roomType];
-                  if (!cellData) return null;
-
-                  const availColor = getAvailabilityColor(cellData.available, cellData.totalInventory);
-                  const hasRestrictions = cellData.stopSell || cellData.cta || cellData.ctd;
-                  const colors = roomTypeColors[roomType];
-
-                  return (
-                    <div
-                      key={`${dateInfo.date}-${roomType}`}
-                      className={`cursor-pointer transition-all duration-200 group border-b border-neutral-200/40 last:border-b-0 ${colors.rowBg} ${colors.hoverBg} hover:shadow-sm relative`}
-                      onClick={() => handleCellClick(dateInfo.date, roomType)}
-                    >
-
-                      {/* Room Type Row Header - empty for scrolling alignment */}
-                      <div className="h-14 relative">
-                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-r ${colors.gradient} via-transparent to-transparent`} style={{ opacity: 0.05 }} />
+              {/* Room type labels */}
+              {roomTypes.map(roomType => {
+                const colors = getRoomTypeColors(roomType);
+                return (
+                  <div key={roomType} className="border-b border-r border-neutral-200/40 last:border-b-0">
+                    {/* Room Type Header */}
+                    <div className={`h-14 px-5 flex items-center gap-3 border-l-4 ${colors.bg} ${colors.border} bg-gradient-to-r ${colors.bg} to-white`}>
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shadow-sm ${colors.icon}`}>
+                        <Bed className={`w-5 h-5`} />
                       </div>
-
-                      {/* Availability */}
-                      <div className="h-11 flex items-center justify-center border-t border-neutral-200/40 bg-white/30 transition-colors duration-200">
-                        <span className={`px-3 py-1.5 text-xs rounded-lg transition-all duration-200 ${availColor}`}>
-                          {cellData.available}/{cellData.totalInventory}
-                        </span>
-                      </div>
-
-                      {/* Rate */}
-                      <div className="h-11 flex items-center justify-center border-t border-neutral-200/40 bg-white/20 transition-colors duration-200">
-                        <span className={`text-sm font-semibold tracking-tight transition-colors duration-200 ${colors.text}`}>
-                          ${cellData.rate}
-                        </span>
-                      </div>
-
-                      {/* Min Stay */}
-                      <div className="h-11 flex items-center justify-center border-t border-neutral-200/40 bg-white/30 transition-colors duration-200">
-                        <span className="text-xs font-semibold text-neutral-600 transition-colors duration-200">
-                          {cellData.minStay} night{cellData.minStay !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-
-                      {/* Restrictions */}
-                      <div className="h-11 flex items-center justify-center gap-1.5 border-t border-neutral-200/40 bg-white/20 transition-colors duration-200">
-                        {cellData.stopSell && (
-                          <Tooltip content="Stop Sell - No bookings allowed" side="top">
-                            <span className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-semibold bg-rose-100 text-rose-700 border border-rose-200/60 shadow-sm hover:shadow-md transition-all duration-200">
-                              S
-                            </span>
-                          </Tooltip>
-                        )}
-                        {cellData.cta && (
-                          <Tooltip content="Closed to Arrival - No check-ins allowed" side="top">
-                            <span className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-semibold bg-gold-100 text-gold-700 border border-gold-200/60 shadow-sm hover:shadow-md transition-all duration-200">
-                              A
-                            </span>
-                          </Tooltip>
-                        )}
-                        {cellData.ctd && (
-                          <Tooltip content="Closed to Departure - No check-outs allowed" side="top">
-                            <span className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-semibold bg-ocean-100 text-ocean-700 border border-ocean-200/60 shadow-sm hover:shadow-md transition-all duration-200">
-                              D
-                            </span>
-                          </Tooltip>
-                        )}
-                        {!hasRestrictions && (
-                          <span className="text-xs text-neutral-300 transition-colors duration-200">—</span>
-                        )}
-                      </div>
+                      <span className={`font-semibold text-sm whitespace-nowrap ${colors.text}`}>{roomType}</span>
                     </div>
-                  );
-                })}
-              </div>
-            ))}
+                    {/* Metric rows */}
+                    {['Availability', 'Rate', 'Min Stay', 'Restrictions'].map((metric, idx) => (
+                      <div key={metric} className={`h-11 px-5 flex items-center border-t border-neutral-200/40 ${idx % 2 === 0 ? 'bg-neutral-50/30' : 'bg-white'}`}>
+                        <span className="text-xs whitespace-nowrap font-semibold uppercase tracking-[0.05em] text-neutral-500">{metric}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Scrollable Date Columns */}
+            <div className="flex">
+              {dates.map(dateInfo => (
+                <div key={dateInfo.date} className="flex-shrink-0 w-28 border-r border-neutral-200/40 last:border-r-0">
+                  {/* Sticky Date Header */}
+                  <div className={`sticky top-0 z-10 h-16 flex flex-col items-center justify-center border-b border-neutral-200/40 ${
+                    dateInfo.isToday
+                      ? 'bg-terra-500 text-white shadow-md shadow-terra-500/20'
+                      : dateInfo.isWeekend
+                        ? 'bg-gold-50 border-l-2 border-gold-200'
+                        : 'bg-white'
+                  }`}>
+                    <span className={`text-xs font-semibold uppercase tracking-wider ${dateInfo.isToday ? 'text-white/90' : dateInfo.isWeekend ? 'text-gold-700' : 'text-neutral-500'}`}>
+                      {dateInfo.dayOfWeek}
+                    </span>
+                    <span className={`text-xl font-bold tracking-tight ${dateInfo.isToday ? 'text-white' : dateInfo.isWeekend ? 'text-gold-800' : 'text-neutral-900'}`}>
+                      {dateInfo.dayOfMonth}
+                    </span>
+                    <span className={`text-[10px] font-medium uppercase tracking-wider ${dateInfo.isToday ? 'text-white/80' : dateInfo.isWeekend ? 'text-gold-600/80' : 'text-neutral-400'}`}>
+                      {dateInfo.month}
+                    </span>
+                  </div>
+
+                  {/* Room type cells */}
+                  {roomTypes.map(roomType => {
+                    const cellData = availability[dateInfo.date]?.[roomType];
+                    if (!cellData) return null;
+
+                    const availColor = getAvailabilityColor(cellData.available, cellData.totalInventory);
+                    const hasRestrictions = cellData.stopSell || cellData.cta || cellData.ctd;
+                    const colors = getRoomTypeColors(roomType);
+
+                    return (
+                      <div
+                        key={`${dateInfo.date}-${roomType}`}
+                        className={`cursor-pointer transition-all duration-200 group border-b border-neutral-200/40 last:border-b-0 ${colors.rowBg} ${colors.hoverBg} hover:shadow-sm relative`}
+                        onClick={() => handleCellClick(dateInfo.date, roomType)}
+                      >
+                        {/* Room Type Row Header - empty for scrolling alignment */}
+                        <div className="h-14 relative">
+                          <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-r ${colors.gradient} via-transparent to-transparent`} style={{ opacity: 0.05 }} />
+                        </div>
+
+                        {/* Availability */}
+                        <div className="h-11 flex items-center justify-center border-t border-neutral-200/40 bg-white/30 transition-colors duration-200">
+                          <span className={`px-3 py-1.5 text-xs rounded-lg transition-all duration-200 ${availColor}`}>
+                            {cellData.available}/{cellData.totalInventory}
+                          </span>
+                        </div>
+
+                        {/* Rate */}
+                        <div className="h-11 flex items-center justify-center border-t border-neutral-200/40 bg-white/20 transition-colors duration-200">
+                          <span className={`text-sm font-semibold tracking-tight transition-colors duration-200 ${colors.text}`}>
+                            ${cellData.rate}
+                          </span>
+                        </div>
+
+                        {/* Min Stay */}
+                        <div className="h-11 flex items-center justify-center border-t border-neutral-200/40 bg-white/30 transition-colors duration-200">
+                          <span className="text-xs font-semibold text-neutral-600 transition-colors duration-200">
+                            {cellData.minStay} night{cellData.minStay !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+
+                        {/* Restrictions */}
+                        <div className="h-11 flex items-center justify-center gap-1.5 border-t border-neutral-200/40 bg-white/20 transition-colors duration-200">
+                          {cellData.stopSell && (
+                            <Tooltip content="Stop Sell - No bookings allowed" side="top">
+                              <span className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-semibold bg-rose-100 text-rose-700 border border-rose-200/60 shadow-sm hover:shadow-md transition-all duration-200">
+                                S
+                              </span>
+                            </Tooltip>
+                          )}
+                          {cellData.cta && (
+                            <Tooltip content="Closed to Arrival - No check-ins allowed" side="top">
+                              <span className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-semibold bg-gold-100 text-gold-700 border border-gold-200/60 shadow-sm hover:shadow-md transition-all duration-200">
+                                A
+                              </span>
+                            </Tooltip>
+                          )}
+                          {cellData.ctd && (
+                            <Tooltip content="Closed to Departure - No check-outs allowed" side="top">
+                              <span className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-semibold bg-ocean-100 text-ocean-700 border border-ocean-200/60 shadow-sm hover:shadow-md transition-all duration-200">
+                                D
+                              </span>
+                            </Tooltip>
+                          )}
+                          {!hasRestrictions && (
+                            <span className="text-xs text-neutral-300 transition-colors duration-200">—</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Legend */}
-      <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50">
-        <div className="flex items-center gap-6 flex-wrap">
-          <span className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Legend</span>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-sage-50 flex items-center justify-center">
-              <CheckCircle className="w-3.5 h-3.5 text-sage-600" />
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 bg-neutral-50/50">
+        <div className="flex items-center gap-3 sm:gap-6 flex-wrap">
+          <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Legend</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-sage-50 flex items-center justify-center">
+              <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-sage-600" />
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">Available</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">Available</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-gold-50 flex items-center justify-center">
-              <AlertCircle className="w-3.5 h-3.5 text-gold-600" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-gold-50 flex items-center justify-center">
+              <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gold-600" />
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">Low Stock</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">Low Stock</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-rose-50 flex items-center justify-center">
-              <XCircle className="w-3.5 h-3.5 text-rose-600" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-rose-50 flex items-center justify-center">
+              <XCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-rose-600" />
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">Sold Out</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">Sold Out</span>
           </div>
-          <div className="h-4 w-px bg-neutral-200" />
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-rose-100 flex items-center justify-center">
-              <span className="text-[10px] font-semibold text-rose-700">S</span>
+          <div className="h-4 w-px bg-neutral-200 hidden sm:block" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-rose-100 flex items-center justify-center">
+              <span className="text-[9px] sm:text-[10px] font-semibold text-rose-700">S</span>
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">Stop Sell</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">Stop Sell</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-gold-100 flex items-center justify-center">
-              <span className="text-[10px] font-semibold text-gold-700">A</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-gold-100 flex items-center justify-center">
+              <span className="text-[9px] sm:text-[10px] font-semibold text-gold-700">A</span>
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">CTA</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">CTA</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-ocean-100 flex items-center justify-center">
-              <span className="text-[10px] font-semibold text-ocean-700">D</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-ocean-100 flex items-center justify-center">
+              <span className="text-[9px] sm:text-[10px] font-semibold text-ocean-700">D</span>
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">CTD</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">CTD</span>
           </div>
         </div>
       </div>
@@ -546,17 +648,17 @@ const AvailabilityCalendar = forwardRef(({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[13px] font-semibold text-neutral-800">Nightly Rate</p>
-                  <p className="text-[11px] text-neutral-400 font-medium">Base: ${baseRates[selectedCell.roomType]}/night</p>
+                  <p className="text-[11px] text-neutral-400 font-medium">Base: ${getRoomTypeBaseRate(selectedCell.roomType)}/night</p>
                 </div>
-                {editData.rate !== baseRates[selectedCell.roomType] && (
+                {editData.rate !== getRoomTypeBaseRate(selectedCell.roomType) && (
                   <span className={cn(
                     "text-[11px] font-semibold px-2.5 py-1 rounded-lg",
-                    editData.rate > baseRates[selectedCell.roomType]
+                    editData.rate > getRoomTypeBaseRate(selectedCell.roomType)
                       ? "bg-sage-50 text-sage-700 border border-sage-200"
                       : "bg-rose-50 text-rose-700 border border-rose-200"
                   )}>
-                    {editData.rate > baseRates[selectedCell.roomType] ? '+' : ''}
-                    {Math.round(((editData.rate - baseRates[selectedCell.roomType]) / baseRates[selectedCell.roomType]) * 100)}% from base
+                    {editData.rate > getRoomTypeBaseRate(selectedCell.roomType) ? '+' : ''}
+                    {Math.round(((editData.rate - getRoomTypeBaseRate(selectedCell.roomType)) / getRoomTypeBaseRate(selectedCell.roomType)) * 100)}% from base
                   </span>
                 )}
               </div>
@@ -723,7 +825,7 @@ const AvailabilityCalendar = forwardRef(({
                 <button
                   onClick={() => setEditData(prev => ({
                     ...prev,
-                    rate: baseRates[selectedCell.roomType],
+                    rate: getRoomTypeBaseRate(selectedCell.roomType),
                     minStay: 1,
                     stopSell: false,
                     cta: false,

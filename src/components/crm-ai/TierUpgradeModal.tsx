@@ -373,7 +373,7 @@ export default function TierUpgradeModal({
                   </button>
 
                   {showTierDropdown && (
-                    <div className="absolute z-[100] w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1">
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg py-1">
                       {availableTiers.map((tier) => {
                         const Icon = tier.icon;
                         return (

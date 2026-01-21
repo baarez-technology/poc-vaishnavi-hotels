@@ -60,7 +60,7 @@ export const adminNavCategories = [
     shortName: 'CMS',
     icon: Layers,
     items: [
-      { name: 'Bookings', icon: BookOpen, to: '/admin/cms/bookings' },
+      // { name: 'Bookings', icon: BookOpen, to: '/admin/cms/bookings' },
       { name: 'Availability', icon: Calendar, to: '/admin/cms/availability' },
       { name: 'Rate Plans', icon: Tag, to: '/admin/cms/rate-plans' },
       { name: 'Promotions', icon: Gift, to: '/admin/cms/promotions' },

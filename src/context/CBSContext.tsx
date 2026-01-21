@@ -23,6 +23,39 @@ import useCMSEngine from '../state/cms/useCMSEngine';
 const CBSContext = createContext(null);
 
 const STORAGE_KEY = 'cbs_data';
+const PROMOTION_TYPES_KEY = 'cbs_promotion_types';
+
+// Default promotion types
+const DEFAULT_PROMOTION_TYPES = [
+  { value: 'Early Bird', label: 'Early Bird' },
+  { value: 'Last Minute', label: 'Last Minute' },
+  { value: 'Long Stay', label: 'Long Stay' },
+  { value: 'Advance Purchase', label: 'Advance Purchase' },
+  { value: 'Seasonal Deal', label: 'Seasonal Deal' },
+  { value: 'Flash Sale', label: 'Flash Sale' },
+  { value: 'OTA Exclusive', label: 'OTA Exclusive' },
+  { value: 'Direct Booking', label: 'Direct Booking' },
+];
+
+function loadPromotionTypes() {
+  try {
+    const stored = localStorage.getItem(PROMOTION_TYPES_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error('Failed to load promotion types from storage:', e);
+  }
+  return DEFAULT_PROMOTION_TYPES;
+}
+
+function savePromotionTypes(types) {
+  try {
+    localStorage.setItem(PROMOTION_TYPES_KEY, JSON.stringify(types));
+  } catch (e) {
+    console.error('Failed to save promotion types to storage:', e);
+  }
+}
 
 function loadFromStorage() {
   try {
@@ -69,6 +102,7 @@ export function CBSProvider({ children }) {
   const [availability, setAvailability] = useState(stored?.availability || sampleAvailability);
   const [ratePlans, setRatePlans] = useState(stored?.ratePlans || sampleRatePlans);
   const [promotions, setPromotions] = useState(stored?.promotions || samplePromotions);
+  const [promotionTypes, setPromotionTypes] = useState(loadPromotionTypes());
   const [rooms, setRooms] = useState([]); // Rooms from API with database IDs
   const [isLoading, setIsLoading] = useState(true);
 
@@ -83,6 +117,11 @@ export function CBSProvider({ children }) {
   useEffect(() => {
     saveToStorage({ bookings, availability, ratePlans, promotions });
   }, [bookings, availability, ratePlans, promotions]);
+
+  // Persist promotion types separately
+  useEffect(() => {
+    savePromotionTypes(promotionTypes);
+  }, [promotionTypes]);
 
   // Fetch bookings, rate plans, and promotions from API on mount
   // Only fetch if user has an access token (is authenticated)
@@ -995,6 +1034,46 @@ export function CBSProvider({ children }) {
     }));
   }, []);
 
+  // ============ PROMOTION TYPE FUNCTIONS ============
+
+  const addPromotionType = useCallback((newType: { value: string; label: string }) => {
+    // Check if type already exists
+    const exists = promotionTypes.some(t => t.value.toLowerCase() === newType.value.toLowerCase());
+    if (exists) {
+      return { success: false, error: 'Promotion type already exists' };
+    }
+    setPromotionTypes(prev => [...prev, newType]);
+    return { success: true };
+  }, [promotionTypes]);
+
+  const updatePromotionType = useCallback((oldValue: string, newType: { value: string; label: string }) => {
+    // Check if new value conflicts with existing (excluding the one being updated)
+    const exists = promotionTypes.some(t =>
+      t.value.toLowerCase() === newType.value.toLowerCase() &&
+      t.value.toLowerCase() !== oldValue.toLowerCase()
+    );
+    if (exists) {
+      return { success: false, error: 'Promotion type already exists' };
+    }
+    setPromotionTypes(prev => prev.map(t =>
+      t.value === oldValue ? newType : t
+    ));
+    return { success: true };
+  }, [promotionTypes]);
+
+  const deletePromotionType = useCallback((value: string) => {
+    // Don't allow deletion if there are only 1-2 types left
+    if (promotionTypes.length <= 2) {
+      return { success: false, error: 'Must have at least 2 promotion types' };
+    }
+    setPromotionTypes(prev => prev.filter(t => t.value !== value));
+    return { success: true };
+  }, [promotionTypes]);
+
+  const resetPromotionTypes = useCallback(() => {
+    setPromotionTypes(DEFAULT_PROMOTION_TYPES);
+  }, []);
+
   const applyPromotion = useCallback((promoCode, bookingDetails) => {
     const promo = promotions.find(p =>
       p.code === promoCode &&
@@ -1187,6 +1266,13 @@ export function CBSProvider({ children }) {
     togglePromotionStatus,
     applyPromotion,
     syncPromotionToChannels,
+
+    // Promotion Types
+    promotionTypes,
+    addPromotionType,
+    updatePromotionType,
+    deletePromotionType,
+    resetPromotionTypes,
 
     // AI & Utilities
     getAIInsights,

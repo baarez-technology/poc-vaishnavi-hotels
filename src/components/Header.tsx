@@ -333,13 +333,6 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed, onMobile
               'flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 rounded-xl',
               isDark ? 'bg-neutral-900/50' : 'bg-neutral-50/80'
             )}>
-              {/* Theme Toggle */}
-              <ActionButton
-                icon={isDark ? Sun : Moon}
-                label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                onClick={toggleTheme}
-              />
-
               {/* AI Assistant */}
               <ActionButton
                 icon={Sparkles}

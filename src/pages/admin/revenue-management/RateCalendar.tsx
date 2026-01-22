@@ -372,7 +372,8 @@ const RateCalendar = () => {
         </header>
 
         {/* KPI Cards */}
-        <section className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+        {/* Mobile: 1 col, sm: 2 col, xl: 5 col (iPad Pro with sidebar gets 2-col) */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4">
           <KPICard
             title="Avg Occupancy"
             value={`${avgOccupancy}%`}
@@ -553,7 +554,7 @@ const RateCalendar = () => {
             <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">Current rates & availability</p>
           </div>
           <div className="px-4 sm:px-6 pb-4 sm:pb-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3">
               {roomTypes.map((room, index) => {
                 const todayData = rateCalendar[today]?.rooms?.[room.id];
                 const rate = todayData?.dynamicRate || room.baseRate;

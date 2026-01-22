@@ -233,7 +233,7 @@ const Deliveries = () => {
 
       {/* KPI Cards - 12 Column Grid matching admin dashboard */}
       <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
-        <div className="col-span-12 sm:col-span-6 lg:col-span-4">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-4">
           <StatCard
             title="Pending"
             value={stats.pending}
@@ -243,7 +243,7 @@ const Deliveries = () => {
             onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-4">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-4">
           <StatCard
             title="In Transit"
             value={stats.in_transit}
@@ -253,7 +253,7 @@ const Deliveries = () => {
             onClick={() => setStatusFilter(statusFilter === 'in_transit' ? 'all' : 'in_transit')}
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-4">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-4">
           <StatCard
             title="Delivered"
             value={stats.delivered}

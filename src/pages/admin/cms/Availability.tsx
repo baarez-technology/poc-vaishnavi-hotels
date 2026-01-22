@@ -2168,9 +2168,9 @@ export default function CMSAvailability() {
         )}
 
         {!cmsAvailability.isLoading && !cmsAvailability.error && activeTab === 'calendar' && selectedRoomTypes.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
             {/* Calendar Grid - 3 columns */}
-            <div className="lg:col-span-3 space-y-4">
+            <div className="xl:col-span-3 space-y-4">
               {/* Quick Actions Bar */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

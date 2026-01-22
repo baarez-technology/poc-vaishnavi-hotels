@@ -129,7 +129,7 @@ export default function WOTable({
             >
               Created
             </TableHead>
-            <TableHead width="80px" align="center">Actions</TableHead>
+            <TableHead width="50px" align="center" sticky>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -215,7 +215,7 @@ export default function WOTable({
                 </TableCell>
 
                 {/* Actions */}
-                <TableActions>
+                <TableActions sticky>
                   <div className="relative" ref={openMenuId === wo.id ? menuRef : null}>
                     <IconButton
                       icon={MoreVertical}

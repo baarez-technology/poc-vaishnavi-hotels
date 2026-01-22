@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { AlertCircle } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { AlertCircle, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { AMENITIES } from '../../utils/settings';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
@@ -7,14 +7,17 @@ import { useCurrency } from '@/hooks/useCurrency';
 
 export default function AddRoomTypeModal({ onClose, onSave }) {
   const { symbol } = useCurrency();
+  const fileInputRef = useRef(null);
   const [form, setForm] = useState({
     name: '',
     description: '',
     price: '',
     maxOccupancy: 2,
     amenities: [],
-    inclusions: ''
+    inclusions: '',
+    image: null
   });
+  const [imagePreview, setImagePreview] = useState(null);
   const [errors, setErrors] = useState({});
 
   const handleChange = (field, value) => {
@@ -29,6 +32,39 @@ export default function AddRoomTypeModal({ onClose, onSave }) {
         ? prev.amenities.filter((a) => a !== amenityId)
         : [...prev.amenities, amenityId]
     }));
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setErrors((prev) => ({ ...prev, image: 'Please select an image file' }));
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors((prev) => ({ ...prev, image: 'Image size should be less than 5MB' }));
+        return;
+      }
+      setForm((prev) => ({ ...prev, image: file }));
+      setErrors((prev) => ({ ...prev, image: '' }));
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setForm((prev) => ({ ...prev, image: null }));
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const validate = () => {
@@ -55,7 +91,8 @@ export default function AddRoomTypeModal({ onClose, onSave }) {
       price: parseFloat(form.price),
       maxOccupancy: parseInt(form.maxOccupancy),
       amenities: form.amenities,
-      inclusions: inclusionsList
+      inclusions: inclusionsList,
+      image: form.image
     });
   };
 
@@ -117,6 +154,63 @@ export default function AddRoomTypeModal({ onClose, onSave }) {
             className="w-full px-4 py-3 rounded-lg border border-neutral-200 text-sm text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:ring-2 focus:ring-terra-500/20 focus:ring-0 focus:outline-none transition-colors resize-none"
             placeholder="Brief description of this room type"
           />
+        </div>
+
+        {/* Room Image */}
+        <div>
+          <label className={labelClass}>Room Image</label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            className="hidden"
+          />
+
+          {imagePreview ? (
+            <div className="relative rounded-lg overflow-hidden border border-neutral-200 bg-neutral-50">
+              <img
+                src={imagePreview}
+                alt="Room preview"
+                className="w-full h-40 object-cover"
+              />
+              <button
+                type="button"
+                onClick={removeImage}
+                className="absolute top-2 right-2 p-1.5 rounded-full bg-neutral-900/70 hover:bg-neutral-900/90 text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="absolute bottom-0 left-0 right-0 px-3 py-2 bg-gradient-to-t from-neutral-900/70 to-transparent">
+                <p className="text-xs text-white truncate">{form.image?.name}</p>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full h-40 rounded-lg border-2 border-dashed border-neutral-200 hover:border-terra-300 bg-neutral-50 hover:bg-terra-50/30 transition-colors flex flex-col items-center justify-center gap-2 group"
+            >
+              <div className="w-12 h-12 rounded-full bg-neutral-100 group-hover:bg-terra-100 flex items-center justify-center transition-colors">
+                <ImageIcon className="w-6 h-6 text-neutral-400 group-hover:text-terra-500 transition-colors" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-neutral-700 group-hover:text-terra-600 transition-colors">
+                  Click to upload image
+                </p>
+                <p className="text-xs text-neutral-400 mt-0.5">
+                  PNG, JPG up to 5MB
+                </p>
+              </div>
+            </button>
+          )}
+
+          {errors.image && (
+            <p className="mt-1.5 text-xs text-rose-500 flex items-center gap-1">
+              <AlertCircle className="w-3.5 h-3.5" />
+              {errors.image}
+            </p>
+          )}
         </div>
 
         {/* Price & Occupancy */}

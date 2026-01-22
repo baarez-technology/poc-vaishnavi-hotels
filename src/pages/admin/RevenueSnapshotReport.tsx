@@ -394,9 +394,9 @@ export default function RevenueSnapshotReport() {
         </section>
 
         {/* Charts Row 2 */}
-        <section className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6">
+        <section className="grid grid-cols-1 xl:grid-cols-5 gap-4 sm:gap-6">
           {/* Revenue by Source Pie Chart */}
-          <div className="lg:col-span-2 bg-white rounded-xl p-4 sm:p-6">
+          <div className="xl:col-span-2 bg-white rounded-xl p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1">Revenue by Source</h3>
             <p className="text-[12px] text-neutral-500 mb-4">Revenue distribution</p>
 
@@ -441,7 +441,7 @@ export default function RevenueSnapshotReport() {
           </div>
 
           {/* Daily Revenue Bar Chart */}
-          <div className="lg:col-span-3 bg-white rounded-xl p-4 sm:p-6">
+          <div className="xl:col-span-3 bg-white rounded-xl p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1">Daily Revenue (Last 14 Days)</h3>
             <p className="text-[12px] text-neutral-500 mb-4">Revenue performance</p>
 

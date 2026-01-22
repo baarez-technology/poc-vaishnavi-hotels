@@ -76,6 +76,10 @@ export default function Rooms() {
     out_of_service: rawRooms.filter(r => r.status === 'out_of_service').length
   };
 
+  // Extract unique room types and floors from actual API data
+  const roomTypes = [...new Set(rawRooms.map(r => r.type).filter(Boolean))].sort();
+  const floorsList = [...new Set(rawRooms.map(r => r.floor).filter(f => f !== undefined && f !== null))].sort((a, b) => a - b);
+
   // Event Handlers
   const handleRoomClick = (room) => {
     drawer.openDrawer(room);
@@ -308,6 +312,8 @@ export default function Rooms() {
             onFilterChange={updateFilter}
             onClearFilters={clearFilters}
             hasActiveFilters={hasActiveFilters}
+            roomTypes={roomTypes}
+            floors={floorsList}
           />
         </div>
 

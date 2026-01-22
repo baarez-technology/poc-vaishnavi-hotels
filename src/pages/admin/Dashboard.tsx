@@ -973,8 +973,9 @@ export default function Dashboard() {
       {/* ═══════════════════════════════════════════════════════════════════════ */}
       <main className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6">
         {/* Primary KPIs - 4 cards × 3 columns each = 12 columns */}
+        {/* Use xl: for 4-column, sm: for 2-column - iPad Pro with sidebar gets 2-column layout */}
         <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
-          <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+          <div className="col-span-12 sm:col-span-6 xl:col-span-3">
             <LuxuryKPICard
               label={occupancyLabel}
               value={Math.round(displayOccupancy)}
@@ -988,7 +989,7 @@ export default function Dashboard() {
               delay={0}
             />
           </div>
-          <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+          <div className="col-span-12 sm:col-span-6 xl:col-span-3">
             <LuxuryKPICard
               label={revenueLabel}
               value={displayRevenue}
@@ -1002,7 +1003,7 @@ export default function Dashboard() {
               delay={50}
             />
           </div>
-          <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+          <div className="col-span-12 sm:col-span-6 xl:col-span-3">
             <LuxuryKPICard
               label="ADR"
               value={Math.round(adr)}
@@ -1016,7 +1017,7 @@ export default function Dashboard() {
               delay={100}
             />
           </div>
-          <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+          <div className="col-span-12 sm:col-span-6 xl:col-span-3">
             <LuxuryKPICard
               label="RevPAR"
               value={Math.round(revpar)}
@@ -1037,8 +1038,8 @@ export default function Dashboard() {
         {/* ═══════════════════════════════════════════════════════════════════ */}
 
         <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
-          {/* Occupancy Gauge - 4 columns */}
-          <div className="col-span-12 lg:col-span-4">
+          {/* Occupancy Gauge - 4 columns on xl+, full width on lg (iPad Pro with sidebar) */}
+          <div className="col-span-12 xl:col-span-4">
             <LuxurySectionCard
               title={occupancyRate > 0 ? "Live Occupancy" : "Avg Occupancy (30d)"}
               subtitle={occupancyRate > 0 ? `${totalRooms} total rooms` : `${totalCompletedBookings} bookings completed`}
@@ -1052,8 +1053,8 @@ export default function Dashboard() {
             </LuxurySectionCard>
           </div>
 
-          {/* Revenue Chart - 8 columns */}
-          <div className="col-span-12 lg:col-span-8">
+          {/* Revenue Chart - 8 columns on xl+, full width on lg (iPad Pro with sidebar) */}
+          <div className="col-span-12 xl:col-span-8">
             <LuxurySectionCard
               title="Revenue Analytics"
               subtitle="Weekly performance comparison"
@@ -1158,8 +1159,8 @@ export default function Dashboard() {
         {/* ═══════════════════════════════════════════════════════════════════ */}
 
         <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
-          {/* Channel Distribution - 4 columns */}
-          <div className="col-span-12 lg:col-span-4">
+          {/* Channel Distribution - 4 columns on xl+, 6 on lg (iPad Pro with sidebar) */}
+          <div className="col-span-12 lg:col-span-6 xl:col-span-4">
             <LuxurySectionCard
               title="Booking Channels"
               subtitle="Distribution breakdown"
@@ -1169,8 +1170,8 @@ export default function Dashboard() {
             </LuxurySectionCard>
           </div>
 
-          {/* AI Insights - 4 columns */}
-          <div className="col-span-12 lg:col-span-4">
+          {/* AI Insights - 4 columns on xl+, 6 on lg (iPad Pro with sidebar) */}
+          <div className="col-span-12 lg:col-span-6 xl:col-span-4">
             <LuxurySectionCard
               title="AI Insights"
               subtitle="Powered by Glimmora Intelligence"
@@ -1184,8 +1185,8 @@ export default function Dashboard() {
             </LuxurySectionCard>
           </div>
 
-          {/* Housekeeping - 4 columns */}
-          <div className="col-span-12 lg:col-span-4">
+          {/* Housekeeping - 4 columns on xl+, full width on lg (iPad Pro with sidebar) */}
+          <div className="col-span-12 xl:col-span-4">
             <LuxurySectionCard
               title="Housekeeping Status"
               subtitle="Room cleaning overview"
@@ -1205,7 +1206,7 @@ export default function Dashboard() {
         {/* ═══════════════════════════════════════════════════════════════════ */}
 
         <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
-          {/* Quick Actions - 6 columns */}
+          {/* Quick Actions - 6 columns on lg+ (iPad Pro and up) */}
           <div className="col-span-12 lg:col-span-6">
             <LuxurySectionCard title="Quick Actions" subtitle="Common tasks" className="h-full">
               <div className="grid grid-cols-2 gap-3 -mt-1">
@@ -1273,7 +1274,7 @@ export default function Dashboard() {
         {/* ═══════════════════════════════════════════════════════════════════ */}
 
         <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
-          {/* Performance Summary - 6 columns */}
+          {/* Performance Summary - 6 columns on lg+ (iPad Pro and up) */}
           <div className="col-span-12 lg:col-span-6">
             <LuxurySectionCard
               title="Performance Summary"
@@ -1368,7 +1369,7 @@ export default function Dashboard() {
             </LuxurySectionCard>
           </div>
 
-          {/* Upcoming Arrivals - 6 columns */}
+          {/* Upcoming Arrivals - 6 columns on lg+ (iPad Pro and up) */}
           <div className="col-span-12 lg:col-span-6">
             <LuxurySectionCard
               title="Upcoming Arrivals"

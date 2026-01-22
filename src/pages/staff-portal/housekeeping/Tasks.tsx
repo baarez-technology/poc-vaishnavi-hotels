@@ -357,7 +357,7 @@ const HousekeepingTasks = () => {
       {/* KPI Cards - 12 Column Grid matching admin dashboard */}
       <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
         <div
-          className={`col-span-12 sm:col-span-6 lg:col-span-4 cursor-pointer transition-all active:scale-[0.98] ${
+          className={`col-span-12 sm:col-span-6 xl:col-span-4 cursor-pointer transition-all active:scale-[0.98] ${
             statusFilter === 'todo' ? 'ring-2 ring-terra-500 rounded-[10px]' : ''
           }`}
           onClick={() => setStatusFilter(statusFilter === 'todo' ? 'all' : 'todo')}
@@ -371,7 +371,7 @@ const HousekeepingTasks = () => {
           />
         </div>
         <div
-          className={`col-span-12 sm:col-span-6 lg:col-span-4 cursor-pointer transition-all active:scale-[0.98] ${
+          className={`col-span-12 sm:col-span-6 xl:col-span-4 cursor-pointer transition-all active:scale-[0.98] ${
             statusFilter === 'in_progress' ? 'ring-2 ring-gold-500 rounded-[10px]' : ''
           }`}
           onClick={() => setStatusFilter(statusFilter === 'in_progress' ? 'all' : 'in_progress')}
@@ -385,7 +385,7 @@ const HousekeepingTasks = () => {
           />
         </div>
         <div
-          className={`col-span-12 sm:col-span-12 lg:col-span-4 cursor-pointer transition-all active:scale-[0.98] ${
+          className={`col-span-12 sm:col-span-12 xl:col-span-4 cursor-pointer transition-all active:scale-[0.98] ${
             statusFilter === 'completed' ? 'ring-2 ring-sage-500 rounded-[10px]' : ''
           }`}
           onClick={() => setStatusFilter(statusFilter === 'completed' ? 'all' : 'completed')}

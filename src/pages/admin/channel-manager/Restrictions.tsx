@@ -7,7 +7,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   Plus, Calendar, Edit2, Trash2, ToggleRight, Shield, Ban, Clock,
-  Search, ChevronDown, Check, AlertTriangle
+  Search, ChevronDown, Check, AlertTriangle, MoreHorizontal, Eye
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useChannelManager } from '../../../context/ChannelManagerContext';
@@ -154,6 +154,19 @@ export default function Restrictions() {
   const [editingRestriction, setEditingRestriction] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, restriction: null });
   const [searchQuery, setSearchQuery] = useState('');
+  const [openDropdownId, setOpenDropdownId] = useState(null);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpenDropdownId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Filter state - single select dropdowns
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'inactive'
@@ -449,28 +462,38 @@ export default function Restrictions() {
             <>
               {/* Table */}
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[800px]">
+                <table className="w-full min-w-[800px] border-collapse">
+                  <colgroup>
+                    <col style={{ width: '150px' }} />
+                    <col style={{ width: '130px' }} />
+                    <col style={{ width: '130px' }} />
+                    <col style={{ width: '140px' }} />
+                    <col style={{ width: '180px' }} />
+                    <col style={{ width: '100px' }} />
+                    <col style={{ width: '50px' }} />
+                  </colgroup>
                   <thead>
                     <tr className="bg-neutral-50/30 border-b border-neutral-100">
-                      <th className="py-3 sm:py-4 px-3 sm:px-6 text-left text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                      <th className="py-3 sm:py-4 px-3 sm:px-6 text-left text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 whitespace-nowrap">
                         Date Range
                       </th>
-                      <th className="py-3 sm:py-4 px-3 sm:px-6 text-left text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                      <th className="py-3 sm:py-4 px-3 sm:px-6 text-left text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 whitespace-nowrap">
                         Room Type
                       </th>
-                      <th className="py-3 sm:py-4 px-3 sm:px-6 text-left text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                      <th className="py-3 sm:py-4 px-3 sm:px-6 text-left text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 whitespace-nowrap">
                         Channel
                       </th>
-                      <th className="py-3 sm:py-4 px-3 sm:px-6 text-left text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                      <th className="py-3 sm:py-4 px-3 sm:px-6 text-left text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 whitespace-nowrap">
                         Restriction
                       </th>
-                      <th className="py-3 sm:py-4 px-3 sm:px-6 text-left text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                      <th className="py-3 sm:py-4 px-3 sm:px-6 text-left text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 whitespace-nowrap">
                         Reason
                       </th>
-                      <th className="py-3 sm:py-4 px-3 sm:px-6 text-left text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                      <th className="py-3 sm:py-4 px-3 sm:px-6 text-left text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 whitespace-nowrap">
                         Status
                       </th>
-                      <th className="py-3 sm:py-4 px-3 sm:px-6 text-left text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+                      <th className="px-2 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 whitespace-nowrap sticky right-0 bg-neutral-50 shadow-[-6px_0_12px_-4px_rgba(0,0,0,0.15)]">
+                        Actions
                       </th>
                     </tr>
                   </thead>
@@ -482,7 +505,7 @@ export default function Restrictions() {
                       return (
                         <tr
                           key={restriction.id}
-                          className={`hover:bg-neutral-50/30 transition-colors ${!restriction.isActive ? 'opacity-50' : ''}`}
+                          className={`group bg-white hover:bg-neutral-50/30 transition-colors duration-100 ${!restriction.isActive ? 'opacity-50' : ''}`}
                         >
                           {/* Date Range */}
                           <td className="py-3 sm:py-4 px-3 sm:px-6">
@@ -545,24 +568,45 @@ export default function Restrictions() {
                             </button>
                           </td>
 
-                          {/* Actions */}
-                          <td className="py-3 sm:py-4 px-3 sm:px-6 text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <IconButton
-                                icon={Edit2}
-                                variant="ghost"
-                                size="sm"
-                                label="Edit restriction"
-                                onClick={() => handleEdit(restriction)}
-                              />
-                              <IconButton
-                                icon={Trash2}
-                                variant="ghost"
-                                size="sm"
-                                label="Delete restriction"
-                                onClick={() => handleDelete(restriction)}
-                                className="hover:text-rose-600 hover:bg-rose-50"
-                              />
+                          {/* Actions - Sticky */}
+                          <td className="px-2 py-3 sm:py-4 text-center whitespace-nowrap sticky right-0 bg-white group-hover:bg-neutral-50 shadow-[-6px_0_12px_-4px_rgba(0,0,0,0.15)]">
+                            <div className="relative inline-block" ref={openDropdownId === restriction.id ? dropdownRef : null}>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenDropdownId(openDropdownId === restriction.id ? null : restriction.id);
+                                }}
+                                className={`p-1.5 rounded-md hover:bg-neutral-100 transition-colors ${openDropdownId === restriction.id ? 'bg-neutral-100' : ''}`}
+                              >
+                                <MoreHorizontal className="w-4 h-4 text-neutral-500" />
+                              </button>
+
+                              {openDropdownId === restriction.id && (
+                                <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-neutral-200 py-1 z-50">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleEdit(restriction); }}
+                                    className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5 text-neutral-500" />
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleToggleActive(restriction); }}
+                                    className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
+                                  >
+                                    <ToggleRight className="w-3.5 h-3.5 text-neutral-500" />
+                                    {restriction.isActive ? 'Deactivate' : 'Activate'}
+                                  </button>
+                                  <div className="border-t border-neutral-100 my-1" />
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleDelete(restriction); }}
+                                    className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-rose-600 hover:bg-rose-50"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </td>
                         </tr>

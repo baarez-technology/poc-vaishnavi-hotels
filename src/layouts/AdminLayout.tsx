@@ -16,6 +16,7 @@ export default function AdminLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Close mobile menu on route change or window resize
+  // Use 1024px (lg breakpoint) - iPad Pro and larger get desktop sidebar
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
@@ -66,14 +67,15 @@ export default function AdminLayout() {
         : 'bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100'
     }`}>
       {/* Fixed Frame Container - responsive, removes max constraints on mobile */}
-      <div className={`relative w-full h-full lg:max-w-[1440px] lg:max-h-[1024px] overflow-hidden flex flex-col lg:rounded-xl transition-colors ${
+      {/* Use lg: breakpoint (1024px) for desktop layout - iPad Pro and larger get sidebar */}
+      <div className={`relative w-full h-full xl:max-w-[1440px] xl:max-h-[1024px] overflow-hidden flex flex-col xl:rounded-xl transition-colors ${
         isDark
           ? 'bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-800'
           : 'bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100'
       }`}>
         {/* Top Row: Sidebar Brand + Header with shared border */}
         <div className="flex flex-shrink-0">
-          {/* Sidebar Brand Section - Hidden on mobile, Dynamic Width on desktop */}
+          {/* Sidebar Brand Section - Hidden on mobile, visible on lg+ (iPad Pro and up) */}
           <div className={`hidden lg:block transition-all duration-300 ${
             isSidebarCollapsed ? 'w-20' : 'w-64'
           }`}>
@@ -100,7 +102,7 @@ export default function AdminLayout() {
 
         {/* Bottom Row: Sidebar Navigation + Main Content */}
         <div className="flex flex-1 min-h-0">
-          {/* Sidebar Navigation - Hidden on mobile, Dynamic Width on desktop */}
+          {/* Sidebar Navigation - Hidden on mobile, visible on lg+ (iPad Pro and up) */}
           <aside className={`hidden lg:block h-full flex-shrink-0 transition-all duration-300 ${
             isSidebarCollapsed ? 'w-20' : 'w-64'
           }`}>
@@ -124,7 +126,7 @@ export default function AdminLayout() {
           </main>
         </div>
 
-        {/* Mobile Sidebar Overlay */}
+        {/* Mobile Sidebar Overlay - visible below lg breakpoint (1024px) */}
         {isMobileMenuOpen && (
           <div className="lg:hidden fixed inset-0 z-50">
             {/* Backdrop */}

@@ -568,128 +568,128 @@ export const RoomsPage = () => {
             )}
             </div>
 
-        {/* Pagination Info */}
-        {filteredAndSortedRooms.length > 0 && (
-          <div className="mb-6 text-sm text-neutral-600">
-            Showing <span className="font-semibold text-neutral-900">{startIndex + 1}-{Math.min(endIndex, filteredAndSortedRooms.length)}</span> of <span className="font-semibold text-neutral-900">{filteredAndSortedRooms.length}</span> suites
-          </div>
-        )}
-
-        {/* Room Grid/List */}
-        <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6' : 'space-y-4 sm:space-y-6'}>
-          {paginatedRooms.map((room) => (
-            <RoomCard
-              key={room.id}
-              room={room}
-              viewMode={viewMode}
-              searchData={searchData}
-              nights={nights}
-              navigate={navigate}
-              getCategoryBadgeColor={getCategoryBadgeColor}
-            />
-          ))}
-        </div>
-
-        {/* No Results */}
-        {filteredAndSortedRooms.length === 0 && (
-          <div className="text-center py-24 px-6">
-            <p className="text-neutral-600 text-xl mb-8 font-medium">
-              No suites found matching your criteria
-            </p>
-            <Button variant="primary" onClick={clearFilters} className="font-semibold px-8 py-4">
-              Clear Filters
-            </Button>
-          </div>
-        )}
-
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-6 rounded-xl border border-neutral-200">
-            {/* Page info */}
-            <div className="text-sm text-neutral-600">
-              Page <span className="font-semibold text-neutral-900">{currentPage}</span> of <span className="font-semibold text-neutral-900">{totalPages}</span>
-            </div>
-
-            {/* Pagination buttons */}
-            <div className="flex items-center gap-1.5">
-              {/* First page */}
-              <button
-                onClick={() => handlePageChange(1)}
-                disabled={currentPage === 1}
-                className="p-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                aria-label="First page"
-              >
-                <ChevronsLeft size={16} className="text-neutral-600" />
-              </button>
-
-              {/* Previous page */}
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="p-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                aria-label="Previous page"
-              >
-                <ChevronLeft size={16} className="text-neutral-600" />
-              </button>
-
-              {/* Page numbers */}
-              <div className="hidden sm:flex items-center gap-1 mx-1">
-                {getPageNumbers().map((page, index) => (
-                  page === '...' ? (
-                    <span key={`ellipsis-${index}`} className="px-2 text-neutral-400">
-                      ···
-                    </span>
-                  ) : (
-                    <button
-                      key={page}
-                      onClick={() => handlePageChange(page as number)}
-                      className={`min-w-[36px] px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                        currentPage === page
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-white text-neutral-700 hover:bg-neutral-50 border border-neutral-200'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  )
-                ))}
+            {/* Pagination Info */}
+            {filteredAndSortedRooms.length > 0 && (
+              <div className="mb-6 text-sm text-neutral-600">
+                Showing <span className="font-semibold text-neutral-900">{startIndex + 1}-{Math.min(endIndex, filteredAndSortedRooms.length)}</span> of <span className="font-semibold text-neutral-900">{filteredAndSortedRooms.length}</span> suites
               </div>
+            )}
 
-              {/* Next page */}
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="p-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                aria-label="Next page"
-              >
-                <ChevronRight size={16} className="text-neutral-600" />
-              </button>
-
-              {/* Last page */}
-              <button
-                onClick={() => handlePageChange(totalPages)}
-                disabled={currentPage === totalPages}
-                className="p-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                aria-label="Last page"
-              >
-                <ChevronsRight size={16} className="text-neutral-600" />
-              </button>
+            {/* Room Grid/List */}
+            <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6' : 'space-y-4 sm:space-y-6'}>
+              {paginatedRooms.map((room) => (
+                <RoomCard
+                  key={room.id}
+                  room={room}
+                  viewMode={viewMode}
+                  searchData={searchData}
+                  nights={nights}
+                  navigate={navigate}
+                  getCategoryBadgeColor={getCategoryBadgeColor}
+                />
+              ))}
             </div>
 
-            {/* Results info */}
-            <div className="hidden sm:block text-sm text-neutral-600">
-              <span className="font-semibold text-neutral-900">
-                {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredAndSortedRooms.length)}
-              </span>
-              <span className="font-medium"> of </span>
-              <span className="font-semibold text-neutral-900">{filteredAndSortedRooms.length}</span>
-              <span className="font-medium"> suites</span>
-            </div>
+            {/* No Results */}
+            {filteredAndSortedRooms.length === 0 && (
+              <div className="text-center py-24 px-6">
+                <p className="text-neutral-600 text-xl mb-8 font-medium">
+                  No suites found matching your criteria
+                </p>
+                <Button variant="primary" onClick={clearFilters} className="font-semibold px-8 py-4">
+                  Clear Filters
+                </Button>
+              </div>
+            )}
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-xl border border-neutral-200">
+                {/* Page info */}
+                <div className="text-sm text-neutral-600">
+                  Page <span className="font-semibold text-neutral-900">{currentPage}</span> of <span className="font-semibold text-neutral-900">{totalPages}</span>
+                </div>
+
+                {/* Pagination buttons */}
+                <div className="flex items-center gap-1.5">
+                  {/* First page */}
+                  <button
+                    onClick={() => handlePageChange(1)}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    aria-label="First page"
+                  >
+                    <ChevronsLeft size={16} className="text-neutral-600" />
+                  </button>
+
+                  {/* Previous page */}
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft size={16} className="text-neutral-600" />
+                  </button>
+
+                  {/* Page numbers */}
+                  <div className="hidden sm:flex items-center gap-1 mx-1">
+                    {getPageNumbers().map((page, index) => (
+                      page === '...' ? (
+                        <span key={`ellipsis-${index}`} className="px-2 text-neutral-400">
+                          ···
+                        </span>
+                      ) : (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page as number)}
+                          className={`min-w-[36px] px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                            currentPage === page
+                              ? 'bg-primary-600 text-white'
+                              : 'bg-white text-neutral-700 hover:bg-neutral-50 border border-neutral-200'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      )
+                    ))}
+                  </div>
+
+                  {/* Next page */}
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight size={16} className="text-neutral-600" />
+                  </button>
+
+                  {/* Last page */}
+                  <button
+                    onClick={() => handlePageChange(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    aria-label="Last page"
+                  >
+                    <ChevronsRight size={16} className="text-neutral-600" />
+                  </button>
+                </div>
+
+                {/* Results info */}
+                <div className="hidden sm:block text-sm text-neutral-600">
+                  <span className="font-semibold text-neutral-900">
+                    {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredAndSortedRooms.length)}
+                  </span>
+                  <span className="font-medium"> of </span>
+                  <span className="font-semibold text-neutral-900">{filteredAndSortedRooms.length}</span>
+                  <span className="font-medium"> suites</span>
+                </div>
+              </div>
+            )}
+
           </div>
-        )}
-
-        </div>
-        {/* END MAIN CONTENT AREA */}
+          {/* END MAIN CONTENT AREA */}
 
         </div>
         {/* END Two Column Layout */}

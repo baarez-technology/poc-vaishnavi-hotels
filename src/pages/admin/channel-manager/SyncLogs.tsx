@@ -6,10 +6,11 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
   Download, RefreshCw, CheckCircle, XCircle, AlertTriangle,
   Calendar, Activity, Eye, ChevronDown, Check,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, X
 } from 'lucide-react';
 import { useChannelManager } from '../../../context/ChannelManagerContext';
 import { actionTypes } from '../../../data/channel-manager/sampleSyncLogs';
@@ -161,17 +162,35 @@ const ITEMS_PER_PAGE = 10;
 
 export default function SyncLogs() {
   const { syncLogs, otas, triggerManualSync, syncingOTAs } = useChannelManager();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Get initial OTA filter from URL parameter
+  const urlOtaParam = searchParams.get('ota');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [selectedLog, setSelectedLog] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Filter states - single select dropdowns
-  const [otaFilter, setOTAFilter] = useState('all');
+  // Filter states - single select dropdowns (initialize from URL if present)
+  const [otaFilter, setOTAFilter] = useState(urlOtaParam || 'all');
   const [actionFilter, setActionFilter] = useState('all');
 
   const connectedOTAs = otas.filter(o => o.status === 'connected');
+
+  // Get the filtered OTA name for display
+  const filteredOTAName = useMemo(() => {
+    if (otaFilter === 'all') return null;
+    const ota = otas.find(o => o.code === otaFilter);
+    return ota?.name || otaFilter;
+  }, [otaFilter, otas]);
+
+  // Clear OTA filter and URL param
+  const clearOTAFilter = () => {
+    setOTAFilter('all');
+    setSearchParams({});
+    setCurrentPage(1);
+  };
 
   // Check if any filters are active
   const hasActiveFilters = otaFilter !== 'all' || actionFilter !== 'all';
@@ -180,6 +199,7 @@ export default function SyncLogs() {
   const clearFilters = () => {
     setOTAFilter('all');
     setActionFilter('all');
+    setSearchParams({});
     setCurrentPage(1);
   };
 
@@ -313,12 +333,35 @@ export default function SyncLogs() {
         {/* Page Header */}
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
-              Sync Logs
-            </h1>
+            <div className="flex items-baseline gap-2 sm:gap-3 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
+                Sync Logs
+              </h1>
+              {filteredOTAName && (
+                <span className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[11px] sm:text-xs font-semibold bg-terra-50 text-terra-700 border border-terra-200 translate-y-[-1px]">
+                  {filteredOTAName}
+                  <button
+                    onClick={clearOTAFilter}
+                    className="p-0.5 hover:bg-terra-100 rounded transition-colors -mr-0.5"
+                    title="Clear filter"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+            </div>
             <p className="text-xs sm:text-[13px] text-neutral-500 mt-0.5 sm:mt-1">
-              <span className="hidden sm:inline">Monitor channel synchronization activity</span>
-              <span className="sm:hidden">Channel sync activity</span>
+              {filteredOTAName ? (
+                <>
+                  <span className="hidden sm:inline">Showing sync activity for {filteredOTAName}</span>
+                  <span className="sm:hidden">{filteredOTAName} sync activity</span>
+                </>
+              ) : (
+                <>
+                  <span className="hidden sm:inline">Monitor channel synchronization activity</span>
+                  <span className="sm:hidden">Channel sync activity</span>
+                </>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
@@ -401,7 +444,16 @@ export default function SyncLogs() {
                 {/* Channel Filter Dropdown */}
                 <SelectDropdown
                   value={otaFilter}
-                  onChange={(val) => { setOTAFilter(val); setCurrentPage(1); }}
+                  onChange={(val) => {
+                    setOTAFilter(val);
+                    setCurrentPage(1);
+                    // Update URL param when filter changes
+                    if (val === 'all') {
+                      setSearchParams({});
+                    } else {
+                      setSearchParams({ ota: val });
+                    }
+                  }}
                   options={channelOptions}
                   placeholder="Channels"
                   className="flex-1 sm:flex-none sm:min-w-[140px] lg:min-w-[160px]"

@@ -178,7 +178,7 @@ const CompetitorRates = () => {
         <p className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-wider text-neutral-400 mb-1 truncate">
           {title}
         </p>
-        <p className="text-lg sm:text-[28px] font-semibold tracking-tight text-neutral-900">
+        <p className="text-base sm:text-xl font-semibold tracking-tight text-neutral-900">
           {value}
         </p>
 
@@ -231,7 +231,7 @@ const CompetitorRates = () => {
       </header>
 
       {/* Summary Stats */}
-      <section className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4">
         {isInitialLoading ? (
           <>
             {[0, 1, 2, 3, 4].map((i) => (
@@ -242,35 +242,35 @@ const CompetitorRates = () => {
           <>
             <KPICard
               title="Avg Gap vs Market"
-              value={`${competitorInsights.avgGapPercent > 0 ? '+' : ''}${competitorInsights.avgGapPercent}%`}
-              icon={competitorInsights.avgGapPercent < 0 ? TrendingDown : competitorInsights.avgGapPercent > 0 ? TrendingUp : Globe}
-              accentColor={competitorInsights.avgGapPercent < 0 ? 'sage' : competitorInsights.avgGapPercent > 0 ? 'rose' : 'terra'}
+              value={`${((competitorInsights as any).avgGapPercent ?? 0) > 0 ? '+' : ''}${(competitorInsights as any).avgGapPercent ?? 0}%`}
+              icon={((competitorInsights as any).avgGapPercent ?? 0) < 0 ? TrendingDown : ((competitorInsights as any).avgGapPercent ?? 0) > 0 ? TrendingUp : Globe}
+              accentColor={((competitorInsights as any).avgGapPercent ?? 0) < 0 ? 'sage' : ((competitorInsights as any).avgGapPercent ?? 0) > 0 ? 'rose' : 'terra'}
               index={0}
             />
             <KPICard
               title="Days at Market"
-              value={competitorInsights.atMarketDays}
+              value={(competitorInsights as any).atMarketDays ?? 0}
               icon={CheckCircle}
               accentColor="sage"
               index={1}
             />
             <KPICard
               title="Days Underpriced"
-              value={competitorInsights.underpricedDays}
+              value={(competitorInsights as any).underpricedDays ?? 0}
               icon={TrendingDown}
               accentColor="sage"
               index={2}
             />
             <KPICard
               title="Days Overpriced"
-              value={competitorInsights.overpricedDays}
+              value={(competitorInsights as any).overpricedDays ?? 0}
               icon={TrendingUp}
               accentColor="rose"
               index={3}
             />
             <KPICard
               title="Revenue Opportunity"
-              value={`$${competitorInsights.potentialRevenueLoss?.toLocaleString() ?? '0'}`}
+              value={`$${((competitorInsights as any).potentialRevenueLoss ?? 0).toLocaleString()}`}
               icon={AlertTriangle}
               accentColor="gold"
               index={4}
@@ -280,7 +280,7 @@ const CompetitorRates = () => {
       </section>
 
       {/* Recommendations */}
-      {competitorInsights?.recommendations?.length > 0 && (
+      {(competitorInsights as any)?.recommendations?.length > 0 && (
         <section className="p-3 sm:p-5 rounded-[10px] bg-gold-50 border border-gold-200">
           <div className="flex items-start gap-3 sm:gap-4">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-gold-100">
@@ -291,7 +291,7 @@ const CompetitorRates = () => {
                 Rate Strategy Recommendations
               </h3>
               <ul className="space-y-2">
-                {competitorInsights.recommendations.map((rec, index) => (
+                {(competitorInsights as any).recommendations.map((rec: string, index: number) => (
                   <li key={index} className="text-[11px] sm:text-[13px] flex items-start gap-2 text-gold-700">
                     <span className="w-1.5 h-1.5 rounded-full bg-gold-500 mt-1.5 flex-shrink-0" />
                     <span>{rec}</span>
@@ -395,7 +395,7 @@ const CompetitorRates = () => {
                   )}
                 </div>
               </div>
-              <div className="px-4 sm:px-6 pb-4 sm:pb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                 {competitorList.map(comp => (
                   <CompetitorCard
                     key={comp.id}

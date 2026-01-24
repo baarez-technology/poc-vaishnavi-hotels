@@ -4,19 +4,42 @@
  * Enhanced for consistency with OTA Connections page
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Link2, Sparkles, Check, AlertTriangle, Layers, Search, ChevronDown } from 'lucide-react';
+import { Link2, Sparkles, Check, AlertTriangle, Layers, Search, ChevronDown, Loader2, ArrowRight } from 'lucide-react';
 import { useChannelManager } from '../../../context/ChannelManagerContext';
+import { useChannelManagerSSEEvents } from '../../../hooks/useChannelManagerSSEEvents';
 import RoomMappingTable from '../../../components/channel-manager/RoomMappingTable';
-import { Button } from '../../../components/ui2/Button';
+import { Button, IconButton } from '../../../components/ui2/Button';
 import { DropdownMenu, DropdownMenuItem } from '../../../components/ui2/DropdownMenu';
+import { Drawer } from '../../../components/ui2/Drawer';
 
 export default function RoomMapping() {
-  const { otas, roomMappings, mapRoom } = useChannelManager();
+  const {
+    otas,
+    roomMappings,
+    isLoading: contextLoading,
+    mapRoom,
+    autoMapRoomMappings,
+    fetchRoomMappings,
+  } = useChannelManager();
   const [selectedOTA, setSelectedOTA] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAutoMapping, setIsAutoMapping] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [targetOTA, setTargetOTA] = useState(null);
+
+  // Refetch data function for SSE
+  const refetchData = useCallback(async () => {
+    await fetchRoomMappings();
+  }, [fetchRoomMappings]);
+
+  // Register SSE event handlers for real-time updates
+  useChannelManagerSSEEvents({
+    onSyncStatus: refetchData,
+    refetchData,
+  });
 
   // Get connected OTAs
   const connectedOTAs = otas.filter(ota => ota.status === 'connected');
@@ -43,43 +66,109 @@ export default function RoomMapping() {
 
   const handleAutoMap = async (otaCode) => {
     setIsAutoMapping(true);
+    setTargetOTA(connectedOTAs.find(o => o.code === otaCode));
+    setSuggestions([]);
+    setShowSuggestions(false);
+    
+    try {
+      const result = await autoMapRoomMappings(otaCode);
+      
+      // Handle different response scenarios
+      if (result) {
+        const mappingsCreated = result.mappingsCreated || 0;
+        const suggestions = result.suggestions || [];
+        
+        // Normalize suggestions to ensure they have required fields
+        const normalizedSuggestions = suggestions.map((s: any) => ({
+          pmsRoomTypeId: s.pmsRoomTypeId || s.pmsRoomType,
+          pmsRoomType: s.pmsRoomType,
+          pmsRoomName: s.pmsRoomName || s.pmsRoomType,
+          suggestedOTARoomType: s.suggestedOTARoomType || s.otaRoomType,
+          suggestedOTARoomId: s.suggestedOTARoomId || s.otaRoomId,
+          confidence: s.confidence || 0.8
+        }));
+        
+        // Check if we got suggestions that need user approval
+        if (normalizedSuggestions.length > 0) {
+          if (mappingsCreated === 0) {
+            // Only suggestions, no auto-created mappings - show drawer for review
+            setSuggestions(normalizedSuggestions);
+            setShowSuggestions(true);
+          } else {
+            // Some mappings created, but also have suggestions
+            // Refresh data first, then show suggestions for remaining
+            await refetchData();
+            if (normalizedSuggestions.length > 0) {
+              setSuggestions(normalizedSuggestions);
+              setShowSuggestions(true);
+            }
+          }
+        } else if (mappingsCreated > 0) {
+          // Mappings were created automatically, no suggestions
+          await refetchData();
+        } else {
+          // No suggestions and no mappings created
+          await refetchData();
+        }
+      } else {
+        // No result returned - might be an error or empty response
+        await refetchData();
+      }
+    } catch (err) {
+      console.error('Auto-map error:', err);
+      // Error already handled in context via toast
+      // Still refresh data in case some mappings were created before error
+      await refetchData();
+    } finally {
+      setIsAutoMapping(false);
+    }
+  };
 
-    // PMS room types
-    const pmsRoomTypes = [
-      { id: 'minimalist-studio', name: 'Minimalist Studio' },
-      { id: 'coastal-retreat', name: 'Coastal Retreat' },
-      { id: 'urban-oasis', name: 'Urban Oasis' },
-      { id: 'sunset-vista', name: 'Sunset Vista' },
-      { id: 'pacific-suite', name: 'Pacific Suite' },
-      { id: 'wellness-suite', name: 'Wellness Suite' },
-      { id: 'family-sanctuary', name: 'Family Sanctuary' },
-      { id: 'oceanfront-penthouse', name: 'Oceanfront Penthouse' }
-    ];
-
-    // Simulate AI auto-mapping
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // Auto-map suggestions
-    const suggestions = {
-      'minimalist-studio': 'Studio Room',
-      'coastal-retreat': 'Coastal View Room',
-      'urban-oasis': 'City View Room',
-      'sunset-vista': 'Sunset View Room',
-      'pacific-suite': 'Pacific Suite',
-      'wellness-suite': 'Wellness Suite',
-      'family-sanctuary': 'Family Suite',
-      'oceanfront-penthouse': 'Penthouse Suite'
-    };
-
-    pmsRoomTypes.forEach(room => {
-      mapRoom(room.id, otaCode, {
-        otaRoomType: suggestions[room.id],
-        otaRoomId: `${otaCode}-${room.id}`,
-        status: 'active'
-      });
-    });
-
-    setIsAutoMapping(false);
+  const handleApplySuggestions = async () => {
+    setIsAutoMapping(true);
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+      
+      // Apply each suggestion manually
+      for (const suggestion of suggestions) {
+        try {
+          await mapRoom({
+            pmsRoomTypeId: suggestion.pmsRoomTypeId || suggestion.pmsRoomType,
+            pmsRoomType: suggestion.pmsRoomName || suggestion.pmsRoomType,
+            otaCode: targetOTA.code,
+            otaRoomType: suggestion.suggestedOTARoomType,
+            otaRoomId: suggestion.suggestedOTARoomId || suggestion.suggestedOTARoomType.toUpperCase().replace(/\s+/g, '_'),
+            isActive: true,
+            syncRates: true,
+            syncAvailability: true
+          });
+          successCount++;
+        } catch (err) {
+          console.error('Failed to apply suggestion:', err);
+          errorCount++;
+        }
+      }
+      
+      // Close suggestions drawer
+      setShowSuggestions(false);
+      setSuggestions([]);
+      
+      // Refresh data to show new mappings
+      await refetchData();
+      
+      // Show summary message (individual success/error messages are shown by mapRoom)
+      if (successCount > 0 && errorCount === 0) {
+        // All succeeded - message already shown by individual mapRoom calls
+      } else if (successCount > 0) {
+        // Some succeeded, some failed
+        console.warn(`Applied ${successCount} mappings, ${errorCount} failed`);
+      }
+    } catch (err) {
+      console.error('Failed to apply suggestions:', err);
+    } finally {
+      setIsAutoMapping(false);
+    }
   };
 
   const getFilterLabel = () => {
@@ -114,7 +203,7 @@ export default function RoomMapping() {
     {
       icon: Layers,
       title: 'Room Types',
-      value: 4,
+      value: roomMappings.length,
       accent: 'neutral'
     }
   ];
@@ -125,6 +214,17 @@ export default function RoomMapping() {
     gold: { icon: 'bg-gold-100 text-gold-600' },
     neutral: { icon: 'bg-neutral-100 text-neutral-500' }
   };
+
+  if (contextLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F9F7F7' }}>
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-terra-600 mx-auto mb-4" />
+          <p className="text-neutral-600">Loading room mappings...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
@@ -244,21 +344,84 @@ export default function RoomMapping() {
 
       {/* Auto-Map Overlay */}
       {isAutoMapping && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="rounded-[10px] bg-white p-8 text-center max-w-sm mx-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="rounded-[10px] bg-white p-8 text-center max-w-sm mx-4 shadow-xl">
             <div className="w-16 h-16 rounded-lg bg-terra-50 flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-8 h-8 animate-pulse text-terra-600" />
+              <Loader2 className="w-8 h-8 animate-spin text-terra-600" />
             </div>
             <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-              Auto-Mapping Rooms
+              Processing Auto-Map
             </h3>
             <p className="text-[13px] text-neutral-500">
               AI is analyzing room types and suggesting optimal mappings...
+            </p>
+            <p className="text-[11px] text-neutral-400 mt-2">
+              This may take a few seconds
             </p>
           </div>
         </div>,
         document.body
       )}
+
+      {/* Suggestions Drawer */}
+      <Drawer
+        isOpen={showSuggestions}
+        onClose={() => setShowSuggestions(false)}
+        title="AI Suggested Mappings"
+        subtitle={`Suggestions for ${targetOTA?.name || 'OTA'}`}
+        footer={
+          <div className="flex items-center justify-end gap-3 w-full">
+            <Button
+              variant="ghost"
+              onClick={() => setShowSuggestions(false)}
+              className="px-5 py-2 text-[13px] font-semibold"
+            >
+              Discard Suggestions
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleApplySuggestions}
+              loading={isAutoMapping}
+              className="px-5 py-2 text-[13px] font-semibold"
+            >
+              Apply All Suggested Mappings
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl bg-terra-50 border border-terra-100 mb-6">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-5 h-5 text-terra-600" />
+              <p className="text-[13px] text-terra-700 font-medium">
+                Our AI has analyzed your room types and suggests these mappings with high confidence.
+              </p>
+            </div>
+          </div>
+
+          <div className="divide-y divide-neutral-100 border border-neutral-100 rounded-xl overflow-hidden">
+            {suggestions.map((suggestion, idx) => (
+              <div key={idx} className="p-4 bg-white flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 mb-1">
+                    PMS Room
+                  </p>
+                  <p className="font-semibold text-neutral-900">{suggestion.pmsRoomName || suggestion.pmsRoomType}</p>
+                </div>
+                <div className="flex-shrink-0">
+                  <ArrowRight className="w-4 h-4 text-terra-300" />
+                </div>
+                <div className="flex-1 text-right">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 mb-1">
+                    Suggested OTA Room
+                  </p>
+                  <p className="font-semibold text-terra-600">{suggestion.suggestedOTARoomType}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Drawer>
     </div>
   );
 }

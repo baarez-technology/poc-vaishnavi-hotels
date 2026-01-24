@@ -29,6 +29,8 @@ export default function FiltersBar({ filters, onFilterChange, onClearFilters }) 
   const sourceOptions = [
     { value: 'all', label: 'All Sources' },
     { value: 'Website', label: 'Website' },
+    { value: 'Dummy Channel Manager', label: 'Dummy Channel Manager' },
+    { value: 'CRS', label: 'CRS' },
     { value: 'Booking.com', label: 'Booking.com' },
     { value: 'Expedia', label: 'Expedia' },
     { value: 'Walk-in', label: 'Walk-in' },

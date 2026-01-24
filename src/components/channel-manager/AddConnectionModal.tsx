@@ -4,15 +4,16 @@
  * Redesigned as a slide-in drawer for better UX
  */
 
-import { useState } from 'react';
-import { CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { CheckCircle, AlertCircle, Eye, EyeOff, Search, Plus, Mail } from 'lucide-react';
 import { availableOTAs } from '../../data/channel-manager/sampleOTAs';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 import { useToast } from '../../contexts/ToastContext';
+import { SearchBar } from '../ui2/SearchBar';
 
 export default function AddConnectionModal({ isOpen, onClose, onConnect, existingConnections = [] }) {
-  const toast = useToast();
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [selectedOTA, setSelectedOTA] = useState(null);
   const [credentials, setCredentials] = useState({
@@ -24,11 +25,25 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [requestedOTA, setRequestedOTA] = useState('');
 
-  // Filter out already connected OTAs
-  const availableToConnect = availableOTAs.filter(
-    ota => !existingConnections.some(conn => conn.code === ota.code)
-  );
+  // Filter out already connected OTAs and apply search
+  const availableToConnect = useMemo(() => {
+    const filtered = availableOTAs.filter(
+      ota => !existingConnections.some(conn => conn.code === ota.code)
+    );
+    
+    if (!searchQuery.trim()) return filtered;
+    
+    const query = searchQuery.toLowerCase();
+    return filtered.filter(ota =>
+      ota.name.toLowerCase().includes(query) ||
+      ota.code.toLowerCase().includes(query) ||
+      (ota.description && ota.description.toLowerCase().includes(query))
+    );
+  }, [existingConnections, searchQuery]);
 
   const handleSelectOTA = (ota) => {
     setSelectedOTA(ota);
@@ -85,7 +100,9 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
     onClose();
   };
 
-  const isFormValid = credentials.username && credentials.apiKey && credentials.hotelId;
+  // Form validation - Hotel ID is required, username and API key are optional for some OTAs
+  const isFormValid = credentials.hotelId && credentials.hotelId.trim().length > 0;
+  const hasAllCredentials = credentials.username && credentials.apiKey && credentials.hotelId;
 
   const getTitle = () => {
     if (step === 1) return 'Add OTA Connection';
@@ -125,7 +142,7 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
         <Button
           variant="primary"
           onClick={handleConnect}
-          disabled={!isFormValid || !testResult?.success}
+          disabled={!isFormValid || (testResult && !testResult.success)}
           loading={isConnecting}
           className="px-5 py-2 text-[13px] font-semibold"
         >
@@ -193,33 +210,116 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
           ) : (
             /* OTA Selection Grid */
             <>
+              {/* Search Bar */}
+              <div className="space-y-3">
+                <SearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  onClear={() => setSearchQuery('')}
+                  placeholder="Search OTA platforms..."
+                  size="md"
+                />
+                
+                {/* Request New OTA Button */}
+                {!showRequestForm && (
+                  <button
+                    onClick={() => setShowRequestForm(true)}
+                    className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-neutral-300 rounded-lg text-[13px] font-medium text-neutral-600 hover:border-terra-400 hover:text-terra-600 hover:bg-terra-50/50 transition-all duration-200"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Request New OTA Integration
+                  </button>
+                )}
+
+                {/* Request Form */}
+                {showRequestForm && (
+                  <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-200 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h5 className="text-[13px] font-semibold text-neutral-900">Request New OTA</h5>
+                      <button
+                        onClick={() => {
+                          setShowRequestForm(false);
+                          setRequestedOTA('');
+                        }}
+                        className="text-neutral-400 hover:text-neutral-600"
+                      >
+                        <AlertCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={requestedOTA}
+                      onChange={(e) => setRequestedOTA(e.target.value)}
+                      placeholder="Enter OTA platform name (e.g., Agoda, Hotels.com)"
+                      className="w-full h-9 px-3 rounded-lg text-sm bg-white border border-neutral-200 text-neutral-900 placeholder:text-neutral-400 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none"
+                    />
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => {
+                          toast.success(`Request submitted for ${requestedOTA || 'new OTA'}. We'll contact you soon!`);
+                          setShowRequestForm(false);
+                          setRequestedOTA('');
+                        }}
+                        disabled={!requestedOTA.trim()}
+                      >
+                        <Mail className="w-4 h-4 mr-1" />
+                        Submit Request
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setShowRequestForm(false);
+                          setRequestedOTA('');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900">
                 Available Platforms ({availableToConnect.length})
               </h4>
-              <div className="grid grid-cols-2 gap-3">
-                {availableToConnect.map(ota => (
-                  <button
-                    key={ota.code}
-                    onClick={() => handleSelectOTA(ota)}
-                    className="flex flex-col items-center gap-3 p-4 border border-neutral-200 rounded-lg transition-all duration-200 group"
-                  >
-                    <div
-                      className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                      style={{ backgroundColor: ota.color }}
+              
+              {availableToConnect.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 rounded-lg bg-neutral-100 flex items-center justify-center mx-auto mb-3">
+                    <Search className="w-6 h-6 text-neutral-400" />
+                  </div>
+                  <p className="text-[13px] font-medium text-neutral-600 mb-1">No platforms found</p>
+                  <p className="text-[11px] text-neutral-400">Try a different search term or request a new OTA integration</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {availableToConnect.map(ota => (
+                    <button
+                      key={ota.code}
+                      onClick={() => handleSelectOTA(ota)}
+                      className="flex flex-col items-center gap-3 p-4 border border-neutral-200 rounded-lg transition-all duration-200 group hover:border-terra-400 hover:bg-terra-50/30"
                     >
-                      {ota.name.substring(0, 2).toUpperCase()}
-                    </div>
-                    <div className="text-center">
-                      <h3 className="text-sm font-semibold text-neutral-900">
-                        {ota.name}
-                      </h3>
-                      <p className="text-[10px] text-neutral-400 mt-0.5">
-                        Click to connect
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
+                      <div
+                        className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+                        style={{ backgroundColor: ota.color }}
+                      >
+                        {ota.name.substring(0, 2).toUpperCase()}
+                      </div>
+                      <div className="text-center">
+                        <h3 className="text-sm font-semibold text-neutral-900">
+                          {ota.name}
+                        </h3>
+                        <p className="text-[10px] text-neutral-400 mt-0.5">
+                          Click to connect
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </>
           )}
         </div>

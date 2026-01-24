@@ -156,7 +156,27 @@ export function CBSProvider({ children }) {
               adults: (b.guests?.adults || b.adults || 1),
               children: (b.guests?.children || b.children || 0),
               status: statusMap[b.status?.toLowerCase()] || 'CONFIRMED',
-              source: b.bookingSource || b.booking_source || 'Direct',
+              // Map source to normalized format (e.g., "crs" -> "CRS")
+              source: (() => {
+                const sourceMap = {
+                  'Website': 'Website',
+                  'direct': 'Website',
+                  'Dummy Channel Manager': 'Dummy Channel Manager',
+                  'dummy channel manager': 'Dummy Channel Manager',
+                  'CRS': 'CRS',
+                  'crs': 'CRS',
+                  'Booking.com': 'Booking.com',
+                  'booking.com': 'Booking.com',
+                  'Expedia': 'Expedia',
+                  'expedia': 'Expedia',
+                  'Walk-in': 'Walk-in',
+                  'walk_in': 'Walk-in',
+                  'walk-in': 'Walk-in',
+                  'OTA': 'Booking.com',
+                };
+                const rawSource = b.bookingSource || b.booking_source || 'Direct';
+                return sourceMap[rawSource] || rawSource;
+              })(),
               amount: totalPrice,
               amountPaid: amountPaid,
               balance: balance,
@@ -346,7 +366,27 @@ export function CBSProvider({ children }) {
             adults: (b.guests?.adults || b.adults || 1),
             children: (b.guests?.children || b.children || 0),
             status: statusMap[b.status?.toLowerCase()] || 'CONFIRMED',
-            source: b.bookingSource || b.booking_source || 'Direct',
+            // Map source to normalized format (e.g., "crs" -> "CRS")
+            source: (() => {
+              const sourceMap = {
+                'Website': 'Website',
+                'direct': 'Website',
+                'Dummy Channel Manager': 'Dummy Channel Manager',
+                'dummy channel manager': 'Dummy Channel Manager',
+                'CRS': 'CRS',
+                'crs': 'CRS',
+                'Booking.com': 'Booking.com',
+                'booking.com': 'Booking.com',
+                'Expedia': 'Expedia',
+                'expedia': 'Expedia',
+                'Walk-in': 'Walk-in',
+                'walk_in': 'Walk-in',
+                'walk-in': 'Walk-in',
+                'OTA': 'Booking.com',
+              };
+              const rawSource = b.bookingSource || b.booking_source || 'Direct';
+              return sourceMap[rawSource] || rawSource;
+            })(),
             amount: totalPrice,
             amountPaid: amountPaid,
             balance: balance,

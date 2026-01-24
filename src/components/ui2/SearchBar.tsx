@@ -31,7 +31,7 @@ export function SearchBar({
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
       <input
         ref={inputRef}
-        type="search"
+        type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
@@ -80,7 +80,7 @@ export function AdvancedSearch({
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
           <input
-            type="search"
+            type="text"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}

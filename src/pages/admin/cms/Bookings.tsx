@@ -198,6 +198,8 @@ function FilterChips({ filters, onFilterChange, onClearFilters }) {
   const sourceOptions = [
     { value: 'all', label: 'All Channels' },
     { value: 'Website', label: 'Direct' },
+    { value: 'Dummy Channel Manager', label: 'Dummy Channel Manager' },
+    { value: 'CRS', label: 'CRS' },
     { value: 'Booking.com', label: 'Booking.com' },
     { value: 'Expedia', label: 'Expedia' },
     { value: 'Walk-in', label: 'Walk-in' },
@@ -355,7 +357,10 @@ function ViewToggle({ view, onViewChange }) {
 // ============================================
 function BookingCard({ booking, onClick, index = 0 }) {
   const status = statusConfig[booking.status];
-  const source = sourceConfig[booking.source];
+  const source = sourceConfig[booking.source] || {
+    color: 'bg-[#7B68EE]/10 text-[#7B68EE]',
+    icon: '💻'
+  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -496,7 +501,10 @@ function BookingCard({ booking, onClick, index = 0 }) {
 // ============================================
 function BookingTableRow({ booking, onClick, index }) {
   const status = statusConfig[booking.status];
-  const source = sourceConfig[booking.source];
+  const source = sourceConfig[booking.source] || {
+    color: 'bg-[#7B68EE]/10 text-[#7B68EE]',
+    icon: '💻'
+  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -602,7 +610,10 @@ function BookingDetailDrawer({ booking, isOpen, onClose, onStatusChange }) {
   if (!booking || !isOpen) return null;
 
   const status = statusConfig[booking.status];
-  const source = sourceConfig[booking.source];
+  const source = sourceConfig[booking.source] || {
+    color: 'bg-[#7B68EE]/10 text-[#7B68EE]',
+    icon: '💻'
+  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -939,6 +950,10 @@ function transformApiBooking(apiBooking: any) {
   const sourceMap: Record<string, string> = {
     'Website': 'Website',
     'direct': 'Website',
+    'Dummy Channel Manager': 'Dummy Channel Manager',
+    'dummy channel manager': 'Dummy Channel Manager',
+    'CRS': 'CRS',
+    'crs': 'CRS',
     'Booking.com': 'Booking.com',
     'booking.com': 'Booking.com',
     'Expedia': 'Expedia',
@@ -974,7 +989,12 @@ function transformApiBooking(apiBooking: any) {
     roomType: apiBooking.room?.name || 'Standard Room',
     room: apiBooking.room?.number || null,
     status: statusMap[apiBooking.status?.toLowerCase()] || 'CONFIRMED',
-    source: sourceMap[apiBooking.bookingSource || apiBooking.booking_source] || 'Website',
+    source: (() => {
+      const rawSource = apiBooking.bookingSource || apiBooking.booking_source || apiBooking.source || 'Direct';
+      const mappedSource = sourceMap[rawSource];
+      // If mapped, use it; otherwise use raw source (don't default to Website)
+      return mappedSource || rawSource;
+    })(),
     vip: apiBooking.vipStatus || apiBooking.vip_flag || false,
     amount: totalPrice,
     amountPaid: amountPaid,

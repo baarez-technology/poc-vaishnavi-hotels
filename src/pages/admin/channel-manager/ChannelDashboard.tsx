@@ -4,28 +4,39 @@
  * Enhanced with consistent styling matching CMS section
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Wifi, WifiOff, AlertTriangle, RefreshCw,
   DollarSign, Calendar, Star, Clock,
   CheckCircle, XCircle, ChevronRight, TrendingUp,
-  ChevronUp, ChevronDown, Layers, Activity
+  ChevronUp, ChevronDown, Layers, Activity, Loader2,
+  User, Mail, Phone, Building2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '../../../components/ui2/Button';
 import { useChannelManager } from '../../../context/ChannelManagerContext';
 import { useChannelManagerSSEEvents } from '../../../hooks/useChannelManagerSSEEvents';
+import { Drawer } from '../../../components/ui2/Drawer';
+import { apiClient } from '../../../api/client';
+import { getBookingSourceForOTA } from '../../../utils/channel-manager/otaSourceMapping';
 
 export default function ChannelDashboard() {
-  const [isLoading, setIsLoading] = useState(true);
   const [isInsightsExpanded, setIsInsightsExpanded] = useState(false);
+  const [selectedOTA, setSelectedOTA] = useState(null);
+  const [otaBookings, setOtaBookings] = useState([]);
+  const [loadingBookings, setLoadingBookings] = useState(false);
   const {
     otas,
     syncLogs,
+    isLoading: contextLoading,
     getChannelStats,
     triggerManualSync,
     syncingOTAs,
-    getAIInsights
+    getAIInsights,
+    fetchChannelStats,
+    fetchAIInsights,
+    fetchSyncLogs,
+    fetchOTAs,
   } = useChannelManager();
 
   const stats = getChannelStats();
@@ -55,10 +66,24 @@ export default function ChannelDashboard() {
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 600);
-    return () => clearTimeout(timer);
-  }, []);
+  // Refetch data function for SSE
+  const refetchData = useCallback(async () => {
+    await Promise.all([
+      fetchChannelStats(),
+      fetchAIInsights(),
+      fetchSyncLogs({ pageSize: 5 }),
+      fetchOTAs(),
+    ]);
+  }, [fetchChannelStats, fetchAIInsights, fetchSyncLogs, fetchOTAs]);
+
+  // Register SSE event handlers for real-time updates
+  useChannelManagerSSEEvents({
+    onRatesUpdated: refetchData,
+    onAvailabilityUpdated: refetchData,
+    onRestrictionsUpdated: refetchData,
+    onSyncStatus: refetchData,
+    refetchData,
+  });
 
   const handleSyncAll = () => {
     triggerManualSync('ALL');
@@ -102,6 +127,17 @@ export default function ChannelDashboard() {
     sage: { bg: 'bg-sage-50', icon: 'bg-sage-100 text-sage-600' },
     gold: { bg: 'bg-gold-50', icon: 'bg-gold-100 text-gold-700' }
   };
+
+  if (contextLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F9F7F7' }}>
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-terra-600 mx-auto mb-4" />
+          <p className="text-neutral-600">Loading channel manager data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
@@ -163,11 +199,109 @@ export default function ChannelDashboard() {
                       }`} />
                       {kpi.badge.text}
                     </span>
-                  )}
-                </div>
+        )}
+      </div>
+
+      {/* OTA Performance Details Drawer */}
+      <Drawer
+        isOpen={!!selectedOTA}
+        onClose={() => {
+          setSelectedOTA(null);
+          setOtaBookings([]);
+        }}
+        title={selectedOTA ? `${selectedOTA.name} Performance Details` : ''}
+        subtitle={`${selectedOTA?.stats?.totalBookings || 0} bookings • $${(selectedOTA?.stats?.revenue || 0).toLocaleString()} revenue`}
+        maxWidth="max-w-3xl"
+      >
+        {loadingBookings ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-terra-600" />
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Stats Summary */}
+            <div className="grid grid-cols-4 gap-4">
+              <div className="p-4 rounded-lg bg-neutral-50">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Total Bookings</p>
+                <p className="text-2xl font-bold text-terra-600">{selectedOTA?.stats?.totalBookings || 0}</p>
               </div>
-            );
-          })}
+              <div className="p-4 rounded-lg bg-neutral-50">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Revenue</p>
+                <p className="text-2xl font-bold text-sage-600">${(selectedOTA?.stats?.revenue || 0).toLocaleString()}</p>
+              </div>
+              <div className="p-4 rounded-lg bg-neutral-50">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Avg Rating</p>
+                <p className="text-2xl font-bold text-gold-600 flex items-center gap-1">
+                  {selectedOTA?.stats?.avgRating || 0}
+                  <Star className="w-5 h-5 fill-current" />
+                </p>
+              </div>
+              <div className="p-4 rounded-lg bg-neutral-50">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Commission</p>
+                <p className="text-2xl font-bold text-neutral-700">{selectedOTA?.stats?.commission || 0}%</p>
+              </div>
+            </div>
+
+            {/* Bookings List */}
+            <div>
+              <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-4">
+                Recent Bookings ({otaBookings.length})
+              </h4>
+              {otaBookings.length === 0 ? (
+                <div className="text-center py-8">
+                  <Building2 className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
+                  <p className="text-[13px] font-medium text-neutral-600 mb-1">No bookings found</p>
+                  <p className="text-[11px] text-neutral-400">Bookings from this channel will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {otaBookings.slice(0, 20).map((booking) => (
+                    <div key={booking.id} className="p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="text-[13px] font-semibold text-neutral-900 mb-1">
+                            {booking.guest || booking.guestName || 'Guest'}
+                          </p>
+                          <p className="text-[11px] text-neutral-500 font-mono">{booking.id || booking.bookingNumber}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[13px] font-bold text-terra-600">${(booking.amount || booking.total || 0).toLocaleString()}</p>
+                          <p className="text-[10px] text-neutral-400 mt-0.5">
+                            {booking.checkIn ? new Date(booking.checkIn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'} - {booking.checkOut ? new Date(booking.checkOut).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-[11px] text-neutral-500">
+                        {booking.email && (
+                          <div className="flex items-center gap-1.5">
+                            <Mail className="w-3 h-3" />
+                            <span className="truncate max-w-[200px]">{booking.email}</span>
+                          </div>
+                        )}
+                        {booking.phone && (
+                          <div className="flex items-center gap-1.5">
+                            <Phone className="w-3 h-3" />
+                            <span>{booking.phone}</span>
+                          </div>
+                        )}
+                        {booking.roomType && (
+                          <div className="flex items-center gap-1.5">
+                            <Building2 className="w-3 h-3" />
+                            <span>{booking.roomType}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Drawer>
+    </div>
+  );
+})}
         </section>
 
         {/* AI Insights */}
@@ -238,7 +372,7 @@ export default function ChannelDashboard() {
               </h3>
               <p className="text-[11px] text-neutral-400 font-medium mt-0.5">Channel analytics</p>
             </div>
-            <Link to="/admin/channel-manager/connections">
+            <Link to="/admin/channel-manager/ota">
               <Button variant="ghost" size="sm">
                 View All
                 <ChevronRight className="w-4 h-4 ml-1" />
@@ -253,7 +387,7 @@ export default function ChannelDashboard() {
               </div>
               <p className="text-[13px] font-medium text-neutral-500">No OTAs connected yet</p>
               <Link
-                to="/admin/channel-manager/connections"
+                to="/admin/channel-manager/ota"
                 className="mt-3 text-[13px] font-semibold text-terra-600 hover:text-terra-700"
               >
                 Connect your first OTA →
@@ -273,7 +407,28 @@ export default function ChannelDashboard() {
                 </thead>
                 <tbody>
                   {connectedOTAs.slice(0, 5).map((ota) => (
-                    <tr key={ota.id} className="border-b border-neutral-50 last:border-b-0 hover:bg-neutral-50/50 transition-colors">
+                    <tr 
+                      key={ota.id} 
+                      className="border-b border-neutral-50 last:border-b-0 hover:bg-neutral-50/50 transition-colors cursor-pointer"
+                      onClick={async () => {
+                        setSelectedOTA(ota);
+                        setLoadingBookings(true);
+                        try {
+                          // Fetch bookings for this OTA using correct source mapping
+                          const bookingSource = getBookingSourceForOTA(ota);
+                          console.log(`[ChannelDashboard] Fetching bookings for OTA: ${ota.name} (code: ${ota.code}) with source: ${bookingSource}`);
+                          const response = await apiClient.get('/api/v1/bookings', {
+                            params: { source: bookingSource, limit: 50 }
+                          });
+                          setOtaBookings(response.data?.data?.items || response.data?.items || []);
+                        } catch (error) {
+                          console.error('Failed to fetch bookings:', error);
+                          setOtaBookings([]);
+                        } finally {
+                          setLoadingBookings(false);
+                        }
+                      }}
+                    >
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
                           <div className="relative">
@@ -326,7 +481,7 @@ export default function ChannelDashboard() {
                 </h3>
                 <p className="text-[11px] text-neutral-400 font-medium mt-0.5">Distribution breakdown</p>
               </div>
-              <Link to="/admin/channel-manager/connections">
+              <Link to="/admin/channel-manager/ota">
                 <Button variant="ghost" size="sm">
                   View All
                   <ChevronRight className="w-4 h-4 ml-1" />

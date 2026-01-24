@@ -1,18 +1,25 @@
 /**
  * Channel Manager Context
  * Manages OTA connections, room mappings, rate syncs, restrictions, and sync logs
- * Now integrates with backend API for real room/rate data
+ * Now fully integrated with backend API
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import { sampleOTAs, otaStatusConfig } from '../data/channel-manager/sampleOTAs';
-import { sampleRoomMappings } from '../data/channel-manager/sampleRoomMappings';
-import { sampleRateOverrides, generateRateCalendar, baseRates } from '../data/channel-manager/sampleRateOverrides';
-import { sampleRestrictions } from '../data/channel-manager/sampleRestrictions';
-import { sampleSyncLogs } from '../data/channel-manager/sampleSyncLogs';
-import { apiClient } from '../api/client';
+import { channelManagerService } from '../api/services/channel-manager.service';
+import { roomTypesService } from '../api/services/roomTypes.service';
+import type {
+  OTAConnection,
+  RoomMapping,
+  RateCalendarEntry,
+  Restriction,
+  ChannelPromotion,
+  SyncLog,
+  ChannelStats,
+  AIInsight,
+} from '../api/services/channel-manager.service';
+import { useToast } from '../contexts/ToastContext';
 
-const ChannelManagerContext = createContext(null);
+const ChannelManagerContext = createContext<any>(null);
 
 const STORAGE_KEY = 'channel_manager_data';
 const SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -38,442 +45,527 @@ function saveToStorage(data) {
 }
 
 export function ChannelManagerProvider({ children }) {
+  const { success, error: showError, info } = useToast();
   const stored = loadFromStorage();
 
-  const [otas, setOTAs] = useState(stored?.otas || sampleOTAs);
-  const [roomMappings, setRoomMappings] = useState(stored?.roomMappings || sampleRoomMappings);
-  const [rateOverrides, setRateOverrides] = useState(stored?.rateOverrides || sampleRateOverrides);
-  const [restrictions, setRestrictions] = useState(stored?.restrictions || sampleRestrictions);
-  const [syncLogs, setSyncLogs] = useState(stored?.syncLogs || sampleSyncLogs);
-  const [rateCalendar, setRateCalendar] = useState(() => generateRateCalendar(baseRates, stored?.rateOverrides || sampleRateOverrides));
+  // State
+  const [otas, setOTAs] = useState<OTAConnection[]>(stored?.otas || []);
+  const [roomMappings, setRoomMappings] = useState<RoomMapping[]>(stored?.roomMappings || []);
+  const [restrictions, setRestrictions] = useState<Restriction[]>(stored?.restrictions || []);
+  const [promotions, setPromotions] = useState<ChannelPromotion[]>(stored?.promotions || []);
+  const [syncLogs, setSyncLogs] = useState<SyncLog[]>(stored?.syncLogs || []);
+  const [rateCalendar, setRateCalendar] = useState<Record<string, Record<string, RateCalendarEntry>>>(stored?.rateCalendar || {});
+  const [channelStats, setChannelStats] = useState<ChannelStats | null>(stored?.channelStats || null);
+  const [aiInsights, setAIInsights] = useState<AIInsight[]>(stored?.aiInsights || []);
+  const [roomTypes, setRoomTypes] = useState<any[]>([]);
+
+  // Loading states
+  const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [syncingOTAs, setSyncingOTAs] = useState([]);
-  const [lastGlobalSync, setLastGlobalSync] = useState(new Date().toISOString());
+  const [syncingOTAs, setSyncingOTAs] = useState<string[]>([]);
+  const [lastGlobalSync, setLastGlobalSync] = useState<string>(new Date().toISOString());
 
   const syncIntervalRef = useRef(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Persist to localStorage
+  // ============ DATA FETCHING ============
+
+  const fetchOTAs = useCallback(async () => {
+    try {
+      const response = await channelManagerService.getOTAs();
+      setOTAs(response.items || []);
+      return response.items || [];
+    } catch (err: any) {
+      console.error('Error fetching OTAs:', err);
+      showError(err.response?.data?.error || 'Failed to fetch OTA connections');
+      return [];
+    }
+  }, [showError]);
+
+  const fetchRoomMappings = useCallback(async () => {
+    try {
+      const response = await channelManagerService.getRoomMappings();
+      setRoomMappings(response.items || []);
+      return response.items || [];
+    } catch (err: any) {
+      console.error('Error fetching room mappings:', err);
+      showError(err.response?.data?.error || 'Failed to fetch room mappings');
+      return [];
+    }
+  }, [showError]);
+
+  const fetchRestrictions = useCallback(async () => {
+    try {
+      const response = await channelManagerService.getRestrictions();
+      setRestrictions(response.items || []);
+      return response.items || [];
+    } catch (err: any) {
+      console.error('Error fetching restrictions:', err);
+      showError(err.response?.data?.error || 'Failed to fetch restrictions');
+      return [];
+    }
+  }, [showError]);
+
+  const fetchPromotions = useCallback(async () => {
+    try {
+      const response = await channelManagerService.getPromotions();
+      setPromotions(response.items || []);
+      return response.items || [];
+    } catch (err: any) {
+      console.error('Error fetching promotions:', err);
+      showError(err.response?.data?.error || 'Failed to fetch promotions');
+      return [];
+    }
+  }, [showError]);
+
+  const fetchSyncLogs = useCallback(async (filters?: any) => {
+    try {
+      const response = await channelManagerService.getSyncLogs(filters);
+      setSyncLogs(response.items || []);
+      return response.items || [];
+    } catch (err: any) {
+      console.error('Error fetching sync logs:', err);
+      showError(err.response?.data?.error || 'Failed to fetch sync logs');
+      return [];
+    }
+  }, [showError]);
+
+  const fetchRateCalendar = useCallback(async (startDate?: string, endDate?: string) => {
+    try {
+      const today = new Date();
+      const defaultStart = startDate || today.toISOString().split('T')[0];
+      const defaultEnd = endDate || new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      const response = await channelManagerService.getRateCalendar({
+        startDate: defaultStart,
+        endDate: defaultEnd,
+      });
+      setRateCalendar(response.calendar || {});
+      return response.calendar || {};
+    } catch (err: any) {
+      console.error('Error fetching rate calendar:', err);
+      showError(err.response?.data?.error || 'Failed to fetch rate calendar');
+      return {};
+    }
+  }, [showError]);
+
+  const fetchChannelStats = useCallback(async () => {
+    try {
+      const stats = await channelManagerService.getChannelStats();
+      setChannelStats(stats);
+      return stats;
+    } catch (err: any) {
+      console.error('Error fetching channel stats:', err);
+      showError(err.response?.data?.error || 'Failed to fetch channel statistics');
+      return null;
+    }
+  }, [showError]);
+
+  const fetchAIInsights = useCallback(async () => {
+    try {
+      const response = await channelManagerService.getAIInsights();
+      setAIInsights(response.insights || []);
+      return response.insights || [];
+    } catch (err: any) {
+      console.error('Error fetching AI insights:', err);
+      showError(err.response?.data?.error || 'Failed to fetch AI insights');
+      return [];
+    }
+  }, [showError]);
+
+  const fetchRoomTypes = useCallback(async () => {
+    try {
+      const data = await roomTypesService.getRoomTypes();
+      // Transform API data to match expected format
+      const transformed = data.map((rt: any) => ({
+        id: rt.id || rt.slug,
+        slug: rt.slug,
+        name: rt.name,
+        baseOccupancy: rt.maxGuests || 2,
+        maxOccupancy: rt.maxGuests || 2,
+        basePrice: rt.price || rt.base_price || 0,
+        totalRooms: rt.availableRoomCount || rt.total_rooms || 0,
+      }));
+      setRoomTypes(transformed);
+      return transformed;
+    } catch (err: any) {
+      console.error('Error fetching room types:', err);
+      showError(err.response?.data?.error || 'Failed to fetch room types');
+      return [];
+    }
+  }, [showError]);
+
+  // Initial data load
   useEffect(() => {
-    saveToStorage({ otas, roomMappings, rateOverrides, restrictions, syncLogs });
-  }, [otas, roomMappings, rateOverrides, restrictions, syncLogs]);
-
-  // Regenerate rate calendar when overrides change
-  useEffect(() => {
-    setRateCalendar(generateRateCalendar(baseRates, rateOverrides));
-  }, [rateOverrides]);
-
-  // Auto-sync scheduler
-  useEffect(() => {
-    syncIntervalRef.current = setInterval(() => {
-      autoSyncScheduler();
-    }, SYNC_INTERVAL);
-
-    return () => {
-      if (syncIntervalRef.current) {
-        clearInterval(syncIntervalRef.current);
-      }
-    };
-  }, []);
-
-  // Fetch real data from API to enhance room mappings and rates
-  useEffect(() => {
-    const fetchRealData = async () => {
+    const loadData = async () => {
+      setIsLoading(true);
       try {
-        // Fetch room types from API
-        const roomTypesResponse = await apiClient.get('/api/v1/room-types', { params: { pageSize: 100 } });
-        const roomTypes = roomTypesResponse.data?.items || [];
-
-        if (roomTypes.length > 0) {
-          // Build room mappings from actual room types
-          const realRoomMappings = roomTypes.map((rt: any) => ({
-            pmsRoomType: rt.name || rt.slug || 'Unknown',
-            pmsRoomTypeId: rt.id?.toString() || rt.slug,
-            baseRate: rt.price || 200,
-            totalInventory: rt.availableRoomCount || 10,
-            otaMappings: [
-              { otaCode: 'BOOKING', otaRoomType: `${rt.name} - Best Rate`, otaRoomId: `BK-${rt.slug}`, status: 'active', lastSync: new Date().toISOString() },
-              { otaCode: 'EXPEDIA', otaRoomType: `${rt.name} Room`, otaRoomId: `EX-${rt.slug}`, status: 'active', lastSync: new Date().toISOString() },
-              { otaCode: 'AGODA', otaRoomType: rt.name, otaRoomId: `AG-${rt.slug}`, status: 'active', lastSync: new Date().toISOString() },
-            ]
-          }));
-
-          setRoomMappings(prev => {
-            // Merge with existing or use new data
-            if (prev.length === 0 || prev === sampleRoomMappings) {
-              return realRoomMappings;
-            }
-            return prev;
-          });
-
-          // Generate rate calendar from real room types
-          const realBaseRates: Record<string, number> = {};
-          roomTypes.forEach((rt: any) => {
-            realBaseRates[rt.name || rt.slug || 'Unknown'] = rt.price || 200;
-          });
-
-          // Only update if we have real data
-          if (Object.keys(realBaseRates).length > 0) {
-            setRateCalendar(generateRateCalendar(realBaseRates, rateOverrides));
-          }
-        }
-
-        // Fetch bookings to calculate OTA stats
-        const bookingsResponse = await apiClient.get('/api/v1/bookings', { params: { pageSize: 1000 } });
-        const bookings = bookingsResponse.data?.items || bookingsResponse.data?.data?.items || [];
-
-        if (bookings.length > 0) {
-          // Calculate revenue and booking counts per OTA
-          const otaStats: Record<string, { bookings: number; revenue: number }> = {
-            BOOKING: { bookings: 0, revenue: 0 },
-            EXPEDIA: { bookings: 0, revenue: 0 },
-            AGODA: { bookings: 0, revenue: 0 },
-            DIRECT: { bookings: 0, revenue: 0 },
-          };
-
-          bookings.forEach((booking: any) => {
-            const source = (booking.source || booking.channel || 'DIRECT').toUpperCase();
-            const amount = booking.totalPrice || booking.amount || booking.total || 0;
-
-            // Map booking sources to OTA codes
-            let otaCode = 'DIRECT';
-            if (source.includes('BOOKING')) otaCode = 'BOOKING';
-            else if (source.includes('EXPEDIA')) otaCode = 'EXPEDIA';
-            else if (source.includes('AGODA')) otaCode = 'AGODA';
-
-            if (otaStats[otaCode]) {
-              otaStats[otaCode].bookings++;
-              otaStats[otaCode].revenue += amount;
-            }
-          });
-
-          // Update OTA stats with real data
-          setOTAs(prev => prev.map(ota => {
-            const stats = otaStats[ota.code] || { bookings: 0, revenue: 0 };
-            return {
-              ...ota,
-              stats: {
-                ...ota.stats,
-                totalBookings: stats.bookings || ota.stats?.totalBookings || 0,
-                revenue: stats.revenue || ota.stats?.revenue || 0,
-              }
-            };
-          }));
-        }
-
+        await Promise.all([
+          fetchOTAs(),
+          fetchRoomMappings(),
+          fetchRestrictions(),
+          fetchPromotions(),
+          fetchSyncLogs({ pageSize: 50 }),
+          fetchRateCalendar(),
+          fetchChannelStats(),
+          fetchAIInsights(),
+          fetchRoomTypes(),
+        ]);
       } catch (err) {
-        console.error('Error fetching real data for Channel Manager:', err);
-        // Keep sample data as fallback
+        console.error('Error loading initial data:', err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchRealData();
-  }, [rateOverrides]);
+    loadData();
+  }, []); // Only run once on mount
+
+  // Persist to localStorage (as cache/fallback)
+  useEffect(() => {
+    saveToStorage({
+      otas,
+      roomMappings,
+      restrictions,
+      promotions,
+      syncLogs: syncLogs.slice(0, 100), // Only cache last 100 logs
+      rateCalendar,
+      channelStats,
+      aiInsights,
+    });
+  }, [otas, roomMappings, restrictions, promotions, syncLogs, rateCalendar, channelStats, aiInsights]);
 
   // ============ OTA FUNCTIONS ============
 
-  const connectOTA = useCallback((otaData) => {
-    const newOTA = {
-      id: `ota-${String(Date.now()).slice(-6)}`,
-      ...otaData,
-      status: 'connected',
-      lastSync: new Date().toISOString(),
-      nextSync: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-      syncSettings: {
-        autoSync: true,
-        syncInterval: 5,
-        syncRates: true,
-        syncAvailability: true,
-        syncRestrictions: true
-      },
-      stats: {
-        totalBookings: 0,
-        revenue: 0,
-        avgRating: 0,
-        commission: otaData.commission || 15
-      }
-    };
+  const connectOTA = useCallback(async (otaData: any) => {
+    try {
+      const newOTA = await channelManagerService.createOTA(otaData);
+      setOTAs(prev => [...prev, newOTA]);
+      addSyncLog(newOTA.code, newOTA.name, 'connection', 'success', `Connected to ${newOTA.name} successfully`);
+      success(`Successfully connected to ${newOTA.name}`);
+      return newOTA;
+    } catch (err: any) {
+      console.error('Error connecting OTA:', err);
+      showError(err.response?.data?.error || 'Failed to connect OTA');
+      throw err;
+    }
+  }, [success, showError]);
 
-    setOTAs(prev => [...prev, newOTA]);
-
-    addSyncLog(newOTA.code, newOTA.name, 'connection', 'success', `Connected to ${newOTA.name} successfully`);
-
-    return newOTA;
-  }, []);
-
-  const disconnectOTA = useCallback((otaId) => {
-    setOTAs(prev => prev.map(ota => {
-      if (ota.id === otaId) {
+  const disconnectOTA = useCallback(async (otaId: string) => {
+    try {
+      await channelManagerService.deleteOTA(otaId);
+      const ota = otas.find(o => o.id === otaId);
+      if (ota) {
         addSyncLog(ota.code, ota.name, 'connection', 'success', `Disconnected from ${ota.name}`);
-        return {
-          ...ota,
-          status: 'disconnected',
-          lastSync: new Date().toISOString(),
-          nextSync: null
-        };
+        setOTAs(prev => prev.filter(o => o.id !== otaId));
+        success(`Disconnected from ${ota.name}`);
       }
-      return ota;
-    }));
-  }, []);
+    } catch (err: any) {
+      console.error('Error disconnecting OTA:', err);
+      showError(err.response?.data?.error || 'Failed to disconnect OTA');
+      throw err;
+    }
+  }, [otas, success, showError]);
 
-  const reconnectOTA = useCallback((otaId) => {
-    setOTAs(prev => prev.map(ota => {
-      if (ota.id === otaId) {
-        addSyncLog(ota.code, ota.name, 'connection', 'success', `Reconnected to ${ota.name}`);
-        return {
-          ...ota,
-          status: 'connected',
-          lastSync: new Date().toISOString(),
-          nextSync: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-          errorMessage: undefined
-        };
+  const reconnectOTA = useCallback(async (otaId: string) => {
+    try {
+      const ota = otas.find(o => o.id === otaId);
+      if (!ota) return;
+
+      const updated = await channelManagerService.updateOTA(otaId, {
+        status: 'connected',
+        errorMessage: undefined,
+      });
+      setOTAs(prev => prev.map(o => o.id === otaId ? updated : o));
+      addSyncLog(ota.code, ota.name, 'connection', 'success', `Reconnected to ${ota.name}`);
+      success(`Reconnected to ${ota.name}`);
+    } catch (err: any) {
+      console.error('Error reconnecting OTA:', err);
+      showError(err.response?.data?.error || 'Failed to reconnect OTA');
+      throw err;
+    }
+  }, [otas, success, showError]);
+
+  const updateOTACredentials = useCallback(async (otaId: string, credentials: any) => {
+    try {
+      const ota = otas.find(o => o.id === otaId);
+      if (!ota) return;
+
+      const updated = await channelManagerService.updateOTA(otaId, {
+        credentials: { ...ota.credentials, ...credentials },
+      });
+      setOTAs(prev => prev.map(o => o.id === otaId ? updated : o));
+      success('OTA credentials updated successfully');
+    } catch (err: any) {
+      console.error('Error updating OTA credentials:', err);
+      showError(err.response?.data?.error || 'Failed to update OTA credentials');
+      throw err;
+    }
+  }, [otas, success, showError]);
+
+  const updateOTASyncSettings = useCallback(async (otaId: string, settings: any) => {
+    try {
+      const ota = otas.find(o => o.id === otaId);
+      if (!ota) return;
+
+      const updated = await channelManagerService.updateOTA(otaId, {
+        syncSettings: { ...ota.syncSettings, ...settings },
+      });
+      setOTAs(prev => prev.map(o => o.id === otaId ? updated : o));
+      success('Sync settings updated successfully');
+    } catch (err: any) {
+      console.error('Error updating sync settings:', err);
+      showError(err.response?.data?.error || 'Failed to update sync settings');
+      throw err;
+    }
+  }, [otas, success, showError]);
+
+  const testOTAConnection = useCallback(async (otaId: string) => {
+    try {
+      const result = await channelManagerService.testOTA(otaId);
+      if (result.connected) {
+        success('Connection test successful');
+      } else {
+        showError(result.message || 'Connection test failed');
       }
-      return ota;
-    }));
-  }, []);
-
-  const updateOTACredentials = useCallback((otaId, credentials) => {
-    setOTAs(prev => prev.map(ota => {
-      if (ota.id === otaId) {
-        return {
-          ...ota,
-          credentials: { ...ota.credentials, ...credentials }
-        };
-      }
-      return ota;
-    }));
-  }, []);
-
-  const updateOTASyncSettings = useCallback((otaId, settings) => {
-    setOTAs(prev => prev.map(ota => {
-      if (ota.id === otaId) {
-        return {
-          ...ota,
-          syncSettings: { ...ota.syncSettings, ...settings }
-        };
-      }
-      return ota;
-    }));
-  }, []);
-
-  const testOTAConnection = useCallback(async (credentials) => {
-    // Simulate API test
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    const success = Math.random() > 0.2; // 80% success rate
-    return {
-      success,
-      message: success ? 'Connection successful' : 'Authentication failed - check credentials'
-    };
-  }, []);
+      return result;
+    } catch (err: any) {
+      console.error('Error testing OTA connection:', err);
+      showError(err.response?.data?.error || 'Failed to test OTA connection');
+      throw err;
+    }
+  }, [success, showError]);
 
   // ============ ROOM MAPPING FUNCTIONS ============
 
-  const mapRoom = useCallback((pmsRoomType, otaCode, otaMappingData) => {
-    setRoomMappings(prev => {
-      const existingIndex = prev.findIndex(m => m.pmsRoomType === pmsRoomType);
-
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        const existingMapping = updated[existingIndex];
-        const otaIndex = existingMapping.otaMappings.findIndex(m => m.otaCode === otaCode);
-
-        if (otaIndex >= 0) {
-          existingMapping.otaMappings[otaIndex] = {
-            ...existingMapping.otaMappings[otaIndex],
-            ...otaMappingData,
-            lastSync: new Date().toISOString()
-          };
-        } else {
-          existingMapping.otaMappings.push({
-            otaCode,
-            ...otaMappingData,
-            status: 'active',
-            lastSync: new Date().toISOString()
-          });
-        }
-
-        return updated;
-      }
-
-      return prev;
-    });
-
-    const ota = otas.find(o => o.code === otaCode);
-    addSyncLog(otaCode, ota?.name || otaCode, 'availability_update', 'success', `Room mapping created: ${pmsRoomType} -> ${otaMappingData.otaRoomType}`);
-  }, [otas]);
-
-  const unmapRoom = useCallback((pmsRoomType, otaCode) => {
-    setRoomMappings(prev => prev.map(mapping => {
-      if (mapping.pmsRoomType === pmsRoomType) {
-        return {
-          ...mapping,
-          otaMappings: mapping.otaMappings.filter(m => m.otaCode !== otaCode)
-        };
-      }
-      return mapping;
-    }));
-
-    const ota = otas.find(o => o.code === otaCode);
-    addSyncLog(otaCode, ota?.name || otaCode, 'availability_update', 'success', `Room mapping removed for ${pmsRoomType}`);
-  }, [otas]);
-
-  const validateMapping = useCallback((pmsRoomType, otaCode) => {
-    const mapping = roomMappings.find(m => m.pmsRoomType === pmsRoomType);
-    if (!mapping) return { valid: false, error: 'PMS room type not found' };
-
-    const otaMapping = mapping.otaMappings.find(m => m.otaCode === otaCode);
-    if (!otaMapping) return { valid: false, error: 'OTA mapping not found' };
-
-    const ota = otas.find(o => o.code === otaCode);
-    if (!ota || ota.status !== 'connected') {
-      return { valid: false, error: 'OTA not connected' };
+  const mapRoom = useCallback(async (mappingData: any) => {
+    try {
+      const newMapping = await channelManagerService.createRoomMapping(mappingData);
+      await fetchRoomMappings(); // Refresh list
+      const ota = otas.find(o => o.code === mappingData.otaCode);
+      addSyncLog(
+        mappingData.otaCode,
+        ota?.name || mappingData.otaCode,
+        'availability_update',
+        'success',
+        `Room mapping created: ${mappingData.pmsRoomType} -> ${mappingData.otaRoomType}`
+      );
+      success('Room mapping created successfully');
+      return newMapping;
+    } catch (err: any) {
+      console.error('Error creating room mapping:', err);
+      showError(err.response?.data?.error || 'Failed to create room mapping');
+      throw err;
     }
+  }, [otas, fetchRoomMappings, success, showError]);
 
-    return { valid: true, mapping: otaMapping };
-  }, [roomMappings, otas]);
+  const unmapRoom = useCallback(async (mappingId: string) => {
+    try {
+      await channelManagerService.deleteRoomMapping(mappingId);
+      await fetchRoomMappings(); // Refresh list
+      success('Room mapping removed successfully');
+    } catch (err: any) {
+      console.error('Error removing room mapping:', err);
+      showError(err.response?.data?.error || 'Failed to remove room mapping');
+      throw err;
+    }
+  }, [fetchRoomMappings, success, showError]);
 
-  const autoSuggestMapping = useCallback((pmsRoomType, otaCode) => {
-    const suggestions = {
-      'Minimalist Studio': { BOOKING: 'Minimalist Studio Room', EXPEDIA: 'Studio Room', AGODA: 'Minimalist Studio' },
-      'Coastal Retreat': { BOOKING: 'Coastal Retreat Room', EXPEDIA: 'Coastal Room', AGODA: 'Coastal Retreat' },
-      'Urban Oasis': { BOOKING: 'Urban Oasis Room', EXPEDIA: 'Urban Room', AGODA: 'Urban Oasis' },
-      'Sunset Vista': { BOOKING: 'Sunset Vista Room', EXPEDIA: 'Vista Room', AGODA: 'Sunset Vista' },
-      'Pacific Suite': { BOOKING: 'Pacific Suite', EXPEDIA: 'Pacific Suite', AGODA: 'Pacific Suite' },
-      'Wellness Suite': { BOOKING: 'Wellness Suite', EXPEDIA: 'Spa Suite', AGODA: 'Wellness Suite' },
-      'Family Sanctuary': { BOOKING: 'Family Room', EXPEDIA: 'Family Suite', AGODA: 'Family Sanctuary' },
-      'Oceanfront Penthouse': { BOOKING: 'Oceanfront Penthouse', EXPEDIA: 'Penthouse Suite', AGODA: 'Oceanfront Penthouse' }
-    };
+  const validateMapping = useCallback(async (pmsRoomTypeId: string, otaCode: string) => {
+    try {
+      const result = await channelManagerService.validateRoomMapping({ pmsRoomTypeId, otaCode });
+      return result;
+    } catch (err: any) {
+      console.error('Error validating mapping:', err);
+      showError(err.response?.data?.error || 'Failed to validate mapping');
+      return { valid: false, errors: [err.response?.data?.error || 'Validation failed'], warnings: [] };
+    }
+  }, [showError]);
 
-    return suggestions[pmsRoomType]?.[otaCode] || `${pmsRoomType} Room`;
+  const autoMapRoomMappings = useCallback(async (otaCode: string) => {
+    try {
+      const result = await channelManagerService.autoMapRoomMappings(otaCode);
+      
+      // Ensure result has expected structure
+      const normalizedResult = {
+        mappingsCreated: result?.mappingsCreated || 0,
+        suggestions: result?.suggestions || []
+      };
+      
+      // Only show success message if mappings were actually created
+      if (normalizedResult.mappingsCreated > 0) {
+        await fetchRoomMappings(); // Refresh list
+        success(`Auto-mapped ${normalizedResult.mappingsCreated} room type${normalizedResult.mappingsCreated === 1 ? '' : 's'}`);
+      } else if (normalizedResult.suggestions.length > 0) {
+        // Show info message about suggestions
+        success(`Found ${normalizedResult.suggestions.length} mapping suggestion${normalizedResult.suggestions.length === 1 ? '' : 's'}. Please review and apply.`);
+      } else {
+        // No mappings created and no suggestions
+        await fetchRoomMappings(); // Still refresh in case of any changes
+      }
+      
+      return normalizedResult;
+    } catch (err: any) {
+      console.error('Error auto-mapping rooms:', err);
+      showError(err.response?.data?.error || err.response?.data?.message || 'Failed to auto-map rooms');
+      throw err;
+    }
+  }, [fetchRoomMappings, success, showError]);
+
+  const autoSuggestMapping = useCallback((pmsRoomType: string, otaCode: string) => {
+    // Simple suggestion logic - can be enhanced with AI
+    return `${pmsRoomType} Room`;
   }, []);
 
   // ============ RATE FUNCTIONS ============
 
-  const updateRateForOTA = useCallback((date, roomType, otaCode, newRate) => {
-    setRateCalendar(prev => {
-      if (!prev[date] || !prev[date][roomType]) return prev;
+  const updateRateForOTA = useCallback(async (date: string, roomType: string, otaCode: string, newRate: number) => {
+    try {
+      // Get current rate entry
+      const currentEntry = rateCalendar[date]?.[roomType];
+      const updated = await channelManagerService.updateRate(date, roomType, {
+        otaRates: {
+          ...(currentEntry?.otaRates || {}),
+          [otaCode]: newRate,
+        },
+      });
 
-      return {
+      // Update local state
+      setRateCalendar(prev => ({
         ...prev,
         [date]: {
-          ...prev[date],
-          [roomType]: {
-            ...prev[date][roomType],
-            otaRates: {
-              ...prev[date][roomType].otaRates,
-              [otaCode]: newRate
-            }
-          }
-        }
-      };
-    });
+          ...(prev[date] || {}),
+          [roomType]: updated,
+        },
+      }));
 
-    const ota = otas.find(o => o.code === otaCode);
-    addSyncLog(otaCode, ota?.name || otaCode, 'rate_update', 'success', `Rate updated for ${roomType}: $${newRate}`);
-  }, [otas]);
-
-  const updateAvailabilityForOTA = useCallback((date, roomType, availability) => {
-    setRateCalendar(prev => {
-      if (!prev[date] || !prev[date][roomType]) return prev;
-
-      return {
-        ...prev,
-        [date]: {
-          ...prev[date],
-          [roomType]: {
-            ...prev[date][roomType],
-            availability
-          }
-        }
-      };
-    });
-  }, []);
-
-  const toggleStopSell = useCallback((date, roomType, stopSell) => {
-    setRateCalendar(prev => {
-      if (!prev[date] || !prev[date][roomType]) return prev;
-
-      return {
-        ...prev,
-        [date]: {
-          ...prev[date],
-          [roomType]: {
-            ...prev[date][roomType],
-            stopSell
-          }
-        }
-      };
-    });
-
-    addSyncLog('ALL', 'All OTAs', 'restriction_update', 'success', `Stop sell ${stopSell ? 'activated' : 'deactivated'} for ${roomType} on ${date}`);
-  }, []);
-
-  const toggleCTA = useCallback((date, roomType, cta) => {
-    setRateCalendar(prev => {
-      if (!prev[date] || !prev[date][roomType]) return prev;
-
-      return {
-        ...prev,
-        [date]: {
-          ...prev[date],
-          [roomType]: {
-            ...prev[date][roomType],
-            cta
-          }
-        }
-      };
-    });
-  }, []);
-
-  const toggleCTD = useCallback((date, roomType, ctd) => {
-    setRateCalendar(prev => {
-      if (!prev[date] || !prev[date][roomType]) return prev;
-
-      return {
-        ...prev,
-        [date]: {
-          ...prev[date],
-          [roomType]: {
-            ...prev[date][roomType],
-            ctd
-          }
-        }
-      };
-    });
-  }, []);
-
-  const pushRatesToOTAs = useCallback(async (selectedOTAs, dateRange) => {
-    setIsSyncing(true);
-
-    for (const otaCode of selectedOTAs) {
       const ota = otas.find(o => o.code === otaCode);
-      if (!ota || ota.status !== 'connected') continue;
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const success = Math.random() > 0.1; // 90% success rate
-
-      if (success) {
-        addSyncLog(otaCode, ota.name, 'rate_update', 'success', `Rates synced successfully for ${dateRange || '30 days'}`);
-
-        setOTAs(prev => prev.map(o => {
-          if (o.code === otaCode) {
-            return {
-              ...o,
-              lastSync: new Date().toISOString(),
-              nextSync: new Date(Date.now() + 5 * 60 * 1000).toISOString()
-            };
-          }
-          return o;
-        }));
-      } else {
-        addSyncLog(otaCode, ota.name, 'rate_update', 'error', 'Rate sync failed - API timeout');
-      }
+      addSyncLog(otaCode, ota?.name || otaCode, 'rate_update', 'success', `Rate updated for ${roomType}: $${newRate}`);
+      success('Rate updated successfully');
+    } catch (err: any) {
+      console.error('Error updating rate:', err);
+      showError(err.response?.data?.error || 'Failed to update rate');
+      throw err;
     }
+  }, [rateCalendar, otas, success, showError]);
 
-    setIsSyncing(false);
-    setLastGlobalSync(new Date().toISOString());
-  }, [otas]);
+  const updateAvailabilityForOTA = useCallback(async (date: string, roomType: string, availability: number) => {
+    try {
+      const currentEntry = rateCalendar[date]?.[roomType];
+      const updated = await channelManagerService.updateRate(date, roomType, {
+        availability,
+      });
+
+      setRateCalendar(prev => ({
+        ...prev,
+        [date]: {
+          ...(prev[date] || {}),
+          [roomType]: updated,
+        },
+      }));
+
+      success('Availability updated successfully');
+    } catch (err: any) {
+      console.error('Error updating availability:', err);
+      showError(err.response?.data?.error || 'Failed to update availability');
+      throw err;
+    }
+  }, [rateCalendar, success, showError]);
+
+  const toggleStopSell = useCallback(async (date: string, roomType: string, stopSell: boolean) => {
+    try {
+      const updated = await channelManagerService.updateRate(date, roomType, {
+        stopSell,
+      });
+
+      setRateCalendar(prev => ({
+        ...prev,
+        [date]: {
+          ...(prev[date] || {}),
+          [roomType]: updated,
+        },
+      }));
+
+      addSyncLog('ALL', 'All OTAs', 'restriction_update', 'success', `Stop sell ${stopSell ? 'activated' : 'deactivated'} for ${roomType} on ${date}`);
+      success(`Stop sell ${stopSell ? 'activated' : 'deactivated'}`);
+    } catch (err: any) {
+      console.error('Error toggling stop sell:', err);
+      showError(err.response?.data?.error || 'Failed to update stop sell');
+      throw err;
+    }
+  }, [success, showError]);
+
+  const toggleCTA = useCallback(async (date: string, roomType: string, cta: boolean) => {
+    try {
+      const updated = await channelManagerService.updateRate(date, roomType, {
+        cta,
+      });
+
+      setRateCalendar(prev => ({
+        ...prev,
+        [date]: {
+          ...(prev[date] || {}),
+          [roomType]: updated,
+        },
+      }));
+
+      success(`Close to arrival ${cta ? 'activated' : 'deactivated'}`);
+    } catch (err: any) {
+      console.error('Error toggling CTA:', err);
+      showError(err.response?.data?.error || 'Failed to update CTA');
+      throw err;
+    }
+  }, [success, showError]);
+
+  const toggleCTD = useCallback(async (date: string, roomType: string, ctd: boolean) => {
+    try {
+      const updated = await channelManagerService.updateRate(date, roomType, {
+        ctd,
+      });
+
+      setRateCalendar(prev => ({
+        ...prev,
+        [date]: {
+          ...(prev[date] || {}),
+          [roomType]: updated,
+        },
+      }));
+
+      success(`Close to departure ${ctd ? 'activated' : 'deactivated'}`);
+    } catch (err: any) {
+      console.error('Error toggling CTD:', err);
+      showError(err.response?.data?.error || 'Failed to update CTD');
+      throw err;
+    }
+  }, [success, showError]);
+
+  const pushRatesToOTAs = useCallback(async (selectedOTAs?: string[], dateRange?: { start: string; end: string }) => {
+    setIsSyncing(true);
+    try {
+      const today = new Date();
+      const defaultStart = dateRange?.start || today.toISOString().split('T')[0];
+      const defaultEnd = dateRange?.end || new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      const result = await channelManagerService.pushRates({
+        otaCodes: selectedOTAs || ['ALL'],
+        dateRange: {
+          start: defaultStart,
+          end: defaultEnd,
+        },
+        roomTypeIds: ['ALL'],
+      });
+
+      setLastGlobalSync(new Date().toISOString());
+      success('Rates pushed successfully');
+      return result;
+    } catch (err: any) {
+      console.error('Error pushing rates:', err);
+      showError(err.response?.data?.error || 'Failed to push rates');
+      throw err;
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [success, showError]);
 
   const syncRatesToAllOTAs = useCallback(async () => {
     const connectedOTAs = otas.filter(o => o.status === 'connected').map(o => o.code);
@@ -482,79 +574,137 @@ export function ChannelManagerProvider({ children }) {
 
   // ============ RESTRICTION FUNCTIONS ============
 
-  const setRestriction = useCallback((restrictionData) => {
-    const newRestriction = {
-      id: `rest-${String(Date.now()).slice(-6)}`,
-      ...restrictionData,
-      isActive: true,
-      createdAt: new Date().toISOString().split('T')[0],
-      createdBy: 'Channel Manager'
-    };
-
-    setRestrictions(prev => [...prev, newRestriction]);
-
-    addSyncLog(
-      restrictionData.otaCode,
-      restrictionData.otaCode === 'ALL' ? 'All OTAs' : otas.find(o => o.code === restrictionData.otaCode)?.name || restrictionData.otaCode,
-      'restriction_update',
-      'success',
-      `Restriction set for ${restrictionData.roomType}: ${Object.entries(restrictionData.restriction).filter(([_, v]) => v).map(([k]) => k).join(', ')}`
-    );
-
-    return newRestriction;
-  }, [otas]);
-
-  const removeRestriction = useCallback((restrictionId) => {
-    const restriction = restrictions.find(r => r.id === restrictionId);
-    setRestrictions(prev => prev.filter(r => r.id !== restrictionId));
-
-    if (restriction) {
+  const setRestriction = useCallback(async (restrictionData: any) => {
+    try {
+      const newRestriction = await channelManagerService.createRestriction(restrictionData);
+      await fetchRestrictions(); // Refresh list
       addSyncLog(
-        restriction.otaCode,
-        restriction.otaCode === 'ALL' ? 'All OTAs' : otas.find(o => o.code === restriction.otaCode)?.name || restriction.otaCode,
+        restrictionData.otaCode,
+        restrictionData.otaCode === 'ALL' ? 'All OTAs' : otas.find(o => o.code === restrictionData.otaCode)?.name || restrictionData.otaCode,
         'restriction_update',
         'success',
-        `Restriction removed for ${restriction.roomType}`
+        `Restriction set for ${restrictionData.roomType}`
       );
+      success('Restriction created successfully');
+      return newRestriction;
+    } catch (err: any) {
+      console.error('Error creating restriction:', err);
+      showError(err.response?.data?.error || 'Failed to create restriction');
+      throw err;
     }
-  }, [restrictions, otas]);
+  }, [otas, fetchRestrictions, success, showError]);
 
-  const toggleRestrictionStatus = useCallback((restrictionId) => {
-    setRestrictions(prev => prev.map(r => {
-      if (r.id === restrictionId) {
-        return { ...r, isActive: !r.isActive };
-      }
-      return r;
-    }));
-  }, []);
+  const removeRestriction = useCallback(async (restrictionId: string) => {
+    try {
+      await channelManagerService.deleteRestriction(restrictionId);
+      await fetchRestrictions(); // Refresh list
+      success('Restriction removed successfully');
+    } catch (err: any) {
+      console.error('Error removing restriction:', err);
+      showError(err.response?.data?.error || 'Failed to remove restriction');
+      throw err;
+    }
+  }, [fetchRestrictions, success, showError]);
+
+  const toggleRestrictionStatus = useCallback(async (restrictionId: string) => {
+    try {
+      const result = await channelManagerService.toggleRestriction(restrictionId);
+      await fetchRestrictions(); // Refresh list
+      success(`Restriction ${result.isActive ? 'activated' : 'deactivated'}`);
+    } catch (err: any) {
+      console.error('Error toggling restriction:', err);
+      showError(err.response?.data?.error || 'Failed to toggle restriction');
+      throw err;
+    }
+  }, [fetchRestrictions, success, showError]);
 
   // ============ PROMOTION FUNCTIONS ============
 
-  const createChannelPromotion = useCallback((promotionData) => {
-    // This would integrate with CBS promotions
-    addSyncLog(
-      promotionData.otaCode || 'ALL',
-      promotionData.otaCode === 'ALL' ? 'All OTAs' : otas.find(o => o.code === promotionData.otaCode)?.name || 'All OTAs',
-      'promotion_sync',
-      'success',
-      `Promotion "${promotionData.title}" synced successfully`
-    );
-  }, [otas]);
-
-  const applyPromotionToOTA = useCallback(async (promotionId, otaCodes) => {
-    for (const otaCode of otaCodes) {
-      const ota = otas.find(o => o.code === otaCode);
-      if (!ota || ota.status !== 'connected') continue;
-
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      addSyncLog(otaCode, ota.name, 'promotion_sync', 'success', `Promotion applied to ${ota.name}`);
+  const createChannelPromotion = useCallback(async (promotionData: any) => {
+    try {
+      const newPromotion = await channelManagerService.createPromotion(promotionData);
+      await fetchPromotions(); // Refresh list
+      addSyncLog(
+        promotionData.otaCodes?.[0] || 'ALL',
+        promotionData.otaCodes?.[0] === 'ALL' ? 'All OTAs' : otas.find(o => o.code === promotionData.otaCodes?.[0])?.name || 'All OTAs',
+        'promotion_sync',
+        'success',
+        `Promotion "${promotionData.name}" created successfully`
+      );
+      success('Promotion created successfully');
+      return newPromotion;
+    } catch (err: any) {
+      console.error('Error creating promotion:', err);
+      showError(err.response?.data?.error || 'Failed to create promotion');
+      throw err;
     }
-  }, [otas]);
+  }, [otas, fetchPromotions, success, showError]);
+
+  const applyPromotionToOTA = useCallback(async (promotionId: string, otaCodes: string[]) => {
+    try {
+      await channelManagerService.applyPromotion(promotionId, { otaCodes });
+      for (const otaCode of otaCodes) {
+        const ota = otas.find(o => o.code === otaCode);
+        if (ota) {
+          addSyncLog(otaCode, ota.name, 'promotion_sync', 'success', `Promotion applied to ${ota.name}`);
+        }
+      }
+      success('Promotion applied successfully');
+    } catch (err: any) {
+      console.error('Error applying promotion:', err);
+      showError(err.response?.data?.error || 'Failed to apply promotion');
+      throw err;
+    }
+  }, [otas, success, showError]);
+
+  const updateChannelPromotion = useCallback(async (promotionId: string, promotionData: any) => {
+    try {
+      const updated = await channelManagerService.updatePromotion(promotionId, promotionData);
+      await fetchPromotions(); // Refresh list
+      addSyncLog(
+        promotionData.otaCodes?.[0] || 'ALL',
+        promotionData.otaCodes?.[0] === 'ALL' ? 'All OTAs' : otas.find(o => o.code === promotionData.otaCodes?.[0])?.name || 'All OTAs',
+        'promotion_sync',
+        'success',
+        `Promotion "${promotionData.name || updated.name}" updated successfully`
+      );
+      success('Promotion updated successfully');
+      return updated;
+    } catch (err: any) {
+      console.error('Error updating promotion:', err);
+      showError(err.response?.data?.error || 'Failed to update promotion');
+      throw err;
+    }
+  }, [otas, fetchPromotions, success, showError]);
+
+  const deleteChannelPromotion = useCallback(async (promotionId: string) => {
+    try {
+      await channelManagerService.deletePromotion(promotionId);
+      await fetchPromotions(); // Refresh list
+      success('Promotion deleted successfully');
+    } catch (err: any) {
+      console.error('Error deleting promotion:', err);
+      showError(err.response?.data?.error || 'Failed to delete promotion');
+      throw err;
+    }
+  }, [fetchPromotions, success, showError]);
+
+  const toggleChannelPromotion = useCallback(async (promotionId: string) => {
+    try {
+      const result = await channelManagerService.togglePromotion(promotionId);
+      await fetchPromotions(); // Refresh list
+      success(`Promotion ${result.isActive ? 'activated' : 'deactivated'} successfully`);
+      return result;
+    } catch (err: any) {
+      console.error('Error toggling promotion:', err);
+      showError(err.response?.data?.error || 'Failed to toggle promotion');
+      throw err;
+    }
+  }, [fetchPromotions, success, showError]);
 
   // ============ SYNC LOG FUNCTIONS ============
 
-  const addSyncLog = useCallback((otaCode, otaName, action, status, message, details = {}) => {
+  const addSyncLog = useCallback((otaCode: string, otaName: string, action: string, status: string, message: string, details: any = {}) => {
     const now = Date.now();
     const dedupeWindow = 5000; // 5 seconds deduplication window
 
@@ -574,160 +724,102 @@ export function ChannelManagerProvider({ children }) {
         return prev; // Skip duplicate log
       }
 
-      const newLog = {
+      const newLog: SyncLog = {
         id: `log-${now}-${Math.random().toString(36).substr(2, 5)}`,
         timestamp: new Date(now).toISOString(),
         otaCode,
         otaName,
-        action,
-        status,
+        action: action as any,
+        status: status as any,
         message,
-        details
+        details,
       };
 
       return [newLog, ...prev].slice(0, 100); // Keep last 100 logs
     });
   }, []);
 
-  const filterLogs = useCallback((filters) => {
-    let filtered = [...syncLogs];
-
-    if (filters.otaCode && filters.otaCode !== 'ALL') {
-      filtered = filtered.filter(log => log.otaCode === filters.otaCode);
-    }
-
-    if (filters.status) {
-      filtered = filtered.filter(log => log.status === filters.status);
-    }
-
-    if (filters.action) {
-      filtered = filtered.filter(log => log.action === filters.action);
-    }
-
-    if (filters.dateFrom) {
-      filtered = filtered.filter(log => log.timestamp >= filters.dateFrom);
-    }
-
-    if (filters.dateTo) {
-      filtered = filtered.filter(log => log.timestamp <= filters.dateTo);
-    }
-
-    return filtered;
+  const filterLogs = useCallback((filters: any) => {
+    return syncLogs.filter(log => {
+      if (filters.otaCode && filters.otaCode !== 'ALL' && log.otaCode !== filters.otaCode) return false;
+      if (filters.status && log.status !== filters.status) return false;
+      if (filters.action && log.action !== filters.action) return false;
+      if (filters.dateFrom && log.timestamp < filters.dateFrom) return false;
+      if (filters.dateTo && log.timestamp > filters.dateTo) return false;
+      return true;
+    });
   }, [syncLogs]);
 
-  const clearLogs = useCallback(() => {
-    setSyncLogs([]);
-  }, []);
-
-  // ============ AUTO-SYNC SCHEDULER ============
-
-  const autoSyncScheduler = useCallback(() => {
-    const connectedOTAs = otas.filter(o => o.status === 'connected' && o.syncSettings.autoSync);
-
-    connectedOTAs.forEach(ota => {
-      // Random actions for simulation
-      const actions = ['rate_update', 'availability_update'];
-      const action = actions[Math.floor(Math.random() * actions.length)];
-
-      // 85% success, 10% warning, 5% error
-      const rand = Math.random();
-      let status = 'success';
-      let message = '';
-
-      if (rand > 0.95) {
-        status = 'error';
-        message = `${ota.name} API timeout - retrying...`;
-      } else if (rand > 0.85) {
-        status = 'warning';
-        message = `Partial sync completed for ${ota.name}`;
-      } else {
-        if (action === 'rate_update') {
-          message = `Rates synced successfully to ${ota.name}`;
-        } else {
-          message = `Inventory updated for ${ota.name}`;
-        }
-      }
-
-      addSyncLog(ota.code, ota.name, action, status, message);
-
-      // Update OTA last sync time
-      setOTAs(prev => prev.map(o => {
-        if (o.id === ota.id) {
-          return {
-            ...o,
-            lastSync: new Date().toISOString(),
-            nextSync: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-            status: status === 'error' ? 'error' : 'connected',
-            errorMessage: status === 'error' ? message : undefined
-          };
-        }
-        return o;
-      }));
-    });
-
-    setLastGlobalSync(new Date().toISOString());
-  }, [otas]);
-
-  const simulateOTASync = useCallback(async (otaCode) => {
-    const ota = otas.find(o => o.code === otaCode);
-    if (!ota) return { success: false, error: 'OTA not found' };
-
-    setOTAs(prev => prev.map(o => {
-      if (o.code === otaCode) {
-        return { ...o, status: 'syncing' };
-      }
-      return o;
-    }));
-
-    // Simulate sync delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    const success = Math.random() > 0.15; // 85% success rate
-
-    setOTAs(prev => prev.map(o => {
-      if (o.code === otaCode) {
-        return {
-          ...o,
-          status: success ? 'connected' : 'error',
-          lastSync: new Date().toISOString(),
-          nextSync: success ? new Date(Date.now() + 5 * 60 * 1000).toISOString() : null,
-          errorMessage: success ? undefined : 'Sync failed - please try again'
-        };
-      }
-      return o;
-    }));
-
-    addSyncLog(
-      otaCode,
-      ota.name,
-      'bulk_sync',
-      success ? 'success' : 'error',
-      success ? `Manual sync completed for ${ota.name}` : `Sync failed for ${ota.name}`
-    );
-
-    return { success };
-  }, [otas]);
-
-  const triggerManualSync = useCallback(async (otaCode = 'ALL') => {
-    setIsSyncing(true);
-
-    if (otaCode === 'ALL') {
-      const connectedOTAs = otas.filter(o => o.status === 'connected');
-      setSyncingOTAs(connectedOTAs.map(o => o.code));
-      await syncRatesToAllOTAs();
-      setSyncingOTAs([]);
-    } else {
-      setSyncingOTAs([otaCode]);
-      await simulateOTASync(otaCode);
-      setSyncingOTAs([]);
+  const clearLogs = useCallback(async () => {
+    try {
+      await channelManagerService.clearSyncLogs();
+      setSyncLogs([]);
+      success('Sync logs cleared successfully');
+    } catch (err: any) {
+      console.error('Error clearing logs:', err);
+      showError(err.response?.data?.error || 'Failed to clear sync logs');
+      throw err;
     }
+  }, [success, showError]);
 
-    setIsSyncing(false);
-  }, [otas, syncRatesToAllOTAs, simulateOTASync]);
+  // ============ SYNC FUNCTIONS ============
+
+  const triggerManualSync = useCallback(async (otaCode: string = 'ALL') => {
+    setIsSyncing(true);
+    try {
+      if (otaCode === 'ALL') {
+        const result = await channelManagerService.syncAllOTAs();
+        setSyncingOTAs([]);
+        setLastGlobalSync(new Date().toISOString());
+        success('Sync initiated for all OTAs');
+        return result;
+      } else {
+        const ota = otas.find(o => o.code === otaCode);
+        if (!ota) {
+          throw new Error('OTA not found');
+        }
+        setSyncingOTAs([otaCode]);
+        const result = await channelManagerService.syncOTA(ota.id);
+        setSyncingOTAs([]);
+        setLastGlobalSync(new Date().toISOString());
+        success(`Sync initiated for ${ota.name}`);
+        return result;
+      }
+    } catch (err: any) {
+      console.error('Error triggering sync:', err);
+      showError(err.response?.data?.error || 'Failed to trigger sync');
+      setSyncingOTAs([]);
+      throw err;
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [otas, success, showError]);
+
+  // Auto-sync scheduler (disabled for now - backend handles this)
+  useEffect(() => {
+    // Backend handles auto-sync, but we can refresh data periodically
+    syncIntervalRef.current = setInterval(() => {
+      // Refresh stats and insights periodically
+      fetchChannelStats();
+      fetchAIInsights();
+    }, SYNC_INTERVAL);
+
+    return () => {
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+      }
+    };
+  }, [fetchChannelStats, fetchAIInsights]);
 
   // ============ ANALYTICS ============
 
   const getChannelStats = useCallback(() => {
+    // Return cached stats or calculate from current state
+    if (channelStats) {
+      return channelStats;
+    }
+
+    // Fallback calculation from state
     const connectedCount = otas.filter(o => o.status === 'connected').length;
     const errorCount = otas.filter(o => o.status === 'error').length;
     const totalBookings = otas.reduce((sum, o) => sum + (o.stats?.totalBookings || 0), 0);
@@ -735,40 +827,20 @@ export function ChannelManagerProvider({ children }) {
     const mappedRoomTypes = roomMappings.filter(m => m.otaMappings.length > 0).length;
     const activeRestrictions = restrictions.filter(r => r.isActive).length;
 
-    // Rate parity check
-    const rateParityIssues = [];
-    const today = new Date().toISOString().split('T')[0];
-    if (rateCalendar[today]) {
-      Object.entries(rateCalendar[today]).forEach(([roomType, data]) => {
-        const rates = Object.values(data.otaRates || {});
-        const minRate = Math.min(...rates);
-        const maxRate = Math.max(...rates);
-        if (maxRate - minRate > minRate * 0.1) { // More than 10% difference
-          rateParityIssues.push({
-            roomType,
-            minRate,
-            maxRate,
-            difference: Math.round((maxRate - minRate) / minRate * 100)
-          });
-        }
-      });
-    }
-
-    // Generate trend data based on OTA stats (last 7 data points)
-    const generateTrendData = (baseValue, variance = 0.15) => {
-      const trend = [];
-      for (let i = 6; i >= 0; i--) {
-        const randomFactor = 1 + (Math.random() - 0.5) * variance;
-        const growthFactor = 1 + (6 - i) * 0.02; // Slight upward trend
-        trend.push(Math.round(baseValue * randomFactor * growthFactor / 7));
-      }
-      return trend;
-    };
-
-    // Calculate per-OTA metrics for channel comparison
-    const channelPerformance = otas
-      .filter(o => o.status === 'connected')
-      .map(ota => ({
+    return {
+      connectedOTAs: connectedCount,
+      disconnectedOTAs: otas.length - connectedCount,
+      errorOTAs: errorCount,
+      totalBookings,
+      totalRevenue,
+      mappedRoomTypes,
+      totalRoomTypes: roomMappings.length,
+      activeRestrictions,
+      rateParityIssues: [],
+      lastSync: lastGlobalSync,
+      revenueTrend: [],
+      bookingsTrend: [],
+      channelPerformance: otas.filter(o => o.status === 'connected').map(ota => ({
         name: ota.name,
         code: ota.code,
         color: ota.color,
@@ -776,116 +848,30 @@ export function ChannelManagerProvider({ children }) {
         revenue: ota.stats?.revenue || 0,
         rating: ota.stats?.avgRating || 0,
         commission: ota.stats?.commission || 15,
-        conversionRate: Math.round(Math.random() * 20 + 10) / 10, // Simulated 1.0-3.0%
-      }))
-      .sort((a, b) => b.revenue - a.revenue);
-
-    // Calculate totals with fallbacks for demo data
-    const displayRevenue = totalRevenue > 0 ? totalRevenue : 45230;
-    const displayBookings = totalBookings > 0 ? totalBookings : 156;
-
-    return {
-      connectedOTAs: connectedCount,
-      disconnectedOTAs: otas.length - connectedCount,
-      errorOTAs: errorCount,
-      totalBookings: displayBookings,
-      totalRevenue: displayRevenue,
-      mappedRoomTypes,
-      totalRoomTypes: roomMappings.length,
-      activeRestrictions,
-      rateParityIssues,
-      lastSync: lastGlobalSync,
-      // Trend data for sparklines
-      revenueTrend: generateTrendData(displayRevenue, 0.2),
-      bookingsTrend: generateTrendData(displayBookings, 0.25),
-      // Channel performance data
-      channelPerformance,
-      // Calculated metrics
-      avgCommission: channelPerformance.length > 0
-        ? Math.round(channelPerformance.reduce((sum, c) => sum + c.commission, 0) / channelPerformance.length * 10) / 10
-        : 15,
-      avgConversionRate: channelPerformance.length > 0
-        ? Math.round(channelPerformance.reduce((sum, c) => sum + c.conversionRate, 0) / channelPerformance.length * 10) / 10
-        : 2.1,
-      revenueGrowth: '+12%',
-      bookingsGrowth: '+8%',
+        conversionRate: 2.1,
+      })),
+      avgCommission: 15,
+      avgConversionRate: 2.1,
+      revenueGrowth: '+0%',
+      bookingsGrowth: '+0%',
     };
-  }, [otas, roomMappings, restrictions, rateCalendar, lastGlobalSync]);
+  }, [channelStats, otas, roomMappings, restrictions, lastGlobalSync]);
 
   const getAIInsights = useCallback(() => {
-    const insights = [];
-    const stats = getChannelStats();
-
-    // Rate parity issues
-    if (stats.rateParityIssues.length > 0) {
-      stats.rateParityIssues.forEach(issue => {
-        insights.push({
-          type: 'warning',
-          title: 'Rate Parity Alert',
-          message: `${issue.roomType}: ${issue.difference}% rate difference across channels`,
-          action: 'Review rates'
-        });
-      });
-    }
-
-    // Connection issues
-    if (stats.errorOTAs > 0) {
-      insights.push({
-        type: 'error',
-        title: 'Connection Issue',
-        message: `${stats.errorOTAs} OTA connection(s) need attention`,
-        action: 'Check connections'
-      });
-    }
-
-    // Unmapped rooms
-    if (stats.mappedRoomTypes < stats.totalRoomTypes) {
-      insights.push({
-        type: 'info',
-        title: 'Unmapped Rooms',
-        message: `${stats.totalRoomTypes - stats.mappedRoomTypes} room type(s) not fully mapped to all OTAs`,
-        action: 'Complete mapping'
-      });
-    }
-
-    // High demand suggestion
-    const today = new Date().toISOString().split('T')[0];
-    if (rateCalendar[today]) {
-      const avgAvailability = Object.values(rateCalendar[today]).reduce((sum, d) => sum + d.availability, 0) / 4;
-      if (avgAvailability < 3) {
-        insights.push({
-          type: 'success',
-          title: 'High Demand',
-          message: 'Low availability detected - consider increasing OTA rates by 10-15%',
-          action: 'Adjust rates'
-        });
-      }
-    }
-
-    return insights;
-  }, [getChannelStats, rateCalendar]);
-
-  // ============ RESET ============
-
-  const resetToSampleData = useCallback(() => {
-    setOTAs(sampleOTAs);
-    setRoomMappings(sampleRoomMappings);
-    setRateOverrides(sampleRateOverrides);
-    setRestrictions(sampleRestrictions);
-    setSyncLogs(sampleSyncLogs);
-    setRateCalendar(generateRateCalendar(baseRates, sampleRateOverrides));
-    localStorage.removeItem(STORAGE_KEY);
-  }, []);
+    return aiInsights;
+  }, [aiInsights]);
 
   const value = {
     // State
     otas,
     roomMappings,
-    rateOverrides,
     restrictions,
+    promotions,
     syncLogs,
     rateCalendar,
+    roomTypes,
     isSyncing,
+    isLoading,
     syncingOTAs,
     lastGlobalSync,
 
@@ -901,6 +887,7 @@ export function ChannelManagerProvider({ children }) {
     mapRoom,
     unmapRoom,
     validateMapping,
+    autoMapRoomMappings,
     autoSuggestMapping,
 
     // Rate functions
@@ -919,6 +906,9 @@ export function ChannelManagerProvider({ children }) {
 
     // Promotion functions
     createChannelPromotion,
+    updateChannelPromotion,
+    deleteChannelPromotion,
+    toggleChannelPromotion,
     applyPromotionToOTA,
 
     // Sync log functions
@@ -927,16 +917,22 @@ export function ChannelManagerProvider({ children }) {
     clearLogs,
 
     // Sync functions
-    autoSyncScheduler,
-    simulateOTASync,
     triggerManualSync,
+
+    // Data fetching functions
+    fetchOTAs,
+    fetchRoomMappings,
+    fetchRestrictions,
+    fetchPromotions,
+    fetchSyncLogs,
+    fetchRateCalendar,
+    fetchChannelStats,
+    fetchAIInsights,
+    fetchRoomTypes,
 
     // Analytics
     getChannelStats,
     getAIInsights,
-
-    // Reset
-    resetToSampleData
   };
 
   return (

@@ -112,7 +112,26 @@ function transformBooking(apiBooking: any): AdminBooking {
   const totalAmount = apiBooking.totalPrice || apiBooking.total_amount || apiBooking.total || 0;
 
   // Extract booking source - API returns bookingSource
-  const source = apiBooking.bookingSource || apiBooking.booking_source || apiBooking.source || 'Direct';
+  // Map source to normalized format (e.g., "crs" -> "CRS")
+  const sourceMap: Record<string, string> = {
+    'Website': 'Website',
+    'direct': 'Website',
+    'Dummy Channel Manager': 'Dummy Channel Manager',
+    'dummy channel manager': 'Dummy Channel Manager',
+    'CRS': 'CRS',
+    'crs': 'CRS',
+    'Booking.com': 'Booking.com',
+    'booking.com': 'Booking.com',
+    'Expedia': 'Expedia',
+    'expedia': 'Expedia',
+    'Walk-in': 'Walk-in',
+    'walk_in': 'Walk-in',
+    'walk-in': 'Walk-in',
+    'OTA': 'Booking.com',
+  };
+  const rawSource = apiBooking.bookingSource || apiBooking.booking_source || apiBooking.source || '';
+  // Map the source, but if not found in map, use raw source (don't default to something else)
+  const source = rawSource ? (sourceMap[rawSource] || rawSource) : 'Website';
 
   // Extract special requests - check guestInfo first
   const specialRequests = apiBooking.guestInfo?.specialRequests ||

@@ -43,6 +43,8 @@ export default function BookingFilters({
   const sourceOptions = [
     { value: 'all', label: 'All Channels', icon: '🌐' },
     { value: 'Website', label: 'Direct Website', icon: '🏠' },
+    { value: 'Dummy Channel Manager', label: 'Dummy Channel Manager', icon: '💻' },
+    { value: 'CRS', label: 'CRS', icon: '💻' },
     { value: 'Booking.com', label: 'Booking.com', icon: '🅱️' },
     { value: 'Expedia', label: 'Expedia', icon: '✈️' },
     { value: 'Walk-in', label: 'Walk-in', icon: '🚶' }

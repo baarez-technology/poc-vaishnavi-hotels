@@ -8,35 +8,28 @@ import { useState } from 'react';
 import {
   Link2, Unlink, Check, X, AlertTriangle, ArrowRight,
   Sparkles, Settings, Users, ChevronDown, ChevronUp,
-  RefreshCw, BarChart3, CalendarCheck
+  RefreshCw, BarChart3, CalendarCheck, Layers
 } from 'lucide-react';
 import { useChannelManager } from '../../context/ChannelManagerContext';
 import { Button, IconButton } from '../ui2/Button';
 import EditMappingModal from './EditMappingModal';
 import RemoveMappingModal from './RemoveMappingModal';
+import BulkMappingDrawer from './BulkMappingDrawer';
 
 export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' }) {
-  const { roomMappings, otas, mapRoom, unmapRoom } = useChannelManager();
+  const { roomMappings, otas, roomTypes, mapRoom, unmapRoom, fetchRoomMappings } = useChannelManager();
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [removeModalOpen, setRemoveModalOpen] = useState(false);
   const [mappingToRemove, setMappingToRemove] = useState(null);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [bulkDrawerOpen, setBulkDrawerOpen] = useState(false);
 
   // Get OTA info
   const ota = otas.find(o => o.code === otaCode);
 
-  // PMS room types matching database
-  const pmsRoomTypes = [
-    { id: 'minimalist-studio', name: 'Minimalist Studio', baseOccupancy: 2, maxOccupancy: 2 },
-    { id: 'coastal-retreat', name: 'Coastal Retreat', baseOccupancy: 2, maxOccupancy: 2 },
-    { id: 'urban-oasis', name: 'Urban Oasis', baseOccupancy: 2, maxOccupancy: 2 },
-    { id: 'sunset-vista', name: 'Sunset Vista', baseOccupancy: 2, maxOccupancy: 3 },
-    { id: 'pacific-suite', name: 'Pacific Suite', baseOccupancy: 2, maxOccupancy: 4 },
-    { id: 'wellness-suite', name: 'Wellness Suite', baseOccupancy: 2, maxOccupancy: 2 },
-    { id: 'family-sanctuary', name: 'Family Sanctuary', baseOccupancy: 4, maxOccupancy: 6 },
-    { id: 'oceanfront-penthouse', name: 'Oceanfront Penthouse', baseOccupancy: 2, maxOccupancy: 6 }
-  ];
+  // Use room types from API, fallback to empty array if not loaded yet
+  const pmsRoomTypes = roomTypes.length > 0 ? roomTypes : [];
 
   // Filter by search query
   const filteredRoomTypes = pmsRoomTypes.filter(room =>
@@ -45,7 +38,12 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
 
   // Get mapping for a PMS room type
   const getMappingForRoom = (pmsRoomId) => {
-    const roomMapping = roomMappings.find(m => m.pmsRoomType === pmsRoomId);
+    // Try to find by pmsRoomType (name) or pmsRoomTypeId (id)
+    const roomMapping = roomMappings.find(m => 
+      m.pmsRoomType === pmsRoomId || 
+      m.pmsRoomTypeId === pmsRoomId ||
+      m.pmsRoomTypeId?.toString() === pmsRoomId?.toString()
+    );
     if (!roomMapping) return null;
 
     const otaMapping = roomMapping.otaMappings?.find(om => om.otaCode === otaCode);
@@ -78,16 +76,32 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
     setSelectedRoom(null);
   };
 
-  const handleSaveMapping = (mappingData) => {
-    mapRoom({
-      pmsRoomType: mappingData.pmsRoomType,
-      pmsRoomName: mappingData.pmsRoomName,
-      otaCode: otaCode,
-      otaRoomType: mappingData.otaRoomType,
-      isActive: true,
-      syncRates: mappingData.syncRates,
-      syncAvailability: mappingData.syncAvailability
-    });
+  const handleSaveMapping = async (mappingData) => {
+    if (!mappingData.otaRoomType || !mappingData.otaRoomType.trim()) {
+      throw new Error('OTA room type is required');
+    }
+    
+    try {
+      const result = await mapRoom({
+        pmsRoomTypeId: mappingData.pmsRoomType, // Room ID from PMS
+        pmsRoomType: mappingData.pmsRoomName,   // Room Name from PMS
+        otaCode: otaCode,
+        otaRoomType: mappingData.otaRoomType.trim(),
+        otaRoomId: mappingData.otaRoomType.toUpperCase().replace(/\s+/g, '_'), // Default ID if not provided
+        isActive: true,
+        syncRates: mappingData.syncRates !== false, // Default to true
+        syncAvailability: mappingData.syncAvailability !== false // Default to true
+      });
+      
+      // Success message is shown in context via mapRoom
+      // Return result to indicate success
+      return result;
+    } catch (err) {
+      console.error('Failed to save room mapping:', err);
+      // Error message is shown in context via mapRoom
+      // Re-throw so EditMappingModal knows it failed and doesn't close
+      throw err;
+    }
   };
 
   const handleOpenRemoveModal = (mapping, room) => {
@@ -126,10 +140,9 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
                 {ota?.name?.substring(0, 2).toUpperCase() || 'OT'}
               </div>
               {/* Status indicator */}
-              <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${
-                activeMappings === totalRooms ? 'bg-sage-500' :
-                activeMappings > 0 ? 'bg-gold-500' : 'bg-neutral-400'
-              }`} />
+              <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${activeMappings === totalRooms ? 'bg-sage-500' :
+                  activeMappings > 0 ? 'bg-gold-500' : 'bg-neutral-400'
+                }`} />
             </div>
 
             {/* OTA Name & Mapping Progress */}
@@ -138,13 +151,12 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
                 <h3 className="text-sm font-semibold text-neutral-800 truncate">
                   {ota?.name || 'Unknown OTA'}
                 </h3>
-                <span className={`px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider rounded flex-shrink-0 ${
-                  activeMappings === totalRooms
+                <span className={`px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider rounded flex-shrink-0 ${activeMappings === totalRooms
                     ? 'bg-sage-100 text-sage-700'
                     : activeMappings > 0
                       ? 'bg-gold-100 text-gold-700'
                       : 'bg-neutral-100 text-neutral-500'
-                }`}>
+                  }`}>
                   {activeMappings === totalRooms ? 'Complete' : activeMappings > 0 ? 'Partial' : 'Not Mapped'}
                 </span>
               </div>
@@ -153,9 +165,8 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      activeMappings === totalRooms ? 'bg-sage-500' : 'bg-terra-500'
-                    }`}
+                    className={`h-full rounded-full transition-all duration-300 ${activeMappings === totalRooms ? 'bg-sage-500' : 'bg-terra-500'
+                      }`}
                     style={{ width: `${mappingPercentage}%` }}
                   />
                 </div>
@@ -168,6 +179,14 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
 
           {/* Right: Actions */}
           <div className="flex items-center gap-2 flex-shrink-0">
+            <Button
+              onClick={() => setBulkDrawerOpen(true)}
+              variant="outline"
+              size="sm"
+              icon={Layers}
+            >
+              Bulk Map
+            </Button>
             <Button
               onClick={onAutoMap}
               variant="outline"
@@ -367,6 +386,15 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
         onConfirm={handleConfirmRemove}
         roomName={mappingToRemove?.roomName}
         otaName={ota?.name}
+      />
+
+      {/* Bulk Mapping Drawer */}
+      <BulkMappingDrawer
+        isOpen={bulkDrawerOpen}
+        onClose={() => setBulkDrawerOpen(false)}
+        otaCode={otaCode}
+        otaName={ota?.name}
+        onSuccess={fetchRoomMappings}
       />
     </div>
   );

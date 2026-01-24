@@ -4,18 +4,23 @@
  * Redesigned to match CBS BookingList UI patterns
  */
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
   Download, RefreshCw, CheckCircle, XCircle, AlertTriangle,
   Calendar, Activity, Eye, ChevronDown, Check,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Loader2, FileText, FileSpreadsheet
 } from 'lucide-react';
 import { useChannelManager } from '../../../context/ChannelManagerContext';
+import { useChannelManagerSSEEvents } from '../../../hooks/useChannelManagerSSEEvents';
+import { channelManagerService } from '../../../api/services/channel-manager.service';
 import { actionTypes } from '../../../data/channel-manager/sampleSyncLogs';
 import { Button, IconButton } from '../../../components/ui2/Button';
 import { SearchBar } from '../../../components/ui2/SearchBar';
 import SyncLogDetailDrawer from '../../../components/channel-manager/SyncLogDetailDrawer';
+import { DropdownMenu, DropdownMenuItem } from '../../../components/ui2/DropdownMenu';
+import { useToast } from '../../../contexts/ToastContext';
 
 // Custom Select Dropdown Component - Glimmora Design System v5.0
 function SelectDropdown({ value, onChange, options, placeholder = 'Select...', className = '' }) {
@@ -160,18 +165,81 @@ const actionIcons = {
 const ITEMS_PER_PAGE = 10;
 
 export default function SyncLogs() {
-  const { syncLogs, otas, triggerManualSync, syncingOTAs } = useChannelManager();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const {
+    syncLogs,
+    otas,
+    isLoading: contextLoading,
+    triggerManualSync,
+    syncingOTAs,
+    fetchSyncLogs,
+    clearLogs,
+  } = useChannelManager();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [selectedLog, setSelectedLog] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [exportLoading, setExportLoading] = useState(false);
 
   // Filter states - single select dropdowns
-  const [otaFilter, setOTAFilter] = useState('all');
+  // Initialize otaFilter from URL query parameter if present
+  const [otaFilter, setOTAFilter] = useState(() => {
+    const otaFromUrl = searchParams.get('ota');
+    if (otaFromUrl) {
+      // Find matching OTA code
+      const matchingOTA = otas.find(o => o.code === otaFromUrl || o.code.toLowerCase() === otaFromUrl.toLowerCase());
+      return matchingOTA ? matchingOTA.code : 'all';
+    }
+    return 'all';
+  });
   const [actionFilter, setActionFilter] = useState('all');
 
+  const { toast } = useToast();
+
   const connectedOTAs = otas.filter(o => o.status === 'connected');
+
+  // Update URL when otaFilter changes (but only if it's not from URL initially)
+  useEffect(() => {
+    if (otaFilter !== 'all') {
+      setSearchParams({ ota: otaFilter }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  }, [otaFilter, setSearchParams]);
+
+  // Refetch data function for SSE
+  const refetchData = useCallback(async () => {
+    const filters: any = {
+      page: currentPage,
+      pageSize: ITEMS_PER_PAGE,
+    };
+    if (activeTab !== 'all') {
+      filters.status = activeTab;
+    }
+    if (otaFilter !== 'all') {
+      filters.otaCode = otaFilter;
+    }
+    if (actionFilter !== 'all') {
+      filters.action = actionFilter;
+    }
+    const response = await fetchSyncLogs(filters);
+    setTotalPages(response.totalPages || 1);
+    setTotalCount(response.total || 0);
+  }, [currentPage, activeTab, otaFilter, actionFilter, fetchSyncLogs]);
+
+  // Register SSE event handlers for real-time updates
+  useChannelManagerSSEEvents({
+    onSyncStatus: refetchData,
+    refetchData,
+  });
+
+  // Fetch logs when filters change
+  useEffect(() => {
+    refetchData();
+  }, [refetchData]);
 
   // Check if any filters are active
   const hasActiveFilters = otaFilter !== 'all' || actionFilter !== 'all';
@@ -183,31 +251,28 @@ export default function SyncLogs() {
     setCurrentPage(1);
   };
 
-  // Filter logs
+  // Filter logs (client-side filtering for search only, pagination handled by API)
   const filteredLogs = useMemo(() => {
+    if (!searchQuery) return syncLogs;
+    const searchLower = searchQuery.toLowerCase();
     return syncLogs.filter(log => {
-      const matchesSearch = log.message?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            log.otaName?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = activeTab === 'all' || log.status === activeTab;
-      const matchesOTA = otaFilter === 'all' || log.otaCode === otaFilter;
-      const matchesAction = actionFilter === 'all' || log.action === actionFilter;
-      return matchesSearch && matchesStatus && matchesOTA && matchesAction;
+      // Get action label for search
+      const actionConfig = actionTypes[log.action] || { label: log.action };
+      const actionLabel = actionConfig.label?.toLowerCase() || '';
+      
+      // Search across message, OTA name, and action label
+      const matchesSearch = 
+        log.message?.toLowerCase().includes(searchLower) ||
+        log.otaName?.toLowerCase().includes(searchLower) ||
+        actionLabel.includes(searchLower) ||
+        log.action?.toLowerCase().includes(searchLower);
+      
+      return matchesSearch;
     });
-  }, [syncLogs, searchQuery, activeTab, otaFilter, actionFilter]);
+  }, [syncLogs, searchQuery]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredLogs.length / ITEMS_PER_PAGE);
-  const paginatedLogs = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredLogs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredLogs, currentPage]);
-
-  // Reset page when filters change
-  useEffect(() => {
-    if (currentPage > Math.ceil(filteredLogs.length / ITEMS_PER_PAGE)) {
-      setCurrentPage(1);
-    }
-  }, [filteredLogs.length, currentPage]);
+  // Paginated logs (already paginated by API, but apply search filter)
+  const paginatedLogs = filteredLogs;
 
   // Stats
   const stats = {
@@ -221,24 +286,38 @@ export default function SyncLogs() {
     triggerManualSync('ALL');
   };
 
-  const handleExport = () => {
-    const csv = [
-      ['Timestamp', 'OTA', 'Action', 'Status', 'Message'].join(','),
-      ...filteredLogs.map(log => [
-        log.timestamp,
-        log.otaName,
-        log.action,
-        log.status,
-        `"${log.message}"`
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `sync-logs-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
+  const handleExport = async (format: 'csv' | 'excel' | 'pdf' = 'csv') => {
+    if (exportLoading) return; // Prevent multiple clicks
+    
+    setExportLoading(true);
+    try {
+      const filters: any = { format };
+      if (activeTab !== 'all') filters.status = activeTab;
+      if (otaFilter !== 'all') filters.otaCode = otaFilter;
+      if (actionFilter !== 'all') filters.action = actionFilter;
+      
+      const blob = await channelManagerService.exportSyncLogs(filters);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // Set appropriate file extension based on format
+      const extension = format === 'pdf' ? 'pdf' : format === 'excel' ? 'xlsx' : 'csv';
+      const mimeType = format === 'pdf' ? 'application/pdf' : format === 'excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/csv';
+      
+      a.download = `sync-logs-${new Date().toISOString().split('T')[0]}.${extension}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success(`Sync logs exported successfully as ${format.toUpperCase()}`);
+    } catch (err) {
+      console.error('Error exporting logs:', err);
+      toast.error('Failed to export sync logs. Please try again.');
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   // Tab configuration matching BookingList style
@@ -306,6 +385,17 @@ export default function SyncLogs() {
     ...Object.entries(actionTypes).map(([key, config]) => ({ value: key, label: config.label }))
   ];
 
+  if (contextLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F9F7F7' }}>
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-terra-600 mx-auto mb-4" />
+          <p className="text-neutral-600">Loading sync logs...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
       <div className="px-10 py-6 space-y-6">
@@ -321,9 +411,41 @@ export default function SyncLogs() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" icon={Download} onClick={handleExport}>
-              Export CSV
-            </Button>
+            <DropdownMenu
+              trigger={
+                <Button 
+                  variant="outline" 
+                  icon={Download} 
+                  disabled={exportLoading}
+                  loading={exportLoading}
+                >
+                  {exportLoading ? 'Exporting...' : 'Export'}
+                </Button>
+              }
+              align="end"
+            >
+              <DropdownMenuItem
+                icon={FileText}
+                onSelect={() => handleExport('pdf')}
+                disabled={exportLoading}
+              >
+                Export as PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                icon={FileSpreadsheet}
+                onSelect={() => handleExport('excel')}
+                disabled={exportLoading}
+              >
+                Export as Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                icon={Download}
+                onSelect={() => handleExport('csv')}
+                disabled={exportLoading}
+              >
+                Export as CSV
+              </DropdownMenuItem>
+            </DropdownMenu>
             <Button
               variant="primary"
               icon={RefreshCw}
@@ -554,9 +676,9 @@ export default function SyncLogs() {
                   <p className="text-[13px] text-neutral-500">
                     Showing <span className="font-semibold text-neutral-700">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span>
                     {' '}to{' '}
-                    <span className="font-semibold text-neutral-700">{Math.min(currentPage * ITEMS_PER_PAGE, filteredLogs.length)}</span>
+                    <span className="font-semibold text-neutral-700">{Math.min(currentPage * ITEMS_PER_PAGE, totalCount)}</span>
                     {' '}of{' '}
-                    <span className="font-semibold text-neutral-700">{filteredLogs.length}</span> logs
+                    <span className="font-semibold text-neutral-700">{totalCount}</span> logs
                   </p>
 
                   <div className="flex items-center gap-1">

@@ -178,7 +178,7 @@ const CompetitorRates = () => {
         <p className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-wider text-neutral-400 mb-1 truncate">
           {title}
         </p>
-        <p className="text-lg sm:text-[28px] font-semibold tracking-tight text-neutral-900">
+        <p className="text-base sm:text-xl font-semibold tracking-tight text-neutral-900">
           {value}
         </p>
 
@@ -231,7 +231,7 @@ const CompetitorRates = () => {
       </header>
 
       {/* Summary Stats */}
-      <section className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4">
         {isInitialLoading ? (
           <>
             {[0, 1, 2, 3, 4].map((i) => (
@@ -291,7 +291,7 @@ const CompetitorRates = () => {
                 Rate Strategy Recommendations
               </h3>
               <ul className="space-y-2">
-                {competitorInsights.recommendations.map((rec, index) => (
+                {competitorInsights.recommendations.map((rec: string, index: number) => (
                   <li key={index} className="text-[11px] sm:text-[13px] flex items-start gap-2 text-gold-700">
                     <span className="w-1.5 h-1.5 rounded-full bg-gold-500 mt-1.5 flex-shrink-0" />
                     <span>{rec}</span>
@@ -395,7 +395,7 @@ const CompetitorRates = () => {
                   )}
                 </div>
               </div>
-              <div className="px-4 sm:px-6 pb-4 sm:pb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                 {competitorList.map(comp => (
                   <CompetitorCard
                     key={comp.id}

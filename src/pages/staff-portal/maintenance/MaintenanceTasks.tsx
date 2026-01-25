@@ -382,7 +382,7 @@ const MaintenanceTasks = () => {
 
       {/* KPI Cards - 12 Column Grid matching admin dashboard */}
       <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="To Do"
             value={tasksByStatus.todo.length}
@@ -391,7 +391,7 @@ const MaintenanceTasks = () => {
             color="terra"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="In Progress"
             value={tasksByStatus.in_progress.length}
@@ -400,7 +400,7 @@ const MaintenanceTasks = () => {
             color="gold"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="High Priority"
             value={tasks.filter(t => t.priority === 'high' && t.status !== 'completed').length}
@@ -409,7 +409,7 @@ const MaintenanceTasks = () => {
             color="danger"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Completed"
             value={tasksByStatus.completed.length}

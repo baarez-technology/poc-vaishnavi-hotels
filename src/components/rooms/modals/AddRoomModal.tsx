@@ -4,10 +4,151 @@
  * Matches Channel Manager drawer pattern
  */
 
-import { useState, useEffect } from 'react';
-import { Check } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { Check, ChevronDown } from 'lucide-react';
 import { Drawer } from '../../ui2/Drawer';
 import { Button } from '../../ui2/Button';
+
+// Custom Select Dropdown Component with React Portal
+function SelectDropdown({ value, onChange, options, placeholder }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [position, setPosition] = useState(null);
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const selectedOption = options.find(opt => opt.value === value);
+  const displayLabel = selectedOption?.label || placeholder;
+
+  // Estimate dropdown height
+  const estimatedDropdownHeight = Math.min(options.length * 40 + 8, 248);
+
+  const calculatePosition = () => {
+    if (!triggerRef.current) return null;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    const openAbove = spaceBelow < estimatedDropdownHeight && spaceAbove > spaceBelow;
+
+    return {
+      top: openAbove ? rect.top - estimatedDropdownHeight - 4 : rect.bottom + 4,
+      left: rect.left,
+      width: rect.width,
+      openAbove
+    };
+  };
+
+  const handleToggle = () => {
+    if (isOpen) {
+      setIsOpen(false);
+      setPosition(null);
+    } else {
+      setPosition(calculatePosition());
+      setIsOpen(true);
+    }
+  };
+
+  const handleSelect = (optionValue) => {
+    onChange(optionValue);
+    setIsOpen(false);
+    setPosition(null);
+  };
+
+  // Close on click outside
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (e) => {
+      if (!triggerRef.current?.contains(e.target) && !menuRef.current?.contains(e.target)) {
+        setIsOpen(false);
+        setPosition(null);
+      }
+    };
+
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        setPosition(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [isOpen]);
+
+  // Update position on scroll/resize
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const updatePosition = () => {
+      setPosition(calculatePosition());
+    };
+
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [isOpen]);
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={handleToggle}
+        className={`w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border transition-all flex items-center justify-between focus:outline-none ${
+          isOpen
+            ? 'border-terra-400 ring-2 ring-terra-500/10'
+            : 'border-neutral-200 hover:border-neutral-300'
+        }`}
+      >
+        <span className="text-neutral-900 truncate">{displayLabel}</span>
+        <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform flex-shrink-0 ml-2 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && position && createPortal(
+        <div
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: `${position.top}px`,
+            left: `${position.left}px`,
+            width: `${position.width}px`,
+            maxHeight: `${estimatedDropdownHeight}px`,
+            zIndex: 99999
+          }}
+          className={`bg-white rounded-lg border border-neutral-200 shadow-lg shadow-neutral-900/10 overflow-hidden animate-in fade-in-0 duration-100 ${
+            position.openAbove ? 'origin-bottom' : 'origin-top'
+          }`}
+        >
+          <div className="py-1 max-h-60 overflow-y-auto">
+            {options.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleSelect(option.value)}
+                className={`w-full px-3.5 py-2.5 text-[13px] text-left hover:bg-neutral-50 transition-colors flex items-center justify-between ${
+                  value === option.value ? 'bg-terra-50 text-terra-700 font-medium' : 'text-neutral-700'
+                }`}
+              >
+                <span>{option.label}</span>
+                {value === option.value && <Check className="w-4 h-4 text-terra-500" />}
+              </button>
+            ))}
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
 
 export default function AddRoomModal({ isOpen, onClose, onAdd }) {
   const [formData, setFormData] = useState({
@@ -22,17 +163,23 @@ export default function AddRoomModal({ isOpen, onClose, onAdd }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const roomTypes = [
-    'Minimalist Studio',
-    'Coastal Retreat',
-    'Urban Oasis',
-    'Sunset Vista',
-    'Pacific Suite',
-    'Wellness Suite',
-    'Family Sanctuary',
-    'Oceanfront Penthouse'
+  const roomTypeOptions = [
+    { value: 'Minimalist Studio', label: 'Minimalist Studio' },
+    { value: 'Coastal Retreat', label: 'Coastal Retreat' },
+    { value: 'Urban Oasis', label: 'Urban Oasis' },
+    { value: 'Sunset Vista', label: 'Sunset Vista' },
+    { value: 'Pacific Suite', label: 'Pacific Suite' },
+    { value: 'Wellness Suite', label: 'Wellness Suite' },
+    { value: 'Family Sanctuary', label: 'Family Sanctuary' },
+    { value: 'Oceanfront Penthouse', label: 'Oceanfront Penthouse' }
   ];
-  const bedTypes = ['Single', 'Double', 'Queen', 'King', 'Twin'];
+  const bedTypeOptions = [
+    { value: 'Single', label: 'Single' },
+    { value: 'Double', label: 'Double' },
+    { value: 'Queen', label: 'Queen' },
+    { value: 'King', label: 'King' },
+    { value: 'Twin', label: 'Twin' }
+  ];
   const availableAmenities = ['WiFi', 'TV', 'Air Conditioning', 'Mini Fridge', 'Safe', 'Coffee Maker', 'Balcony', 'Ocean View'];
 
   useEffect(() => {
@@ -154,16 +301,12 @@ export default function AddRoomModal({ isOpen, onClose, onAdd }) {
                 <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
                   Room Type
                 </label>
-                <select
-                  name="type"
+                <SelectDropdown
                   value={formData.type}
-                  onChange={handleChange}
-                  className={inputStyles}
-                >
-                  {roomTypes.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setFormData(prev => ({ ...prev, type: value }))}
+                  options={roomTypeOptions}
+                  placeholder="Select room type"
+                />
               </div>
             </div>
 
@@ -186,16 +329,12 @@ export default function AddRoomModal({ isOpen, onClose, onAdd }) {
                 <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
                   Bed Type
                 </label>
-                <select
-                  name="bedType"
+                <SelectDropdown
                   value={formData.bedType}
-                  onChange={handleChange}
-                  className={inputStyles}
-                >
-                  {bedTypes.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setFormData(prev => ({ ...prev, bedType: value }))}
+                  options={bedTypeOptions}
+                  placeholder="Select bed type"
+                />
               </div>
             </div>
           </div>

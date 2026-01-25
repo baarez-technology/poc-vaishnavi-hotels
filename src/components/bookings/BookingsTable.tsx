@@ -100,8 +100,7 @@ export default function BookingsTable({
 
   return (
     <div className="overflow-x-auto">
-      {/* Prevent header wrapping; allow horizontal scroll like CMS */}
-      <table className="w-full min-w-[1450px] border-collapse">
+      <table className="w-full min-w-[1200px] border-collapse">
         <colgroup>
           <col style={{ width: '200px' }} />
           <col style={{ width: '150px' }} />
@@ -112,7 +111,7 @@ export default function BookingsTable({
           <col style={{ width: '120px' }} />
           <col style={{ width: '130px' }} />
           <col style={{ width: '120px' }} />
-          <col style={{ width: '140px' }} />
+          <col style={{ width: '50px' }} />
         </colgroup>
         <thead>
           <tr className="bg-neutral-50/30 border-b border-neutral-100">
@@ -183,7 +182,7 @@ export default function BookingsTable({
                 Amount <SortIndicator field="amount" />
               </span>
             </th>
-            <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
+            <th className="px-2 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap sticky right-0 bg-neutral-50 shadow-[-6px_0_12px_-4px_rgba(0,0,0,0.15)]">
               Actions
             </th>
           </tr>
@@ -192,7 +191,7 @@ export default function BookingsTable({
         <tbody className="divide-y divide-neutral-100">
           {bookings.length === 0 ? (
             <tr>
-              <td colSpan={10} className="px-6 py-16 text-center">
+              <td colSpan={10} className="px-4 py-12 text-center">
                 <div className="flex flex-col items-center">
                   <div className="w-12 h-12 rounded-lg bg-terra-50 flex items-center justify-center mb-4">
                     <CalendarX className="w-5 h-5 text-terra-500" />
@@ -228,134 +227,120 @@ export default function BookingsTable({
             return (
                 <tr key={booking.id} className="group bg-white hover:bg-neutral-50/30 transition-colors duration-100">
                   {/* Guest Name */}
-                  <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-neutral-900 group-hover:text-terra-600 transition-colors">
-                      {booking.guest}
-                    </span>
-                    {booking.vip && (
-                      <Crown className="w-4 h-4 text-gold-500 flex-shrink-0" />
-                    )}
-                  </div>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-neutral-900 group-hover:text-terra-600 transition-colors">
+                        {booking.guest}
+                      </span>
+                      {booking.vip && <Crown className="w-4 h-4 text-gold-500 flex-shrink-0" />}
+                    </div>
                   </td>
 
                   {/* Booking ID */}
-                  <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
-                  <span className="text-xs text-neutral-500 font-mono">
-                    {booking.id}
-                  </span>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="text-xs text-neutral-500 font-mono">{booking.id}</span>
                   </td>
 
                   {/* Check-in Date */}
-                  <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
-                  <span className="text-sm text-neutral-700 font-medium">
-                    {formatDate(booking.checkIn)}
-                  </span>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm text-neutral-700 font-medium">{formatDate(booking.checkIn)}</span>
                   </td>
 
                   {/* Nights */}
-                  <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
-                  <span className="text-sm text-neutral-600">
-                    {booking.nights}n
-                  </span>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm text-neutral-600">{booking.nights}n</span>
                   </td>
 
                   {/* Room */}
-                  <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
-                  <span className="font-semibold text-neutral-900 text-sm">Room {booking.room}</span>
-                  <span className="text-neutral-400 text-xs ml-1.5">• {booking.roomType}</span>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="font-semibold text-neutral-900 text-sm">Room {booking.room}</span>
+                    <span className="text-neutral-400 text-xs ml-1.5">• {booking.roomType}</span>
                   </td>
 
                   {/* Status */}
-                  <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
-                  <StatusBadge status={status.label} className="" />
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <StatusBadge status={status.label} className="" />
                   </td>
 
                   {/* Source */}
-                  <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${source.color}`}>
-                    <span className="mr-1">{source.icon}</span>
-                    {booking.source}
-                  </span>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${source.color}`}>
+                      <span className="mr-1">{source.icon}</span>
+                      {booking.source}
+                    </span>
                   </td>
 
                   {/* Payment Status */}
-                  <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
-                  {(() => {
-                    const paymentStatus = booking.paymentStatus || booking.payment_status || 'pending';
-                    const payment = (paymentStatusConfig as any)[paymentStatus] || (paymentStatusConfig as any)['pending'];
-                    return (
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold border ${payment.color}`}>
-                        <span className="mr-1.5">{payment.icon}</span>
-                        {payment.label}
-                      </span>
-                    );
-                  })()}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {(() => {
+                      const paymentStatus = booking.paymentStatus || booking.payment_status || 'pending';
+                      const payment = (paymentStatusConfig as any)[paymentStatus] || (paymentStatusConfig as any)['pending'];
+                      return (
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold border ${payment.color}`}>
+                          <span className="mr-1.5">{payment.icon}</span>
+                          {payment.label}
+                        </span>
+                      );
+                    })()}
                   </td>
 
                   {/* Amount */}
-                  <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">
-                  <span className="text-sm font-bold text-neutral-900">
-                    {formatCurrency(booking.amount)}
-                  </span>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm font-bold text-neutral-900">{formatCurrency(booking.amount)}</span>
                   </td>
 
-                  {/* Actions */}
-                  <td className="px-6 py-4 text-right whitespace-nowrap">
-                    <div className="flex items-center justify-end gap-1">
-                      <IconButton
-                        icon={Eye}
-                        size="sm"
-                        variant="ghost"
-                        label="View Details"
-                        onClick={(e) => handleViewClick(e, booking)}
-                      />
-                      <IconButton
-                        icon={Pencil}
-                        size="sm"
-                        variant="ghost"
-                        label="Edit Booking"
-                        onClick={(e) => handleEditClick(e, booking)}
-                      />
-                      <div className="relative" ref={openDropdownId === booking.id ? dropdownRef : null}>
-                        <IconButton
-                          icon={MoreHorizontal}
-                          size="sm"
-                          variant="ghost"
-                          label="More Options"
-                          onClick={(e) => handleMoreClick(e, booking.id)}
-                          className={openDropdownId === booking.id ? 'bg-neutral-100' : ''}
-                        />
+                  {/* Actions - Sticky column (small) */}
+                  <td className="px-2 py-4 text-center whitespace-nowrap sticky right-0 bg-white group-hover:bg-neutral-50 shadow-[-6px_0_12px_-4px_rgba(0,0,0,0.15)]">
+                    <div className="relative inline-block" ref={openDropdownId === booking.id ? dropdownRef : null}>
+                      <button
+                        onClick={(e) => handleMoreClick(e, booking.id)}
+                        className={`p-1.5 rounded-md hover:bg-neutral-100 transition-colors ${openDropdownId === booking.id ? 'bg-neutral-100' : ''}`}
+                      >
+                        <MoreHorizontal className="w-4 h-4 text-neutral-500" />
+                      </button>
 
-                        {/* Dropdown Menu */}
-                        {openDropdownId === booking.id && (
-                          <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-[10px] shadow-lg border border-neutral-200 py-1 z-50">
-                            <button
-                              onClick={(e) => handleManagePayment(e, booking)}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
-                            >
-                              <CreditCard className="w-4 h-4 text-emerald-600" />
-                              Manage Payment
-                            </button>
-                            <button
-                              onClick={(e) => handleAssignRoom(e, booking)}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
-                            >
-                              <Bed className="w-4 h-4 text-teal-600" />
-                              Assign Room
-                            </button>
-                            <div className="border-t border-neutral-100 my-1" />
-                            <button
-                              onClick={(e) => handleCancel(e, booking)}
-                              disabled={booking.status === 'CANCELLED'}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <XCircle className="w-4 h-4" />
-                              {booking.status === 'CANCELLED' ? 'Already Cancelled' : 'Cancel Booking'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      {/* Dropdown Menu */}
+                      {openDropdownId === booking.id && (
+                        <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-neutral-200 py-1 z-50">
+                          <button
+                            onClick={(e) => handleViewClick(e, booking)}
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-neutral-500" />
+                            View
+                          </button>
+                          <button
+                            onClick={(e) => handleEditClick(e, booking)}
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
+                          >
+                            <Pencil className="w-3.5 h-3.5 text-neutral-500" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={(e) => handleManagePayment(e, booking)}
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
+                          >
+                            <CreditCard className="w-3.5 h-3.5 text-neutral-500" />
+                            Payment
+                          </button>
+                          <button
+                            onClick={(e) => handleAssignRoom(e, booking)}
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
+                          >
+                            <Bed className="w-3.5 h-3.5 text-neutral-500" />
+                            Assign Room
+                          </button>
+                          <div className="border-t border-neutral-100 my-1" />
+                          <button
+                            onClick={(e) => handleCancel(e, booking)}
+                            disabled={booking.status === 'CANCELLED'}
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-rose-600 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                            Cancel
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>

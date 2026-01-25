@@ -116,19 +116,19 @@ function ReputationAIContent() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <div className="px-10 py-6 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-xl font-semibold text-neutral-900">Reputation AI</h1>
-            <p className="text-sm text-neutral-500">
+            <h1 className="text-xl sm:text-2xl font-semibold text-neutral-900">Reputation AI</h1>
+            <p className="text-xs sm:text-sm text-neutral-500 mt-0.5 sm:mt-1">
               Review intelligence, sentiment analysis & automated responses
             </p>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-3">
-            <span className="text-[11px] text-neutral-400">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="text-[10px] sm:text-[11px] text-neutral-400 hidden sm:inline">
               Updated {lastUpdated.toLocaleTimeString()}
             </span>
             <IconButton
@@ -145,6 +145,7 @@ function ReputationAIContent() {
               size="md"
               icon={Download}
               onClick={handleExportCSV}
+              className="text-xs sm:text-sm"
             >
               Export
             </Button>
@@ -158,26 +159,27 @@ function ReputationAIContent() {
         <SentimentSummary metrics={metrics} />
 
         {/* Charts - Side by Side */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
           <SentimentTrendChart data={sentiment} />
           <OTAScoreChart data={otaRatings} />
         </div>
 
         {/* New AI Panels - Trends, Goals, Pending Reviews */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* xl: for 3-col layout - iPad Pro with sidebar gets 1-col */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
           <TrendsPanel />
           <GoalsPanel />
           <PendingReviewsPanel />
         </div>
 
         {/* Keywords & Reviews - Stacked */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           <KeywordFrequency data={keywords} />
           <ReviewFeed reviews={filteredReviews} onReviewClick={handleReviewClick} />
         </div>
 
         {/* AI Integration - Stacked */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           <ImpactOnRevenue
             sentimentData={sentiment}
             recommendations={affectRateRecommendations}
@@ -193,32 +195,29 @@ function ReputationAIContent() {
         <AutoReplies settings={settings} onSettingsChange={updateSettings} />
 
         {/* Footer Stats */}
-        <div className="bg-white rounded-[10px] p-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
+        <div className="bg-white rounded-[10px] p-4 sm:p-5">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 lg:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Reputation Engine</p>
-                <p className="text-[15px] font-semibold text-sage-600 mt-0.5">Active</p>
+                <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Reputation Engine</p>
+                <p className="text-[13px] sm:text-[15px] font-semibold text-sage-600 mt-0.5">Active</p>
               </div>
-              <div className="h-8 w-px bg-neutral-100" />
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">NLP Model</p>
-                <p className="text-[15px] font-semibold text-neutral-900 mt-0.5">v3.2.0</p>
+                <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">NLP Model</p>
+                <p className="text-[13px] sm:text-[15px] font-semibold text-neutral-900 mt-0.5">v3.2.0</p>
               </div>
-              <div className="h-8 w-px bg-neutral-100" />
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Accuracy</p>
-                <p className="text-[15px] font-semibold text-ocean-600 mt-0.5">92.7%</p>
+                <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Accuracy</p>
+                <p className="text-[13px] sm:text-[15px] font-semibold text-ocean-600 mt-0.5">92.7%</p>
               </div>
-              <div className="h-8 w-px bg-neutral-100" />
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Auto-Replies</p>
-                <p className="text-[15px] font-semibold text-terra-500 mt-0.5">24 this week</p>
+                <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Auto-Replies</p>
+                <p className="text-[13px] sm:text-[15px] font-semibold text-terra-500 mt-0.5">24 this week</p>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Powered by</p>
-              <p className="text-[14px] font-semibold text-neutral-900 mt-0.5">Glimmora AI</p>
+            <div className="text-left lg:text-right pt-3 lg:pt-0 border-t lg:border-t-0 border-neutral-100">
+              <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Powered by</p>
+              <p className="text-[13px] sm:text-[14px] font-semibold text-neutral-900 mt-0.5">Glimmora AI</p>
             </div>
           </div>
         </div>

@@ -156,7 +156,7 @@ const HousekeepingRooms = () => {
 
       {/* KPI Cards - 12 Column Grid matching admin dashboard */}
       <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Dirty Rooms"
             value={stats.dirtyRooms}
@@ -165,7 +165,7 @@ const HousekeepingRooms = () => {
             color="danger"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="In Progress"
             value={stats.inProgressRooms}
@@ -174,7 +174,7 @@ const HousekeepingRooms = () => {
             color="gold"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Clean Rooms"
             value={stats.cleanRooms}
@@ -183,7 +183,7 @@ const HousekeepingRooms = () => {
             color="sage"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="High Priority"
             value={stats.urgentRooms}

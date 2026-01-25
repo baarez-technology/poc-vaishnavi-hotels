@@ -181,9 +181,9 @@ const Profile = () => {
         </p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-6">
         {/* Profile Card - matching admin dashboard */}
-        <div className="col-span-1 lg:col-span-8 rounded-[10px] p-4 sm:p-6 bg-white">
+        <div className="col-span-1 xl:col-span-8 rounded-[10px] p-4 sm:p-6 bg-white">
           {/* Profile Header */}
           <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-5 pb-6 border-b border-neutral-100 dark:border-neutral-800">
             {/* Avatar and User Info Container for Mobile */}
@@ -310,7 +310,7 @@ const Profile = () => {
         </div>
 
         {/* Account Information Card */}
-        <div className="col-span-1 lg:col-span-4 rounded-[10px] p-4 sm:p-6 bg-white">
+        <div className="col-span-1 xl:col-span-4 rounded-[10px] p-4 sm:p-6 bg-white">
           <h3 className="text-sm font-semibold text-neutral-800 mb-4 sm:mb-5">
             Account Information
           </h3>
@@ -341,7 +341,7 @@ const Profile = () => {
         </div>
 
         {/* Security Card */}
-        <div className="col-span-1 lg:col-span-6 rounded-[10px] p-4 sm:p-6 bg-white">
+        <div className="col-span-1 xl:col-span-6 rounded-[10px] p-4 sm:p-6 bg-white">
           <h3 className="text-sm font-semibold text-neutral-800 mb-4 sm:mb-5">
             Security
           </h3>
@@ -367,7 +367,7 @@ const Profile = () => {
         </div>
 
         {/* Preferences Card */}
-        <div className="col-span-1 lg:col-span-6 rounded-[10px] p-4 sm:p-6 bg-white">
+        <div className="col-span-1 xl:col-span-6 rounded-[10px] p-4 sm:p-6 bg-white">
           <h3 className="text-sm font-semibold text-neutral-800 mb-4 sm:mb-5">
             Preferences
           </h3>

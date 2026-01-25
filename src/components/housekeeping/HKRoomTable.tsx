@@ -40,7 +40,7 @@ export default function HKRoomTable({
     { key: 'cleaningStartedAt', label: 'Start Time', sortable: true, width: 'auto', minWidth: '100px' },
     { key: 'estimatedFinish', label: 'Est. Finish', sortable: false, width: 'auto', minWidth: '100px' },
     { key: 'lastCleaned', label: 'Last Updated', sortable: true, width: 'auto', minWidth: '120px' },
-    { key: 'actions', label: '', sortable: false, width: '60px' }
+    { key: 'actions', label: 'Actions', sortable: false, width: '50px', sticky: true }
   ];
 
   const getStaffName = (staffId) => {
@@ -120,6 +120,7 @@ export default function HKRoomTable({
                 sorted={sortField === col.key ? sortDirection : null}
                 onSort={() => col.sortable && onSort && onSort(col.key)}
                 style={{ width: col.width, minWidth: col.minWidth }}
+                sticky={col.sticky}
               >
                 {col.label}
               </TableHead>
@@ -213,7 +214,7 @@ export default function HKRoomTable({
                 </TableCell>
 
                 {/* Actions */}
-                <TableActions>
+                <TableActions sticky>
                   <div className="relative" ref={openDropdown === room.id ? dropdownRef : null}>
                     <IconButton
                       icon={MoreHorizontal}

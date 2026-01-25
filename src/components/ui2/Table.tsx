@@ -58,7 +58,7 @@ export function TableRow({ className, selected, clickable, children, ...props })
   return (
     <tr
       className={cn(
-        'transition-colors duration-100',
+        'transition-colors duration-100 group',
         selected ? 'bg-terra-50' : 'bg-white hover:bg-neutral-50/80',
         clickable && 'cursor-pointer',
         className
@@ -78,6 +78,7 @@ export function TableHead({
   onSort,
   align = 'left',
   width,
+  sticky = false,
   children,
   ...props
 }) {
@@ -95,6 +96,7 @@ export function TableHead({
         'px-6 py-4 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider whitespace-nowrap',
         alignments[align],
         sortable && 'cursor-pointer select-none hover:text-neutral-700 transition-colors',
+        sticky && 'sticky right-0 bg-neutral-50 shadow-[-6px_0_12px_-4px_rgba(0,0,0,0.15)]',
         className
       )}
       style={{ width }}
@@ -141,10 +143,14 @@ export function TableCell({
 }
 
 // Table Action Cell - For row actions
-export function TableActions({ children, className }) {
+export function TableActions({ children, className, sticky = false }) {
   return (
-    <td className={cn('px-6 py-4 text-right', className)}>
-      <div className="flex items-center justify-end gap-1">
+    <td className={cn(
+      'px-2 py-4 text-center',
+      sticky && 'sticky right-0 bg-white group-hover:bg-neutral-50 shadow-[-6px_0_12px_-4px_rgba(0,0,0,0.15)]',
+      className
+    )}>
+      <div className="flex items-center justify-center gap-1">
         {children}
       </div>
     </td>

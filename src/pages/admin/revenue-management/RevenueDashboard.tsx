@@ -783,7 +783,7 @@ const RevenueDashboard = () => {
             subtitle="Pricing rules"
           >
             <Link
-              to="/admin/revenue/rules"
+              to="/admin/revenue/pricing"
               className="text-[10px] sm:text-[11px] font-semibold text-terra-600 flex items-center gap-1"
             >
               View All <ChevronRight className="w-3 h-3" />

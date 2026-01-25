@@ -866,9 +866,9 @@ export default function AISegmentationStudio() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         {/* Configuration Panel */}
-        <div className="lg:col-span-1">
+        <div className="xl:col-span-1">
           <GenerateSegmentsPanel
             config={config}
             onConfigChange={setConfig}
@@ -909,7 +909,7 @@ export default function AISegmentationStudio() {
         </div>
 
         {/* Segments Grid */}
-        <div className="lg:col-span-3">
+        <div className="xl:col-span-3">
           {isGenerating ? (
             <div className="bg-white rounded-xl border border-neutral-200">
               <LoadingState message="Analyzing guests and generating segments..." />

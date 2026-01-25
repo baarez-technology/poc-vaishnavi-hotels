@@ -278,7 +278,7 @@ export default function HousekeepingRoomsReport() {
           </div>
 
           {/* Turnover Bar Chart */}
-          <div className="lg:col-span-3 bg-white rounded-xl p-4 sm:p-6">
+          <div className="xl:col-span-3 bg-white rounded-xl p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1">Turnover Time by Floor</h3>
             <p className="text-[12px] text-neutral-500 mb-4">Average minutes per room</p>
 

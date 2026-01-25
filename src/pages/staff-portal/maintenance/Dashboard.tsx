@@ -179,7 +179,7 @@ const MaintenanceDashboard = () => {
 
       {/* KPI Cards - 12 Column Grid matching admin dashboard */}
       <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Open Work Orders"
             value={stats.pendingWorkOrders + stats.inProgressWorkOrders}
@@ -188,7 +188,7 @@ const MaintenanceDashboard = () => {
             color="terra"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Critical Issues"
             value={stats.criticalWorkOrders}
@@ -197,7 +197,7 @@ const MaintenanceDashboard = () => {
             color="danger"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Tasks Due Today"
             value={stats.pendingTasks + stats.inProgressTasks}
@@ -206,7 +206,7 @@ const MaintenanceDashboard = () => {
             color="gold"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Shift Hours Left"
             value={shiftHoursLeft || '--'}
@@ -220,7 +220,7 @@ const MaintenanceDashboard = () => {
       {/* Main Content - 12 Column Grid matching admin dashboard */}
       <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
         {/* Recent Work Orders - 8 columns */}
-        <div className="col-span-12 lg:col-span-8">
+        <div className="col-span-12 xl:col-span-8">
           <SectionCard
             title="Recent Work Orders"
             subtitle={`${recentWorkOrders.length} active orders`}
@@ -293,13 +293,13 @@ const MaintenanceDashboard = () => {
         </div>
 
         {/* Quick Actions - 4 columns */}
-        <div className="col-span-12 lg:col-span-4">
+        <div className="col-span-12 xl:col-span-4">
           <SectionCard
             title="Quick Actions"
             subtitle="Common tasks"
             className="h-full"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-3">
               <button
                 onClick={() => {
                   const nextOrder = workOrders.find((wo: any) => wo.status === 'pending');
@@ -363,7 +363,7 @@ const MaintenanceDashboard = () => {
       {/* Activity & Alerts - 6 + 6 = 12 columns */}
       <div className="grid grid-cols-12 gap-4 sm:gap-6">
         {/* Recent Activity - 6 columns */}
-        <div className="col-span-12 lg:col-span-6">
+        <div className="col-span-12 xl:col-span-6">
           <SectionCard
             title="Recent Activity"
             subtitle="Latest updates"
@@ -416,7 +416,7 @@ const MaintenanceDashboard = () => {
         </div>
 
         {/* Urgent Alerts - 6 columns */}
-        <div className="col-span-12 lg:col-span-6">
+        <div className="col-span-12 xl:col-span-6">
           <SectionCard
             title="Urgent Alerts"
             subtitle="Important notifications"

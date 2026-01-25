@@ -67,7 +67,7 @@ export function HeroSection() {
           </motion.div>
 
           {/* Right Column - Promotional Text */}
-        <motion.div
+          <motion.div
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
@@ -76,8 +76,8 @@ export function HeroSection() {
             <p>
               Experience luxury accommodations with AI-powered recommendations. Book now and save 15% or more when you reserve by January 2025. Not sure where to go? Use our intelligent search to find the perfect hotel for your needs.
             </p>
-        </motion.div>
-      </div>
+          </motion.div>
+        </div>
 
         {/* Search Card */}
         <motion.div

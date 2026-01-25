@@ -387,7 +387,7 @@ const WorkOrders = () => {
 
       {/* KPI Cards - 12 Column Grid matching admin dashboard */}
       <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Pending"
             value={stats.pendingWorkOrders}
@@ -396,7 +396,7 @@ const WorkOrders = () => {
             color="gold"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="In Progress"
             value={stats.inProgressWorkOrders}
@@ -405,7 +405,7 @@ const WorkOrders = () => {
             color="ocean"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Critical Issues"
             value={stats.criticalWorkOrders}
@@ -414,7 +414,7 @@ const WorkOrders = () => {
             color="danger"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Completed"
             value={stats.completedWorkOrders}

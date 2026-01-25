@@ -25,7 +25,7 @@ import {
 
 export default function CBSCalendar() {
   const navigate = useNavigate();
-  const { availability, updateAvailability, getCalendarData, bookings, refreshBookings } = useCBS();
+  const { availability: cbsAvailability, updateAvailability, getCalendarData, bookings, refreshBookings } = useCBS();
   const cmsAvailability = useCMSAvailability();
   const { success } = useToast();
   const calendarRef = useRef(null);

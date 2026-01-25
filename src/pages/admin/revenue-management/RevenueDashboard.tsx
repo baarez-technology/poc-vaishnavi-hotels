@@ -12,11 +12,12 @@ import {
   Download,
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { revenueIntelligenceService, DashboardResponse, PricingRecommendation, PricingRule, SegmentPerformance } from '../../../api/services/revenue-intelligence.service';
+import { revenueIntelligenceService, DashboardResponse, PricingRecommendation, PricingRule } from '../../../api/services/revenue-intelligence.service';
 import { useToast } from '../../../contexts/ToastContext';
 import { DemandLevelBadge } from '../../../components/revenue-management/DemandChart';
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalContent, ModalFooter, ConfirmModal } from '../../../components/ui2/Modal';
 import { Button } from '../../../components/ui2/Button';
+import { useBookingsSSE } from '../../../hooks/useBookingsSSE';
 
 // Skeleton Loader Component
 function SkeletonLoader({ className = '' }: { className?: string }) {
@@ -105,9 +106,8 @@ const RevenueDashboard = () => {
   // State for API data
   const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null);
   const [recommendations, setRecommendations] = useState<PricingRecommendation[]>([]);
-  const [totalOpportunity, setTotalOpportunity] = useState<number>(0);
   const [rules, setRules] = useState<PricingRule[]>([]);
-  const [segments, setSegments] = useState<SegmentPerformance[]>([]);
+  const [segments, setSegments] = useState<any[]>([]);
   const [pickupMetrics, setPickupMetrics] = useState<{
     strong_days: number;
     critical_days: number;
@@ -140,7 +140,6 @@ const RevenueDashboard = () => {
 
       setDashboardData(dashboard);
       setRecommendations(recsResponse?.recommendations || []);
-      setTotalOpportunity(recsResponse?.total_opportunity || 0);
       setRules(Array.isArray(pricingRules) ? pricingRules : []);
       setSegments(Array.isArray(segmentsData) ? segmentsData : []);
       if (pickupData?.summary) {
@@ -159,11 +158,35 @@ const RevenueDashboard = () => {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [showToast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // showToast is stable from context, no need to include in deps
 
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
+
+  // SSE Integration for real-time booking updates (affects revenue dashboard)
+  useBookingsSSE({
+    onBookingCreated: (bookingData) => {
+      console.log('[Revenue Dashboard] 🎉 New booking received via SSE, refreshing dashboard:', bookingData);
+      // Refresh dashboard when new booking is created (affects revenue metrics)
+      fetchDashboardData();
+    },
+    onBookingCancelled: (bookingId) => {
+      console.log('[Revenue Dashboard] 🚫 Booking cancelled via SSE, refreshing dashboard:', bookingId);
+      // Refresh dashboard when booking is cancelled (affects revenue metrics)
+      fetchDashboardData();
+    },
+    refetchBookings: () => {
+      // Refresh dashboard data which includes booking-related metrics
+      fetchDashboardData();
+    },
+  });
+
+  // Handle export - memoized to prevent re-renders
+  const handleExport = useCallback(() => {
+    setShowExportOptions(true);
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -182,7 +205,7 @@ const RevenueDashboard = () => {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []);
+  }, [handleExport]);
 
   const handleRefreshAll = async () => {
     setIsRefreshing(true);
@@ -237,7 +260,7 @@ const RevenueDashboard = () => {
         `$${kpis?.adr || 0}`,
         `${kpis?.adr_trend || 0}%`
       ]);
-      csvData.push(['Active Pricing Rules', rules.filter(r => r.isActive).length, '']);
+      csvData.push(['Active Pricing Rules', Array.isArray(rules) ? rules.filter(r => r.isActive).length : 0, '']);
       csvData.push([]);
 
       // Revenue Forecast
@@ -416,7 +439,7 @@ const RevenueDashboard = () => {
             </div>
             <div class="kpi-card">
               <div class="kpi-label">Active Pricing Rules</div>
-              <div class="kpi-value">${rules.filter(r => r.isActive).length}</div>
+              <div class="kpi-value">${Array.isArray(rules) ? rules.filter(r => r.isActive).length : 0}</div>
             </div>
           </div>
 
@@ -489,10 +512,6 @@ const RevenueDashboard = () => {
     } catch (error) {
       showToast('Failed to generate PDF', 'error');
     }
-  };
-
-  const handleExport = () => {
-    setShowExportOptions(true);
   };
 
   // Format last updated time
@@ -578,6 +597,9 @@ const RevenueDashboard = () => {
     revenue: Math.round((item.forecasted_occupancy / 100) * totalRooms * avgAdr),
     occupancy: item.forecasted_occupancy,
   })) || [];
+
+  // Calculate total opportunity from recommendations
+  const totalOpportunity = recommendations.reduce((sum, rec) => sum + (rec.potential_revenue || 0), 0);
 
   // Segment pie data - use API data or fallback to defaults
   const segmentColors: Record<string, string> = {
@@ -752,7 +774,7 @@ const RevenueDashboard = () => {
 
           <KPICard
             title="Active Rules"
-            value={rules.filter(r => r.isActive).length}
+            value={Array.isArray(rules) ? rules.filter(r => r.isActive).length : 0}
             trendValue={null}
             icon={Sparkles}
             accentColor="gold"

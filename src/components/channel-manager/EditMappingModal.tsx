@@ -17,6 +17,7 @@ export default function EditMappingModal({
   ota,
   existingMapping,
 }) {
+  const [isLoading, setIsLoading] = useState(false);
   const [otaRoomType, setOtaRoomType] = useState('');
   const [syncRates, setSyncRates] = useState(true);
   const [syncAvailability, setSyncAvailability] = useState(true);
@@ -27,6 +28,7 @@ export default function EditMappingModal({
       setOtaRoomType(existingMapping?.otaRoomType || '');
       setSyncRates(existingMapping?.syncRates !== false);
       setSyncAvailability(existingMapping?.syncAvailability !== false);
+      setIsLoading(false);
     }
   }, [isOpen, room, existingMapping]);
 
@@ -42,16 +44,28 @@ export default function EditMappingModal({
     room.name.toLowerCase().includes('suite') ? 'Executive Suite' : null
   ].filter(Boolean);
 
-  const handleSave = () => {
-    if (otaRoomType.trim()) {
-      onSave({
+  const handleSave = async () => {
+    if (!otaRoomType.trim()) {
+      return; // Don't proceed if OTA room type is empty
+    }
+    
+    setIsLoading(true);
+    try {
+      await onSave({
         pmsRoomType: room.id,
         pmsRoomName: room.name,
         otaRoomType: otaRoomType.trim(),
         syncRates,
         syncAvailability
       });
+      // Only close if save was successful (no error thrown)
       onClose();
+    } catch (err) {
+      // Error handling is done in context/toast
+      // Don't close modal on error so user can fix and retry
+      console.error('Failed to save mapping:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -72,7 +86,8 @@ export default function EditMappingModal({
           <Button
             variant="primary"
             onClick={handleSave}
-            disabled={!otaRoomType.trim()}
+            disabled={!otaRoomType.trim() || isLoading}
+            loading={isLoading}
             className="px-5 py-2 text-[13px] font-semibold"
           >
             {isEditing ? 'Update Mapping' : 'Create Mapping'}
@@ -122,11 +137,10 @@ export default function EditMappingModal({
                 key={idx}
                 type="button"
                 onClick={() => setOtaRoomType(suggestion)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                  otaRoomType === suggestion
-                    ? 'bg-terra-100 text-terra-700 border border-terra-300'
-                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 border border-transparent'
-                }`}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${otaRoomType === suggestion
+                  ? 'bg-terra-100 text-terra-700 border border-terra-300'
+                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 border border-transparent'
+                  }`}
               >
                 {suggestion}
               </button>
@@ -148,13 +162,11 @@ export default function EditMappingModal({
             <button
               type="button"
               onClick={() => setSyncRates(!syncRates)}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                syncRates ? 'bg-terra-500' : 'bg-neutral-300'
-              }`}
+              className={`relative w-11 h-6 rounded-full transition-colors ${syncRates ? 'bg-terra-500' : 'bg-neutral-300'
+                }`}
             >
-              <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-                syncRates ? 'translate-x-5' : 'translate-x-0'
-              }`} />
+              <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${syncRates ? 'translate-x-5' : 'translate-x-0'
+                }`} />
             </button>
           </label>
 
@@ -166,13 +178,11 @@ export default function EditMappingModal({
             <button
               type="button"
               onClick={() => setSyncAvailability(!syncAvailability)}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                syncAvailability ? 'bg-terra-500' : 'bg-neutral-300'
-              }`}
+              className={`relative w-11 h-6 rounded-full transition-colors ${syncAvailability ? 'bg-terra-500' : 'bg-neutral-300'
+                }`}
             >
-              <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-                syncAvailability ? 'translate-x-5' : 'translate-x-0'
-              }`} />
+              <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${syncAvailability ? 'translate-x-5' : 'translate-x-0'
+                }`} />
             </button>
           </label>
         </div>

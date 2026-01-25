@@ -4,11 +4,13 @@
  * Enhanced with consistent styling matching CMS section
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  Plus, RefreshCw, Search, Wifi, WifiOff, AlertTriangle, ChevronDown
+  Plus, RefreshCw, Search, Wifi, WifiOff, AlertTriangle, ChevronDown, Loader2
 } from 'lucide-react';
 import { useChannelManager } from '../../../context/ChannelManagerContext';
+import { useChannelManagerSSEEvents } from '../../../hooks/useChannelManagerSSEEvents';
 import OTAConnectionCard from '../../../components/channel-manager/OTAConnectionCard';
 import AddConnectionModal from '../../../components/channel-manager/AddConnectionModal';
 import EditCredentialsModal from '../../../components/channel-manager/EditCredentialsModal';
@@ -17,17 +19,19 @@ import { Button } from '../../../components/ui2/Button';
 import { DropdownMenu, DropdownMenuItem } from '../../../components/ui2/DropdownMenu';
 
 export default function OTAConnections() {
+  const navigate = useNavigate();
   const {
     otas,
+    isLoading: contextLoading,
     syncingOTAs,
     connectOTA,
     disconnectOTA,
     reconnectOTA,
     updateOTACredentials,
-    triggerManualSync
+    triggerManualSync,
+    fetchOTAs,
   } = useChannelManager();
 
-  const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
@@ -36,10 +40,16 @@ export default function OTAConnections() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 600);
-    return () => clearTimeout(timer);
-  }, []);
+  // Refetch data function for SSE
+  const refetchData = useCallback(async () => {
+    await fetchOTAs();
+  }, [fetchOTAs]);
+
+  // Register SSE event handlers for real-time updates
+  useChannelManagerSSEEvents({
+    onSyncStatus: refetchData,
+    refetchData,
+  });
 
   // Filter OTAs
   const filteredOTAs = otas.filter(ota => {
@@ -56,8 +66,14 @@ export default function OTAConnections() {
     error: otas.filter(o => o.status === 'error').length
   };
 
-  const handleConnect = (otaData) => {
-    connectOTA(otaData);
+  const handleConnect = async (otaData) => {
+    try {
+      await connectOTA(otaData);
+      setShowAddModal(false);
+      await refetchData();
+    } catch (err) {
+      // Error already handled in context
+    }
   };
 
   const handleDisconnect = (otaId) => {
@@ -66,12 +82,23 @@ export default function OTAConnections() {
     setShowDisconnectModal(true);
   };
 
-  const handleConfirmDisconnect = (otaId) => {
-    disconnectOTA(otaId);
+  const handleConfirmDisconnect = async (otaId) => {
+    try {
+      await disconnectOTA(otaId);
+      setShowDisconnectModal(false);
+      await refetchData();
+    } catch (err) {
+      // Error already handled in context
+    }
   };
 
-  const handleReconnect = (otaId) => {
-    reconnectOTA(otaId);
+  const handleReconnect = async (otaId) => {
+    try {
+      await reconnectOTA(otaId);
+      await refetchData();
+    } catch (err) {
+      // Error already handled in context
+    }
   };
 
   const handleEditCredentials = (ota) => {
@@ -79,12 +106,18 @@ export default function OTAConnections() {
     setShowEditModal(true);
   };
 
-  const handleSaveCredentials = (otaId, credentials) => {
-    updateOTACredentials(otaId, credentials);
+  const handleSaveCredentials = async (otaId, credentials) => {
+    try {
+      await updateOTACredentials(otaId, credentials);
+      setShowEditModal(false);
+      await refetchData();
+    } catch (err) {
+      // Error already handled in context
+    }
   };
 
   const handleViewLogs = (otaCode) => {
-    window.location.href = `/admin/channel-manager/logs?ota=${otaCode}`;
+    navigate(`/admin/channel-manager/logs?ota=${otaCode}`);
   };
 
   const handleSync = (otaCode) => {
@@ -138,6 +171,17 @@ export default function OTAConnections() {
       default: return `All (${statusCounts.all})`;
     }
   };
+
+  if (contextLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F9F7F7' }}>
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-terra-600 mx-auto mb-4" />
+          <p className="text-neutral-600">Loading OTA connections...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
@@ -196,7 +240,7 @@ export default function OTAConnections() {
 
                 {/* Value */}
                 <p className="text-xl sm:text-[28px] font-semibold tracking-tight text-neutral-900">
-                  {isLoading ? '-' : kpi.value}
+                  {contextLoading ? '-' : kpi.value}
                 </p>
               </div>
             );
@@ -244,7 +288,7 @@ export default function OTAConnections() {
 
         {/* OTA Cards */}
         <section className="space-y-3 sm:space-y-4">
-          {isLoading ? (
+          {contextLoading ? (
             <div className="space-y-3 sm:space-y-4">
               {[1, 2, 3].map(i => (
                 <div key={i} className="rounded-[10px] bg-white p-4 sm:p-6 animate-pulse">

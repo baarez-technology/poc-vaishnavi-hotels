@@ -47,6 +47,7 @@ import {
 } from '../../../data/bookingsData';
 import NewBookingDrawer from '../../../components/cbs/NewBookingDrawer';
 import { apiClient } from '../../../api/client';
+import { useBookingsSSE } from '../../../hooks/useBookingsSSE';
 
 // ============================================
 // ANIMATED COUNTER COMPONENT
@@ -197,6 +198,8 @@ function FilterChips({ filters, onFilterChange, onClearFilters }) {
   const sourceOptions = [
     { value: 'all', label: 'All Channels' },
     { value: 'Website', label: 'Direct' },
+    { value: 'Dummy Channel Manager', label: 'Dummy Channel Manager' },
+    { value: 'CRS', label: 'CRS' },
     { value: 'Booking.com', label: 'Booking.com' },
     { value: 'Expedia', label: 'Expedia' },
     { value: 'Walk-in', label: 'Walk-in' },
@@ -356,7 +359,10 @@ function ViewToggle({ view, onViewChange }) {
 // ============================================
 function BookingCard({ booking, onClick, index = 0 }) {
   const status = statusConfig[booking.status];
-  const source = sourceConfig[booking.source];
+  const source = sourceConfig[booking.source] || {
+    color: 'bg-[#7B68EE]/10 text-[#7B68EE]',
+    icon: '💻'
+  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -498,7 +504,10 @@ function BookingCard({ booking, onClick, index = 0 }) {
 // ============================================
 function BookingTableRow({ booking, onClick, index }) {
   const status = statusConfig[booking.status];
-  const source = sourceConfig[booking.source];
+  const source = sourceConfig[booking.source] || {
+    color: 'bg-[#7B68EE]/10 text-[#7B68EE]',
+    icon: '💻'
+  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -604,7 +613,10 @@ function BookingDetailDrawer({ booking, isOpen, onClose, onStatusChange }) {
   if (!booking || !isOpen) return null;
 
   const status = statusConfig[booking.status];
-  const source = sourceConfig[booking.source];
+  const source = sourceConfig[booking.source] || {
+    color: 'bg-[#7B68EE]/10 text-[#7B68EE]',
+    icon: '💻'
+  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -942,6 +954,10 @@ function transformApiBooking(apiBooking: any) {
   const sourceMap: Record<string, string> = {
     'Website': 'Website',
     'direct': 'Website',
+    'Dummy Channel Manager': 'Dummy Channel Manager',
+    'dummy channel manager': 'Dummy Channel Manager',
+    'CRS': 'CRS',
+    'crs': 'CRS',
     'Booking.com': 'Booking.com',
     'booking.com': 'Booking.com',
     'Expedia': 'Expedia',
@@ -977,7 +993,12 @@ function transformApiBooking(apiBooking: any) {
     roomType: apiBooking.room?.name || 'Standard Room',
     room: apiBooking.room?.number || null,
     status: statusMap[apiBooking.status?.toLowerCase()] || 'CONFIRMED',
-    source: sourceMap[apiBooking.bookingSource || apiBooking.booking_source] || 'Website',
+    source: (() => {
+      const rawSource = apiBooking.bookingSource || apiBooking.booking_source || apiBooking.source || 'Direct';
+      const mappedSource = sourceMap[rawSource];
+      // If mapped, use it; otherwise use raw source (don't default to Website)
+      return mappedSource || rawSource;
+    })(),
     vip: apiBooking.vipStatus || apiBooking.vip_flag || false,
     amount: totalPrice,
     amountPaid: amountPaid,
@@ -1015,23 +1036,31 @@ export default function CMSBookings() {
 
   // Fetch bookings from API
   const fetchBookings = useCallback(async () => {
+    console.log('[CMS Bookings] 🔄 Starting fetchBookings...');
     setIsLoading(true);
     setApiError(null);
     try {
+      console.log('[CMS Bookings] 📡 Fetching bookings from API...');
       const response = await apiClient.get('/api/v1/bookings', {
         params: { pageSize: 1000 }
       });
 
       const apiBookings = response.data?.items || response.data?.data?.items || [];
+      console.log('[CMS Bookings] 📦 Received bookings from API:', apiBookings.length, 'bookings');
 
       const transformedBookings = apiBookings.map(transformApiBooking);
+      console.log('[CMS Bookings] ✅ Transformed bookings:', transformedBookings.length, 'bookings');
+      console.log('[CMS Bookings] 📋 First booking sample:', transformedBookings[0]);
+      
       setBookings(transformedBookings);
+      console.log('[CMS Bookings] ✅✅✅ State updated successfully with', transformedBookings.length, 'bookings');
     } catch (error: any) {
-      console.error('CMS Bookings: Failed to fetch bookings from API', error?.message);
+      console.error('[CMS Bookings] ❌ Failed to fetch bookings from API:', error?.message);
       setApiError('Failed to load bookings. Please try again.');
       setBookings([]);
     } finally {
       setIsLoading(false);
+      console.log('[CMS Bookings] 🏁 fetchBookings completed');
     }
   }, []);
 
@@ -1039,6 +1068,11 @@ export default function CMSBookings() {
   useEffect(() => {
     fetchBookings();
   }, [fetchBookings]);
+
+  // SSE Integration for real-time booking updates
+  useBookingsSSE({
+    refetchBookings: fetchBookings,
+  });
 
   // Computed values
   const today = new Date().toISOString().split('T')[0];
@@ -1098,6 +1132,19 @@ export default function CMSBookings() {
         b.email.toLowerCase().includes(query)
       );
     }
+
+    // Sort by createdAt (newest first), then by checkIn as fallback
+    result.sort((a, b) => {
+      const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (bCreated !== aCreated) {
+        return bCreated - aCreated; // Descending (newest first)
+      }
+      // If createdAt is same or missing, sort by checkIn
+      const aCheckIn = a.checkIn ? new Date(a.checkIn).getTime() : 0;
+      const bCheckIn = b.checkIn ? new Date(b.checkIn).getTime() : 0;
+      return bCheckIn - aCheckIn; // Descending
+    });
 
     return result;
   }, [bookings, activeTab, filters, searchQuery, today]);

@@ -214,11 +214,16 @@ export default function BookingsTable({
               color: 'bg-neutral-100 text-neutral-700 border-neutral-200',
               label: booking.status || 'Unknown'
             };
-            // Normalize source with fallback
-            const source = (sourceConfig as any)[booking.source] || {
-              color: 'bg-neutral-100 text-neutral-700',
-              icon: '📋'
-            };
+            // Normalize source with fallback - preserve original source if not in config
+            const source = booking.source && (sourceConfig as any)[booking.source]
+              ? (sourceConfig as any)[booking.source]
+              : (booking.source ? {
+                  color: 'bg-[#7B68EE]/10 text-[#7B68EE]',
+                  icon: '💻'
+                } : {
+                  color: 'bg-neutral-100 text-neutral-700',
+                  icon: '📋'
+                });
 
             return (
                 <tr key={booking.id} className="group bg-white hover:bg-neutral-50/30 transition-colors duration-100">

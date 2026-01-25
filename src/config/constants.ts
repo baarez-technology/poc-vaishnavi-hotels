@@ -90,6 +90,62 @@ export const API_ENDPOINTS = {
     CHAT: '/api/v1/guest-ai/chat',
     CREATE_BOOKING: '/api/v1/guest-ai/create-booking',
   },
+  CHANNEL_MANAGER: {
+    BASE: '/api/v1/channel-manager',
+    OTAS: {
+      LIST: '/api/v1/channel-manager/otas',
+      DETAIL: (id: string) => `/api/v1/channel-manager/otas/${id}`,
+      CREATE: '/api/v1/channel-manager/otas',
+      UPDATE: (id: string) => `/api/v1/channel-manager/otas/${id}`,
+      DELETE: (id: string) => `/api/v1/channel-manager/otas/${id}`,
+      TEST: (id: string) => `/api/v1/channel-manager/otas/${id}/test`,
+      SYNC: (id: string) => `/api/v1/channel-manager/otas/${id}/sync`,
+      SYNC_ALL: '/api/v1/channel-manager/otas/sync/all',
+    },
+    ROOM_MAPPINGS: {
+      LIST: '/api/v1/channel-manager/room-mappings',
+      DETAIL: (id: string) => `/api/v1/channel-manager/room-mappings/${id}`,
+      CREATE: '/api/v1/channel-manager/room-mappings',
+      UPDATE: (id: string) => `/api/v1/channel-manager/room-mappings/${id}`,
+      DELETE: (id: string) => `/api/v1/channel-manager/room-mappings/${id}`,
+      AUTO_MAP: '/api/v1/channel-manager/room-mappings/auto-map',
+      VALIDATE: '/api/v1/channel-manager/room-mappings/validate',
+    },
+    RATES: {
+      CALENDAR: '/api/v1/channel-manager/rates/calendar',
+      UPDATE: (date: string, roomType: string) => `/api/v1/channel-manager/rates/calendar/${date}/${roomType}`,
+      PUSH: '/api/v1/channel-manager/rates/push',
+      PULL: '/api/v1/channel-manager/rates/pull',
+      PARITY: '/api/v1/channel-manager/rates/parity',
+    },
+    RESTRICTIONS: {
+      LIST: '/api/v1/channel-manager/restrictions',
+      DETAIL: (id: string) => `/api/v1/channel-manager/restrictions/${id}`,
+      CREATE: '/api/v1/channel-manager/restrictions',
+      UPDATE: (id: string) => `/api/v1/channel-manager/restrictions/${id}`,
+      DELETE: (id: string) => `/api/v1/channel-manager/restrictions/${id}`,
+      TOGGLE: (id: string) => `/api/v1/channel-manager/restrictions/${id}/toggle`,
+    },
+    PROMOTIONS: {
+      LIST: '/api/v1/channel-manager/promotions',
+      DETAIL: (id: string) => `/api/v1/channel-manager/promotions/${id}`,
+      CREATE: '/api/v1/channel-manager/promotions',
+      UPDATE: (id: string) => `/api/v1/channel-manager/promotions/${id}`,
+      DELETE: (id: string) => `/api/v1/channel-manager/promotions/${id}`,
+      TOGGLE: (id: string) => `/api/v1/channel-manager/promotions/${id}/toggle`,
+      APPLY: (id: string) => `/api/v1/channel-manager/promotions/${id}/apply`,
+    },
+    SYNC_LOGS: {
+      LIST: '/api/v1/channel-manager/sync-logs',
+      DETAIL: (id: string) => `/api/v1/channel-manager/sync-logs/${id}`,
+      CLEAR: '/api/v1/channel-manager/sync-logs',
+      EXPORT: '/api/v1/channel-manager/sync-logs/export',
+    },
+    STATS: {
+      BASE: '/api/v1/channel-manager/stats',
+      INSIGHTS: '/api/v1/channel-manager/stats/insights',
+    },
+  },
 } as const;
 
 export const QUERY_KEYS = {

@@ -4,13 +4,14 @@
  * Consistent with RateSync, OTAConnections, and RoomMapping pages
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Plus, Calendar, Edit2, Trash2, ToggleRight, Shield, Ban, Clock,
-  Search, ChevronDown, Check, AlertTriangle
+  Search, ChevronDown, Check, AlertTriangle, Loader2
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useChannelManager } from '../../../context/ChannelManagerContext';
+import { useChannelManagerSSEEvents } from '../../../hooks/useChannelManagerSSEEvents';
 import { useToast } from '../../../contexts/ToastContext';
 import RestrictionDrawer from '../../../components/channel-manager/RestrictionDrawer';
 import { Button, IconButton } from '../../../components/ui2/Button';
@@ -148,12 +149,32 @@ function SelectDropdown({ value, onChange, options, placeholder = 'Select...', c
 }
 
 export default function Restrictions() {
-  const { restrictions, otas, setRestriction, removeRestriction, toggleRestrictionStatus } = useChannelManager();
+  const {
+    restrictions,
+    otas,
+    isLoading: contextLoading,
+    setRestriction,
+    removeRestriction,
+    toggleRestrictionStatus,
+    fetchRestrictions,
+  } = useChannelManager();
   const toast = useToast();
   const [showDrawer, setShowDrawer] = useState(false);
   const [editingRestriction, setEditingRestriction] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, restriction: null });
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Refetch data function for SSE
+  const refetchData = useCallback(async () => {
+    await fetchRestrictions();
+  }, [fetchRestrictions]);
+
+  // Register SSE event handlers for real-time updates
+  useChannelManagerSSEEvents({
+    onRestrictionsUpdated: refetchData,
+    onAvailabilityUpdated: refetchData,
+    refetchData,
+  });
 
   // Filter state - single select dropdowns
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'inactive'
@@ -268,12 +289,22 @@ export default function Restrictions() {
     setShowDrawer(true);
   };
 
-  const handleSave = (data, isEditing) => {
-    setRestriction(data);
-    if (isEditing) {
-      toast.success('Restriction updated successfully');
-    } else {
-      toast.success('Restriction created successfully');
+  const handleSave = async (data, isEditing) => {
+    try {
+      if (isEditing && editingRestriction) {
+        // Update existing restriction
+        await setRestriction({ ...data, id: editingRestriction.id });
+        toast.success('Restriction updated successfully');
+      } else {
+        // Create new restriction
+        await setRestriction(data);
+        toast.success('Restriction created successfully');
+      }
+      setShowDrawer(false);
+      setEditingRestriction(null);
+      await refetchData();
+    } catch (err) {
+      // Error already handled in context
     }
   };
 
@@ -281,18 +312,28 @@ export default function Restrictions() {
     setDeleteConfirm({ isOpen: true, restriction });
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteConfirm.restriction) {
-      removeRestriction(deleteConfirm.restriction.id);
-      toast.success('Restriction deleted successfully');
+      try {
+        await removeRestriction(deleteConfirm.restriction.id);
+        toast.success('Restriction deleted successfully');
+        await refetchData();
+      } catch (err) {
+        // Error already handled in context
+      }
     }
     setDeleteConfirm({ isOpen: false, restriction: null });
   };
 
-  const handleToggleActive = (restriction) => {
-    toggleRestrictionStatus(restriction.id);
-    const newStatus = !restriction.isActive;
-    toast.success(`Restriction ${newStatus ? 'activated' : 'deactivated'} successfully`);
+  const handleToggleActive = async (restriction) => {
+    try {
+      await toggleRestrictionStatus(restriction.id);
+      const newStatus = !restriction.isActive;
+      toast.success(`Restriction ${newStatus ? 'activated' : 'deactivated'} successfully`);
+      await refetchData();
+    } catch (err) {
+      // Error already handled in context
+    }
   };
 
   const formatDateRange = (dateRange) => {
@@ -328,6 +369,17 @@ export default function Restrictions() {
     };
     return colorMap[color] || 'bg-neutral-100 text-neutral-700';
   };
+
+  if (contextLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F9F7F7' }}>
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-terra-600 mx-auto mb-4" />
+          <p className="text-neutral-600">Loading restrictions...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>

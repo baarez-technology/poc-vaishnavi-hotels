@@ -316,7 +316,7 @@ export const RecommendationsPanel = ({
 
   // Update local state when props change
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && recommendations) {
       setLocalRecommendations(recommendations);
     }
   }, [recommendations, isLoading]);

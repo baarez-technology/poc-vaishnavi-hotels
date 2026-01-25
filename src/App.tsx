@@ -7,7 +7,7 @@ import { BookingProvider } from './contexts/BookingContext';
 import { PreCheckInProvider } from './contexts/PreCheckInContext';
 import { GuestAIProvider } from './contexts/GuestAIContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { BrandingProvider } from './contexts/BrandingContext';
+import { SSEProvider } from './contexts/SSEContext';
 import { AGIChatWidget } from './components/chatbot/AGIChatWidget';
 
 // Wrapper component to conditionally show Aria AI Chat Widget only on guest pages
@@ -145,8 +145,7 @@ const StaffTaskAcceptance = lazy(() => import('./pages/staff/TaskAcceptance'));
 function App() {
   return (
     <ThemeProvider>
-      <BrandingProvider>
-        <Router>
+      <Router>
           <AuthProvider>
             <ChatProvider>
               <AGIChatProvider>
@@ -243,90 +242,90 @@ function App() {
                             element={
                               <ProtectedRoute>
                                 <ToastProvider>
-                                  <SettingsProvider>
-                                    <AdminProvider>
-                                      <ChannelManagerProvider>
-                                        <AIInsightsProvider>
-                                          <RMSProvider>
-                                            <Suspense fallback={
-                                              <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-                                                <div className="text-center">
-                                                  <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4" />
-                                                  <p className="text-neutral-600">Loading admin panel...</p>
+                                  <SSEProvider>
+                                    <SettingsProvider>
+                                      <AdminProvider>
+                                        <ChannelManagerProvider>
+                                          <AIInsightsProvider>
+                                            <RMSProvider>
+                                              <Suspense fallback={
+                                                <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+                                                  <div className="text-center">
+                                                    <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4" />
+                                                    <p className="text-neutral-600">Loading admin panel...</p>
+                                                  </div>
                                                 </div>
-                                              </div>
-                                            }>
-                                              <Routes>
-                                                <Route element={<AdminLayout />}>
-                                                  <Route index element={<Dashboard />} />
-                                                  <Route path="dashboard" element={<Dashboard />} />
-                                                  <Route path="bookings" element={<Bookings />} />
-                                                  <Route path="guests" element={<Guests />} />
-                                                  <Route path="guests/:guestId" element={<GuestProfile />} />
-                                                  <Route path="rooms" element={<Rooms />} />
-                                                  <Route path="staff" element={<Staff />} />
-                                                  <Route path="staff/:staffId" element={<StaffProfile />} />
-                                                  <Route path="housekeeping" element={<Housekeeping />} />
-                                                  <Route path="maintenance" element={<Maintenance />} />
-                                                  <Route path="runner" element={<Runner />} />
-                                                  <Route path="revenue" element={<RevenueDashboard />} />
-                                                  <Route path="reputation" element={<ReputationAI />} />
-                                                  <Route path="crm" element={<CRM />} />
-                                                  <Route path="crm/segment/:segmentId" element={<SegmentDetailsWrapper />} />
-                                                  <Route path="reports" element={<ReportsHome />} />
-                                                  <Route path="reports/bookings-occupancy" element={<BookingsOccupancyReport />} />
-                                                  <Route path="reports/housekeeping-rooms" element={<HousekeepingRoomsReport />} />
-                                                  <Route path="reports/revenue-snapshot" element={<RevenueSnapshotReport />} />
-                                                  <Route path="reports/guest-experience" element={<GuestExperienceReport />} />
-                                                  <Route path="analytics" element={<AdvancedAnalytics />} />
-                                                  <Route path="settings/*" element={<SettingsLayout />} />
-                                                  {/* Profile Route */}
-                                                  <Route path="profile" element={<Profile />} />
-                                                  {/* CMS Routes */}
-                                                  <Route path="cms/availability" element={<CMSAvailability />} />
-                                                  {/* Channel Manager Routes */}
-                                                  <Route path="channel-manager" element={<ChannelDashboard />} />
-                                                  {/* RMS Routes */}
-                                                  <Route path="rms" element={<Navigate to="/admin/revenue" replace />} />
-                                                  {/* CMS Routes */}
-                                                  <Route path="cms/bookings" element={<CMSBookings />} />
-                                                  <Route path="cms/rate-plans" element={<CMSRatePlans />} />
-                                                  <Route path="cms/promotions" element={<CMSPromotions />} />
-                                                  {/* Channel Manager Routes */}
-                                                  <Route path="channel-manager/ota" element={<OTAConnections />} />
-                                                  <Route path="channel-manager/mapping" element={<RoomMapping />} />
-                                                  <Route path="channel-manager/rate-sync" element={<RateSync />} />
-                                                  <Route path="channel-manager/restrictions" element={<Restrictions />} />
-                                                  <Route path="channel-manager/promotions" element={<ChannelPromotions />} />
-                                                  <Route path="channel-manager/logs" element={<SyncLogs />} />
-                                                  {/* Revenue Management Routes */}
-                                                  <Route path="revenue/calendar" element={<RateCalendar />} />
-                                                  <Route path="revenue/pickup" element={<PickupAnalysis />} />
-                                                  <Route path="revenue/forecast" element={<DemandForecast />} />
-                                                  <Route path="revenue/competitors" element={<CompetitorRates />} />
-                                                  <Route path="revenue/segments" element={<Segmentation />} />
-                                                  <Route path="revenue/pricing" element={<PricingRules />} />
-                                                  <Route path="revenue/ai" element={<RevenueAI />} />
-                                                  {/* AI Routes */}
-                                                  <Route path="ai/reputation" element={<ReputationAI />} />
-                                                  <Route path="ai/crm" element={<CRM />} />
-                                                  <Route path="ai/crm-dashboard" element={<CRMAIDashboard />} />
-                                                  <Route path="ai/crm-chat" element={<CRMAI />} />
-                                                  <Route path="ai/ab-testing" element={<ABTestingDashboard />} />
-                                                  <Route path="ai/ota-conversion" element={<OTAConversionCenter />} />
-                                                  <Route path="ai/member-tiers" element={<MemberTierManagement />} />
-                                                  <Route path="ai/ai-segments" element={<AISegmentationStudio />} />
-                                                  <Route path="ai/recovery" element={<RecoveryActionCenter />} />
-                                                  {/* Maintenance Specializations */}
-                                                  <Route path="maintenance/specializations" element={<TechnicianSpecializations />} />
-                                                </Route>
-                                              </Routes>
-                                            </Suspense>
-                                          </RMSProvider>
-                                        </AIInsightsProvider>
-                                      </ChannelManagerProvider>
-                                    </AdminProvider>
-                                  </SettingsProvider>
+                                              }>
+                                                <Routes>
+                                                  <Route element={<AdminLayout />}>
+                                                    <Route index element={<Dashboard />} />
+                                                    <Route path="dashboard" element={<Dashboard />} />
+                                                    <Route path="bookings" element={<Bookings />} />
+                                                    <Route path="guests" element={<Guests />} />
+                                                    <Route path="guests/:guestId" element={<GuestProfile />} />
+                                                    <Route path="rooms" element={<Rooms />} />
+                                                    <Route path="staff" element={<Staff />} />
+                                                    <Route path="staff/:staffId" element={<StaffProfile />} />
+                                                    <Route path="housekeeping" element={<Housekeeping />} />
+                                                    <Route path="maintenance" element={<Maintenance />} />
+                                                    <Route path="runner" element={<Runner />} />
+                                                    <Route path="revenue" element={<RevenueDashboard />} />
+                                                    <Route path="reputation" element={<ReputationAI />} />
+                                                    <Route path="crm" element={<CRM />} />
+                                                    <Route path="crm/segment/:segmentId" element={<SegmentDetailsWrapper />} />
+                                                    <Route path="reports" element={<ReportsHome />} />
+                                                    <Route path="reports/bookings-occupancy" element={<BookingsOccupancyReport />} />
+                                                    <Route path="reports/housekeeping-rooms" element={<HousekeepingRoomsReport />} />
+                                                    <Route path="reports/revenue-snapshot" element={<RevenueSnapshotReport />} />
+                                                    <Route path="reports/guest-experience" element={<GuestExperienceReport />} />
+                                                    <Route path="analytics" element={<AdvancedAnalytics />} />
+                                                    <Route path="settings/*" element={<SettingsLayout />} />
+                                                    {/* Profile Route */}
+                                                    <Route path="profile" element={<Profile />} />
+                                                    {/* CMS Routes */}
+                                                    <Route path="cms/availability" element={<CMSAvailability />} />
+                                                    <Route path="cms/bookings" element={<CMSBookings />} />
+                                                    <Route path="cms/rate-plans" element={<CMSRatePlans />} />
+                                                    <Route path="cms/promotions" element={<CMSPromotions />} />
+                                                    {/* Channel Manager Routes */}
+                                                    <Route path="channel-manager" element={<ChannelDashboard />} />
+                                                    <Route path="channel-manager/ota" element={<OTAConnections />} />
+                                                    <Route path="channel-manager/mapping" element={<RoomMapping />} />
+                                                    <Route path="channel-manager/rate-sync" element={<RateSync />} />
+                                                    <Route path="channel-manager/restrictions" element={<Restrictions />} />
+                                                    <Route path="channel-manager/promotions" element={<ChannelPromotions />} />
+                                                    <Route path="channel-manager/logs" element={<SyncLogs />} />
+                                                    {/* RMS Routes */}
+                                                    <Route path="rms" element={<Navigate to="/admin/revenue" replace />} />
+                                                    {/* Revenue Management Routes */}
+                                                    <Route path="revenue/calendar" element={<RateCalendar />} />
+                                                    <Route path="revenue/pickup" element={<PickupAnalysis />} />
+                                                    <Route path="revenue/forecast" element={<DemandForecast />} />
+                                                    <Route path="revenue/competitors" element={<CompetitorRates />} />
+                                                    <Route path="revenue/segments" element={<Segmentation />} />
+                                                    <Route path="revenue/pricing" element={<PricingRules />} />
+                                                    <Route path="revenue/ai" element={<RevenueAI />} />
+                                                    {/* AI Routes */}
+                                                    <Route path="ai/reputation" element={<ReputationAI />} />
+                                                    <Route path="ai/crm" element={<CRM />} />
+                                                    <Route path="ai/crm-dashboard" element={<CRMAIDashboard />} />
+                                                    <Route path="ai/crm-chat" element={<CRMAI />} />
+                                                    <Route path="ai/ab-testing" element={<ABTestingDashboard />} />
+                                                    <Route path="ai/ota-conversion" element={<OTAConversionCenter />} />
+                                                    <Route path="ai/member-tiers" element={<MemberTierManagement />} />
+                                                    <Route path="ai/ai-segments" element={<AISegmentationStudio />} />
+                                                    <Route path="ai/recovery" element={<RecoveryActionCenter />} />
+                                                    {/* Maintenance Specializations */}
+                                                    <Route path="maintenance/specializations" element={<TechnicianSpecializations />} />
+                                                  </Route>
+                                                </Routes>
+                                              </Suspense>
+                                            </RMSProvider>
+                                          </AIInsightsProvider>
+                                        </ChannelManagerProvider>
+                                      </AdminProvider>
+                                    </SettingsProvider>
+                                  </SSEProvider>
                                 </ToastProvider>
                               </ProtectedRoute>
                             }
@@ -417,7 +416,6 @@ function App() {
             </ChatProvider>
           </AuthProvider>
         </Router>
-      </BrandingProvider>
     </ThemeProvider>
   );
 }

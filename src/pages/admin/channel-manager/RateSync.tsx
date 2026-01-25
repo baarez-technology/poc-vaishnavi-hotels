@@ -4,12 +4,13 @@
  * Consistent with OTAConnections and RoomMapping pages
  */
 
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   RefreshCw, Upload, Download, DollarSign, TrendingUp,
-  AlertTriangle, CheckCircle, Globe, ChevronDown, ChevronUp
+  AlertTriangle, CheckCircle, Globe, ChevronDown, ChevronUp, Loader2
 } from 'lucide-react';
 import { useChannelManager } from '../../../context/ChannelManagerContext';
+import { useChannelManagerSSEEvents } from '../../../hooks/useChannelManagerSSEEvents';
 import RateSyncCalendar from '../../../components/channel-manager/RateSyncCalendar';
 import { Button } from '../../../components/ui2/Button';
 
@@ -17,10 +18,13 @@ export default function RateSync() {
   const {
     otas,
     rateCalendar,
+    isLoading: contextLoading,
     syncingOTAs,
     pushRatesToOTAs,
     syncRatesToAllOTAs,
-    getChannelStats
+    getChannelStats,
+    fetchRateCalendar,
+    fetchChannelStats,
   } = useChannelManager();
 
   const [isPushing, setIsPushing] = useState(false);
@@ -29,14 +33,40 @@ export default function RateSync() {
   const connectedOTAs = otas.filter(o => o.status === 'connected');
   const stats = getChannelStats();
 
+  // Refetch data function for SSE
+  const refetchData = useCallback(async () => {
+    await Promise.all([
+      fetchRateCalendar(),
+      fetchChannelStats(),
+    ]);
+  }, [fetchRateCalendar, fetchChannelStats]);
+
+  // Register SSE event handlers for real-time updates
+  useChannelManagerSSEEvents({
+    onRatesUpdated: refetchData,
+    onSyncStatus: refetchData,
+    refetchData,
+  });
+
   const handlePushRates = async () => {
     setIsPushing(true);
-    await pushRatesToOTAs();
-    setIsPushing(false);
+    try {
+      await pushRatesToOTAs();
+      await refetchData();
+    } catch (err) {
+      // Error already handled in context
+    } finally {
+      setIsPushing(false);
+    }
   };
 
   const handleSyncAll = async () => {
-    await syncRatesToAllOTAs();
+    try {
+      await syncRatesToAllOTAs();
+      await refetchData();
+    } catch (err) {
+      // Error already handled in context
+    }
   };
 
   // Calculate rate parity issues
@@ -93,6 +123,17 @@ export default function RateSync() {
     rose: { icon: 'bg-rose-100 text-rose-600' },
     neutral: { icon: 'bg-neutral-100 text-neutral-500' }
   };
+
+  if (contextLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F9F7F7' }}>
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-terra-600 mx-auto mb-4" />
+          <p className="text-neutral-600">Loading rate calendar...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>

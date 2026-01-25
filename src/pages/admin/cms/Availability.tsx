@@ -8,6 +8,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useToast } from '../../../contexts/ToastContext';
 import { useTheme } from '../../../contexts/ThemeContext';
 import useCMSAvailability from '../../../state/cms/useCMSAvailability';
+import { useChannelManagerSSEEvents } from '../../../hooks/useChannelManagerSSEEvents';
 import { Button } from '../../../components/ui2/Button';
 import { Drawer } from '../../../components/ui2/Modal';
 import { Tooltip } from '../../../components/ui2/Tooltip';
@@ -1495,6 +1496,24 @@ export default function CMSAvailability() {
     const timer = setTimeout(scrollToToday, 100);
     return () => clearTimeout(timer);
   }, [scrollToToday]);
+
+// SSE Integration for real-time availability and restrictions updates
+  useChannelManagerSSEEvents({
+    onAvailabilityUpdated: () => {
+      console.log('[CMS Availability] Refreshing availability data due to SSE event');
+      cmsAvailability.fetchAvailabilityData();
+      cmsAvailability.fetchRoomBlocks();
+    },
+    onRestrictionsUpdated: () => {
+      console.log('[CMS Availability] Refreshing availability data due to restrictions update');
+      cmsAvailability.fetchAvailabilityData();
+    },
+    refetchData: () => {
+      console.log('[CMS Availability] Refetching all data due to SSE event');
+      cmsAvailability.fetchAvailabilityData();
+      cmsAvailability.fetchRoomBlocks();
+    },
+  });
 
   // Export availability data to CSV with timeout protection
   const handleExport = useCallback(() => {

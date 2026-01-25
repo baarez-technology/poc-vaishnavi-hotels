@@ -7,6 +7,7 @@ import revenueIntelligenceService, {
   RateCalendarData,
   ExecuteRulesResponse,
 } from '../../api/services/revenue-intelligence.service';
+import { useChannelManagerSSEEvents } from '../../hooks/useChannelManagerSSEEvents';
 
 interface RateCalendarViewProps {
   onDateSelect?: (date: string) => void;
@@ -71,6 +72,18 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
   useEffect(() => {
     fetchCalendarData();
   }, [fetchCalendarData]);
+
+  // SSE Integration for real-time rates updates
+  useChannelManagerSSEEvents({
+    onRatesUpdated: () => {
+      console.log('[RateCalendarView] Rates updated via SSE, refreshing calendar view');
+      fetchCalendarData();
+    },
+    refetchData: () => {
+      console.log('[RateCalendarView] Refetching calendar data due to SSE event');
+      fetchCalendarData();
+    },
+  });
 
   // Update selectedRoomType when roomTypes are loaded from API
   useEffect(() => {

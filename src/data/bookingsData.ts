@@ -45,6 +45,8 @@ export const sourceConfig = {
   'Booking.com': { color: 'bg-[#5C9BA4]/10 text-[#5C9BA4]', icon: '🏨' },
   'Expedia': { color: 'bg-[#CDB261]/20 text-[#CDB261]', icon: '✈️' },
   'Walk-in': { color: 'bg-neutral-100 text-neutral-700', icon: '🚶' },
+  'CRS': { color: 'bg-[#7B68EE]/10 text-[#7B68EE]', icon: '💻' },
+  'Dummy Channel Manager': { color: 'bg-[#7B68EE]/10 text-[#7B68EE]', icon: '💻' },
 };
 
 export const paymentStatusConfig = {

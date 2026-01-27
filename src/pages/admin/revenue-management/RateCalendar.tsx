@@ -66,6 +66,9 @@ const RateCalendar = () => {
     recommendations,
     refreshRecommendations,
     refreshAll,
+    isLoading,
+    error,
+    isSyncing,
   } = useRMS();
 
   const [selectedDate, setSelectedDate] = useState(null);

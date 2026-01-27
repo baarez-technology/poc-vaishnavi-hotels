@@ -242,35 +242,35 @@ const CompetitorRates = () => {
           <>
             <KPICard
               title="Avg Gap vs Market"
-              value={`${((competitorInsights as any).avgGapPercent ?? 0) > 0 ? '+' : ''}${(competitorInsights as any).avgGapPercent ?? 0}%`}
-              icon={((competitorInsights as any).avgGapPercent ?? 0) < 0 ? TrendingDown : ((competitorInsights as any).avgGapPercent ?? 0) > 0 ? TrendingUp : Globe}
-              accentColor={((competitorInsights as any).avgGapPercent ?? 0) < 0 ? 'sage' : ((competitorInsights as any).avgGapPercent ?? 0) > 0 ? 'rose' : 'terra'}
+              value={`${(competitorInsights?.avgGapPercent || 0) > 0 ? '+' : ''}${competitorInsights?.avgGapPercent || 0}%`}
+              icon={(competitorInsights?.avgGapPercent || 0) < 0 ? TrendingDown : (competitorInsights?.avgGapPercent || 0) > 0 ? TrendingUp : Globe}
+              accentColor={(competitorInsights?.avgGapPercent || 0) < 0 ? 'sage' : (competitorInsights?.avgGapPercent || 0) > 0 ? 'rose' : 'terra'}
               index={0}
             />
             <KPICard
               title="Days at Market"
-              value={(competitorInsights as any).atMarketDays ?? 0}
+              value={competitorInsights?.atMarketDays || 0}
               icon={CheckCircle}
               accentColor="sage"
               index={1}
             />
             <KPICard
               title="Days Underpriced"
-              value={(competitorInsights as any).underpricedDays ?? 0}
+              value={competitorInsights?.underpricedDays || 0}
               icon={TrendingDown}
               accentColor="sage"
               index={2}
             />
             <KPICard
               title="Days Overpriced"
-              value={(competitorInsights as any).overpricedDays ?? 0}
+              value={competitorInsights?.overpricedDays || 0}
               icon={TrendingUp}
               accentColor="rose"
               index={3}
             />
             <KPICard
               title="Revenue Opportunity"
-              value={`$${((competitorInsights as any).potentialRevenueLoss ?? 0).toLocaleString()}`}
+              value={`$${(competitorInsights?.potentialRevenueLoss || 0).toLocaleString()}`}
               icon={AlertTriangle}
               accentColor="gold"
               index={4}
@@ -280,7 +280,7 @@ const CompetitorRates = () => {
       </section>
 
       {/* Recommendations */}
-      {(competitorInsights as any)?.recommendations?.length > 0 && (
+      {competitorInsights?.recommendations && Array.isArray(competitorInsights.recommendations) && competitorInsights.recommendations.length > 0 && (
         <section className="p-3 sm:p-5 rounded-[10px] bg-gold-50 border border-gold-200">
           <div className="flex items-start gap-3 sm:gap-4">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-gold-100">
@@ -291,7 +291,7 @@ const CompetitorRates = () => {
                 Rate Strategy Recommendations
               </h3>
               <ul className="space-y-2">
-                {(competitorInsights as any).recommendations.map((rec: string, index: number) => (
+                {competitorInsights.recommendations.map((rec: string, index: number) => (
                   <li key={index} className="text-[11px] sm:text-[13px] flex items-start gap-2 text-gold-700">
                     <span className="w-1.5 h-1.5 rounded-full bg-gold-500 mt-1.5 flex-shrink-0" />
                     <span>{rec}</span>

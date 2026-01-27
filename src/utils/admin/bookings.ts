@@ -69,6 +69,16 @@ export const SOURCE_CONFIG = {
     bgColor: 'bg-[#CDB261]/10',
     textColor: 'text-[#CDB261]',
   },
+  'CRS': {
+    label: 'CRS',
+    bgColor: 'bg-[#7B68EE]/10',
+    textColor: 'text-[#7B68EE]',
+  },
+  'Dummy Channel Manager': {
+    label: 'Dummy Channel Manager',
+    bgColor: 'bg-[#7B68EE]/10',
+    textColor: 'text-[#7B68EE]',
+  },
   'Walk-in': {
     label: 'Walk-in',
     bgColor: 'bg-[#C8B29D]/10',
@@ -89,7 +99,7 @@ export const ROOM_TYPES = [
 ];
 
 // Source options
-export const SOURCE_OPTIONS = ['Website', 'Booking.com', 'Expedia', 'Walk-in', 'Direct', 'Corporate', 'OTA'];
+export const SOURCE_OPTIONS = ['Website', 'Dummy Channel Manager', 'CRS', 'Booking.com', 'Expedia', 'Walk-in', 'Direct', 'Corporate', 'OTA'];
 
 // Cancellation reasons
 export const CANCELLATION_REASONS = [

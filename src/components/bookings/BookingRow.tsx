@@ -31,9 +31,11 @@ export default function BookingRow({ booking, onClick }) {
   const normalizedStatus = booking.status?.toUpperCase?.()?.replace(/[\s_]/g, '-') || 'CONFIRMED';
   const status = statusConfig[normalizedStatus] || statusConfig[booking.status] || defaultStatus;
 
-  // Normalize source for lookup
-  const normalizedSource = booking.source || 'Website';
-  const source = sourceConfig[normalizedSource] || defaultSource;
+  // Normalize source for lookup - preserve original source if not in config
+  const normalizedSource = booking.source || '';
+  const source = normalizedSource && sourceConfig[normalizedSource] 
+    ? sourceConfig[normalizedSource] 
+    : (normalizedSource ? { color: 'bg-[#7B68EE]/10 text-[#7B68EE]', icon: '💻', label: normalizedSource } : defaultSource);
 
   const handleActionClick = (e, action) => {
     e.stopPropagation();

@@ -10,9 +10,10 @@ import { availableOTAs } from '../../data/channel-manager/sampleOTAs';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 import { useToast } from '../../contexts/ToastContext';
+import { SearchBar } from '../ui2/SearchBar';
 
 export default function AddConnectionModal({ isOpen, onClose, onConnect, existingConnections = [] }) {
-  const toast = useToast();
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [selectedOTA, setSelectedOTA] = useState(null);
   const [credentials, setCredentials] = useState({
@@ -26,10 +27,21 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
   const [isConnecting, setIsConnecting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Filter out already connected OTAs
-  const availableToConnect = availableOTAs.filter(
-    ota => !existingConnections.some(conn => conn.code === ota.code)
-  );
+  // Filter out already connected OTAs and apply search
+  const availableToConnect = useMemo(() => {
+    const filtered = availableOTAs.filter(
+      ota => !existingConnections.some(conn => conn.code === ota.code)
+    );
+    
+    if (!searchQuery.trim()) return filtered;
+    
+    const query = searchQuery.toLowerCase();
+    return filtered.filter(ota =>
+      ota.name.toLowerCase().includes(query) ||
+      ota.code.toLowerCase().includes(query) ||
+      (ota.description && ota.description.toLowerCase().includes(query))
+    );
+  }, [existingConnections, searchQuery]);
 
   // Filter OTAs based on search query
   const filteredOTAs = useMemo(() => {
@@ -142,7 +154,7 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
         <Button
           variant="primary"
           onClick={handleConnect}
-          disabled={!isFormValid || !testResult?.success}
+          disabled={!isFormValid || (testResult && !testResult.success)}
           loading={isConnecting}
           className="px-5 py-2 text-[13px] font-semibold"
         >

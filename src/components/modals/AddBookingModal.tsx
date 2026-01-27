@@ -19,6 +19,8 @@ import { useCurrency } from '@/hooks/useCurrency';
 
 const SOURCE_OPTIONS = [
   { value: 'Website', label: 'Website' },
+  { value: 'Dummy Channel Manager', label: 'Dummy Channel Manager' },
+  { value: 'CRS', label: 'CRS' },
   { value: 'Walk-in', label: 'Walk-in' },
   { value: 'Booking.com', label: 'Booking.com' },
   { value: 'Expedia', label: 'Expedia' },

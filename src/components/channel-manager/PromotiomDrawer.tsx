@@ -7,6 +7,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Trash2, Check, ChevronDown, Percent, DollarSign } from 'lucide-react';
 import { createPortal } from 'react-dom';
+import { useChannelManager } from '../../context/ChannelManagerContext';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 import DatePicker from '../ui2/DatePicker';
@@ -289,16 +290,15 @@ export default function PromotionDrawer({
   onSave,
   connectedOTAs = [],
 }) {
+  const { roomTypes } = useChannelManager();
+  
+  // Build room type options from API data
   const roomTypeOptions = [
     { value: 'ALL', label: 'All Room Types' },
-    { value: 'Minimalist Studio', label: 'Minimalist Studio' },
-    { value: 'Coastal Retreat', label: 'Coastal Retreat' },
-    { value: 'Urban Oasis', label: 'Urban Oasis' },
-    { value: 'Sunset Vista', label: 'Sunset Vista' },
-    { value: 'Pacific Suite', label: 'Pacific Suite' },
-    { value: 'Wellness Suite', label: 'Wellness Suite' },
-    { value: 'Family Sanctuary', label: 'Family Sanctuary' },
-    { value: 'Oceanfront Penthouse', label: 'Oceanfront Penthouse' }
+    ...(roomTypes.map(rt => ({
+      value: rt.name,
+      label: rt.name
+    })))
   ];
 
   const channelOptions = [

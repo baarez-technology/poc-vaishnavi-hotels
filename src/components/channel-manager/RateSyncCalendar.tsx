@@ -4,7 +4,7 @@
  * Consistent with AvailabilityCalendar design patterns
  */
 
-import { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   ChevronLeft, ChevronRight, DollarSign, Calendar,
   AlertCircle, Ban, ChevronDown, CheckCircle, XCircle, Clock, Bed
@@ -15,19 +15,27 @@ import { IconButton } from '../ui2/Button';
 import { Tooltip } from '../ui2/Tooltip';
 
 export default function RateSyncCalendar({ selectedRoomType = null }) {
-  const { rateCalendar, otas, updateRateForOTA, updateAvailabilityForOTA, toggleStopSell } = useChannelManager();
+  const { rateCalendar, otas, roomTypes, updateRateForOTA, updateAvailabilityForOTA, toggleStopSell } = useChannelManager();
   const [viewStartDate, setViewStartDate] = useState(new Date());
-  const [internalRoomType, setInternalRoomType] = useState('Minimalist Studio');
+  const [internalRoomType, setInternalRoomType] = useState(null);
   const [selectedOTA, setSelectedOTA] = useState('ALL');
   const [editingCell, setEditingCell] = useState(null);
   const [editValue, setEditValue] = useState('');
   const scrollContainerRef = useRef(null);
 
-  // Use prop if provided, otherwise use internal state
-  const activeRoomType = selectedRoomType || internalRoomType;
-
-  const roomTypes = ['Minimalist Studio', 'Coastal Retreat', 'Urban Oasis', 'Sunset Vista', 'Pacific Suite', 'Wellness Suite', 'Family Sanctuary', 'Oceanfront Penthouse'];
+  // Use prop if provided, otherwise use internal state (first room type from API)
+  const activeRoomType = selectedRoomType || internalRoomType || (roomTypes.length > 0 ? roomTypes[0].name : null);
+  
+  // Use room types from API, extract names for dropdown
+  const roomTypeNames = roomTypes.length > 0 ? roomTypes.map(rt => rt.name) : [];
   const connectedOTAs = otas.filter(o => o.status === 'connected');
+  
+  // Set default room type when roomTypes are loaded
+  useEffect(() => {
+    if (!internalRoomType && roomTypes.length > 0) {
+      setInternalRoomType(roomTypes[0].name);
+    }
+  }, [roomTypes, internalRoomType]);
 
   // Generate 14 visible days
   const visibleDays = useMemo(() => {
@@ -146,9 +154,9 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
                 </button>
               }
             >
-              {roomTypes.map(room => (
-                <DropdownMenuItem key={room} onSelect={() => setInternalRoomType(room)}>
-                  {room}
+              {roomTypeNames.map(roomName => (
+                <DropdownMenuItem key={roomName} onSelect={() => setInternalRoomType(roomName)}>
+                  {roomName}
                 </DropdownMenuItem>
               ))}
             </DropdownMenu>

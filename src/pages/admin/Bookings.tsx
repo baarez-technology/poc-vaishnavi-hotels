@@ -18,6 +18,7 @@ import { CANCELLATION_REASONS } from '../../utils/bookings';
 import { Button } from '../../components/ui2/Button';
 import { useTheme } from '../../contexts/ThemeContext';
 import { cn } from '../../lib/utils';
+import { useBookingsSSE } from '../../hooks/useBookingsSSE';
 
 // Local filter functions
 function filterByStatus(bookings: any[], status: string) {
@@ -71,6 +72,7 @@ export default function Bookings() {
     cancelBooking,
     getArrivalsToday,
     getDeparturesToday,
+    fetchBookings,
   } = useBookings();
 
   // Tab state
@@ -375,8 +377,35 @@ export default function Bookings() {
     return searchBookings(filteredData, searchQuery);
   }, [filteredData, searchQuery]);
 
-  // Step 4: Apply sorting
-  const { sortedData, sortConfig, handleSort } = useSort(searchedData, 'checkIn', 'desc');
+  // Step 4: Apply sorting - Sort by createdAt (newest first), then by checkIn as fallback
+  const sortedBookingsByDate = useMemo(() => {
+    return [...searchedData].sort((a, b) => {
+      // First sort by createdAt (newest first)
+      const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (bCreated !== aCreated) {
+        return bCreated - aCreated; // Descending (newest first)
+      }
+      // If createdAt is same or missing, sort by checkIn
+      const aCheckIn = a.checkIn ? new Date(a.checkIn).getTime() : 0;
+      const bCheckIn = b.checkIn ? new Date(b.checkIn).getTime() : 0;
+      return bCheckIn - aCheckIn; // Descending
+    });
+  }, [searchedData]);
+  
+  const { sortedData, sortConfig, handleSort } = useSort(sortedBookingsByDate, 'createdAt', 'desc');
+
+  // SSE Integration for real-time booking updates
+  useBookingsSSE({
+    onBookingCreated: (bookingData) => {
+      console.log('[Admin Bookings] 🎉 New booking received via SSE:', bookingData);
+      // Refetch bookings to get the new record
+      if (fetchBookings) {
+        fetchBookings();
+      }
+    },
+    refetchBookings: fetchBookings,
+  });
 
   // Step 5: Apply pagination
   const {

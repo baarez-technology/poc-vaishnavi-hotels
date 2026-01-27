@@ -74,7 +74,8 @@ const DemandChart = ({
       ]);
 
       setForecastData(forecastResponse.forecasts || []);
-      setEvents(eventsResponse || []);
+      // Ensure events is always an array
+      setEvents(Array.isArray(eventsResponse) ? eventsResponse : []);
     } catch (err) {
       console.error('Failed to fetch demand forecast:', err);
       setError('Failed to load demand forecast data');
@@ -97,9 +98,12 @@ const DemandChart = ({
 
   // Transform API data to chart format
   const chartData = useMemo(() => {
+    // Ensure events is an array before using it
+    const eventsArray = Array.isArray(events) ? events : [];
+    
     return forecastData.map((item) => {
       const date = new Date(item.date);
-      const event = events.find(
+      const event = eventsArray.find(
         (e) => item.date >= e.startDate && item.date <= e.endDate
       );
 
@@ -240,7 +244,8 @@ const DemandChart = ({
 
   // Get event dates for reference lines
   const eventDates = useMemo(() => {
-    return events.map((event) => ({
+    const eventsArray = Array.isArray(events) ? events : [];
+    return eventsArray.map((event) => ({
       date: event.startDate,
       name: event.name,
       type: event.type,

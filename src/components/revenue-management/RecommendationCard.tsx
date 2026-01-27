@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   TrendingUp,
   TrendingDown,
@@ -313,11 +313,19 @@ export const RecommendationsPanel = ({
   const [showAll, setShowAll] = useState(false);
   const [localRecommendations, setLocalRecommendations] = useState<Recommendation[]>(recommendations);
   const [isApplyingAll, setIsApplyingAll] = useState(false);
+  const prevRecommendationsRef = useRef<string>('');
 
   // Update local state when props change
   useEffect(() => {
-    if (!isLoading) {
-      setLocalRecommendations(recommendations);
+    if (!isLoading && recommendations) {
+      // Compare by serializing IDs to detect actual changes
+      const currentIds = recommendations.map(r => r.id).sort().join(',');
+      
+      // Only update if the recommendations actually changed
+      if (prevRecommendationsRef.current !== currentIds) {
+        prevRecommendationsRef.current = currentIds;
+        setLocalRecommendations(recommendations);
+      }
     }
   }, [recommendations, isLoading]);
 

@@ -79,15 +79,17 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
   };
 
   const handleSaveMapping = (mappingData) => {
-    mapRoom({
-      pmsRoomType: mappingData.pmsRoomType,
-      pmsRoomName: mappingData.pmsRoomName,
-      otaCode: otaCode,
-      otaRoomType: mappingData.otaRoomType,
-      isActive: true,
-      syncRates: mappingData.syncRates,
-      syncAvailability: mappingData.syncAvailability
-    });
+    mapRoom(
+      mappingData.pmsRoomType,
+      otaCode,
+      {
+        otaRoomType: mappingData.otaRoomType,
+        pmsRoomName: mappingData.pmsRoomName,
+        isActive: true,
+        syncRates: mappingData.syncRates,
+        syncAvailability: mappingData.syncAvailability
+      }
+    );
   };
 
   const handleOpenRemoveModal = (mapping, room) => {

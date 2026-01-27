@@ -44,7 +44,7 @@ interface PricingRule {
   createdAt: string;
   updatedAt: string;
   lastTriggered?: string;
-  timesTriggered: number;
+  timesTriggered?: number;
   executionStatus?: 'success' | 'error' | 'pending' | 'running';
   lastExecutionMessage?: string;
 }
@@ -336,7 +336,7 @@ const RuleCard = ({
                 Triggers
               </p>
               <p className="text-lg sm:text-xl font-bold text-neutral-900">
-                {rule.timesTriggered.toLocaleString()}
+                {(rule.timesTriggered ?? 0).toLocaleString()}
               </p>
             </div>
             <div className="text-center">
@@ -418,7 +418,7 @@ const RuleCard = ({
                   Triggers
                 </p>
                 <p className="text-lg font-bold text-neutral-900">
-                  {rule.timesTriggered.toLocaleString()}
+                  {(rule.timesTriggered ?? 0).toLocaleString()}
                 </p>
               </div>
               <div className="text-center">
@@ -535,7 +535,7 @@ interface RuleSummaryProps {
 
 export const RuleSummary = ({ rules }: RuleSummaryProps) => {
   const activeRules = rules.filter((r) => r.isActive);
-  const totalTriggers = rules.reduce((sum, r) => sum + r.timesTriggered, 0);
+  const totalTriggers = rules.reduce((sum, r) => sum + (r.timesTriggered ?? 0), 0);
   const avgTriggersPerRule = rules.length > 0 ? Math.round(totalTriggers / rules.length) : 0;
 
   return (

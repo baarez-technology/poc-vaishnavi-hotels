@@ -88,14 +88,14 @@ export function Modal({
         aria-modal="true"
         className={`
           relative z-[51] bg-white rounded-[var(--brand-radius-card)] w-full overflow-hidden
-          max-h-[90vh] flex flex-col
+          max-h-[calc(100vh-2rem)] sm:max-h-[90vh] flex flex-col
           border border-neutral-200 shadow-xl shadow-neutral-900/10
           ${sizeStyles[size]}
           ${className}
         `}
       >
         {(title || showCloseButton) && (
-          <div className="flex items-start justify-between px-6 py-5 border-b border-neutral-100">
+          <div className="flex items-start justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-neutral-100 flex-shrink-0">
             <div className="flex-1 min-w-0 pr-8">
               {title && (
                 <h2 className="text-lg font-semibold text-neutral-900 tracking-tight">{title}</h2>
@@ -115,12 +115,12 @@ export function Modal({
           </div>
         )}
 
-        <div className="px-6 py-5 overflow-y-auto flex-1">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 overflow-y-auto flex-1">
           {children}
         </div>
 
         {footer && (
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-100 bg-neutral-50/50">
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 bg-neutral-50/50 flex-shrink-0">
             {footer}
           </div>
         )}

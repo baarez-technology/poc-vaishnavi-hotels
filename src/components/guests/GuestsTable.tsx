@@ -6,21 +6,72 @@
 
 import { ChevronUp, ChevronDown, ChevronsUpDown, Users, MoreHorizontal, Eye, Pencil, Mail, Trash2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 export default function GuestsTable({ guests, sortField, sortDirection, onSort, onGuestClick, onEditGuest, onMessageGuest, onDeleteGuest }) {
   const [openDropdownId, setOpenDropdownId] = useState(null);
+  const [dropdownPosition, setDropdownPosition] = useState(null);
   const dropdownRef = useRef(null);
+  const buttonRefs = useRef({});
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setOpenDropdownId(null);
+        const isButtonClick = Object.values(buttonRefs.current).some(
+          btn => btn && btn.contains(event.target)
+        );
+        if (!isButtonClick) {
+          setOpenDropdownId(null);
+          setDropdownPosition(null);
+        }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Update dropdown position on scroll/resize
+  useEffect(() => {
+    if (!openDropdownId) return;
+
+    const updatePosition = () => {
+      const button = buttonRefs.current[openDropdownId];
+      if (button) {
+        const rect = button.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.right - 144
+        });
+      }
+    };
+
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [openDropdownId]);
+
+  const handleMoreClick = (e, guestId) => {
+    e.stopPropagation();
+    if (openDropdownId === guestId) {
+      setOpenDropdownId(null);
+      setDropdownPosition(null);
+    } else {
+      const button = buttonRefs.current[guestId];
+      if (button) {
+        const rect = button.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.right - 144
+        });
+      }
+      setOpenDropdownId(guestId);
+    }
+  };
 
   const SortIndicator = ({ field }) => {
     const sorted = sortField === field ? sortDirection : null;
@@ -86,7 +137,7 @@ export default function GuestsTable({ guests, sortField, sortDirection, onSort, 
                 </span>
               </th>
             ))}
-            <th className="px-2 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap sticky right-0 bg-neutral-50 shadow-[-6px_0_12px_-4px_rgba(0,0,0,0.15)]">
+            <th className="px-2 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap sticky right-0 bg-neutral-50 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.06)]">
               Actions
             </th>
           </tr>
@@ -158,20 +209,27 @@ export default function GuestsTable({ guests, sortField, sortDirection, onSort, 
                   </td>
 
                   {/* Actions - Sticky */}
-                  <td className="px-2 py-4 text-center whitespace-nowrap sticky right-0 bg-white group-hover:bg-neutral-50 shadow-[-6px_0_12px_-4px_rgba(0,0,0,0.15)]">
-                    <div className="relative inline-block" ref={openDropdownId === guest.id ? dropdownRef : null}>
+                  <td className="px-2 py-4 text-center whitespace-nowrap sticky right-0 bg-white group-hover:bg-neutral-50 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.06)]">
+                    <div className="relative inline-block">
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenDropdownId(openDropdownId === guest.id ? null : guest.id);
-                        }}
+                        ref={(el) => { buttonRefs.current[guest.id] = el; }}
+                        onClick={(e) => handleMoreClick(e, guest.id)}
                         className={`p-1.5 rounded-md hover:bg-neutral-100 transition-colors ${openDropdownId === guest.id ? 'bg-neutral-100' : ''}`}
                       >
                         <MoreHorizontal className="w-4 h-4 text-neutral-500" />
                       </button>
 
-                      {openDropdownId === guest.id && (
-                        <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-neutral-200 py-1 z-50">
+                      {openDropdownId === guest.id && dropdownPosition && createPortal(
+                        <div
+                          ref={dropdownRef}
+                          style={{
+                            position: 'fixed',
+                            top: `${dropdownPosition.top}px`,
+                            left: `${dropdownPosition.left}px`,
+                            zIndex: 9999
+                          }}
+                          className="w-36 bg-white rounded-lg shadow-lg shadow-neutral-900/10 border border-neutral-200 py-1 animate-in fade-in-0 zoom-in-95 duration-100"
+                        >
                           <button
                             onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); onGuestClick?.(guest); }}
                             className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
@@ -201,7 +259,8 @@ export default function GuestsTable({ guests, sortField, sortDirection, onSort, 
                             <Trash2 className="w-3.5 h-3.5" />
                             Delete
                           </button>
-                        </div>
+                        </div>,
+                        document.body
                       )}
                     </div>
                   </td>

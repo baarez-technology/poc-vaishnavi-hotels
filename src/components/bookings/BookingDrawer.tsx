@@ -174,13 +174,13 @@ export default function BookingDrawer({
         }`}
       >
         <div
-          className={`bg-white rounded-[10px] shadow-2xl w-full max-w-[700px] min-[740px]:min-w-[700px] max-h-[90vh] flex flex-col transform transition-all duration-300 ${
+          className={`bg-white rounded-[10px] shadow-2xl w-full max-w-[700px] min-[740px]:min-w-[700px] max-h-[calc(100vh-2rem)] sm:max-h-[90vh] flex flex-col transform transition-all duration-300 ${
             isOpen ? 'scale-100' : 'scale-95'
           }`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex-shrink-0 p-6 pb-4 border-b border-neutral-100">
+          <div className="flex-shrink-0 p-4 sm:p-6 pb-3 sm:pb-4 border-b border-neutral-100">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-terra-500 rounded-full flex items-center justify-center">
@@ -245,7 +245,7 @@ export default function BookingDrawer({
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto px-6 pb-6">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6">
             <div className="space-y-5 pt-5">
               {/* Stay Details */}
               <div className="grid grid-cols-3 gap-4 p-4 bg-neutral-50 rounded-[10px]">
@@ -354,7 +354,7 @@ export default function BookingDrawer({
           </div>
 
           {/* Footer */}
-          <div className="flex-shrink-0 border-t border-neutral-100 p-4 bg-white rounded-b-[10px]">
+          <div className="flex-shrink-0 border-t border-neutral-100 p-3 sm:p-4 bg-white rounded-b-[10px]">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => onCancelBooking && onCancelBooking()}

@@ -22,10 +22,10 @@ const Drawer = forwardRef(({
 }, ref) => {
 
   const sizes = {
-    sm: 'w-[320px]',
-    md: 'w-[420px]',
-    lg: 'w-[560px]',
-    xl: 'w-[720px]',
+    sm: 'w-full sm:w-[320px]',
+    md: 'w-full sm:w-[420px]',
+    lg: 'w-full sm:w-[560px]',
+    xl: 'w-full sm:w-[720px]',
   };
 
   // Handle escape key
@@ -68,7 +68,7 @@ const Drawer = forwardRef(({
       <div
         ref={ref}
         className={`
-          absolute right-0 top-0 h-full bg-white flex flex-col
+          absolute right-0 top-0 h-[100dvh] bg-white flex flex-col
           animate-slideInRight
           ${sizes[size]}
           ${className}
@@ -76,7 +76,7 @@ const Drawer = forwardRef(({
         {...props}
       >
         {/* Header */}
-        <div className="flex items-start justify-between px-6 py-5 border-b border-neutral-100 flex-shrink-0">
+        <div className="flex items-start justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-neutral-100 flex-shrink-0">
           <div>
             {title && (
               <h2 className="text-[16px] font-semibold text-neutral-900">
@@ -100,13 +100,13 @@ const Drawer = forwardRef(({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
           {children}
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center gap-3 px-6 py-4 border-t border-neutral-100 flex-shrink-0">
+          <div className="flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 flex-shrink-0">
             {footer}
           </div>
         )}

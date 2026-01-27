@@ -73,11 +73,11 @@ const Modal = ({
     >
       <div
         ref={modalRef}
-        className={`bg-white rounded-[10px] border border-neutral-200 ${sizeClasses[size]} ${className} max-h-[90vh] flex flex-col shadow-xl min-[740px]:min-w-[700px]`}
+        className={`bg-white rounded-[10px] border border-neutral-200 ${sizeClasses[size]} ${className} max-h-[calc(100vh-2rem)] sm:max-h-[90vh] flex flex-col shadow-xl min-[740px]:min-w-[700px]`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 flex-shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-neutral-100 flex-shrink-0">
           <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
           {showCloseButton && (
             <button
@@ -91,10 +91,10 @@ const Modal = ({
         </div>
 
         {/* Modal Body */}
-        <div className="overflow-y-auto flex-1 px-6 py-6 custom-scrollbar">{children}</div>
+        <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 sm:py-6 custom-scrollbar">{children}</div>
 
         {/* Modal Footer */}
-        {footer && <div className="border-t border-neutral-100 px-6 py-4 flex-shrink-0">{footer}</div>}
+        {footer && <div className="border-t border-neutral-100 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0">{footer}</div>}
       </div>
     </div>
   );

@@ -402,8 +402,7 @@ export default function SyncLogs() {
                   >
                     <span className="flex items-center gap-1.5 sm:gap-2">
                       <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline">{tab.label}</span>
-                      <span className="sm:hidden">{tab.id === 'all' ? 'All' : tab.label.substring(0, 4)}</span>
+                      <span>{tab.label}</span>
                       <span className={`px-1 sm:px-1.5 py-0.5 rounded text-[9px] sm:text-[11px] font-semibold tabular-nums ${
                         activeTab === tab.id
                           ? 'bg-terra-500 text-white'
@@ -585,7 +584,7 @@ export default function SyncLogs() {
                           <td className="py-3 sm:py-4 px-3 sm:px-6">
                             <span className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[10px] sm:text-[11px] font-medium ${getStatusBadgeClasses(log.status)}`}>
                               <StatusIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                              <span className="hidden sm:inline">{log.status.charAt(0).toUpperCase() + log.status.slice(1)}</span>
+                              <span>{log.status.charAt(0).toUpperCase() + log.status.slice(1)}</span>
                             </span>
                           </td>
 

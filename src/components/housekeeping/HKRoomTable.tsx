@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { MoreHorizontal, Bed } from 'lucide-react';
 import { HK_STATUS_CONFIG, PRIORITY_CONFIG, calculateEstimatedFinish } from '../../utils/housekeeping';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableActions, TableEmpty } from '../ui2/Table';
@@ -18,18 +19,68 @@ export default function HKRoomTable({
   onSort
 }) {
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [dropdownPosition, setDropdownPosition] = useState(null);
   const dropdownRef = useRef(null);
+  const buttonRefs = useRef({});
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setOpenDropdown(null);
+        const isButtonClick = Object.values(buttonRefs.current).some(
+          btn => btn && btn.contains(event.target)
+        );
+        if (!isButtonClick) {
+          setOpenDropdown(null);
+          setDropdownPosition(null);
+        }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Update dropdown position on scroll/resize
+  useEffect(() => {
+    if (!openDropdown) return;
+
+    const updatePosition = () => {
+      const button = buttonRefs.current[openDropdown];
+      if (button) {
+        const rect = button.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + 6,
+          left: rect.right - 176 // 176px = w-44 = 11rem
+        });
+      }
+    };
+
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [openDropdown]);
+
+  const handleMoreClick = (e, roomId) => {
+    e.stopPropagation();
+    if (openDropdown === roomId) {
+      setOpenDropdown(null);
+      setDropdownPosition(null);
+    } else {
+      const button = buttonRefs.current[roomId];
+      if (button) {
+        const rect = button.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + 6,
+          left: rect.right - 176
+        });
+      }
+      setOpenDropdown(roomId);
+    }
+  };
 
   const columns = [
     { key: 'roomNumber', label: 'Room', sortable: true, width: 'auto', minWidth: '180px' },
@@ -215,20 +266,28 @@ export default function HKRoomTable({
 
                 {/* Actions */}
                 <TableActions sticky>
-                  <div className="relative" ref={openDropdown === room.id ? dropdownRef : null}>
-                    <IconButton
-                      icon={MoreHorizontal}
-                      size="sm"
-                      variant="ghost"
-                      label="More actions"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenDropdown(openDropdown === room.id ? null : room.id);
-                      }}
-                    />
+                  <div className="relative">
+                    <div ref={(el) => { buttonRefs.current[room.id] = el; }}>
+                      <IconButton
+                        icon={MoreHorizontal}
+                        size="sm"
+                        variant="ghost"
+                        label="More actions"
+                        onClick={(e) => handleMoreClick(e, room.id)}
+                      />
+                    </div>
 
-                    {openDropdown === room.id && (
-                      <div className="absolute right-0 top-full mt-1.5 w-44 bg-white rounded-lg shadow-lg border border-neutral-200 py-1.5 z-20">
+                    {openDropdown === room.id && dropdownPosition && createPortal(
+                      <div
+                        ref={dropdownRef}
+                        style={{
+                          position: 'fixed',
+                          top: `${dropdownPosition.top}px`,
+                          left: `${dropdownPosition.left}px`,
+                          zIndex: 9999
+                        }}
+                        className="w-44 bg-white rounded-lg shadow-lg shadow-neutral-900/10 border border-neutral-200 py-1.5 animate-in fade-in-0 zoom-in-95 duration-100"
+                      >
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -287,7 +346,8 @@ export default function HKRoomTable({
                             Inspect Room
                           </button>
                         )}
-                      </div>
+                      </div>,
+                      document.body
                     )}
                   </div>
                 </TableActions>

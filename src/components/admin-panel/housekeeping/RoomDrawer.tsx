@@ -148,11 +148,11 @@ export default function RoomDrawer({
       >
         {/* Modal */}
         <div
-          className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-scaleIn"
+          className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden animate-scaleIn flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="p-6 border-b border-neutral-200 bg-gradient-to-r from-[#FAF8F6] to-white">
+          <div className="p-4 sm:p-6 border-b border-neutral-200 bg-gradient-to-r from-[#FAF8F6] to-white flex-shrink-0">
             <div className="flex items-center justify-between mb-2">
               <div>
                 <h2 className="text-3xl font-serif font-bold text-neutral-900 mb-1">
@@ -170,7 +170,7 @@ export default function RoomDrawer({
           </div>
 
           {/* Content */}
-          <div className="overflow-y-auto max-h-[calc(90vh-260px)] custom-scrollbar p-6 pb-4 space-y-6">
+          <div className="overflow-y-auto flex-1 custom-scrollbar p-4 sm:p-6 pb-4 space-y-6">
           {/* Status Section */}
           <div>
             <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-wide mb-3">Status</h3>
@@ -412,7 +412,7 @@ export default function RoomDrawer({
           </div>
 
           {/* Footer CTA */}
-          <div className="p-6 border-t border-neutral-200 bg-gradient-to-r from-[#FAF8F6] to-white">
+          <div className="p-4 sm:p-6 border-t border-neutral-200 bg-gradient-to-r from-[#FAF8F6] to-white flex-shrink-0">
             <div className="text-center px-4 py-3 bg-[#A57865]/5 rounded-xl border border-[#A57865]/20 transition-all duration-200">
               <p className="text-sm font-semibold text-[#A57865]">
                 Use the actions above to manage this room's cleaning status

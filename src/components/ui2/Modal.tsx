@@ -98,6 +98,10 @@ export function Modal({
           'relative z-[51] bg-white rounded-[var(--brand-radius-card)] w-full overflow-hidden',
           'animate-scaleIn',
           'border border-neutral-200 shadow-xl shadow-neutral-900/10',
+          // Flex layout for proper footer positioning
+          'flex flex-col',
+          // Max height to ensure footer is always visible
+          'max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-4rem)]',
           // Modal minimum width requirement (responsive-safe)
           'min-[740px]:min-w-[700px]',
           sizes[size],
@@ -135,7 +139,8 @@ export function ModalHeader({
   return (
     <div
       className={cn(
-        'flex items-start gap-4 px-6 pt-6 pb-5',
+        'flex items-start gap-4 px-4 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-5',
+        'flex-shrink-0',
         className
       )}
       {...props}
@@ -173,7 +178,7 @@ export function ModalDescription({ children, className }: { children: ReactNode;
 // Modal Content/Body
 export function ModalContent({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('px-6 py-5', className)}>
+    <div className={cn('px-6 py-5 flex-1 overflow-y-auto', className)}>
       {children}
     </div>
   );
@@ -184,8 +189,9 @@ export function ModalFooter({ children, className }: { children: ReactNode; clas
   return (
     <div
       className={cn(
-        'flex items-center justify-end gap-3 px-6 py-5',
+        'flex items-center justify-end gap-3 px-4 sm:px-6 py-4 sm:py-5',
         'border-t border-neutral-200/40 bg-white',
+        'flex-shrink-0',
         className
       )}
     >
@@ -366,10 +372,10 @@ export function Drawer({
   if (!open) return null;
 
   const sizes: Record<DrawerSize, string> = {
-    sm: 'w-80',
-    md: 'w-96',
-    lg: 'w-[480px]',
-    xl: 'w-[600px]',
+    sm: 'w-full sm:w-80',
+    md: 'w-full sm:w-96',
+    lg: 'w-full sm:w-[480px]',
+    xl: 'w-full sm:w-[600px]',
   };
 
   const positions: Record<DrawerSide, string> = {

@@ -83,10 +83,10 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
       />
 
       {/* Drawer */}
-      <div className="fixed top-0 bottom-0 right-0 h-screen w-full max-w-md bg-white shadow-xl border-l border-neutral-200 z-50 overflow-y-auto custom-scrollbar animate-slideInRight">
+      <div className="fixed top-0 bottom-0 right-0 h-[100dvh] w-full max-w-md bg-white shadow-xl border-l border-neutral-200 z-50 flex flex-col animate-slideInRight">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-neutral-200 z-10">
-          <div className="p-6 pb-4">
+        <div className="bg-white border-b border-neutral-200 flex-shrink-0">
+          <div className="p-4 sm:p-6 pb-4">
             <div className="flex items-start justify-between mb-3">
               <div>
                 <h2 className="text-2xl font-serif font-bold text-neutral-900">
@@ -118,7 +118,7 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
           {/* Guest Info */}
           {room.guests && (
             <section className="space-y-3">

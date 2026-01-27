@@ -79,7 +79,7 @@ export default function BaseModal({
       <div
         ref={modalRef}
         className={cn(
-          'relative w-full overflow-hidden rounded-3xl shadow-2xl bg-white flex flex-col max-h-[90vh]',
+          'relative w-full overflow-hidden rounded-3xl shadow-2xl bg-white flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh]',
           sizeClasses[size],
           className
         )}
@@ -87,7 +87,7 @@ export default function BaseModal({
       >
         {/* Header */}
         {(title || Icon) && (
-          <div className="relative flex items-center justify-between px-6 py-5 border-b border-gray-100">
+          <div className="relative flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 flex-shrink-0">
             <div className="flex items-center gap-4">
               {showIcon && (
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-[#A57865]/10">
@@ -131,13 +131,13 @@ export default function BaseModal({
         )}
 
         {/* Body */}
-        <div className="px-6 py-6 flex-1 overflow-y-auto">
+        <div className="px-4 sm:px-6 py-4 sm:py-6 flex-1 overflow-y-auto">
           {children}
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className="border-t border-gray-100 px-6 py-4 flex items-center justify-end gap-3 bg-gray-50/50">
+          <div className="border-t border-gray-100 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-end gap-3 bg-gray-50/50 flex-shrink-0">
             {footer}
           </div>
         )}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   MoreVertical,
   AlertTriangle,
@@ -24,18 +25,68 @@ export default function WOTable({
   onAssignTech
 }) {
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [menuPosition, setMenuPosition] = useState(null);
   const menuRef = useRef(null);
+  const buttonRefs = useRef({});
 
   // Close menu on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setOpenMenuId(null);
+        const isButtonClick = Object.values(buttonRefs.current).some(
+          btn => btn && btn.contains(e.target)
+        );
+        if (!isButtonClick) {
+          setOpenMenuId(null);
+          setMenuPosition(null);
+        }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Update menu position on scroll/resize
+  useEffect(() => {
+    if (!openMenuId) return;
+
+    const updatePosition = () => {
+      const button = buttonRefs.current[openMenuId];
+      if (button) {
+        const rect = button.getBoundingClientRect();
+        setMenuPosition({
+          top: rect.bottom + 6,
+          left: rect.right - 176
+        });
+      }
+    };
+
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [openMenuId]);
+
+  const handleMenuClick = (e, woId) => {
+    e.stopPropagation();
+    if (openMenuId === woId) {
+      setOpenMenuId(null);
+      setMenuPosition(null);
+    } else {
+      const button = buttonRefs.current[woId];
+      if (button) {
+        const rect = button.getBoundingClientRect();
+        setMenuPosition({
+          top: rect.bottom + 6,
+          left: rect.right - 176
+        });
+      }
+      setOpenMenuId(woId);
+    }
+  };
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -216,20 +267,28 @@ export default function WOTable({
 
                 {/* Actions */}
                 <TableActions sticky>
-                  <div className="relative" ref={openMenuId === wo.id ? menuRef : null}>
-                    <IconButton
-                      icon={MoreVertical}
-                      size="sm"
-                      variant="ghost"
-                      label="Actions"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenMenuId(openMenuId === wo.id ? null : wo.id);
-                      }}
-                    />
+                  <div className="relative">
+                    <div ref={(el) => { buttonRefs.current[wo.id] = el; }}>
+                      <IconButton
+                        icon={MoreVertical}
+                        size="sm"
+                        variant="ghost"
+                        label="Actions"
+                        onClick={(e) => handleMenuClick(e, wo.id)}
+                      />
+                    </div>
 
-                    {openMenuId === wo.id && (
-                      <div className="absolute right-0 top-full mt-1.5 w-44 bg-white rounded-lg shadow-lg border border-neutral-200 py-1.5 z-20">
+                    {openMenuId === wo.id && menuPosition && createPortal(
+                      <div
+                        ref={menuRef}
+                        style={{
+                          position: 'fixed',
+                          top: `${menuPosition.top}px`,
+                          left: `${menuPosition.left}px`,
+                          zIndex: 9999
+                        }}
+                        className="w-44 bg-white rounded-lg shadow-lg shadow-neutral-900/10 border border-neutral-200 py-1.5 animate-in fade-in-0 zoom-in-95 duration-100"
+                      >
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -298,7 +357,8 @@ export default function WOTable({
                         >
                           Delete
                         </button>
-                      </div>
+                      </div>,
+                      document.body
                     )}
                   </div>
                 </TableActions>

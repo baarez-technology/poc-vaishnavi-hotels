@@ -74,6 +74,7 @@ const DemandChart = ({
       ]);
 
       setForecastData(forecastResponse.forecasts || []);
+      // Ensure events is always an array
       setEvents(Array.isArray(eventsResponse) ? eventsResponse : []);
     } catch (err) {
       console.error('Failed to fetch demand forecast:', err);
@@ -97,11 +98,14 @@ const DemandChart = ({
 
   // Transform API data to chart format
   const chartData = useMemo(() => {
+    // Ensure events is an array before using it
+    const eventsArray = Array.isArray(events) ? events : [];
+    
     return forecastData.map((item) => {
       const date = new Date(item.date);
-      const event = Array.isArray(events) ? events.find(
+      const event = eventsArray.find(
         (e) => item.date >= e.startDate && item.date <= e.endDate
-      ) : undefined;
+      );
 
       // Calculate confidence bands (upper and lower bounds based on confidence level)
       const confidenceMargin = (100 - item.confidence_level) / 100;
@@ -240,11 +244,12 @@ const DemandChart = ({
 
   // Get event dates for reference lines
   const eventDates = useMemo(() => {
-    return Array.isArray(events) ? events.map((event) => ({
+    const eventsArray = Array.isArray(events) ? events : [];
+    return eventsArray.map((event) => ({
       date: event.startDate,
       name: event.name,
       type: event.type,
-    })) : [];
+    }));
   }, [events]);
 
   if (isLoading) {

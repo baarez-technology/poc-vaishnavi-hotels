@@ -144,9 +144,9 @@ export default function CreateSegmentModal({ isOpen, onClose, onSave, guests, lo
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-scale-in">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden animate-scale-in flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-neutral-200 bg-[#FAF7F4]">
+        <div className="flex items-center justify-between p-4 border-b border-neutral-200 bg-[#FAF7F4] flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-[#A57865]/10 flex items-center justify-center">
               <Users className="w-5 h-5 text-[#A57865]" />
@@ -165,7 +165,7 @@ export default function CreateSegmentModal({ isOpen, onClose, onSave, guests, lo
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-180px)] p-4 space-y-6">
+        <div className="overflow-y-auto flex-1 p-4 space-y-6">
           {/* Basic Info */}
           <div className="space-y-4">
             <div>
@@ -444,7 +444,7 @@ export default function CreateSegmentModal({ isOpen, onClose, onSave, guests, lo
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-4 border-t border-neutral-200 bg-neutral-50">
+        <div className="flex items-center justify-end gap-3 p-4 border-t border-neutral-200 bg-neutral-50 flex-shrink-0">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-200 rounded-lg transition-colors"

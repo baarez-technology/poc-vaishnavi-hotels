@@ -81,9 +81,9 @@ export function ForceAssignModal({
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-hidden">
+      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 bg-gold-50">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-neutral-200 bg-gold-50 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gold-100 flex items-center justify-center">
               <AlertTriangle className="w-5 h-5 text-gold-600" />
@@ -102,7 +102,7 @@ export function ForceAssignModal({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-5 overflow-y-auto max-h-[calc(90vh-200px)]">
+        <div className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1">
           {/* Task Info */}
           <div className="bg-neutral-50 rounded-xl p-4">
             <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">
@@ -228,7 +228,7 @@ export function ForceAssignModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-neutral-200 bg-neutral-50 flex items-center justify-end gap-3">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-200 bg-neutral-50 flex items-center justify-end gap-3 flex-shrink-0">
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>

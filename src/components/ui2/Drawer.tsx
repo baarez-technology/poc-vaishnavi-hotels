@@ -72,7 +72,7 @@ export function Drawer({
           "border-l border-neutral-200",
           "shadow-2xl",
           "animate-in slide-in-from-right duration-300",
-          "h-screen",
+          "h-[100dvh]", // Use dvh for proper mobile viewport handling
           className
         )}
         onClick={(e) => e.stopPropagation()}
@@ -203,7 +203,7 @@ export function ConfirmDrawer({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-5 border-t border-neutral-100 bg-neutral-50/50 space-y-3">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 border-t border-neutral-100 bg-neutral-50/50 space-y-3 flex-shrink-0">
           <Button
             variant={config.buttonVariant}
             onClick={onConfirm}

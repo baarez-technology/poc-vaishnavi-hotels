@@ -232,11 +232,11 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
       >
         {/* Modal */}
         <div
-          className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-scaleIn"
+          className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden animate-scaleIn flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="p-6 border-b border-neutral-200">
+          <div className="p-4 sm:p-6 border-b border-neutral-200 flex-shrink-0">
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-2xl font-serif font-bold text-neutral-900">Add New Staff</h2>
               <button
@@ -250,7 +250,7 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
           </div>
 
           {/* Form Content */}
-          <div className="overflow-y-auto max-h-[calc(90vh-200px)] custom-scrollbar p-6 pb-4 space-y-6">
+          <div className="overflow-y-auto flex-1 custom-scrollbar p-4 sm:p-6 pb-4 space-y-6">
           {/* Basic Information */}
           <div>
             <div className="flex items-center gap-2 mb-4">
@@ -518,7 +518,7 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
           </div>
 
           {/* Footer Actions */}
-          <div className="border-t border-neutral-200 p-6 bg-white">
+          <div className="border-t border-neutral-200 p-4 sm:p-6 bg-white flex-shrink-0">
             <div className="flex items-center justify-end gap-3">
               <button
                 onClick={onClose}

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { MouseEvent } from 'react';
 import { Crown, Eye, Pencil, MoreHorizontal, Bed, XCircle, CalendarX, ChevronUp, ChevronDown, ChevronsUpDown, CreditCard } from 'lucide-react';
 import { statusConfig, sourceConfig, paymentStatusConfig } from '../../data/bookingsData';
@@ -36,18 +37,51 @@ export default function BookingsTable({
   };
 
   const [openDropdownId, setOpenDropdownId] = useState(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const buttonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | any) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setOpenDropdownId(null);
+        // Check if click is on any of the trigger buttons
+        const isButtonClick = Object.values(buttonRefs.current).some(
+          btn => btn && btn.contains(event.target)
+        );
+        if (!isButtonClick) {
+          setOpenDropdownId(null);
+          setDropdownPosition(null);
+        }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Update dropdown position on scroll/resize
+  useEffect(() => {
+    if (!openDropdownId) return;
+
+    const updatePosition = () => {
+      const button = buttonRefs.current[openDropdownId];
+      if (button) {
+        const rect = button.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.right - 144 // 144px = dropdown width (w-36 = 9rem = 144px)
+        });
+      }
+    };
+
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [openDropdownId]);
 
   const handleViewClick = (e: any, booking: BookingLike) => {
     e.stopPropagation();
@@ -65,7 +99,20 @@ export default function BookingsTable({
 
   const handleMoreClick = (e: any, bookingId: any) => {
     e.stopPropagation();
-    setOpenDropdownId(openDropdownId === bookingId ? null : bookingId);
+    if (openDropdownId === bookingId) {
+      setOpenDropdownId(null);
+      setDropdownPosition(null);
+    } else {
+      const button = buttonRefs.current[bookingId];
+      if (button) {
+        const rect = button.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.right - 144
+        });
+      }
+      setOpenDropdownId(bookingId);
+    }
   };
 
   const handleAssignRoom = (e: any, booking: BookingLike) => {
@@ -182,7 +229,7 @@ export default function BookingsTable({
                 Amount <SortIndicator field="amount" />
               </span>
             </th>
-            <th className="px-2 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap sticky right-0 bg-neutral-50 shadow-[-6px_0_12px_-4px_rgba(0,0,0,0.15)]">
+            <th className="px-2 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap sticky right-0 bg-neutral-50 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.06)]">
               Actions
             </th>
           </tr>
@@ -290,18 +337,28 @@ export default function BookingsTable({
                   </td>
 
                   {/* Actions - Sticky column (small) */}
-                  <td className="px-2 py-4 text-center whitespace-nowrap sticky right-0 bg-white group-hover:bg-neutral-50 shadow-[-6px_0_12px_-4px_rgba(0,0,0,0.15)]">
-                    <div className="relative inline-block" ref={openDropdownId === booking.id ? dropdownRef : null}>
+                  <td className="px-2 py-4 text-center whitespace-nowrap sticky right-0 bg-white group-hover:bg-neutral-50 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.06)]">
+                    <div className="relative inline-block">
                       <button
+                        ref={(el) => { buttonRefs.current[booking.id] = el; }}
                         onClick={(e) => handleMoreClick(e, booking.id)}
                         className={`p-1.5 rounded-md hover:bg-neutral-100 transition-colors ${openDropdownId === booking.id ? 'bg-neutral-100' : ''}`}
                       >
                         <MoreHorizontal className="w-4 h-4 text-neutral-500" />
                       </button>
 
-                      {/* Dropdown Menu */}
-                      {openDropdownId === booking.id && (
-                        <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-neutral-200 py-1 z-50">
+                      {/* Dropdown Menu - Rendered via Portal */}
+                      {openDropdownId === booking.id && dropdownPosition && createPortal(
+                        <div
+                          ref={dropdownRef}
+                          style={{
+                            position: 'fixed',
+                            top: `${dropdownPosition.top}px`,
+                            left: `${dropdownPosition.left}px`,
+                            zIndex: 9999
+                          }}
+                          className="w-36 bg-white rounded-lg shadow-lg shadow-neutral-900/10 border border-neutral-200 py-1 animate-in fade-in-0 zoom-in-95 duration-100"
+                        >
                           <button
                             onClick={(e) => handleViewClick(e, booking)}
                             className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
@@ -339,7 +396,8 @@ export default function BookingsTable({
                             <XCircle className="w-3.5 h-3.5" />
                             Cancel
                           </button>
-                        </div>
+                        </div>,
+                        document.body
                       )}
                     </div>
                   </td>

@@ -208,8 +208,11 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
       if (response?.roomTypes && response.roomTypes.length > 0) {
         setRoomTypes(response.roomTypes);
       }
-    } catch (err) {
-      console.error('Failed to load room types:', err);
+    } catch (err: any) {
+      // Only log non-404 errors (404 means endpoint doesn't exist yet, which is expected)
+      if (err?.response?.status !== 404) {
+        console.error('Failed to load room types:', err);
+      }
       // Keep the sample data fallback (already set in initial state)
     }
   }, []);

@@ -164,18 +164,68 @@ export default function Restrictions() {
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, restriction: null });
   const [searchQuery, setSearchQuery] = useState('');
   const [openDropdownId, setOpenDropdownId] = useState(null);
+  const [dropdownPosition, setDropdownPosition] = useState(null);
   const dropdownRef = useRef(null);
+  const buttonRefs = useRef({});
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setOpenDropdownId(null);
+        const isButtonClick = Object.values(buttonRefs.current).some(
+          btn => btn && btn.contains(event.target)
+        );
+        if (!isButtonClick) {
+          setOpenDropdownId(null);
+          setDropdownPosition(null);
+        }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Update dropdown position on scroll/resize
+  useEffect(() => {
+    if (!openDropdownId) return;
+
+    const updatePosition = () => {
+      const button = buttonRefs.current[openDropdownId];
+      if (button) {
+        const rect = button.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.right - 144
+        });
+      }
+    };
+
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [openDropdownId]);
+
+  const handleMoreClick = (e, restrictionId) => {
+    e.stopPropagation();
+    if (openDropdownId === restrictionId) {
+      setOpenDropdownId(null);
+      setDropdownPosition(null);
+    } else {
+      const button = buttonRefs.current[restrictionId];
+      if (button) {
+        const rect = button.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.right - 144
+        });
+      }
+      setOpenDropdownId(restrictionId);
+    }
+  };
 
   // Refetch data function for SSE
   const refetchData = useCallback(async () => {
@@ -544,7 +594,7 @@ export default function Restrictions() {
                       <th className="py-3 sm:py-4 px-3 sm:px-6 text-left text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 whitespace-nowrap">
                         Status
                       </th>
-                      <th className="px-2 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 whitespace-nowrap sticky right-0 bg-neutral-50 shadow-[-6px_0_12px_-4px_rgba(0,0,0,0.15)]">
+                      <th className="px-2 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 whitespace-nowrap sticky right-0 bg-neutral-50 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.06)]">
                         Actions
                       </th>
                     </tr>
@@ -621,20 +671,27 @@ export default function Restrictions() {
                           </td>
 
                           {/* Actions - Sticky */}
-                          <td className="px-2 py-3 sm:py-4 text-center whitespace-nowrap sticky right-0 bg-white group-hover:bg-neutral-50 shadow-[-6px_0_12px_-4px_rgba(0,0,0,0.15)]">
-                            <div className="relative inline-block" ref={openDropdownId === restriction.id ? dropdownRef : null}>
+                          <td className="px-2 py-3 sm:py-4 text-center whitespace-nowrap sticky right-0 bg-white group-hover:bg-neutral-50 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.06)]">
+                            <div className="relative inline-block">
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOpenDropdownId(openDropdownId === restriction.id ? null : restriction.id);
-                                }}
+                                ref={(el) => { buttonRefs.current[restriction.id] = el; }}
+                                onClick={(e) => handleMoreClick(e, restriction.id)}
                                 className={`p-1.5 rounded-md hover:bg-neutral-100 transition-colors ${openDropdownId === restriction.id ? 'bg-neutral-100' : ''}`}
                               >
                                 <MoreHorizontal className="w-4 h-4 text-neutral-500" />
                               </button>
 
-                              {openDropdownId === restriction.id && (
-                                <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-neutral-200 py-1 z-50">
+                              {openDropdownId === restriction.id && dropdownPosition && createPortal(
+                                <div
+                                  ref={dropdownRef}
+                                  style={{
+                                    position: 'fixed',
+                                    top: `${dropdownPosition.top}px`,
+                                    left: `${dropdownPosition.left}px`,
+                                    zIndex: 9999
+                                  }}
+                                  className="w-36 bg-white rounded-lg shadow-lg shadow-neutral-900/10 border border-neutral-200 py-1 animate-in fade-in-0 zoom-in-95 duration-100"
+                                >
                                   <button
                                     onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); handleEdit(restriction); }}
                                     className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
@@ -657,7 +714,8 @@ export default function Restrictions() {
                                     <Trash2 className="w-3.5 h-3.5" />
                                     Delete
                                   </button>
-                                </div>
+                                </div>,
+                                document.body
                               )}
                             </div>
                           </td>

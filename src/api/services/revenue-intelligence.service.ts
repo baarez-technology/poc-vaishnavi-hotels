@@ -135,7 +135,7 @@ export interface PricingRule {
   createdAt: string;
   updatedAt: string;
   lastTriggered?: string;
-  timesTriggered: number;
+  timesTriggered?: number;
 }
 
 export interface CreatePricingRuleRequest {

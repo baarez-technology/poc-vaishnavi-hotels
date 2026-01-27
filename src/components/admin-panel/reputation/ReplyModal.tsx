@@ -37,9 +37,9 @@ export default function ReplyModal({ review, isOpen, onClose, onSubmit, generate
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-neutral-200 p-6 flex items-center justify-between">
+        <div className="bg-white border-b border-neutral-200 p-4 sm:p-6 flex items-center justify-between flex-shrink-0">
           <h3 className="text-2xl font-serif font-semibold text-neutral-900">
             Reply to Review
           </h3>
@@ -51,7 +51,7 @@ export default function ReplyModal({ review, isOpen, onClose, onSubmit, generate
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6 flex-1 overflow-y-auto">
           {/* Original Review */}
           <div className="p-4 bg-[#FAF8F6] rounded-xl border border-neutral-200">
             <div className="flex items-center justify-between mb-3">

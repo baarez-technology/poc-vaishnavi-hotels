@@ -153,9 +153,9 @@ export default function BulkAssignModal({
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden animate-scaleIn">
+      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden animate-scaleIn flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-neutral-200">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-neutral-200 flex-shrink-0">
           <div>
             <h2 className="text-2xl font-serif font-semibold text-neutral-900">
               Bulk Assign Housekeeper
@@ -173,7 +173,7 @@ export default function BulkAssignModal({
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-280px)] space-y-6">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6">
           {/* Select Housekeeper */}
           <div>
             <label className="block text-sm font-semibold text-neutral-700 mb-3">
@@ -350,7 +350,7 @@ export default function BulkAssignModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-neutral-200">
+        <div className="flex items-center justify-end gap-3 p-4 sm:p-6 border-t border-neutral-200 flex-shrink-0">
           <button
             type="button"
             onClick={onClose}

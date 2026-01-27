@@ -96,11 +96,11 @@ export default function StaffDrawer({ staff, isOpen, onClose, onAssignShift, onM
       >
         {/* Modal */}
         <div
-          className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-scaleIn"
+          className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden animate-scaleIn flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="border-b border-neutral-200">
+          <div className="border-b border-neutral-200 flex-shrink-0">
             <div className="p-6 pb-4">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-4">
@@ -132,7 +132,7 @@ export default function StaffDrawer({ staff, isOpen, onClose, onAssignShift, onM
           </div>
 
           {/* Content */}
-          <div className="overflow-y-auto max-h-[calc(90vh-240px)] custom-scrollbar p-6 space-y-6">
+          <div className="overflow-y-auto flex-1 custom-scrollbar p-4 sm:p-6 space-y-6">
           {/* Contact Info */}
           <div>
             <div className="flex items-center gap-2 mb-3">

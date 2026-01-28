@@ -583,7 +583,21 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
 
             {/* AI Suggestions Badge */}
             {visibleSuggestions.length > 0 && (
-              <button className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-[13px] font-medium text-gold-700 bg-gold-50 border border-gold-200 rounded-lg hover:bg-gold-100 transition-colors whitespace-nowrap">
+              <button
+                onClick={() => {
+                  // Find and scroll to the AI Recommendations section
+                  const recommendationsSection = document.querySelector('[data-recommendations-panel]');
+                  if (recommendationsSection) {
+                    recommendationsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    success(`${visibleSuggestions.length} AI suggestions available`);
+                  } else {
+                    // Fallback: scroll to bottom of page where recommendations typically are
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    success(`${visibleSuggestions.length} AI suggestions available`);
+                  }
+                }}
+                className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-[13px] font-medium text-gold-700 bg-gold-50 border border-gold-200 rounded-lg hover:bg-gold-100 transition-colors whitespace-nowrap"
+              >
                 <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline">{visibleSuggestions.length} AI Suggestions</span>
                 <span className="sm:hidden">{visibleSuggestions.length} AI</span>

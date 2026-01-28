@@ -167,17 +167,14 @@ export default function BookingDrawer({
         onClick={onClose}
       />
 
-      {/* Drawer on mobile, Center Modal on desktop */}
+      {/* Side Drawer - slides from right */}
       <div
-        className={`fixed inset-0 z-50 transition-all duration-300 ${
-          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        } md:flex md:items-center md:justify-center md:p-4`}
+        className={`fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] md:w-[480px] lg:w-[520px] transform transition-transform duration-300 ease-out ${
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
       >
         <div
-          className={`bg-white shadow-2xl w-full h-full flex flex-col transform transition-all duration-300 ease-out
-            md:rounded-[10px] md:max-w-[700px] md:min-w-[700px] md:max-h-[90vh] md:h-auto
-            ${isOpen ? 'translate-x-0 md:translate-x-0 md:scale-100' : 'translate-x-full md:translate-x-0 md:scale-95'}
-          `}
+          className="bg-white shadow-2xl w-full h-full flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -355,29 +352,29 @@ export default function BookingDrawer({
           </div>
 
           {/* Footer */}
-          <div className="flex-shrink-0 border-t border-neutral-100 p-3 sm:p-4 bg-white md:rounded-b-[10px]">
+          <div className="flex-shrink-0 border-t border-neutral-100 p-3 sm:p-4 bg-white">
             <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={() => onCancelBooking && onCancelBooking()}
                 disabled={booking?.status === 'CANCELLED'}
-                className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 border border-neutral-200 text-neutral-600 hover:border-rose-200 hover:text-rose-600 hover:bg-rose-50 rounded-lg text-xs sm:text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-neutral-200 text-neutral-600 hover:border-rose-200 hover:text-rose-600 hover:bg-rose-50 rounded-lg text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <XCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">Cancel</span>
+                Cancel
               </button>
               <button
                 onClick={onAssignRoom}
-                className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg text-xs sm:text-[13px] font-medium transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg text-[13px] font-medium transition-colors"
               >
                 <Bed className="w-4 h-4" />
-                <span className="hidden sm:inline">Assign</span>
+                Assign
               </button>
               <button
                 onClick={onEditBooking}
-                className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 bg-terra-500 hover:bg-terra-600 text-white rounded-lg text-xs sm:text-[13px] font-medium transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-terra-500 hover:bg-terra-600 text-white rounded-lg text-[13px] font-medium transition-colors"
               >
                 <Edit className="w-4 h-4" />
-                <span className="hidden sm:inline">Edit</span>
+                Edit
               </button>
             </div>
           </div>

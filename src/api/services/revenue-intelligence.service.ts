@@ -564,6 +564,29 @@ export interface DashboardData {
 
 const BASE_URL = '/api/v1/revenue-intelligence';
 
+/**
+ * Transform API rule response to frontend format
+ * Handles both camelCase and snake_case field names
+ */
+const transformRuleResponse = (rule: any): PricingRule => {
+  return {
+    id: rule.id,
+    name: rule.name || rule.rule_name || 'Unnamed Rule',
+    description: rule.description || '',
+    priority: rule.priority || 1,
+    isActive: rule.isActive ?? rule.is_active ?? true,
+    roomTypes: rule.roomTypes || rule.room_types || [],
+    conditions: rule.conditions || [],
+    actions: rule.actions || [],
+    createdAt: rule.createdAt || rule.created_at || new Date().toISOString(),
+    updatedAt: rule.updatedAt || rule.updated_at || new Date().toISOString(),
+    lastTriggered: rule.lastTriggered || rule.last_triggered || rule.lastTriggeredAt || rule.last_triggered_at,
+    timesTriggered: rule.timesTriggered ?? rule.times_triggered ?? 0,
+    executionStatus: rule.executionStatus || rule.execution_status,
+    lastExecutionMessage: rule.lastExecutionMessage || rule.last_execution_message,
+  };
+};
+
 export const revenueIntelligenceService = {
   /**
    * Get real-time KPIs
@@ -950,31 +973,34 @@ export const revenueIntelligenceService = {
    * Get all pricing rules
    */
   async getPricingRules(): Promise<PricingRule[]> {
-    const response = await apiClient.get<{ rules: PricingRule[]; total: number; activeCount: number }>(`${BASE_URL}/pricing-rules`);
-    return response.data.rules || [];
+    const response = await apiClient.get<{ rules: any[]; total: number; activeCount: number }>(`${BASE_URL}/pricing-rules`);
+    const rules = response.data.rules || [];
+    // Transform API response: map rule_name to name, and handle other snake_case fields
+    return rules.map((rule: any) => transformRuleResponse(rule));
   },
 
   /**
    * Create a new pricing rule
    */
   async createPricingRule(rule: CreatePricingRuleRequest): Promise<PricingRule> {
-    const response = await apiClient.post<PricingRule>(`${BASE_URL}/pricing-rules`, rule);
-    return response.data;
+    const response = await apiClient.post<any>(`${BASE_URL}/pricing-rules`, rule);
+    return transformRuleResponse(response.data);
   },
 
   /**
    * Update an existing pricing rule
    */
   async updatePricingRule(id: number, rule: UpdatePricingRuleRequest): Promise<PricingRule> {
-    const response = await apiClient.put<PricingRule>(`${BASE_URL}/pricing-rules/${id}`, rule);
-    return response.data;
+    const response = await apiClient.put<any>(`${BASE_URL}/pricing-rules/${id}`, rule);
+    return transformRuleResponse(response.data);
   },
 
   /**
    * Delete a pricing rule
    */
-  async deletePricingRule(id: number): Promise<void> {
-    await apiClient.delete(`${BASE_URL}/pricing-rules/${id}`);
+  async deletePricingRule(id: number): Promise<{ rule_name?: string; name?: string }> {
+    const response = await apiClient.delete<{ rule_name?: string; name?: string }>(`${BASE_URL}/pricing-rules/${id}`);
+    return response.data || {};
   },
 
   /**

@@ -125,8 +125,10 @@ const RateCalendar = () => {
     setIsRecalculating(true);
     showToast('Recalculating rates...', 'info');
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      runAllRules();
+      // Await runAllRules to ensure it completes and refreshes the calendar
+      await runAllRules();
+      // Refresh all data to ensure UI is updated
+      await refreshAll?.();
       showToast('Rates recalculated successfully', 'success');
     } catch (error) {
       showToast('Failed to recalculate rates', 'error');

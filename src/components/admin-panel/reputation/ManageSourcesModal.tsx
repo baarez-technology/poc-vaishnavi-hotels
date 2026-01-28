@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Settings, RefreshCw, Key, Clock, Check } from 'lucide-react';
+import { X, Settings, RefreshCw, Key, Clock, Check, Save } from 'lucide-react';
 import { PLATFORMS } from '@/utils/admin/reputation';
+import { Button } from '../../ui2/Button';
 
 export default function ManageSourcesModal({ isOpen, onClose, sourcesConfig, onSave }) {
   const [config, setConfig] = useState([]);
@@ -211,18 +212,12 @@ export default function ManageSourcesModal({ isOpen, onClose, sourcesConfig, onS
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 p-4 border-t border-neutral-200 bg-neutral-50 flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-200 rounded-lg transition-colors"
-          >
+          <Button variant="ghost" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-6 py-2 bg-[#A57865] text-white text-sm font-medium rounded-lg hover:bg-[#A57865]/90 transition-colors"
-          >
+          </Button>
+          <Button variant="primary" onClick={handleSave} icon={Save}>
             Save Changes
-          </button>
+          </Button>
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Send, Loader2 } from 'lucide-react';
 import { staffService } from '../../../../api/services/staff.service';
+import { Button } from '../../../ui2/Button';
 
 export default function MessageStaffModal({ staff, isOpen, onClose, onSend }) {
   const [formData, setFormData] = useState({
@@ -206,26 +207,12 @@ Terra Suites Management`
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 p-6 border-t border-neutral-200">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="px-6 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-all duration-200 disabled:opacity-50"
-          >
+          <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
             Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="px-6 py-2 text-sm font-semibold text-white bg-[#8E6554] rounded-lg hover:bg-[#A57865] hover:shadow transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
-          >
-            {isSubmitting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} disabled={isSubmitting} icon={isSubmitting ? Loader2 : Send} loading={isSubmitting}>
             {isSubmitting ? 'Sending...' : 'Send Message'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

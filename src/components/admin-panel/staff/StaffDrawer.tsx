@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { X, Phone, Mail, Calendar, TrendingUp, Star, Sparkles, Clock, MessageSquare, Edit2, Save, Coffee, Briefcase, CheckCircle, User, UserX } from 'lucide-react';
+import { Button } from '../../ui2/Button';
 
 export default function StaffDrawer({ staff, isOpen, onClose, onAssignShift, onMessage, onUpdateStatus, onMarkLeave, onEdit, onDisable, onViewProfile }) {
   const navigate = useNavigate();
@@ -326,84 +327,87 @@ export default function StaffDrawer({ staff, isOpen, onClose, onAssignShift, onM
                     <option value="sick">Sick</option>
                     <option value="leave">On Leave</option>
                   </select>
-                  <button
+                  <Button
+                    variant="primary"
                     onClick={handleSaveStatus}
                     disabled={!isStatusEditing || selectedStatus === staff.status}
-                    className={`px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 active:scale-95 ${
-                      isStatusEditing && selectedStatus !== staff.status
-                        ? 'bg-[#A57865] text-white hover:bg-[#8E6554] hover:shadow-md'
-                        : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
-                    }`}
+                    icon={Save}
                   >
-                    <Save className="w-4 h-4" />
                     Save
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <button
+              <Button
+                variant="primary"
                 onClick={() => onAssignShift(staff)}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-[#A57865] hover:bg-[#8E6554] text-white rounded-xl border border-transparent transition-all duration-200 font-semibold text-sm shadow-sm hover:shadow-md active:scale-95"
+                icon={Calendar}
+                className="w-full justify-start"
               >
-                <Calendar className="w-4 h-4" />
                 Assign Shift
-              </button>
+              </Button>
 
-              <button
+              <Button
+                variant="outline-neutral"
                 onClick={() => onMarkLeave && onMarkLeave(staff)}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-neutral-50 text-neutral-700 rounded-xl border-2 border-neutral-200 hover:border-[#A57865]/30 transition-all duration-200 font-semibold text-sm active:scale-95"
+                icon={Coffee}
+                className="w-full justify-start"
               >
-                <Coffee className="w-4 h-4" />
                 Mark Leave
-              </button>
+              </Button>
 
-              <button
+              <Button
+                variant="outline-neutral"
                 onClick={() => onMessage(staff)}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-neutral-50 text-neutral-700 rounded-xl border-2 border-neutral-200 hover:border-[#A57865]/30 transition-all duration-200 font-semibold text-sm active:scale-95"
+                icon={MessageSquare}
+                className="w-full justify-start"
               >
-                <MessageSquare className="w-4 h-4" />
                 Send Message
-              </button>
+              </Button>
 
-              <button
+              <Button
+                variant="outline-neutral"
                 onClick={() => onEdit && onEdit(staff)}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-neutral-50 text-neutral-700 rounded-xl border-2 border-neutral-200 hover:border-[#A57865]/30 transition-all duration-200 font-semibold text-sm active:scale-95"
+                icon={Edit2}
+                className="w-full justify-start"
               >
-                <Edit2 className="w-4 h-4" />
                 Edit Details
-              </button>
+              </Button>
 
-              <button
+              <Button
+                variant="secondary"
                 onClick={() => {
                   onClose();
                   navigate(`/admin/staff/${staff.id}`);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-[#4E5840] hover:bg-[#3d4633] text-white rounded-xl border border-transparent transition-all duration-200 font-semibold text-sm shadow-sm hover:shadow-md active:scale-95"
+                icon={User}
+                className="w-full justify-start"
               >
-                <User className="w-4 h-4" />
                 View Full Profile
-              </button>
+              </Button>
 
               {staff.status !== 'disabled' && (
-                <button
+                <Button
+                  variant="danger"
                   onClick={() => onDisable && onDisable(staff)}
-                  className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-red-50 text-red-600 rounded-xl border-2 border-red-200 hover:border-red-300 transition-all duration-200 font-semibold text-sm active:scale-95"
+                  icon={UserX}
+                  className="w-full justify-start"
                 >
-                  <UserX className="w-4 h-4" />
                   Disable Staff
-                </button>
+                </Button>
               )}
             </div>
           </div>
 
             {/* Close Button */}
-            <button
+            <Button
+              variant="ghost"
               onClick={onClose}
-              className="w-full px-4 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl font-semibold text-sm transition-all duration-200 active:scale-95"
+              className="w-full"
             >
               Close
-            </button>
+            </Button>
           </div>
         </div>
       </div>

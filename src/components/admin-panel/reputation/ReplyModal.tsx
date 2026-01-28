@@ -1,5 +1,6 @@
 import { X, Sparkles, Send } from 'lucide-react';
 import { useState } from 'react';
+import { Button } from '../../ui2/Button';
 
 export default function ReplyModal({ review, isOpen, onClose, onSubmit, generateReply }) {
   const [replyText, setReplyText] = useState('');
@@ -132,29 +133,15 @@ export default function ReplyModal({ review, isOpen, onClose, onSubmit, generate
 
           {/* Actions */}
           <div className="flex gap-3">
-            <button
-              onClick={handleSubmit}
-              disabled={!replyText.trim()}
-              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-[#8E6554] hover:bg-[#A57865] text-white rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Send className="w-5 h-5" />
+            <Button variant="primary" onClick={handleSubmit} disabled={!replyText.trim()} icon={Send} className="flex-1">
               Send Reply
-            </button>
-            <button
-              onClick={() => {
-                setReplyText('');
-                setUseAI(false);
-              }}
-              className="py-3 px-6 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 rounded-xl font-medium transition-colors"
-            >
+            </Button>
+            <Button variant="ghost" onClick={() => { setReplyText(''); setUseAI(false); }}>
               Clear
-            </button>
-            <button
-              onClick={onClose}
-              className="py-3 px-6 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 rounded-xl font-medium transition-colors"
-            >
+            </Button>
+            <Button variant="ghost" onClick={onClose}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       </div>

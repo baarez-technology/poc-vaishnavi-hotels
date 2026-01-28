@@ -258,44 +258,54 @@ function RevenueAIContent() {
             </div>
 
             {/* Actions */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Button
                 variant="outline"
+                size="sm"
                 icon={Calculator}
                 onClick={() => setScenarioModalOpen(true)}
+                className="text-xs sm:text-sm"
               >
                 <span className="hidden sm:inline">Simulate</span>
                 <span className="sm:hidden">Sim</span>
               </Button>
               <Button
                 variant="outline"
+                size="sm"
                 icon={Building2}
                 onClick={() => setCompetitorModalOpen(true)}
-                className="hidden sm:flex"
+                className="hidden sm:flex text-xs sm:text-sm"
               >
-                Add Competitor
+                <span className="hidden md:inline">Add Competitor</span>
+                <span className="md:hidden">Competitor</span>
               </Button>
               <Button
                 variant="outline"
+                size="sm"
                 icon={CalendarDays}
                 onClick={() => setEventModalOpen(true)}
-                className="hidden sm:flex"
+                className="hidden sm:flex text-xs sm:text-sm"
               >
-                Add Event
+                <span className="hidden md:inline">Add Event</span>
+                <span className="md:hidden">Event</span>
               </Button>
               <Button
                 variant="outline"
+                size="sm"
                 icon={RefreshCw}
                 onClick={handleRefresh}
                 disabled={isRefreshing}
                 loading={isRefreshing}
+                className="text-xs sm:text-sm"
               >
                 <span className="hidden sm:inline">Refresh</span>
               </Button>
               <Button
                 variant="primary"
+                size="sm"
                 icon={Download}
                 onClick={handleExportReport}
+                className="text-xs sm:text-sm"
               >
                 <span className="hidden sm:inline">Export Report</span>
                 <span className="sm:hidden">Export</span>

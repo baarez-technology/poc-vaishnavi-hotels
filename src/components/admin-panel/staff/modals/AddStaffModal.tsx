@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, User, Mail, Phone, Briefcase, Calendar, MapPin, Hash, Lock, Eye, EyeOff, DollarSign } from 'lucide-react';
+import { Button } from '../../../ui2/Button';
 
 export default function AddStaffModal({ isOpen, onClose, onAdd }) {
   const [formData, setFormData] = useState({
@@ -520,18 +521,12 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
           {/* Footer Actions */}
           <div className="border-t border-neutral-200 p-4 sm:p-6 bg-white flex-shrink-0">
             <div className="flex items-center justify-end gap-3">
-              <button
-                onClick={onClose}
-                className="px-8 py-3 bg-white text-neutral-700 border-2 border-neutral-200 rounded-xl font-semibold text-sm hover:bg-neutral-50 hover:border-[#A57865]/30 transition-all duration-200 active:scale-95"
-              >
+              <Button variant="ghost" onClick={onClose}>
                 Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="px-8 py-3 bg-[#A57865] text-white rounded-xl font-semibold text-sm hover:bg-[#8E6554] shadow-sm hover:shadow-md transition-all duration-200 active:scale-95"
-              >
+              </Button>
+              <Button variant="primary" onClick={handleSubmit}>
                 Add Staff Member
-              </button>
+              </Button>
             </div>
           </div>
         </div>

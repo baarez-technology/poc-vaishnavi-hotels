@@ -8,7 +8,7 @@ import { Check, ChevronRight } from 'lucide-react';
  * Luxury action menus with refined aesthetics
  */
 
-export function DropdownMenu({ children, trigger, align = 'start', side = 'bottom', className }) {
+export function DropdownMenu({ children, trigger, align = 'start', side = 'bottom', className, disabled = false }) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState(null);
   const triggerRef = useRef(null);
@@ -55,6 +55,7 @@ export function DropdownMenu({ children, trigger, align = 'start', side = 'botto
 
   // Handle trigger click - calculate position immediately
   const handleTriggerClick = () => {
+    if (disabled) return; // Don't open if disabled
     if (open) {
       setOpen(false);
       setPosition(null);

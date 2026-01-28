@@ -10,13 +10,16 @@ import {
   RefreshCw,
   AlertTriangle,
   Download,
+  FileText,
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { revenueIntelligenceService, DashboardResponse, PricingRecommendation, PricingRule } from '../../../api/services/revenue-intelligence.service';
 import { useToast } from '../../../contexts/ToastContext';
 import { DemandLevelBadge } from '../../../components/revenue-management/DemandChart';
-import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalContent, ModalFooter, ConfirmModal } from '../../../components/ui2/Modal';
+import { Modal, ModalHeader, ModalTitle, ModalContent, ModalFooter, ConfirmModal } from '../../../components/ui2/Modal';
 import { Button } from '../../../components/ui2/Button';
+import { DropdownMenu, DropdownMenuItem } from '../../../components/ui2/DropdownMenu';
 import { useBookingsSSE } from '../../../hooks/useBookingsSSE';
 
 // Skeleton Loader Component
@@ -101,7 +104,7 @@ function KPICard({ title, value, trendValue, icon: Icon, accentColor = 'terra', 
 }
 
 const RevenueDashboard = () => {
-  const { showToast } = useToast();
+  const toast = useToast();
 
   // State for API data
   const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null);
@@ -124,7 +127,7 @@ const RevenueDashboard = () => {
     start: new Date(),
     end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
   });
-  const [showExportOptions, setShowExportOptions] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
 
   // Fetch dashboard data from API
   const fetchDashboardData = useCallback(async () => {
@@ -153,13 +156,13 @@ const RevenueDashboard = () => {
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
       setError('Failed to load dashboard data');
-      showToast('Failed to load dashboard', 'error');
+      toast.error('Failed to load dashboard');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // showToast is stable from context, no need to include in deps
+  }, []); // toast is stable from context, no need to include in deps
 
   useEffect(() => {
     fetchDashboardData();
@@ -183,11 +186,6 @@ const RevenueDashboard = () => {
     },
   });
 
-  // Handle export - memoized to prevent re-renders
-  const handleExport = useCallback(() => {
-    setShowExportOptions(true);
-  }, []);
-
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -196,16 +194,11 @@ const RevenueDashboard = () => {
         e.preventDefault();
         setShowRefreshConfirm(true);
       }
-      // Cmd/Ctrl + E - Export
-      if ((e.metaKey || e.ctrlKey) && e.key === 'e') {
-        e.preventDefault();
-        handleExport();
-      }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [handleExport]);
+  }, []);
 
   const handleRefreshAll = async () => {
     setIsRefreshing(true);
@@ -215,302 +208,182 @@ const RevenueDashboard = () => {
       await revenueIntelligenceService.executePricingRules();
       // Refetch dashboard data
       await fetchDashboardData();
-      showToast('Dashboard data refreshed successfully', 'success');
+      toast.success('Dashboard data refreshed successfully');
     } catch (error) {
-      showToast('Failed to refresh dashboard data', 'error');
+      toast.error('Failed to refresh dashboard data');
       setIsRefreshing(false);
     }
   };
 
-  // Export to CSV
-  const exportToCSV = () => {
-    try {
-      showToast('Generating CSV export...', 'info');
+  // Handle export with format selection
+  const handleExport = async (format: 'csv' | 'pdf') => {
+    if (exportLoading) return;
 
+    setExportLoading(true);
+    try {
       if (!dashboardData) {
-        showToast('No data to export', 'error');
+        toast.error('No data to export');
+        setExportLoading(false);
         return;
       }
 
-      // Prepare CSV data
-      const csvData: (string | number)[][] = [];
-
-      // Add headers
-      csvData.push(['Revenue Management Dashboard Export']);
-      csvData.push(['Generated:', new Date().toLocaleString()]);
-      csvData.push(['Period:', `${getPeriodDays()} Days`]);
-      csvData.push([]);
-
-      // KPIs Section
       const kpis = dashboardData.kpis?.next_7_days;
-      csvData.push(['KEY METRICS']);
-      csvData.push(['Metric', 'Value', 'Change']);
-      csvData.push([
-        `${getPeriodDays()}-Day Revenue`,
-        `$${getPeriodRevenue().toLocaleString()}`,
-        `${kpis?.revenue_trend || 0}%`
-      ]);
-      csvData.push([
-        'Avg Occupancy',
-        `${kpis?.occupancy || 0}%`,
-        `${kpis?.occupancy_trend || 0}%`
-      ]);
-      csvData.push([
-        'Avg ADR',
-        `$${kpis?.adr || 0}`,
-        `${kpis?.adr_trend || 0}%`
-      ]);
-      csvData.push(['Active Pricing Rules', Array.isArray(rules) ? rules.filter(r => r.isActive).length : 0, '']);
-      csvData.push([]);
 
-      // Revenue Forecast
-      csvData.push(['REVENUE FORECAST (14 Days)']);
-      csvData.push(['Date', 'Revenue', 'Occupancy %']);
-      revenueChartData.forEach(day => {
-        csvData.push([day.date, `$${day.revenue}`, `${day.occupancy}%`]);
-      });
-      csvData.push([]);
+      if (format === 'pdf') {
+        // Generate PDF using jsPDF
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        let yPos = 20;
 
-      // High Impact Days
-      if (dashboardData.high_impact_days && dashboardData.high_impact_days.length > 0) {
-        csvData.push(['HIGH DEMAND DAYS']);
-        csvData.push(['Date', 'Demand Level', 'Occupancy %']);
-        dashboardData.high_impact_days.slice(0, 5).forEach(day => {
-          const date = new Date(day.date).toLocaleDateString('en-US', {
-            weekday: 'short', month: 'short', day: 'numeric'
+        // Title
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Revenue Management Dashboard', pageWidth / 2, yPos, { align: 'center' });
+        yPos += 10;
+
+        // Subtitle
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100);
+        doc.text(`Generated: ${new Date().toLocaleString()} | Period: ${getPeriodDays()} Days`, pageWidth / 2, yPos, { align: 'center' });
+        yPos += 15;
+
+        // Key Metrics Section
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0);
+        doc.text('Key Metrics', 14, yPos);
+        yPos += 8;
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        const metrics = [
+          [`${getPeriodDays()}-Day Revenue:`, `$${getPeriodRevenue().toLocaleString()}`, `${kpis?.revenue_trend || 0}%`],
+          ['Avg Occupancy:', `${kpis?.occupancy || 0}%`, `${kpis?.occupancy_trend || 0}%`],
+          ['Avg ADR:', `$${kpis?.adr || 0}`, `${kpis?.adr_trend || 0}%`],
+          ['Active Pricing Rules:', `${Array.isArray(rules) ? rules.filter(r => r.isActive).length : 0}`, ''],
+        ];
+
+        metrics.forEach(([label, value, trend]) => {
+          doc.text(label, 14, yPos);
+          doc.text(value, 80, yPos);
+          if (trend) doc.text(`(${trend} vs last week)`, 120, yPos);
+          yPos += 6;
+        });
+        yPos += 10;
+
+        // Revenue Forecast Section
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Revenue Forecast (14 Days)', 14, yPos);
+        yPos += 8;
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Date', 14, yPos);
+        doc.text('Revenue', 60, yPos);
+        doc.text('Occupancy', 100, yPos);
+        yPos += 5;
+
+        doc.setFont('helvetica', 'normal');
+        revenueChartData.forEach(day => {
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+          doc.text(day.date, 14, yPos);
+          doc.text(`$${day.revenue.toLocaleString()}`, 60, yPos);
+          doc.text(`${day.occupancy}%`, 100, yPos);
+          yPos += 5;
+        });
+        yPos += 10;
+
+        // High Demand Days Section
+        if (dashboardData.high_impact_days && dashboardData.high_impact_days.length > 0) {
+          if (yPos > 250) {
+            doc.addPage();
+            yPos = 20;
+          }
+
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.text('High Demand Days', 14, yPos);
+          yPos += 8;
+
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.text('Date', 14, yPos);
+          doc.text('Demand Level', 70, yPos);
+          doc.text('Occupancy', 120, yPos);
+          yPos += 5;
+
+          doc.setFont('helvetica', 'normal');
+          dashboardData.high_impact_days.slice(0, 5).forEach(day => {
+            const dateStr = new Date(day.date).toLocaleDateString('en-US', {
+              weekday: 'short', month: 'short', day: 'numeric'
+            });
+            doc.text(dateStr, 14, yPos);
+            doc.text(day.demand_level, 70, yPos);
+            doc.text(`${day.forecasted_occupancy}%`, 120, yPos);
+            yPos += 5;
           });
-          csvData.push([date, day.demand_level, `${day.forecasted_occupancy}%`]);
+        }
+
+        // Save PDF
+        doc.save(`rms-dashboard-${new Date().toISOString().split('T')[0]}.pdf`);
+        toast.success('Dashboard exported successfully as PDF');
+      } else {
+        // CSV Export
+        const csvData: (string | number)[][] = [];
+
+        csvData.push(['Revenue Management Dashboard Export']);
+        csvData.push(['Generated:', new Date().toLocaleString()]);
+        csvData.push(['Period:', `${getPeriodDays()} Days`]);
+        csvData.push([]);
+
+        csvData.push(['KEY METRICS']);
+        csvData.push(['Metric', 'Value', 'Change']);
+        csvData.push([`${getPeriodDays()}-Day Revenue`, `$${getPeriodRevenue().toLocaleString()}`, `${kpis?.revenue_trend || 0}%`]);
+        csvData.push(['Avg Occupancy', `${kpis?.occupancy || 0}%`, `${kpis?.occupancy_trend || 0}%`]);
+        csvData.push(['Avg ADR', `$${kpis?.adr || 0}`, `${kpis?.adr_trend || 0}%`]);
+        csvData.push(['Active Pricing Rules', Array.isArray(rules) ? rules.filter(r => r.isActive).length : 0, '']);
+        csvData.push([]);
+
+        csvData.push(['REVENUE FORECAST (14 Days)']);
+        csvData.push(['Date', 'Revenue', 'Occupancy %']);
+        revenueChartData.forEach(day => {
+          csvData.push([day.date, `$${day.revenue}`, `${day.occupancy}%`]);
         });
         csvData.push([]);
+
+        if (dashboardData.high_impact_days && dashboardData.high_impact_days.length > 0) {
+          csvData.push(['HIGH DEMAND DAYS']);
+          csvData.push(['Date', 'Demand Level', 'Occupancy %']);
+          dashboardData.high_impact_days.slice(0, 5).forEach(day => {
+            const date = new Date(day.date).toLocaleDateString('en-US', {
+              weekday: 'short', month: 'short', day: 'numeric'
+            });
+            csvData.push([date, day.demand_level, `${day.forecasted_occupancy}%`]);
+          });
+        }
+
+        const csvContent = csvData.map(row => row.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `rms-dashboard-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success('Dashboard exported successfully as CSV');
       }
-
-      // Convert to CSV string
-      const csvContent = csvData.map(row => row.join(',')).join('\n');
-
-      // Download
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `rms-dashboard-${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      showToast('CSV exported successfully', 'success');
-      setShowExportOptions(false);
     } catch (error) {
-      showToast('Failed to export CSV', 'error');
-    }
-  };
-
-  // Export to PDF
-  const exportToPDF = () => {
-    try {
-      showToast('Generating PDF export...', 'info');
-
-      if (!dashboardData) {
-        showToast('No data to export', 'error');
-        return;
-      }
-
-      // Create a simple HTML-based PDF export using print
-      const printWindow = window.open('', '', 'width=800,height=600');
-
-      if (!printWindow) {
-        showToast('Failed to open print window', 'error');
-        return;
-      }
-
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>RMS Dashboard Export</title>
-          <style>
-            body {
-              font-family: system-ui, -apple-system, sans-serif;
-              padding: 40px;
-              color: #1a1a1a;
-            }
-            h1 {
-              color: #4E5840;
-              border-bottom: 3px solid #A57865;
-              padding-bottom: 10px;
-              margin-bottom: 20px;
-            }
-            h2 {
-              color: #A57865;
-              margin-top: 30px;
-              margin-bottom: 15px;
-              font-size: 18px;
-            }
-            .meta {
-              color: #6A6A6A;
-              margin-bottom: 30px;
-              font-size: 14px;
-            }
-            .kpi-grid {
-              display: grid;
-              grid-template-columns: repeat(2, 1fr);
-              gap: 20px;
-              margin-bottom: 30px;
-            }
-            .kpi-card {
-              border: 1px solid #E5E4E0;
-              border-radius: 8px;
-              padding: 20px;
-              background: #fafaf9;
-            }
-            .kpi-label {
-              font-size: 12px;
-              color: #6A6A6A;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-            }
-            .kpi-value {
-              font-size: 28px;
-              font-weight: bold;
-              color: #1a1a1a;
-              margin: 8px 0;
-            }
-            .kpi-trend {
-              font-size: 14px;
-              color: #059669;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin: 15px 0;
-            }
-            th {
-              background: #4E5840;
-              color: white;
-              padding: 12px;
-              text-align: left;
-              font-weight: 600;
-            }
-            td {
-              padding: 10px 12px;
-              border-bottom: 1px solid #E5E4E0;
-            }
-            tr:nth-child(even) {
-              background: #fafaf9;
-            }
-            .positive { color: #059669; }
-            .negative { color: #dc2626; }
-            @media print {
-              body { padding: 20px; }
-              .no-print { display: none; }
-            }
-          </style>
-        </head>
-        <body>
-          <h1>Revenue Management System Dashboard</h1>
-          <div class="meta">
-            <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
-            <p><strong>Period:</strong> ${getPeriodDays()} Days</p>
-            <p><strong>Last Updated:</strong> ${getLastUpdatedText()}</p>
-          </div>
-
-          <h2>Key Metrics</h2>
-          <div class="kpi-grid">
-            <div class="kpi-card">
-              <div class="kpi-label">${getPeriodDays()}-Day Revenue Forecast</div>
-              <div class="kpi-value">$${getPeriodRevenue().toLocaleString()}</div>
-              <div class="kpi-trend ${(dashboardData.kpis?.next_7_days?.revenue_trend || 0) >= 0 ? 'positive' : 'negative'}">
-                ${(dashboardData.kpis?.next_7_days?.revenue_trend || 0) >= 0 ? '↑' : '↓'} ${Math.abs(dashboardData.kpis?.next_7_days?.revenue_trend || 0)}%
-              </div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-label">Avg Occupancy</div>
-              <div class="kpi-value">${dashboardData.kpis?.next_7_days?.occupancy || 0}%</div>
-              <div class="kpi-trend ${(dashboardData.kpis?.next_7_days?.occupancy_trend || 0) >= 0 ? 'positive' : 'negative'}">
-                ${(dashboardData.kpis?.next_7_days?.occupancy_trend || 0) >= 0 ? '↑' : '↓'} ${Math.abs(dashboardData.kpis?.next_7_days?.occupancy_trend || 0)}%
-              </div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-label">Avg ADR</div>
-              <div class="kpi-value">$${dashboardData.kpis?.next_7_days?.adr || 0}</div>
-              <div class="kpi-trend ${(dashboardData.kpis?.next_7_days?.adr_trend || 0) >= 0 ? 'positive' : 'negative'}">
-                ${(dashboardData.kpis?.next_7_days?.adr_trend || 0) >= 0 ? '↑' : '↓'} ${Math.abs(dashboardData.kpis?.next_7_days?.adr_trend || 0)}%
-              </div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-label">Active Pricing Rules</div>
-              <div class="kpi-value">${Array.isArray(rules) ? rules.filter(r => r.isActive).length : 0}</div>
-            </div>
-          </div>
-
-          <h2>Revenue Forecast (14 Days)</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Revenue</th>
-                <th>Occupancy</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${revenueChartData.map(day => `
-                <tr>
-                  <td>${day.date}</td>
-                  <td>$${day.revenue.toLocaleString()}</td>
-                  <td>${day.occupancy}%</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-
-          ${dashboardData.high_impact_days && dashboardData.high_impact_days.length > 0 ? `
-          <h2>High Demand Days</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Demand Level</th>
-                <th>Occupancy</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${dashboardData.high_impact_days.slice(0, 5).map(day => {
-                const date = new Date(day.date).toLocaleDateString('en-US', {
-                  weekday: 'short', month: 'short', day: 'numeric'
-                });
-                return `
-                  <tr>
-                    <td>${date}</td>
-                    <td>${day.demand_level}</td>
-                    <td>${day.forecasted_occupancy}%</td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
-          ` : ''}
-
-          <div class="no-print" style="margin-top: 40px; text-align: center;">
-            <button onclick="window.print()" style="padding: 10px 20px; background: #4E5840; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
-              Print / Save as PDF
-            </button>
-            <button onclick="window.close()" style="padding: 10px 20px; background: #6A6A6A; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; margin-left: 10px;">
-              Close
-            </button>
-          </div>
-        </body>
-        </html>
-      `;
-
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-
-      setTimeout(() => {
-        showToast('PDF ready - use Print dialog to save', 'success');
-        setShowExportOptions(false);
-      }, 500);
-    } catch (error) {
-      showToast('Failed to generate PDF', 'error');
+      console.error('Export error:', error);
+      toast.error('Failed to export dashboard');
+    } finally {
+      setExportLoading(false);
     }
   };
 
@@ -579,7 +452,7 @@ const RevenueDashboard = () => {
   const handleCustomDateApply = () => {
     setTimePeriod('custom');
     setShowDatePicker(false);
-    showToast(`Custom range applied: ${getPeriodDays()} days`, 'success');
+    toast.success(`Custom range applied: ${getPeriodDays()} days`);
   };
 
   // Get critical alerts count
@@ -661,14 +534,45 @@ const RevenueDashboard = () => {
             {/* Action Buttons - Always visible */}
             <div className="flex items-center gap-2 sm:gap-3">
               {/* Export Button */}
-              <Button
-                variant="outline"
-                icon={Download}
-                onClick={handleExport}
-                className="text-xs sm:text-sm"
-              >
-                <span className="hidden sm:inline">Export</span>
-              </Button>
+              {exportLoading ? (
+                <Button
+                  variant="outline"
+                  icon={Download}
+                  disabled
+                  loading
+                  className="text-xs sm:text-sm pointer-events-none"
+                >
+                  <span className="hidden sm:inline">Exporting...</span>
+                  <span className="sm:hidden">...</span>
+                </Button>
+              ) : (
+                <DropdownMenu
+                  trigger={
+                    <Button
+                      variant="outline"
+                      icon={Download}
+                      className="text-xs sm:text-sm"
+                    >
+                      <span className="hidden sm:inline">Export</span>
+                      <span className="sm:hidden">Export</span>
+                    </Button>
+                  }
+                  align="end"
+                >
+                  <DropdownMenuItem
+                    icon={FileText}
+                    onSelect={() => handleExport('pdf')}
+                  >
+                    Export as PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    icon={Download}
+                    onSelect={() => handleExport('csv')}
+                  >
+                    Export as CSV
+                  </DropdownMenuItem>
+                </DropdownMenu>
+              )}
 
               {/* Refresh Button */}
               <Button
@@ -1251,51 +1155,6 @@ const RevenueDashboard = () => {
         cancelText="Cancel"
         variant="warning"
       />
-
-      {/* Export Options Dialog */}
-      <Modal open={showExportOptions} onClose={() => setShowExportOptions(false)} size="md">
-        <ModalHeader>
-          <ModalTitle className="text-base sm:text-lg">Export Dashboard</ModalTitle>
-          <ModalDescription className="text-xs sm:text-sm">Choose your preferred export format</ModalDescription>
-        </ModalHeader>
-        <ModalContent>
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
-            <button
-              onClick={exportToCSV}
-              className="p-3 sm:p-5 rounded-lg border border-neutral-200 hover:border-terra-300 hover:bg-terra-50 transition-all duration-200 group"
-            >
-              <div className="flex flex-col items-center gap-1.5 sm:gap-2">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-terra-50 group-hover:bg-terra-100 flex items-center justify-center transition-colors">
-                  <Download className="w-4 h-4 sm:w-5 sm:h-5 text-terra-600" />
-                </div>
-                <span className="text-xs sm:text-[13px] font-semibold text-neutral-800">CSV File</span>
-                <span className="text-[10px] sm:text-[11px] text-center text-neutral-500">
-                  Spreadsheet format
-                </span>
-              </div>
-            </button>
-            <button
-              onClick={exportToPDF}
-              className="p-3 sm:p-5 rounded-lg border border-neutral-200 hover:border-terra-300 hover:bg-terra-50 transition-all duration-200 group"
-            >
-              <div className="flex flex-col items-center gap-1.5 sm:gap-2">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-terra-50 group-hover:bg-terra-100 flex items-center justify-center transition-colors">
-                  <Download className="w-4 h-4 sm:w-5 sm:h-5 text-terra-600" />
-                </div>
-                <span className="text-xs sm:text-[13px] font-semibold text-neutral-800">PDF Report</span>
-                <span className="text-[10px] sm:text-[11px] text-center text-neutral-500">
-                  Formatted report
-                </span>
-              </div>
-            </button>
-          </div>
-        </ModalContent>
-        <ModalFooter>
-          <Button variant="ghost" onClick={() => setShowExportOptions(false)} className="text-xs sm:text-sm">
-            Cancel
-          </Button>
-        </ModalFooter>
-      </Modal>
 
       {/* Custom Date Range Picker Dialog */}
       <Modal open={showDatePicker} onClose={() => setShowDatePicker(false)} size="sm">

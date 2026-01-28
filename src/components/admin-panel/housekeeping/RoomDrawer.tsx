@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, User, Clock, CheckCircle2, AlertCircle, Play, CheckCircle, Ban, RotateCcw, Edit, Sparkles, Loader2, XCircle } from 'lucide-react';
+import { Button } from '../../ui2/Button';
 
 export default function RoomDrawer({
   room,
@@ -201,35 +202,23 @@ export default function RoomDrawer({
               <div className="flex flex-wrap gap-2">
                 {/* Start Cleaning */}
                 {room.cleaningStatus === 'not_started' && room.status === 'dirty' && (
-                  <button
-                    onClick={() => onStartCleaning(room.id)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#5C9BA4] hover:bg-[#4A8A94] text-white rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow active:scale-95"
-                  >
-                    <Play className="w-4 h-4" />
+                  <Button variant="secondary" onClick={() => onStartCleaning(room.id)} icon={Play}>
                     Start Cleaning
-                  </button>
+                  </Button>
                 )}
 
                 {/* Mark as Cleaned */}
                 {(room.cleaningStatus === 'in_progress' || room.status === 'dirty') && (
-                  <button
-                    onClick={() => onMarkCleaned(room.id)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#4E5840] hover:bg-[#3D4633] text-white rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow active:scale-95"
-                  >
-                    <CheckCircle className="w-4 h-4" />
+                  <Button variant="success" onClick={() => onMarkCleaned(room.id)} icon={CheckCircle}>
                     Mark Cleaned
-                  </button>
+                  </Button>
                 )}
 
                 {/* Mark as Dirty */}
                 {room.status === 'clean' && (
-                  <button
-                    onClick={() => onMarkDirty(room.id)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#CDB261] hover:bg-[#B89E50] text-white rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow active:scale-95"
-                  >
-                    <RotateCcw className="w-4 h-4" />
+                  <Button variant="warning" onClick={() => onMarkDirty(room.id)} icon={RotateCcw}>
                     Mark Dirty
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -238,21 +227,13 @@ export default function RoomDrawer({
           {/* Block/Unblock Actions */}
           <div>
             {room.status === 'out_of_service' ? (
-              <button
-                onClick={() => onUnblockRoom(room.id)}
-                className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-[#4E5840] hover:bg-[#3D4633] text-white rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98]"
-              >
-                <CheckCircle className="w-5 h-5" />
+              <Button variant="success" onClick={() => onUnblockRoom(room.id)} icon={CheckCircle} fullWidth>
                 Unblock Room
-              </button>
+              </Button>
             ) : (
-              <button
-                onClick={() => onBlockRoom(room.id, 'Maintenance required')}
-                className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-[#A57865] hover:bg-[#8E6554] text-white rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98]"
-              >
-                <Ban className="w-5 h-5" />
+              <Button variant="primary" onClick={() => onBlockRoom(room.id, 'Maintenance required')} icon={Ban} fullWidth>
                 Block Room
-              </button>
+              </Button>
             )}
           </div>
 

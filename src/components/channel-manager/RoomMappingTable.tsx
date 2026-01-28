@@ -186,8 +186,10 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
               variant="outline"
               size="sm"
               icon={Layers}
+              className="text-xs sm:text-sm"
             >
-              Bulk Map
+              <span className="hidden sm:inline">Bulk Map</span>
+              <span className="sm:hidden">Bulk</span>
             </Button>
             <Button
               onClick={onAutoMap}

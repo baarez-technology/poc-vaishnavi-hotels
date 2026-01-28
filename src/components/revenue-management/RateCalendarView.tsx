@@ -538,32 +538,45 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
             {/* Room Type Selector - Custom Dropdown */}
             <div className="relative flex-1 sm:flex-none" ref={dropdownRef}>
               <button
-                onClick={() => setIsRoomDropdownOpen(!isRoomDropdownOpen)}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsRoomDropdownOpen(!isRoomDropdownOpen);
+                }}
                 className="w-full sm:w-auto flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-[13px] font-medium border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/40 bg-white hover:bg-neutral-50 transition-colors sm:min-w-[180px]"
               >
                 <span className="truncate">{roomTypes.find(r => r.id === selectedRoomType)?.name || 'Select Room'}</span>
                 <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-500 transition-transform flex-shrink-0 ${isRoomDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {isRoomDropdownOpen && (
-                <div className="absolute top-full left-0 mt-2 w-full sm:min-w-[180px] bg-white border border-neutral-200 rounded-lg shadow-lg z-50 overflow-hidden">
+              {isRoomDropdownOpen && roomTypes.length > 0 && (
+                <div className="absolute top-full left-0 right-0 sm:right-auto mt-2 sm:min-w-[200px] bg-white border border-neutral-200 rounded-lg shadow-xl z-[100] overflow-hidden max-h-[300px] overflow-y-auto">
                   {roomTypes.map(room => (
                     <button
                       key={room.id}
-                      onClick={() => {
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
                         setSelectedRoomType(room.id);
                         setIsRoomDropdownOpen(false);
                       }}
-                      className={`w-full flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-[13px] text-left hover:bg-neutral-50 transition-colors ${
+                      className={`w-full flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-[13px] text-left hover:bg-neutral-50 transition-colors border-b border-neutral-100 last:border-b-0 ${
                         selectedRoomType === room.id ? 'bg-terra-50 text-terra-600 font-medium' : 'text-neutral-700'
                       }`}
                     >
-                      <span className="truncate">{room.name}</span>
+                      <span className="truncate pr-2">{room.name}</span>
                       {selectedRoomType === room.id && (
-                        <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-terra-600 flex-shrink-0" />
+                        <Check className="w-4 h-4 sm:w-5 sm:h-5 text-terra-600 flex-shrink-0" />
                       )}
                     </button>
                   ))}
+                </div>
+              )}
+
+              {isRoomDropdownOpen && roomTypes.length === 0 && (
+                <div className="absolute top-full left-0 right-0 sm:right-auto mt-2 sm:min-w-[200px] bg-white border border-neutral-200 rounded-lg shadow-xl z-[100] p-4 text-center">
+                  <p className="text-xs sm:text-sm text-neutral-500">No room types available</p>
                 </div>
               )}
             </div>

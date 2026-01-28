@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { createPortal } from 'react-dom';
 import { X, Plus } from 'lucide-react';
 import { SimpleDropdown } from '@/components/ui/Select';
+import { Button } from '../../../ui2/Button';
 
 export default function AddRoomModal({ isOpen, onClose, onAdd }) {
   const [formData, setFormData] = useState({
@@ -300,24 +301,12 @@ export default function AddRoomModal({ isOpen, onClose, onAdd }) {
         {/* Sticky Footer */}
         <div className="fixed bottom-0 right-0 w-full max-w-2xl bg-white border-t border-neutral-200 p-6 z-10">
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-6 py-3 text-sm font-semibold text-neutral-700 bg-white border-2 border-neutral-200 rounded-xl hover:bg-neutral-50 hover:border-neutral-300 transition-all duration-200 active:scale-95"
-            >
+            <Button variant="ghost" onClick={onClose} className="flex-1">
               Cancel
-            </button>
-            <button
-              type="submit"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className={`flex-1 px-6 py-3 text-sm font-semibold text-white rounded-xl transition-all duration-200 flex items-center justify-center gap-2 ${
-                isSubmitting ? 'bg-neutral-400 cursor-not-allowed' : 'bg-[#A57865] hover:bg-[#8E6554] hover:shadow-md active:scale-95'
-              }`}
-            >
-              <Plus className="w-4 h-4" />
+            </Button>
+            <Button variant="primary" onClick={handleSubmit} disabled={isSubmitting} icon={Plus} loading={isSubmitting} className="flex-1">
               {isSubmitting ? 'Creating...' : 'Add Room'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

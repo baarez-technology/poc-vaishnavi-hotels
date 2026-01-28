@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Calendar, RefreshCw, Download, Sparkles, TrendingUp, TrendingDown, Clock, AlertTriangle, DollarSign, Users, CheckCircle, Edit3, Copy, ExternalLink, X, Loader2 } from 'lucide-react';
+import { Calendar, RefreshCw, Download, Sparkles, TrendingUp, TrendingDown, Clock, AlertTriangle, DollarSign, Users, CheckCircle, Edit3, Copy, ExternalLink, X, Loader2, FileText } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 import { useRMS } from '../../../context/RMSContext';
 import { useToast } from '../../../contexts/ToastContext';
 import RateCalendarView from '../../../components/revenue-management/RateCalendarView';
 import { RecommendationsPanel } from '../../../components/revenue-management/RecommendationCard';
 import { Button } from '../../../components/ui2/Button';
+import { DropdownMenu, DropdownMenuItem } from '../../../components/ui2/DropdownMenu';
 import { useChannelManagerSSEEvents } from '../../../hooks/useChannelManagerSSEEvents';
 
 // KPI Card Component - Consistent with Design System
@@ -56,7 +58,7 @@ function KPICard({ title, value, trendValue, icon: Icon, accentColor = 'terra', 
 }
 
 const RateCalendar = () => {
-  const { showToast } = useToast();
+  const toast = useToast();
   const location = useLocation();
   const {
     rateCalendar,
@@ -105,7 +107,7 @@ const RateCalendar = () => {
       // Clear navigation state
       window.history.replaceState({}, document.title);
     }
-  }, [location.state, showToast]);
+  }, [location.state, toast]);
 
   // SSE Integration for real-time rates updates
   useChannelManagerSSEEvents({
@@ -123,24 +125,169 @@ const RateCalendar = () => {
 
   const handleRecalculateAll = async () => {
     setIsRecalculating(true);
-    showToast('Recalculating rates...', 'info');
+    toast.info('Recalculating rates...');
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
       runAllRules();
-      showToast('Rates recalculated successfully', 'success');
+      toast.success('Rates recalculated successfully');
     } catch (error) {
-      showToast('Failed to recalculate rates', 'error');
+      toast.error('Failed to recalculate rates');
     } finally {
       setIsRecalculating(false);
     }
   };
 
-  const handleExport = async () => {
+  const handleExport = async (format: 'csv' | 'pdf') => {
+    if (isExporting) return;
     setIsExporting(true);
-    showToast('Exporting rate calendar...', 'info');
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      showToast('Rate calendar exported successfully', 'success');
+      const calendarEntries = Object.entries(rateCalendar || {});
+      if (calendarEntries.length === 0) {
+        toast.error('No data to export');
+        setIsExporting(false);
+        return;
+      }
+
+      if (format === 'pdf') {
+        // Generate PDF using jsPDF
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        let yPos = 20;
+
+        // Title
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Rate Calendar Export', pageWidth / 2, yPos, { align: 'center' });
+        yPos += 10;
+
+        // Subtitle
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth / 2, yPos, { align: 'center' });
+        yPos += 15;
+
+        // Summary Section
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0);
+        doc.text('Summary (Next 7 Days)', 14, yPos);
+        yPos += 8;
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        const summaryData = [
+          ['Avg Occupancy:', `${avgOccupancy}%`],
+          ['Avg BAR Rate:', `$${avgRate}`],
+          ['Revenue Forecast:', `$${(totalRevenue / 1000).toFixed(1)}K`],
+          ['Days with Restrictions:', `${restrictedDays}`],
+          ['AI Suggestions:', `${recommendations.length}`],
+        ];
+
+        summaryData.forEach(([label, value]) => {
+          doc.text(label, 14, yPos);
+          doc.text(value, 80, yPos);
+          yPos += 6;
+        });
+        yPos += 10;
+
+        // Rate Calendar Data
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Daily Rates & Occupancy', 14, yPos);
+        yPos += 8;
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Date', 14, yPos);
+        doc.text('Occupancy', 50, yPos);
+        doc.text('Rate', 85, yPos);
+        doc.text('Available', 115, yPos);
+        doc.text('Sold', 150, yPos);
+        yPos += 5;
+
+        doc.setFont('helvetica', 'normal');
+        const today = new Date().toISOString().split('T')[0];
+        const firstRoomTypeId = roomTypes.length > 0 ? roomTypes[0].id : 'STD';
+
+        calendarEntries
+          .filter(([date]) => date >= today)
+          .slice(0, 30)
+          .forEach(([date, data]) => {
+            if (yPos > 270) {
+              doc.addPage();
+              yPos = 20;
+            }
+            const dateStr = new Date(date).toLocaleDateString('en-US', {
+              weekday: 'short', month: 'short', day: 'numeric'
+            });
+            const roomData = data.rooms?.[firstRoomTypeId];
+            doc.text(dateStr, 14, yPos);
+            doc.text(`${data.occupancy || 0}%`, 50, yPos);
+            doc.text(`$${roomData?.dynamicRate || 0}`, 85, yPos);
+            doc.text(`${roomData?.available || 0}`, 115, yPos);
+            doc.text(`${roomData?.sold || 0}`, 150, yPos);
+            yPos += 5;
+          });
+
+        // Save PDF
+        doc.save(`rate-calendar-${new Date().toISOString().split('T')[0]}.pdf`);
+        toast.success('Rate calendar exported as PDF');
+      } else {
+        // CSV Export
+        const csvData: (string | number)[][] = [];
+
+        csvData.push(['Rate Calendar Export']);
+        csvData.push(['Generated:', new Date().toLocaleString()]);
+        csvData.push([]);
+
+        csvData.push(['SUMMARY (Next 7 Days)']);
+        csvData.push(['Avg Occupancy', `${avgOccupancy}%`]);
+        csvData.push(['Avg BAR Rate', `$${avgRate}`]);
+        csvData.push(['Revenue Forecast', `$${(totalRevenue / 1000).toFixed(1)}K`]);
+        csvData.push(['Days with Restrictions', restrictedDays]);
+        csvData.push(['AI Suggestions', recommendations.length]);
+        csvData.push([]);
+
+        csvData.push(['DAILY RATES & OCCUPANCY']);
+        csvData.push(['Date', 'Occupancy %', 'Rate', 'Available', 'Sold']);
+
+        const today = new Date().toISOString().split('T')[0];
+        const firstRoomTypeId = roomTypes.length > 0 ? roomTypes[0].id : 'STD';
+
+        calendarEntries
+          .filter(([date]) => date >= today)
+          .slice(0, 30)
+          .forEach(([date, data]) => {
+            const dateStr = new Date(date).toLocaleDateString('en-US', {
+              weekday: 'short', month: 'short', day: 'numeric'
+            });
+            const roomData = data.rooms?.[firstRoomTypeId];
+            csvData.push([
+              dateStr,
+              `${data.occupancy || 0}%`,
+              `$${roomData?.dynamicRate || 0}`,
+              roomData?.available || 0,
+              roomData?.sold || 0
+            ]);
+          });
+
+        const csvContent = csvData.map(row => row.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `rate-calendar-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success('Rate calendar exported as CSV');
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export rate calendar');
     } finally {
       setIsExporting(false);
     }
@@ -150,9 +297,9 @@ const RateCalendar = () => {
     setBulkEditMode(!bulkEditMode);
     setSelectedDates([]);
     if (bulkEditMode) {
-      showToast('Bulk edit mode disabled', 'info');
+      toast.info('Bulk edit mode disabled');
     } else {
-      showToast('Select dates to apply bulk changes', 'info');
+      toast.info('Select dates to apply bulk changes');
     }
   };
 
@@ -170,7 +317,7 @@ const RateCalendar = () => {
 
   const handleBulkEdit = () => {
     if (selectedDates.length === 0) {
-      showToast('Please select at least one date', 'warning');
+      toast.warning('Please select at least one date');
       return;
     }
     setShowBulkEditModal(true);
@@ -179,15 +326,15 @@ const RateCalendar = () => {
   const applyBulkChanges = () => {
     const { rateChange, changeType } = bulkEditData;
     if (!rateChange || rateChange === '') {
-      showToast('Please enter a rate change amount', 'warning');
+      toast.warning('Please enter a rate change amount');
       return;
     }
 
-    showToast(`Applying ${changeType === 'amount' ? '$' + rateChange : rateChange + '%'} change to ${selectedDates.length} dates...`, 'info');
+    toast.info(`Applying ${changeType === 'amount' ? '$' + rateChange : rateChange + '%'} change to ${selectedDates.length} dates...`);
 
     // Simulate API call
     setTimeout(() => {
-      showToast(`Successfully updated ${selectedDates.length} dates`, 'success');
+      toast.success(`Successfully updated ${selectedDates.length} dates`);
       setShowBulkEditModal(false);
       setBulkEditMode(false);
       setSelectedDates([]);
@@ -198,7 +345,7 @@ const RateCalendar = () => {
   const selectDateRange = (startDate, endDate) => {
     const dates = Object.keys(rateCalendar).filter(date => date >= startDate && date <= endDate);
     setSelectedDates(dates);
-    showToast(`Selected ${dates.length} dates from ${startDate} to ${endDate}`, 'success');
+    toast.success(`Selected ${dates.length} dates from ${startDate} to ${endDate}`);
   };
 
   // Calculate summary stats - handle empty data gracefully
@@ -360,16 +507,44 @@ const RateCalendar = () => {
 
             {!bulkEditMode && (
               <>
-                <Button
-                  variant="outline"
-                  icon={Download}
-                  onClick={handleExport}
-                  disabled={isExporting}
-                  loading={isExporting}
-                  className="text-xs sm:text-sm"
-                >
-                  Export
-                </Button>
+                {isExporting ? (
+                  <Button
+                    variant="outline"
+                    icon={Download}
+                    disabled
+                    loading
+                    className="text-xs sm:text-sm"
+                  >
+                    <span className="hidden sm:inline">Exporting...</span>
+                    <span className="sm:hidden">...</span>
+                  </Button>
+                ) : (
+                  <DropdownMenu
+                    trigger={
+                      <Button
+                        variant="outline"
+                        icon={Download}
+                        className="text-xs sm:text-sm"
+                      >
+                        Export
+                      </Button>
+                    }
+                    align="end"
+                  >
+                    <DropdownMenuItem
+                      icon={FileText}
+                      onSelect={() => handleExport('pdf')}
+                    >
+                      Export as PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      icon={Download}
+                      onSelect={() => handleExport('csv')}
+                    >
+                      Export as CSV
+                    </DropdownMenuItem>
+                  </DropdownMenu>
+                )}
 
                 <Button
                   variant="primary"

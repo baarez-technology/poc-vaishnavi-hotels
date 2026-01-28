@@ -1,4 +1,5 @@
 import { Sparkles, TrendingUp, AlertTriangle, Lightbulb, Target, ChevronRight } from 'lucide-react';
+import { Button } from '../../ui2/Button';
 
 export default function AIInsights({ insights }) {
   const getIcon = (type) => {
@@ -130,9 +131,9 @@ export default function AIInsights({ insights }) {
             <p className="text-sm font-semibold text-neutral-900">Ready to take action?</p>
             <p className="text-xs text-[#A57865]">Implement these insights to maximize guest value</p>
           </div>
-          <button className="px-4 py-2 bg-[#8E6554] hover:bg-[#A57865] text-white rounded-lg text-sm font-semibold transition-colors">
+          <Button variant="primary">
             Create Action Plan
-          </button>
+          </Button>
         </div>
       </div>
     </div>

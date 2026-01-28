@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Users, Filter, Eye, Plus, Tag, Trash2 } from 'lucide-react';
+import { X, Users, Filter, Eye, Plus, Tag, Trash2, Save } from 'lucide-react';
 import {
   BOOKING_SOURCES,
   ROOM_TYPES,
@@ -9,6 +9,7 @@ import {
   calculateAverageLTV,
   calculateRepeatRate
 } from '@/utils/admin/crm';
+import { Button } from '../../ui2/Button';
 
 const SEGMENT_COLORS = [
   '#A57865', '#4E5840', '#5C9BA4', '#CDB261', '#8E6554',
@@ -454,18 +455,12 @@ export default function EditSegmentModal({ isOpen, onClose, onSave, onDelete, se
                   Are you sure you want to delete this segment? This action cannot be undone.
                 </p>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleDelete}
-                    className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
-                  >
+                  <Button variant="danger" onClick={handleDelete} icon={Trash2}>
                     Yes, Delete
-                  </button>
-                  <button
-                    onClick={() => setShowDeleteConfirm(false)}
-                    className="px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-200 rounded-lg transition-colors"
-                  >
+                  </Button>
+                  <Button variant="ghost" onClick={() => setShowDeleteConfirm(false)}>
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -474,19 +469,12 @@ export default function EditSegmentModal({ isOpen, onClose, onSave, onDelete, se
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 p-4 border-t border-neutral-200 bg-neutral-50 flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-200 rounded-lg transition-colors"
-          >
+          <Button variant="ghost" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={!formData.name.trim()}
-            className="px-6 py-2 bg-[#A57865] text-white text-sm font-medium rounded-lg hover:bg-[#A57865]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} disabled={!formData.name.trim()} icon={Save}>
             Save Changes
-          </button>
+          </Button>
         </div>
       </div>
 

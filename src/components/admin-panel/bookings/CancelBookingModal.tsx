@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, AlertTriangle, XCircle } from 'lucide-react';
 import { CANCELLATION_REASONS } from '@/utils/admin/bookings';
+import { Button } from '../../ui2/Button';
 
 export default function CancelBookingModal({
   isOpen,
@@ -146,21 +147,12 @@ export default function CancelBookingModal({
 
           {/* Actions */}
           <div className="flex items-center gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl transition-all duration-200 font-medium focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2"
-            >
+            <Button variant="ghost" onClick={onClose} className="flex-1">
               Keep Booking
-            </button>
-            <button
-              type="submit"
-              disabled={!isFormValid || isCancelling}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white disabled:bg-neutral-300 disabled:cursor-not-allowed rounded-xl transition-all duration-200 font-semibold focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-            >
-              <XCircle className="w-4 h-4" />
+            </Button>
+            <Button variant="danger" type="submit" disabled={!isFormValid || isCancelling} icon={XCircle} loading={isCancelling} className="flex-1">
               {isCancelling ? 'Cancelling...' : 'Cancel Booking'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

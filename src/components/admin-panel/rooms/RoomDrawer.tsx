@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Building2, Users, Sparkles, Ban, Edit, UserPlus, Trash2, Check, AlertTriangle, Bed, UsersRound, DollarSign } from 'lucide-react';
+import { Button } from '../../ui2/Button';
 
 export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAssignGuest, onMarkClean, onMarkDirty, onBlockRoom, onUnassignGuest, onUnblockRoom }) {
   useEffect(() => {
@@ -237,72 +238,44 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
             </div>
             <div className="space-y-2">
               {/* Update Status */}
-              <button
-                onClick={() => onUpdateStatus(room)}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-[#A57865] text-white rounded-xl hover:bg-[#8E6554] hover:shadow-md hover:scale-[1.02] transition-all duration-200 font-semibold text-sm active:scale-95"
-              >
-                <Edit className="w-4 h-4" />
+              <Button variant="primary" onClick={() => onUpdateStatus(room)} icon={Edit} fullWidth className="justify-start">
                 Update Status
-              </button>
+              </Button>
 
               {/* Assign Guest (only if available) */}
               {room.status === 'available' && (
-                <button
-                  onClick={() => onAssignGuest(room)}
-                  className="w-full flex items-center gap-3 px-4 py-3 bg-white border-2 border-neutral-200 text-neutral-700 rounded-xl hover:border-[#A57865]/30 hover:bg-neutral-50 hover:shadow-sm hover:scale-[1.02] transition-all duration-200 font-semibold text-sm active:scale-95"
-                >
-                  <UserPlus className="w-4 h-4" />
+                <Button variant="outline-neutral" onClick={() => onAssignGuest(room)} icon={UserPlus} fullWidth className="justify-start">
                   Assign Guest
-                </button>
+                </Button>
               )}
 
               {/* Unassign Guest (only if occupied) */}
               {room.status === 'occupied' && (
-                <button
-                  onClick={() => onUnassignGuest(room)}
-                  className="w-full flex items-center gap-3 px-4 py-3 bg-white border-2 border-neutral-200 text-neutral-700 rounded-xl hover:border-orange-300 hover:bg-orange-50 hover:shadow-sm hover:scale-[1.02] transition-all duration-200 font-semibold text-sm active:scale-95"
-                >
-                  <Trash2 className="w-4 h-4" />
+                <Button variant="outline-neutral" onClick={() => onUnassignGuest(room)} icon={Trash2} fullWidth className="justify-start">
                   Unassign Guest
-                </button>
+                </Button>
               )}
 
               {/* Mark Clean/Dirty */}
               {room.cleaning === 'dirty' ? (
-                <button
-                  onClick={() => onMarkClean(room)}
-                  className="w-full flex items-center gap-3 px-4 py-3 bg-white border-2 border-neutral-200 text-neutral-700 rounded-xl hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-sm hover:scale-[1.02] transition-all duration-200 font-semibold text-sm active:scale-95"
-                >
-                  <Check className="w-4 h-4" />
+                <Button variant="success" onClick={() => onMarkClean(room)} icon={Check} fullWidth className="justify-start">
                   Mark as Clean
-                </button>
+                </Button>
               ) : (
-                <button
-                  onClick={() => onMarkDirty(room)}
-                  className="w-full flex items-center gap-3 px-4 py-3 bg-white border-2 border-neutral-200 text-neutral-700 rounded-xl hover:border-amber-300 hover:bg-amber-50 hover:shadow-sm hover:scale-[1.02] transition-all duration-200 font-semibold text-sm active:scale-95"
-                >
-                  <AlertTriangle className="w-4 h-4" />
+                <Button variant="warning" onClick={() => onMarkDirty(room)} icon={AlertTriangle} fullWidth className="justify-start">
                   Mark as Dirty
-                </button>
+                </Button>
               )}
 
               {/* Block/Unblock Room */}
               {room.status === 'out_of_service' ? (
-                <button
-                  onClick={() => onUnblockRoom(room)}
-                  className="w-full flex items-center gap-3 px-4 py-3 bg-white border-2 border-neutral-200 text-neutral-700 rounded-xl hover:border-[#4E5840]/30 hover:bg-[#4E5840]/5 hover:shadow-sm hover:scale-[1.02] transition-all duration-200 font-semibold text-sm active:scale-95"
-                >
-                  <Check className="w-4 h-4" />
+                <Button variant="success" onClick={() => onUnblockRoom(room)} icon={Check} fullWidth className="justify-start">
                   Unblock Room
-                </button>
+                </Button>
               ) : (
-                <button
-                  onClick={() => onBlockRoom(room)}
-                  className="w-full flex items-center gap-3 px-4 py-3 bg-red-50 text-red-700 rounded-xl hover:bg-red-100 hover:shadow-md border-2 border-red-200 hover:border-red-300 transition-all duration-200 font-semibold text-sm active:scale-95"
-                >
-                  <Ban className="w-4 h-4" />
+                <Button variant="danger" onClick={() => onBlockRoom(room)} icon={Ban} fullWidth className="justify-start">
                   Block Room
-                </button>
+                </Button>
               )}
             </div>
           </section>

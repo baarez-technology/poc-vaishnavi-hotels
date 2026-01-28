@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { ChevronDown, Command, Search, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { adminNavCategories } from '../navigation/adminNav';
@@ -12,13 +12,43 @@ export function AdminSidebar({ collapsed, onToggleCollapsed, mobileOpen, onClose
   const [expanded, setExpanded] = useState({});
   const [q, setQ] = useState('');
   const [focused, setFocused] = useState(false);
+  const activeCategoryRef = useRef(null);
+  const navContainerRef = useRef(null);
 
-  useEffect(() => {
-    const activeCategory = adminNavCategories.find((cat) =>
+  // Find the active category based on current path
+  const activeCategory = useMemo(() => {
+    return adminNavCategories.find((cat) =>
       cat.items.some((item) => location.pathname === item.to || location.pathname.startsWith(item.to + '/'))
     );
-    if (activeCategory) setExpanded((prev) => ({ ...prev, [activeCategory.id]: true }));
   }, [location.pathname]);
+
+  // Scroll to active category
+  const scrollToActiveCategory = useCallback(() => {
+    if (activeCategoryRef.current && navContainerRef.current) {
+      // Use setTimeout to ensure the DOM has updated after expansion
+      setTimeout(() => {
+        activeCategoryRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }, 100);
+    }
+  }, []);
+
+  // Auto-expand active category and scroll to it
+  useEffect(() => {
+    if (activeCategory) {
+      setExpanded((prev) => ({ ...prev, [activeCategory.id]: true }));
+      scrollToActiveCategory();
+    }
+  }, [location.pathname, activeCategory, scrollToActiveCategory]);
+
+  // Scroll to active category when mobile menu opens
+  useEffect(() => {
+    if (mobileOpen && activeCategory) {
+      scrollToActiveCategory();
+    }
+  }, [mobileOpen, activeCategory, scrollToActiveCategory]);
 
   const categories = useMemo(() => {
     if (!q.trim()) return adminNavCategories;
@@ -120,7 +150,7 @@ export function AdminSidebar({ collapsed, onToggleCollapsed, mobileOpen, onClose
       )}
 
       {/* Nav */}
-      <nav className={cn('flex-1 overflow-y-auto sidebar-scrollbar', collapsed ? 'px-2 py-4' : 'px-4 py-3')}>
+      <nav ref={navContainerRef} className={cn('flex-1 overflow-y-auto sidebar-scrollbar', collapsed ? 'px-2 py-4' : 'px-4 py-3')}>
         <div className={cn('space-y-5', collapsed && 'space-y-4')}>
           {categories.map((cat, catIndex) => {
             const isSingle = cat.items.length === 1;
@@ -130,8 +160,11 @@ export function AdminSidebar({ collapsed, onToggleCollapsed, mobileOpen, onClose
               (item) => location.pathname === item.to || location.pathname.startsWith(item.to + '/')
             );
 
+            // Check if this is the active category
+            const isActiveCategory = activeCategory?.id === cat.id;
+
             return (
-              <div key={cat.id}>
+              <div key={cat.id} ref={isActiveCategory ? activeCategoryRef : null}>
                 {/* Category header */}
                 {!collapsed && !isSingle && (
                   <button

@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   LayoutDashboard,
   CalendarCheck,
@@ -144,19 +144,43 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly,
   const [expandedSections, setExpandedSections] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const activeCategoryRef = useRef(null);
+  const navContainerRef = useRef(null);
 
   // Get hotel name from settings, with fallback
   const hotelName = generalSettings?.hotelName || 'Glimmora';
   const customLogo = generalSettings?.branding?.logo;
 
-  useEffect(() => {
-    const activeCategory = navCategories.find(cat =>
+  // Find the active category based on current path
+  const activeCategory = useMemo(() => {
+    return navCategories.find(cat =>
       cat.items.some(item => location.pathname.startsWith(item.to))
     );
+  }, [location.pathname]);
+
+  // Scroll to active category
+  const scrollToActiveCategory = useCallback(() => {
+    if (activeCategoryRef.current) {
+      // Use setTimeout to ensure the DOM has updated after expansion
+      setTimeout(() => {
+        activeCategoryRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }, 100);
+    }
+  }, []);
+
+  // Auto-expand active category and scroll to it
+  useEffect(() => {
     if (activeCategory) {
       setExpandedSections(prev => ({ ...prev, [activeCategory.id]: true }));
+      // Only scroll in mobile mode when the menu is open
+      if (isMobileMode) {
+        scrollToActiveCategory();
+      }
     }
-  }, [location.pathname]);
+  }, [location.pathname, activeCategory, isMobileMode, scrollToActiveCategory]);
 
   const toggleSection = (sectionId) => {
     setExpandedSections(prev => ({
@@ -229,7 +253,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly,
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-4">
+        <nav ref={navContainerRef} className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-4">
           <div className="space-y-6">
             {filteredCategories.map((category) => {
               const isExpanded = expandedSections[category.id] !== false;
@@ -238,9 +262,10 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly,
               );
               const isSingleItem = category.items.length === 1;
               const CategoryIcon = category.icon;
+              const isActiveCategory = activeCategory?.id === category.id;
 
               return (
-                <div key={category.id}>
+                <div key={category.id} ref={isActiveCategory ? activeCategoryRef : null}>
                   {/* Category Header */}
                   {!isSingleItem && (
                     <button
@@ -435,7 +460,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly,
         )}
 
         {/* Navigation */}
-        <nav className={`flex-1 overflow-y-auto custom-scrollbar ${
+        <nav ref={navContainerRef} className={`flex-1 overflow-y-auto custom-scrollbar ${
           isCollapsed ? 'px-2' : 'px-3'
         } pb-4`}>
           <div className="space-y-6">
@@ -446,9 +471,10 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly,
               );
               const isSingleItem = category.items.length === 1;
               const CategoryIcon = category.icon;
+              const isActiveCategory = activeCategory?.id === category.id;
 
               return (
-                <div key={category.id}>
+                <div key={category.id} ref={isActiveCategory ? activeCategoryRef : null}>
                   {/* Category Header */}
                   {!isCollapsed && !isSingleItem && (
                     <button

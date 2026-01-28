@@ -85,6 +85,8 @@ export default function BookingsTable({
 
   const handleViewClick = (e: any, booking: BookingLike) => {
     e.stopPropagation();
+    setOpenDropdownId(null);
+    setDropdownPosition(null);
     if (onViewBooking) {
       onViewBooking(booking);
     }
@@ -92,6 +94,8 @@ export default function BookingsTable({
 
   const handleEditClick = (e: any, booking: BookingLike) => {
     e.stopPropagation();
+    setOpenDropdownId(null);
+    setDropdownPosition(null);
     if (onEditBooking) {
       onEditBooking(booking);
     }

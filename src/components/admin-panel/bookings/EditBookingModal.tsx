@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { X, Save } from 'lucide-react';
+import { Button } from '../../ui2/Button';
 
 const SOURCE_OPTIONS = ['Website', 'Walk-in', 'Booking.com', 'Expedia'];
 
@@ -250,21 +251,12 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
 
           {/* Actions Footer - Sticky */}
           <div className="flex-shrink-0 bg-white border-t border-neutral-200 px-6 py-4 flex items-center justify-end gap-3 shadow-lg">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-3 bg-neutral-100 hover:bg-neutral-200 hover:shadow-sm text-neutral-700 hover:text-neutral-900 rounded-lg transition-all duration-200 font-medium focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2 active:scale-95"
-            >
+            <Button variant="ghost" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              form="edit-booking-form"
-              disabled={!isFormValid || isSaving}
-              className="px-6 py-3 bg-[#A57865] hover:bg-[#8E6554] hover:shadow text-white disabled:bg-neutral-300 disabled:cursor-not-allowed rounded-lg transition-all duration-200 font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:ring-offset-2 active:scale-95"
-            >
+            </Button>
+            <Button variant="primary" type="submit" form="edit-booking-form" disabled={!isFormValid || isSaving} icon={Save} loading={isSaving}>
               {isSaving ? 'Saving...' : 'Save Changes'}
-            </button>
+            </Button>
           </div>
       </div>
     </>,

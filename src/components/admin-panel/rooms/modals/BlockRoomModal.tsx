@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Ban } from 'lucide-react';
+import { Button } from '../../../ui2/Button';
 
 export default function BlockRoomModal({ room, isOpen, onClose, onBlock }) {
   const [formData, setFormData] = useState({
@@ -130,20 +131,12 @@ export default function BlockRoomModal({ room, isOpen, onClose, onBlock }) {
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 p-6 border-t border-neutral-200">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-6 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-all duration-200"
-          >
+          <Button variant="ghost" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="px-6 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 hover:shadow transition-all duration-200 flex items-center gap-2"
-          >
-            <Ban className="w-4 h-4" />
+          </Button>
+          <Button variant="danger" onClick={handleSubmit} icon={Ban}>
             Block Room
-          </button>
+          </Button>
         </div>
       </div>
     </div>

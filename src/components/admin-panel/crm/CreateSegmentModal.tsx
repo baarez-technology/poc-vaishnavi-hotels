@@ -10,6 +10,7 @@ import {
   calculateRepeatRate,
   generateId
 } from '@/utils/admin/crm';
+import { Button } from '../../ui2/Button';
 
 const SEGMENT_COLORS = [
   '#A57865', '#4E5840', '#5C9BA4', '#CDB261', '#8E6554',
@@ -445,19 +446,12 @@ export default function CreateSegmentModal({ isOpen, onClose, onSave, guests, lo
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 p-4 border-t border-neutral-200 bg-neutral-50 flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-200 rounded-lg transition-colors"
-          >
+          <Button variant="ghost" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={!formData.name.trim()}
-            className="px-6 py-2 bg-[#A57865] text-white text-sm font-medium rounded-lg hover:bg-[#A57865]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} disabled={!formData.name.trim()} icon={Plus}>
             Create Segment
-          </button>
+          </Button>
         </div>
       </div>
 

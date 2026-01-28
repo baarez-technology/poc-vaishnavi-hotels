@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, User, Calendar, Bed, DollarSign, Globe } from 'lucide-react';
+import { X, User, Calendar, Bed, DollarSign, Globe, Plus } from 'lucide-react';
 import {
   ROOM_TYPES,
   SOURCE_OPTIONS,
@@ -10,6 +10,7 @@ import {
 } from '@/utils/admin/bookings';
 import { SimpleDropdown } from '@/components/ui/Select';
 import { useCurrency } from '@/hooks/useCurrency';
+import { Button } from '../../ui2/Button';
 
 export default function AddBookingModal({ isOpen, onClose, onSubmit }) {
   const { formatCurrency } = useCurrency();
@@ -463,20 +464,12 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit }) {
 
         {/* Actions Footer - Sticky */}
         <div className="flex-shrink-0 bg-white border-t border-neutral-200 px-6 py-4 flex items-center justify-end gap-3 shadow-lg">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-6 py-3 bg-neutral-100 hover:bg-neutral-200 hover:shadow-sm text-neutral-700 hover:text-neutral-900 rounded-xl transition-all duration-200 font-medium focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2 active:scale-95"
-          >
+          <Button variant="ghost" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            type="submit"
-            form="booking-form"
-            className="px-6 py-3 bg-[#A57865] hover:bg-[#8E6554] hover:shadow text-white rounded-xl transition-all duration-200 font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:ring-offset-2 active:scale-95"
-          >
+          </Button>
+          <Button variant="primary" type="submit" form="booking-form" icon={Plus}>
             Create Booking
-          </button>
+          </Button>
         </div>
       </div>
     </>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Users, CheckSquare, MapPin, Loader2, AlertTriangle } from 'lucide-react';
+import { Button } from '../../../ui2/Button';
 
 export default function BulkAssignModal({
   rooms,
@@ -307,26 +308,17 @@ export default function BulkAssignModal({
                     ))}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={handleCancelDuplicate}
-                      className="px-3 py-1.5 text-xs font-medium text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors"
-                    >
+                    <Button variant="ghost" size="xs" onClick={handleCancelDuplicate}>
                       Cancel
-                    </button>
+                    </Button>
                     {checkForDuplicates().newRooms.length > 0 && (
-                      <button
-                        onClick={handleAssignNewOnly}
-                        className="px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-100 border border-amber-300 rounded-lg hover:bg-amber-200 transition-colors"
-                      >
+                      <Button variant="outline-warning" size="xs" onClick={handleAssignNewOnly}>
                         Assign New Rooms Only ({checkForDuplicates().newRooms.length})
-                      </button>
+                      </Button>
                     )}
-                    <button
-                      onClick={handleAssign}
-                      className="px-3 py-1.5 text-xs font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors"
-                    >
+                    <Button variant="warning" size="xs" onClick={handleAssign}>
                       Assign Anyway
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -351,25 +343,12 @@ export default function BulkAssignModal({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 p-4 sm:p-6 border-t border-neutral-200 flex-shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-6 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-all duration-200"
-          >
+          <Button variant="ghost" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={handleAssign}
-            disabled={selectedRooms.length === 0 || !selectedHousekeeper}
-            className={`px-6 py-2 text-sm font-semibold rounded-lg transition-all duration-200 flex items-center gap-2 ${
-              selectedRooms.length > 0 && selectedHousekeeper
-                ? 'text-white bg-[#8E6554] hover:bg-[#A57865] hover:shadow'
-                : 'text-neutral-400 bg-neutral-200 cursor-not-allowed'
-            }`}
-          >
-            <Users className="w-4 h-4" />
+          </Button>
+          <Button variant="primary" onClick={handleAssign} disabled={selectedRooms.length === 0 || !selectedHousekeeper} icon={Users}>
             Assign All ({selectedRooms.length})
-          </button>
+          </Button>
         </div>
       </div>
     </div>

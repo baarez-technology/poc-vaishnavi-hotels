@@ -122,11 +122,18 @@ export function ChannelManagerProvider({ children }) {
     try {
       const response = await channelManagerService.getSyncLogs(filters);
       setSyncLogs(response.items || []);
-      return response.items || [];
+      // Return full response including total, totalPages for pagination/stats
+      return {
+        items: response.items || [],
+        total: response.total || 0,
+        page: response.page || 1,
+        pageSize: response.pageSize || 10,
+        totalPages: response.totalPages || 1,
+      };
     } catch (err: any) {
       console.error('Error fetching sync logs:', err);
       showError(err.response?.data?.error || 'Failed to fetch sync logs');
-      return [];
+      return { items: [], total: 0, page: 1, pageSize: 10, totalPages: 1 };
     }
   }, [showError]);
 

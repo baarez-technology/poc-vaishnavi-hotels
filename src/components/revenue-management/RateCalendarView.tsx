@@ -581,6 +581,7 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
             {/* Room Type Selector - Custom Dropdown */}
             <div className="relative flex-1 sm:flex-none" ref={dropdownRef}>
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsRoomDropdownOpen(!isRoomDropdownOpen);

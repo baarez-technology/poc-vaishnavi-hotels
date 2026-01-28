@@ -1,4 +1,5 @@
 import { X, Mail, Phone, Star, Heart, TrendingUp, Calendar, Edit, MessageSquare, History } from 'lucide-react';
+import { Button } from '../../ui2/Button';
 
 export default function GuestDrawer({ isOpen, data, onClose }) {
   if (!isOpen || !data) return null;
@@ -154,18 +155,15 @@ export default function GuestDrawer({ isOpen, data, onClose }) {
 
           {/* Action Buttons */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4">
-            <button className="px-4 py-3 bg-[#A57865] hover:bg-[#8E6554] text-white rounded-xl transition-all font-semibold shadow-sm flex items-center justify-center gap-2">
-              <Edit className="w-4 h-4" />
+            <Button variant="primary" icon={Edit}>
               Edit Profile
-            </button>
-            <button className="px-4 py-3 bg-[#5C9BA4] hover:bg-[#4A7C84] text-white rounded-xl transition-all font-semibold shadow-sm flex items-center justify-center gap-2">
-              <MessageSquare className="w-4 h-4" />
+            </Button>
+            <Button variant="secondary" icon={MessageSquare}>
               Send Message
-            </button>
-            <button className="px-4 py-3 bg-[#4E5840] hover:bg-[#3D4533] text-white rounded-xl transition-all font-semibold shadow-sm flex items-center justify-center gap-2">
-              <History className="w-4 h-4" />
+            </Button>
+            <Button variant="success" icon={History}>
               View History
-            </button>
+            </Button>
           </div>
         </div>
       </div>

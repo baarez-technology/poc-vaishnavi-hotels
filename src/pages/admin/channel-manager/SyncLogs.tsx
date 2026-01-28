@@ -10,7 +10,7 @@ import { useSearchParams } from 'react-router-dom';
 import {
   Download, RefreshCw, CheckCircle, XCircle, AlertTriangle,
   Calendar, Activity, Eye, ChevronDown, Check,
-  ChevronLeft, ChevronRight, Loader2, FileText, FileSpreadsheet, X
+  ChevronLeft, ChevronRight, Loader2, FileText, FileSpreadsheet, X, Clock
 } from 'lucide-react';
 import { useChannelManager } from '../../../context/ChannelManagerContext';
 import { useChannelManagerSSEEvents } from '../../../hooks/useChannelManagerSSEEvents';
@@ -187,11 +187,20 @@ export default function SyncLogs() {
   const [totalCount, setTotalCount] = useState(0);
   const [exportLoading, setExportLoading] = useState(false);
 
+  // Cached stats that persist across tab changes
+  const [cachedStats, setCachedStats] = useState({
+    total: 0,
+    success: 0,
+    error: 0,
+    warning: 0,
+    pending: 0
+  });
+
   // Filter states - single select dropdowns (initialize from URL if present)
   const [otaFilter, setOTAFilter] = useState(urlOtaParam || 'all');
   const [actionFilter, setActionFilter] = useState('all');
 
-  const { toast } = useToast();
+  const toast = useToast();
 
   const connectedOTAs = otas.filter(o => o.status === 'connected');
 
@@ -203,6 +212,34 @@ export default function SyncLogs() {
       setSearchParams({}, { replace: true });
     }
   }, [otaFilter, setSearchParams]);
+
+  // Fetch stats counts for all statuses (independent of current tab filter)
+  const fetchStats = useCallback(async () => {
+    try {
+      const baseFilters: any = { pageSize: 1 }; // Only need counts, not data
+      if (otaFilter !== 'all') baseFilters.otaCode = otaFilter;
+      if (actionFilter !== 'all') baseFilters.action = actionFilter;
+
+      // Fetch counts for each status in parallel
+      const [allRes, successRes, errorRes, warningRes, pendingRes] = await Promise.all([
+        fetchSyncLogs({ ...baseFilters, page: 1 }),
+        fetchSyncLogs({ ...baseFilters, page: 1, status: 'success' }),
+        fetchSyncLogs({ ...baseFilters, page: 1, status: 'error' }),
+        fetchSyncLogs({ ...baseFilters, page: 1, status: 'warning' }),
+        fetchSyncLogs({ ...baseFilters, page: 1, status: 'pending' }),
+      ]);
+
+      setCachedStats({
+        total: allRes.total || 0,
+        success: successRes.total || 0,
+        error: errorRes.total || 0,
+        warning: warningRes.total || 0,
+        pending: pendingRes.total || 0,
+      });
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  }, [otaFilter, actionFilter, fetchSyncLogs]);
 
   // Refetch data function for SSE
   const refetchData = useCallback(async () => {
@@ -222,11 +259,21 @@ export default function SyncLogs() {
     const response = await fetchSyncLogs(filters);
     setTotalPages(response.totalPages || 1);
     setTotalCount(response.total || 0);
+
+    // Update the current tab's count in cachedStats
+    if (activeTab === 'all') {
+      setCachedStats(prev => ({ ...prev, total: response.total || 0 }));
+    } else {
+      setCachedStats(prev => ({ ...prev, [activeTab]: response.total || 0 }));
+    }
   }, [currentPage, activeTab, otaFilter, actionFilter, fetchSyncLogs]);
 
   // Register SSE event handlers for real-time updates
   useChannelManagerSSEEvents({
-    onSyncStatus: refetchData,
+    onSyncStatus: () => {
+      refetchData();
+      fetchStats();
+    },
     refetchData,
   });
 
@@ -234,6 +281,11 @@ export default function SyncLogs() {
   useEffect(() => {
     refetchData();
   }, [refetchData]);
+
+  // Fetch stats on mount and when OTA/action filters change (not on tab change)
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   // Get the filtered OTA name for display
   const filteredOTAName = useMemo(() => {
@@ -283,47 +335,82 @@ export default function SyncLogs() {
   // Paginated logs (already paginated by API, but apply search filter)
   const paginatedLogs = filteredLogs;
 
-  // Stats
-  const stats = {
-    total: syncLogs.length,
-    success: syncLogs.filter(l => l.status === 'success').length,
-    error: syncLogs.filter(l => l.status === 'error').length,
-    warning: syncLogs.filter(l => l.status === 'warning').length
-  };
+  // Use cached stats (fetched independently of tab filter)
+  const stats = cachedStats;
 
   const handleRefresh = () => {
     triggerManualSync('ALL');
   };
 
+  // Client-side CSV export fallback
+  const generateClientSideCSV = (logs: typeof syncLogs) => {
+    const headers = ['Timestamp', 'Channel', 'Channel Code', 'Action', 'Status', 'Message'];
+    const rows = logs.map(log => {
+      const otaInfo = getOTAInfo(log.otaCode);
+      const actionConfig = actionTypes[log.action] || { label: log.action };
+      return [
+        new Date(log.timestamp).toISOString(),
+        otaInfo.name,
+        log.otaCode,
+        actionConfig.label,
+        log.status,
+        `"${(log.message || '').replace(/"/g, '""')}"` // Escape quotes in CSV
+      ].join(',');
+    });
+    return [headers.join(','), ...rows].join('\n');
+  };
+
   const handleExport = async (format: 'csv' | 'excel' | 'pdf' = 'csv') => {
     if (exportLoading) return; // Prevent multiple clicks
-    
+
     setExportLoading(true);
     try {
       const filters: any = { format };
       if (activeTab !== 'all') filters.status = activeTab;
       if (otaFilter !== 'all') filters.otaCode = otaFilter;
       if (actionFilter !== 'all') filters.action = actionFilter;
-      
-      const blob = await channelManagerService.exportSyncLogs(filters);
+
+      let blob: Blob;
+      let useClientSide = false;
+
+      try {
+        blob = await channelManagerService.exportSyncLogs(filters);
+
+        // Validate blob response
+        if (!blob || blob.size === 0) {
+          throw new Error('Empty response');
+        }
+      } catch (apiError) {
+        // Fallback to client-side CSV export if API fails
+        console.warn('API export failed, using client-side fallback:', apiError);
+        useClientSide = true;
+
+        if (format !== 'csv') {
+          toast.warning(`${format.toUpperCase()} export requires server. Exporting as CSV instead.`);
+        }
+
+        const csvContent = generateClientSideCSV(filteredLogs);
+        blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      }
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      
-      // Set appropriate file extension based on format
-      const extension = format === 'pdf' ? 'pdf' : format === 'excel' ? 'xlsx' : 'csv';
-      const mimeType = format === 'pdf' ? 'application/pdf' : format === 'excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/csv';
-      
+
+      // Set appropriate file extension based on format (use csv for client-side fallback)
+      const extension = useClientSide ? 'csv' : (format === 'pdf' ? 'pdf' : format === 'excel' ? 'xlsx' : 'csv');
+
       a.download = `sync-logs-${new Date().toISOString().split('T')[0]}.${extension}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
-      toast.success(`Sync logs exported successfully as ${format.toUpperCase()}`);
-    } catch (err) {
+
+      toast.success(`Sync logs exported successfully as ${extension.toUpperCase()}`);
+    } catch (err: any) {
       console.error('Error exporting logs:', err);
-      toast.error('Failed to export sync logs. Please try again.');
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to export sync logs. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setExportLoading(false);
     }
@@ -332,6 +419,7 @@ export default function SyncLogs() {
   // Tab configuration matching BookingList style
   const tabs = [
     { id: 'all', label: 'All Logs', icon: Calendar, count: stats.total },
+    { id: 'pending', label: 'Pending', icon: Clock, count: stats.pending },
     { id: 'success', label: 'Success', icon: CheckCircle, count: stats.success },
     { id: 'error', label: 'Errors', icon: XCircle, count: stats.error },
     { id: 'warning', label: 'Warnings', icon: AlertTriangle, count: stats.warning }
@@ -361,6 +449,7 @@ export default function SyncLogs() {
       case 'success': return CheckCircle;
       case 'error': return XCircle;
       case 'warning': return AlertTriangle;
+      case 'pending': return Clock;
       default: return Calendar;
     }
   };
@@ -444,43 +533,51 @@ export default function SyncLogs() {
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            <DropdownMenu
-              trigger={
-                <Button
-                  variant="outline"
-                  icon={Download}
-                  disabled={exportLoading}
-                  loading={exportLoading}
-                  className="text-xs sm:text-sm"
-                >
-                  <span className="hidden sm:inline">{exportLoading ? 'Exporting...' : 'Export'}</span>
-                  <span className="sm:hidden">{exportLoading ? '...' : 'Export'}</span>
-                </Button>
-              }
-              align="end"
-            >
-              <DropdownMenuItem
-                icon={FileText}
-                onSelect={() => handleExport('pdf')}
-                disabled={exportLoading}
-              >
-                Export as PDF
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                icon={FileSpreadsheet}
-                onSelect={() => handleExport('excel')}
-                disabled={exportLoading}
-              >
-                Export as Excel
-              </DropdownMenuItem>
-              <DropdownMenuItem
+            {exportLoading ? (
+              <Button
+                variant="outline"
                 icon={Download}
-                onSelect={() => handleExport('csv')}
-                disabled={exportLoading}
+                disabled
+                loading
+                className="text-xs sm:text-sm pointer-events-none"
               >
-                Export as CSV
-              </DropdownMenuItem>
-            </DropdownMenu>
+                <span className="hidden sm:inline">Exporting...</span>
+                <span className="sm:hidden">...</span>
+              </Button>
+            ) : (
+              <DropdownMenu
+                trigger={
+                  <Button
+                    variant="outline"
+                    icon={Download}
+                    className="text-xs sm:text-sm"
+                  >
+                    <span className="hidden sm:inline">Export</span>
+                    <span className="sm:hidden">Export</span>
+                  </Button>
+                }
+                align="end"
+              >
+                <DropdownMenuItem
+                  icon={FileText}
+                  onSelect={() => handleExport('pdf')}
+                >
+                  Export as PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  icon={FileSpreadsheet}
+                  onSelect={() => handleExport('excel')}
+                >
+                  Export as Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  icon={Download}
+                  onSelect={() => handleExport('csv')}
+                >
+                  Export as CSV
+                </DropdownMenuItem>
+              </DropdownMenu>
+            )}
             <Button
               variant="primary"
               icon={RefreshCw}
@@ -584,7 +681,7 @@ export default function SyncLogs() {
 
           {/* Table */}
           {filteredLogs.length === 0 ? (
-            <div className="px-4 sm:px-6 py-8 sm:py-16 text-center">
+            <div className="px-4 sm:px-5 py-8 sm:py-16 text-center">
               <div className="flex flex-col items-center">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-terra-50 flex items-center justify-center mb-3 sm:mb-4">
                   <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-terra-500" />
@@ -609,33 +706,25 @@ export default function SyncLogs() {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[800px] lg:min-w-[1000px] border-collapse">
-                  <colgroup>
-                    <col className="w-[100px] sm:w-[140px]" />
-                    <col className="w-[140px] sm:w-[180px]" />
-                    <col className="w-[120px] sm:w-[180px]" />
-                    <col style={{ width: 'auto' }} />
-                    <col className="w-[90px] sm:w-[120px]" />
-                    <col className="w-[60px] sm:w-[80px]" />
-                  </colgroup>
+                <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-neutral-50/30 border-b border-neutral-100">
-                      <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                      <th className="text-left px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
                         Time
                       </th>
-                      <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                      <th className="text-left px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
                         Channel
                       </th>
-                      <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                      <th className="text-left px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
                         Action
                       </th>
-                      <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                      <th className="text-left px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
                         Message
                       </th>
-                      <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                      <th className="text-left px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
                         Status
                       </th>
-                      <th className="px-3 sm:px-6 py-3 sm:py-4"></th>
+                      <th className="px-2 py-3 sm:py-4 w-10"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -652,22 +741,22 @@ export default function SyncLogs() {
                           className="bg-white hover:bg-neutral-50/50 transition-colors animate-in fade-in slide-in-from-left-2 border-b border-neutral-100 last:border-b-0"
                         >
                           {/* Time */}
-                          <td className="py-3 sm:py-4 px-3 sm:px-6">
+                          <td className="py-3 sm:py-4 px-4 whitespace-nowrap">
                             <span className="text-xs sm:text-[13px] text-neutral-600 font-medium">
                               {formatTime(log.timestamp)}
                             </span>
                           </td>
 
                           {/* Channel/OTA */}
-                          <td className="py-3 sm:py-4 px-3 sm:px-6">
-                            <div className="flex items-center gap-2 sm:gap-3">
+                          <td className="py-3 sm:py-4 px-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
                               <div
-                                className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-white text-[9px] sm:text-[11px] font-bold flex-shrink-0"
+                                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-white text-[9px] sm:text-[10px] font-bold flex-shrink-0"
                                 style={{ backgroundColor: otaInfo.color }}
                               >
                                 {otaInfo.name.substring(0, 2).toUpperCase()}
                               </div>
-                              <div>
+                              <div className="min-w-0">
                                 <p className="text-xs sm:text-[13px] font-semibold text-neutral-800">
                                   {otaInfo.name}
                                 </p>
@@ -679,29 +768,29 @@ export default function SyncLogs() {
                           </td>
 
                           {/* Action */}
-                          <td className="py-3 sm:py-4 px-3 sm:px-6">
+                          <td className="py-3 sm:py-4 px-4 whitespace-nowrap">
                             <p className="text-xs sm:text-[13px] font-medium text-neutral-800">
                               {actionConfig.label}
                             </p>
                           </td>
 
                           {/* Message */}
-                          <td className="py-3 sm:py-4 px-3 sm:px-6">
-                            <p className="text-xs sm:text-[13px] text-neutral-500 max-w-[200px] sm:max-w-[300px] truncate">
+                          <td className="py-3 sm:py-4 px-4">
+                            <p className="text-xs sm:text-[13px] text-neutral-500 max-w-xs lg:max-w-md truncate" title={log.message}>
                               {log.message}
                             </p>
                           </td>
 
                           {/* Status */}
-                          <td className="py-3 sm:py-4 px-3 sm:px-6">
+                          <td className="py-3 sm:py-4 px-4 whitespace-nowrap">
                             <span className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[10px] sm:text-[11px] font-medium ${getStatusBadgeClasses(log.status)}`}>
-                              <StatusIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                              <StatusIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
                               <span>{log.status.charAt(0).toUpperCase() + log.status.slice(1)}</span>
                             </span>
                           </td>
 
                           {/* Actions - Always visible */}
-                          <td className="py-3 sm:py-4 px-3 sm:px-6">
+                          <td className="py-3 sm:py-4 px-2 text-center w-10">
                             <IconButton
                               icon={Eye}
                               variant="ghost"
@@ -722,7 +811,7 @@ export default function SyncLogs() {
 
               {/* Pagination - Matching BookingList exactly */}
               {totalPages > 1 && (
-                <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 bg-neutral-50/30">
+                <div className="px-4 sm:px-5 py-3 sm:py-4 border-t border-neutral-100 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 bg-neutral-50/30">
                   <p className="text-[11px] sm:text-[13px] text-neutral-500 order-2 sm:order-1">
                     <span className="hidden sm:inline">Showing </span>
                     <span className="font-semibold text-neutral-700">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span>

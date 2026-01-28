@@ -219,6 +219,11 @@ const cacheAndReturn = (response: AxiosResponse, processedResponse: AxiosRespons
 // Response interceptor
 apiClient.interceptors.response.use(
   (response) => {
+    // For blob responses (file downloads), return as-is without processing
+    if (response.config.responseType === 'blob') {
+      return response;
+    }
+
     // Backend returns data directly, not wrapped in { data: ... }
     // For auth endpoints, return data as-is (they return { access_token: "..." } directly)
     if (response.config.url?.includes('/api/v1/auth/login') ||

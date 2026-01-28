@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Save, Bed, Users, DollarSign, MapPin, Tag } from 'lucide-react';
+import { Button } from '../../../ui2/Button';
 
 export default function EditRoomModal({ room, isOpen, onClose, onSave }) {
   const [formData, setFormData] = useState({
@@ -379,21 +380,12 @@ export default function EditRoomModal({ room, isOpen, onClose, onSave }) {
         {/* Sticky Footer */}
         <div className="fixed bottom-0 right-0 w-full max-w-2xl bg-white border-t border-neutral-200 p-6 z-10">
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-6 py-3 text-sm font-semibold text-neutral-700 bg-white border-2 border-neutral-200 rounded-xl hover:bg-neutral-50 hover:border-neutral-300 transition-all duration-200 active:scale-95"
-            >
+            <Button variant="ghost" onClick={onClose} className="flex-1">
               Cancel
-            </button>
-            <button
-              type="submit"
-              onClick={handleSubmit}
-              className="flex-1 px-6 py-3 text-sm font-semibold text-white bg-[#5C9BA4] rounded-xl hover:bg-[#4A8A93] hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2 active:scale-95"
-            >
-              <Save className="w-4 h-4" />
+            </Button>
+            <Button variant="primary" onClick={handleSubmit} icon={Save} className="flex-1">
               Save Changes
-            </button>
+            </Button>
           </div>
         </div>
       </div>

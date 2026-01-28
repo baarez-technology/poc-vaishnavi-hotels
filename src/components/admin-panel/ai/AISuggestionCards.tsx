@@ -1,5 +1,6 @@
 import React from 'react';
 import { aiSuggestions } from '@/data/aiSuggestions';
+import { Button } from '../../ui2/Button';
 
 /**
  * AI Suggestion Cards Component
@@ -60,9 +61,9 @@ export default function AISuggestionCards({ onSuggestionClick, currentPage = 'da
       </div>
 
       {suggestions.length > 4 && (
-        <button className="mt-4 w-full py-2.5 text-sm font-semibold text-[#A57865] hover:text-white bg-white hover:bg-[#A57865] border-2 border-[#A57865]/20 hover:border-[#A57865] rounded-xl transition-all duration-300 hover:shadow-md">
+        <Button variant="outline" fullWidth className="mt-4">
           Show more suggestions →
-        </button>
+        </Button>
       )}
     </div>
   );

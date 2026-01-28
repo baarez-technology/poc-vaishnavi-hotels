@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, AlertTriangle, UserX } from 'lucide-react';
+import { Button } from '../../../ui2/Button';
 
 export default function DisableStaffModal({ staff, isOpen, onClose, onDisable }) {
   const [confirmText, setConfirmText] = useState('');
@@ -131,24 +132,12 @@ export default function DisableStaffModal({ staff, isOpen, onClose, onDisable })
 
           {/* Footer */}
           <div className="p-6 pt-0 flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-white border-2 border-neutral-200 text-neutral-700 rounded-xl font-semibold text-sm hover:bg-neutral-50 transition-all duration-200"
-            >
+            <Button variant="ghost" onClick={onClose} className="flex-1">
               Cancel
-            </button>
-            <button
-              onClick={handleDisable}
-              disabled={!isConfirmValid}
-              className={`flex-1 px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all duration-200 ${
-                isConfirmValid
-                  ? 'bg-red-600 text-white hover:bg-red-700'
-                  : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
-              }`}
-            >
-              <UserX className="w-4 h-4" />
+            </Button>
+            <Button variant="danger" onClick={handleDisable} disabled={!isConfirmValid} icon={UserX} className="flex-1">
               Disable Staff
-            </button>
+            </Button>
           </div>
         </div>
       </div>

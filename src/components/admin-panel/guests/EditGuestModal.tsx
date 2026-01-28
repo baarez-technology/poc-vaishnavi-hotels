@@ -9,6 +9,7 @@ import {
   calculateLoyaltyTier,
   LOYALTY_TIERS,
 } from '@/utils/admin/guests';
+import { Button } from '../../ui2/Button';
 
 export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSaving }) {
   const [formData, setFormData] = useState({
@@ -429,22 +430,12 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
         {/* Actions Footer */}
         <div className="flex-shrink-0 bg-white border-t border-neutral-200 px-6 py-4 shadow-lg">
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-6 py-3 bg-neutral-100 hover:bg-neutral-200 hover:shadow-sm text-neutral-700 hover:text-neutral-900 rounded-xl transition-all duration-200 font-medium focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2 active:scale-95"
-            >
+            <Button variant="ghost" onClick={onClose} className="flex-1">
               Cancel
-            </button>
-            <button
-              type="submit"
-              form="edit-guest-form"
-              disabled={isSaving}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-[#A57865] hover:bg-[#8E6554] hover:shadow text-white disabled:bg-neutral-300 disabled:cursor-not-allowed rounded-xl transition-all duration-200 font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:ring-offset-2 active:scale-95"
-            >
-              <Save className="w-4 h-4" />
+            </Button>
+            <Button variant="primary" type="submit" form="edit-guest-form" disabled={isSaving} icon={Save} loading={isSaving} className="flex-1">
               {isSaving ? 'Saving...' : 'Save Changes'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { Calendar, Clock, Bed, DollarSign, Star, Gift, AlertCircle, CheckCircle } from 'lucide-react';
+import { Button } from '../../ui2/Button';
 
 export default function UpcomingArrivals({ arrivals }) {
   // Safety check for empty or undefined arrivals
@@ -199,12 +200,12 @@ export default function UpcomingArrivals({ arrivals }) {
 
             {/* Actions */}
             <div className="mt-3 pt-3 border-t border-neutral-200 flex gap-2">
-              <button className="flex-1 px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg text-xs font-medium transition-colors">
+              <Button variant="ghost" size="sm" className="flex-1">
                 Assign Room
-              </button>
-              <button className="flex-1 px-3 py-1.5 bg-[#8E6554] hover:bg-[#A57865] text-white rounded-lg text-xs font-semibold transition-colors">
+              </Button>
+              <Button variant="primary" size="sm" className="flex-1">
                 View Details
-              </button>
+              </Button>
             </div>
           </div>
         ))}

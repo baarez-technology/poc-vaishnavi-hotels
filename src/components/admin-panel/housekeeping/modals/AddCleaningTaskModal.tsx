@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Plus, Clock, AlertTriangle } from 'lucide-react';
 import { calculateCleaningTime } from '@/utils/admin/housekeeping';
+import { Button } from '../../../ui2/Button';
 
 export default function AddCleaningTaskModal({
   rooms,
@@ -217,20 +218,12 @@ export default function AddCleaningTaskModal({
                       Do you still want to assign Room {duplicateInfo.roomNumber} to this staff member?
                     </p>
                     <div className="flex gap-2 mt-4">
-                      <button
-                        type="button"
-                        onClick={handleCancelDuplicate}
-                        className="px-4 py-2 bg-white border border-amber-300 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-50 transition-colors"
-                      >
+                      <Button variant="outline-warning" size="sm" onClick={handleCancelDuplicate}>
                         Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleSubmit}
-                        className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
-                      >
+                      </Button>
+                      <Button variant="warning" size="sm" onClick={handleSubmit}>
                         Assign Anyway
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -359,21 +352,12 @@ export default function AddCleaningTaskModal({
 
             {/* Actions */}
             <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 px-4 py-2.5 bg-white border-2 border-neutral-200 text-neutral-700 rounded-xl font-semibold text-sm hover:bg-neutral-50 transition-all duration-200"
-              >
+              <Button variant="ghost" onClick={onClose} className="flex-1">
                 Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={availableRooms.length === 0}
-                className="flex-1 px-4 py-2.5 bg-[#A57865] hover:bg-[#8E6554] text-white rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Plus className="w-4 h-4" />
+              </Button>
+              <Button variant="primary" type="submit" disabled={availableRooms.length === 0} icon={Plus} className="flex-1">
                 Add Task
-              </button>
+              </Button>
             </div>
           </form>
         </div>

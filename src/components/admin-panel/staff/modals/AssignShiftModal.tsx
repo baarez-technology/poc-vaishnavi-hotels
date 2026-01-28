@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Calendar, Clock, CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
 import { staffService } from '../../../../api/services/staff.service';
+import { Button } from '../../../ui2/Button';
 
 export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
   const [formData, setFormData] = useState({
@@ -268,20 +269,12 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
                         Do you want to replace the existing shift{existingShiftDates.length > 1 ? 's' : ''} with the new assignment?
                       </p>
                       <div className="flex gap-2 mt-4">
-                        <button
-                          type="button"
-                          onClick={handleCancelDuplicate}
-                          className="px-4 py-2 bg-white border border-amber-300 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-50 transition-colors"
-                        >
+                        <Button variant="outline-warning" size="sm" onClick={handleCancelDuplicate}>
                           Cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleSubmit}
-                          className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
-                        >
+                        </Button>
+                        <Button variant="warning" size="sm" onClick={handleSubmit}>
                           Replace Shift{existingShiftDates.length > 1 ? 's' : ''}
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -446,26 +439,12 @@ export default function AssignShiftModal({ staff, isOpen, onClose, onAssign }) {
           {/* Footer Actions */}
           <div className="border-t border-neutral-200 p-6 bg-white">
             <div className="flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isSubmitting}
-                className="px-8 py-3 bg-white text-neutral-700 border-2 border-neutral-200 rounded-xl font-semibold text-sm hover:bg-neutral-50 hover:border-[#A57865]/30 transition-all duration-200 active:scale-95 disabled:opacity-50"
-              >
+              <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
                 Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="px-8 py-3 bg-[#A57865] text-white rounded-xl font-semibold text-sm hover:bg-[#8E6554] shadow-sm hover:shadow-md transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Calendar className="w-4 h-4" />
-                )}
+              </Button>
+              <Button variant="primary" onClick={handleSubmit} disabled={isSubmitting} icon={isSubmitting ? Loader2 : Calendar} loading={isSubmitting}>
                 {isSubmitting ? 'Assigning...' : 'Assign Shift'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, BedDouble, AlertCircle } from 'lucide-react';
+import { X, BedDouble, AlertCircle, Save } from 'lucide-react';
 import { AMENITIES } from '@/utils/admin/settings';
+import { Button } from '../../ui2/Button';
 
 export default function EditRoomTypeModal({ room, onClose, onSave }) {
   const [form, setForm] = useState({
@@ -229,19 +230,12 @@ export default function EditRoomTypeModal({ room, onClose, onSave }) {
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 p-4 sm:p-6 border-t border-[#E5E5E5] bg-[#FAF7F4] flex-shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 rounded-lg text-neutral-600 hover:bg-neutral-200 font-medium transition-colors"
-          >
+          <Button variant="ghost" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="px-6 py-2.5 rounded-lg bg-[#5C9BA4] text-white font-medium hover:bg-[#4A8A99] transition-colors"
-          >
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} icon={Save}>
             Save Changes
-          </button>
+          </Button>
         </div>
       </div>
     </div>,

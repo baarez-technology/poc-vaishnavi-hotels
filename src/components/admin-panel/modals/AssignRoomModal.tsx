@@ -4,6 +4,7 @@ import { X, Check, Bed, Users, Wifi, Tv, Wind, Coffee, Search, Loader2 } from 'l
 import { formatCurrency } from '@/utils/admin/bookings';
 import { roomsService } from '@/api/services/rooms.service';
 import { SimpleDropdown } from '@/components/ui/Select';
+import { Button } from '../../ui2/Button';
 
 // Feature icons mapping
 const FEATURE_ICONS = {
@@ -372,21 +373,12 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
             </div>
           )}
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-6 py-3 bg-neutral-100 hover:bg-neutral-200 hover:shadow-sm text-neutral-700 hover:text-neutral-900 rounded-xl transition-all duration-200 font-medium focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2 active:scale-95"
-            >
+            <Button variant="ghost" onClick={onClose} className="flex-1">
               Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={!selectedRoom || isAssigning}
-              className="flex-1 px-6 py-3 bg-[#A57865] hover:bg-[#8E6554] hover:shadow text-white disabled:bg-neutral-300 disabled:cursor-not-allowed disabled:opacity-60 rounded-xl transition-all duration-200 font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:ring-offset-2 active:scale-95"
-            >
+            </Button>
+            <Button variant="primary" onClick={handleSubmit} disabled={!selectedRoom || isAssigning} icon={Check} loading={isAssigning} className="flex-1">
               {isAssigning ? 'Assigning...' : 'Assign Room'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

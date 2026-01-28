@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Check } from 'lucide-react';
 import { roomsService } from '@/api/services/rooms.service';
+import { Button } from '../../ui2/Button';
 
 const statusBadge = {
   available: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
@@ -185,21 +186,12 @@ export default function AssignRoomModal({
           </div>
 
           <div className="mt-6 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-sm font-medium text-neutral-600 hover:text-neutral-900"
-            >
+            <Button variant="ghost" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleAssign}
-              disabled={!selectedRoom || isAssigning}
-              className="text-sm font-medium text-white bg-[#A57865] disabled:bg-[#A57865]/20 disabled:cursor-not-allowed px-5 py-3 rounded-lg shadow-sm hover:bg-[#8E6554] transition"
-            >
+            </Button>
+            <Button variant="primary" onClick={handleAssign} disabled={!selectedRoom || isAssigning} icon={Check} loading={isAssigning}>
               {isAssigning ? 'Assigning...' : 'Assign Room'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

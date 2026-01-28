@@ -134,14 +134,11 @@ export default function RoomMapping() {
       for (const suggestion of suggestions) {
         try {
           await mapRoom({
-            pmsRoomTypeId: suggestion.pmsRoomTypeId || suggestion.pmsRoomType,
-            pmsRoomType: suggestion.pmsRoomName || suggestion.pmsRoomType,
+            pmsRoomTypeId: String(suggestion.pmsRoomTypeId ?? suggestion.pmsRoomType ?? ''),
+            pmsRoomType: suggestion.pmsRoomName ?? suggestion.pmsRoomType ?? '',
             otaCode: targetOTA.code,
-            otaRoomType: suggestion.suggestedOTARoomType,
-            otaRoomId: suggestion.suggestedOTARoomId || suggestion.suggestedOTARoomType.toUpperCase().replace(/\s+/g, '_'),
-            isActive: true,
-            syncRates: true,
-            syncAvailability: true
+            otaRoomType: suggestion.suggestedOTARoomType ?? '',
+            otaRoomId: suggestion.suggestedOTARoomId ?? (suggestion.suggestedOTARoomType ?? '').toString().toUpperCase().replace(/\s+/g, '_'),
           });
           successCount++;
         } catch (err) {

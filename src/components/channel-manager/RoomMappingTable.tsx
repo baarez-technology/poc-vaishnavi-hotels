@@ -15,9 +15,10 @@ import { Button, IconButton } from '../ui2/Button';
 import EditMappingModal from './EditMappingModal';
 import RemoveMappingModal from './RemoveMappingModal';
 import BulkMappingDrawer from './BulkMappingDrawer';
+import { API_ENDPOINTS } from '@/config/constants';
 
 export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' }) {
-  const { roomMappings, otas, roomTypes, mapRoom, unmapRoom, fetchRoomMappings } = useChannelManager();
+  const { roomMappings, otas, roomTypes, mapRoom, unmapRoom, fetchRoomMappings, showError } = useChannelManager();
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [removeModalOpen, setRemoveModalOpen] = useState(false);
@@ -81,25 +82,60 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
       throw new Error('OTA room type is required');
     }
     
-    try {
-      const result = await mapRoom({
-        pmsRoomTypeId: mappingData.pmsRoomType, // Room ID from PMS
-        pmsRoomType: mappingData.pmsRoomName,   // Room Name from PMS
-        otaCode: otaCode,
-        otaRoomType: mappingData.otaRoomType.trim(),
-        otaRoomId: mappingData.otaRoomType.toUpperCase().replace(/\s+/g, '_'), // Default ID if not provided
-        isActive: true,
-        syncRates: mappingData.syncRates !== false, // Default to true
-        syncAvailability: mappingData.syncAvailability !== false // Default to true
+    let numericId = mappingData.pmsRoomTypeId;
+    
+    // Fallback 1: If no numeric ID, try to find it from existing room mappings (by room name)
+    if ((numericId == null || typeof numericId !== 'number' || !Number.isInteger(numericId)) && mappingData.pmsRoomName) {
+      const existingMapping = roomMappings.find(m => 
+        m.pmsRoomType === mappingData.pmsRoomName || 
+        m.pmsRoomType === mappingData.pmsRoomType
+      );
+      if (existingMapping?.pmsRoomTypeId) {
+        const parsed = typeof existingMapping.pmsRoomTypeId === 'string' 
+          ? (/^\d+$/.test(existingMapping.pmsRoomTypeId) ? parseInt(existingMapping.pmsRoomTypeId, 10) : null)
+          : (typeof existingMapping.pmsRoomTypeId === 'number' ? existingMapping.pmsRoomTypeId : null);
+        if (parsed != null && Number.isInteger(parsed)) {
+          numericId = parsed;
+        }
+      }
+    }
+    
+    // Fallback 2: If still no numeric ID, try to parse the room.id if it's numeric
+    if ((numericId == null || typeof numericId !== 'number' || !Number.isInteger(numericId)) && mappingData.pmsRoomType) {
+      const parsed = /^\d+$/.test(String(mappingData.pmsRoomType)) 
+        ? parseInt(String(mappingData.pmsRoomType), 10) 
+        : null;
+      if (parsed != null && Number.isInteger(parsed)) {
+        numericId = parsed;
+      }
+    }
+    
+    // Final check: if still no valid numeric ID, show error with debug info
+    if (numericId == null || typeof numericId !== 'number' || !Number.isInteger(numericId)) {
+      const room = pmsRoomTypes.find(r => r.id === mappingData.pmsRoomType || r.name === mappingData.pmsRoomName);
+      console.error('Room type missing numeric ID:', {
+        roomName: mappingData.pmsRoomName,
+        roomId: mappingData.pmsRoomType,
+        roomData: room,
+        availableFields: room?._raw ? Object.keys(room._raw) : 'N/A',
       });
-      
-      // Success message is shown in context via mapRoom
-      // Return result to indicate success
+      const msg = `Room type "${mappingData.pmsRoomName}" does not have a numeric ID. The channel manager requires a numeric PMS room type ID. Please ensure your room-types API (${API_ENDPOINTS?.ROOM_TYPES?.LIST || '/api/v1/room-types'}) returns a numeric id or room_type_id field for each room type.`;
+      showError(msg);
+      throw new Error(msg);
+    }
+    
+    try {
+      const otaRoomTypeTrimmed = mappingData.otaRoomType.trim();
+      const result = await mapRoom({
+        pmsRoomTypeId: String(numericId),
+        pmsRoomType: mappingData.pmsRoomName ?? '',
+        otaCode: otaCode,
+        otaRoomType: otaRoomTypeTrimmed,
+        otaRoomId: otaRoomTypeTrimmed.toUpperCase().replace(/\s+/g, '_'),
+      });
       return result;
     } catch (err) {
       console.error('Failed to save room mapping:', err);
-      // Error message is shown in context via mapRoom
-      // Re-throw so EditMappingModal knows it failed and doesn't close
       throw err;
     }
   };

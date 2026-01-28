@@ -301,7 +301,8 @@ export const channelManagerService = {
   },
 
   /**
-   * Create new room mapping
+   * Create new room mapping.
+   * Backend expects pmsRoomTypeId as integer (422 if string/slug sent).
    */
   async createRoomMapping(data: {
     pmsRoomTypeId: string;
@@ -312,7 +313,21 @@ export const channelManagerService = {
     maxGuests?: number;
     defaultRatePlan?: string;
   }): Promise<RoomMapping> {
-    const response = await apiClient.post(`${BASE_URL}/room-mappings`, data);
+    const id = data.pmsRoomTypeId;
+    const pmsRoomTypeId = /^\d+$/.test(String(id)) ? parseInt(String(id), 10) : id;
+    if (typeof pmsRoomTypeId !== 'number') {
+      throw new Error('pmsRoomTypeId must be a numeric ID (integer). The channel manager backend does not accept slug.');
+    }
+    const body = {
+      pmsRoomTypeId,
+      pmsRoomType: data.pmsRoomType,
+      otaCode: data.otaCode,
+      otaRoomType: data.otaRoomType,
+      otaRoomId: data.otaRoomId,
+      ...(data.maxGuests != null && { maxGuests: data.maxGuests }),
+      ...(data.defaultRatePlan != null && { defaultRatePlan: data.defaultRatePlan }),
+    };
+    const response = await apiClient.post(`${BASE_URL}/room-mappings`, body);
     return response.data?.data || response.data;
   },
 

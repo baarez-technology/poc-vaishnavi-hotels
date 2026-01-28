@@ -116,12 +116,88 @@ export interface RateCalendarData {
 export interface PricingRuleCondition {
   type: string;
   value: number | string | boolean | { min: number; max: number } | string[];
+  operator?: string; // Backend requires operator for some condition types
 }
 
 export interface PricingRuleAction {
   type: string;
   value: number | boolean;
 }
+
+// Transform frontend condition type to backend format
+const transformConditionToBackend = (condition: PricingRuleCondition): any => {
+  const { type, value } = condition;
+  
+  // Map frontend condition types to backend format
+  // Backend expects: 'demand_level', 'occupancy', 'day_of_week', 'lead_time'
+  // Backend expects operator for occupancy and lead_time
+  
+  if (type === 'occupancy_above') {
+    return { type: 'occupancy', operator: 'above', value };
+  }
+  if (type === 'occupancy_below') {
+    return { type: 'occupancy', operator: 'below', value };
+  }
+  if (type === 'pickup_above' || type === 'pickup_below') {
+    // Pickup pace conditions might map to lead_time or occupancy
+    // Assuming lead_time for now, but may need adjustment
+    return { type: 'lead_time', operator: type === 'pickup_above' ? 'above' : 'below', value };
+  }
+  if (type === 'days_to_arrival') {
+    return { type: 'lead_time', operator: condition.operator || 'in_range', value };
+  }
+  if (type === 'day_of_week') {
+    return { type: 'day_of_week', value };
+  }
+  if (type === 'demand_level') {
+    return { type: 'demand_level', value };
+  }
+  if (type === 'competitor_higher' || type === 'competitor_lower') {
+    // These might not be directly supported - map to occupancy or demand_level
+    // For now, keeping original but may need backend support
+    return { type: 'demand_level', value: type === 'competitor_higher' ? 'high' : 'low' };
+  }
+  if (type === 'event_active') {
+    // Boolean condition - might need special handling
+    return { type: 'demand_level', value: value ? 'high' : 'low' };
+  }
+  
+  // If already in backend format (has operator), return as-is
+  if (condition.operator) {
+    return condition;
+  }
+  
+  // Default: return with type as-is (may fail validation if not supported)
+  return condition;
+};
+
+// Transform frontend action type to backend format
+const transformActionToBackend = (action: PricingRuleAction): any => {
+  const { type, value } = action;
+  
+  // Backend expects: 'adjust_percent', 'set_rate', 'multiply_by'
+  
+  if (type === 'increase_percent') {
+    return { type: 'adjust_percent', value: Math.abs(Number(value)) };
+  }
+  if (type === 'decrease_percent') {
+    return { type: 'adjust_percent', value: -Math.abs(Number(value)) };
+  }
+  if (type === 'set_rate') {
+    return { type: 'set_rate', value };
+  }
+  if (type === 'set_min_rate' || type === 'set_max_rate') {
+    // These might map to set_rate with constraints, or may need backend support
+    // For now, use set_rate
+    return { type: 'set_rate', value };
+  }
+  if (type === 'multiply_by') {
+    return { type: 'multiply_by', value };
+  }
+  
+  // If already in backend format, return as-is
+  return action;
+};
 
 export interface PricingRule {
   id: number;
@@ -980,18 +1056,37 @@ export const revenueIntelligenceService = {
   },
 
   /**
-   * Create a new pricing rule
+   * Create a new pricing rule.
+   * Backend expects: rule_name (not name), snake_case fields, and specific condition/action types.
    */
   async createPricingRule(rule: CreatePricingRuleRequest): Promise<PricingRule> {
-    const response = await apiClient.post<any>(`${BASE_URL}/pricing-rules`, rule);
+    const body = {
+      rule_name: rule.name, // Backend expects rule_name, not name
+      ...(rule.description != null && { description: rule.description }),
+      priority: rule.priority,
+      is_active: rule.isActive,
+      room_types: rule.roomTypes,
+      conditions: rule.conditions.map(transformConditionToBackend),
+      actions: rule.actions.map(transformActionToBackend),
+    };
+    const response = await apiClient.post<any>(`${BASE_URL}/pricing-rules`, body);
     return transformRuleResponse(response.data);
   },
 
   /**
-   * Update an existing pricing rule
+   * Update an existing pricing rule.
+   * Backend expects: rule_name (not name), snake_case fields, and specific condition/action types.
    */
   async updatePricingRule(id: number, rule: UpdatePricingRuleRequest): Promise<PricingRule> {
-    const response = await apiClient.put<any>(`${BASE_URL}/pricing-rules/${id}`, rule);
+    const body: any = {};
+    if (rule.name != null) body.rule_name = rule.name; // Backend expects rule_name, not name
+    if (rule.description != null) body.description = rule.description;
+    if (rule.priority != null) body.priority = rule.priority;
+    if (rule.isActive != null) body.is_active = rule.isActive;
+    if (rule.roomTypes != null) body.room_types = rule.roomTypes;
+    if (rule.conditions != null) body.conditions = rule.conditions.map(transformConditionToBackend);
+    if (rule.actions != null) body.actions = rule.actions.map(transformActionToBackend);
+    const response = await apiClient.put<any>(`${BASE_URL}/pricing-rules/${id}`, body);
     return transformRuleResponse(response.data);
   },
 

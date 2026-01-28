@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Plus, Play, RefreshCw, Zap, AlertCircle } from 'lucide-react';
 import { revenueIntelligenceService, PricingRule } from '../../../api/services/revenue-intelligence.service';
 import { useToast } from '../../../contexts/ToastContext';
+import { useRMS } from '../../../context/RMSContext';
 import RuleCard, { RuleSummary } from '../../../components/revenue-management/RuleCard';
 import RuleEditorDrawer from '../../../components/revenue-management/RuleEditorDrawer';
 import { Button } from '../../../components/ui2/Button';
@@ -9,6 +10,7 @@ import { ConfirmModal } from '../../../components/ui2/Modal';
 
 const PricingRules = () => {
   const { showToast } = useToast();
+  const { runAllRules: runAllRulesFromContext, refreshAll } = useRMS();
 
   // State for API data
   const [rules, setRules] = useState<PricingRule[]>([]);
@@ -50,10 +52,13 @@ const PricingRules = () => {
   const handleRunAllRules = async () => {
     setIsRunning(true);
     try {
-      await revenueIntelligenceService.runAllRules();
+      // Use context's runAllRules which refreshes the rate calendar
+      await runAllRulesFromContext();
       showToast('All rules executed successfully', 'success');
       // Refresh rules to get updated execution status
       await fetchRules();
+      // Also refresh all data to ensure calendar is updated
+      await refreshAll();
     } catch (err) {
       console.error('Failed to run rules:', err);
       showToast('Failed to run pricing rules', 'error');
@@ -333,6 +338,7 @@ const PricingRules = () => {
                   onEdit={() => handleEditRule(rule)}
                   onDelete={() => handleDeleteRule(rule)}
                   onToggle={() => handleToggleRule(rule)}
+                  onRuleUpdated={fetchRules}
                   isSelected={selectedRule === rule.id}
                   onClick={() => setSelectedRule(selectedRule === rule.id ? null : rule.id)}
                 />

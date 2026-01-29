@@ -417,8 +417,10 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
           {/* Month Navigation */}
           <div className="flex items-center justify-center sm:justify-start gap-2 sm:gap-3">
             <button
+              type="button"
               onClick={handlePrevMonth}
-              className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-neutral-100 rounded-lg transition-colors"
+              className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
+              aria-label="Previous month"
             >
               <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-500" />
             </button>
@@ -426,8 +428,10 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
               {formatMonthYear(currentMonth)}
             </h2>
             <button
+              type="button"
               onClick={handleNextMonth}
-              className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-neutral-100 rounded-lg transition-colors"
+              className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
+              aria-label="Next month"
             >
               <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-500" />
             </button>

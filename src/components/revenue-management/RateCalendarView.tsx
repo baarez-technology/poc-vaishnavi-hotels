@@ -458,8 +458,10 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
           {/* Month Navigation */}
           <div className="flex items-center justify-center sm:justify-start gap-2 sm:gap-3">
             <button
+              type="button"
               onClick={handlePrevMonth}
-              className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-neutral-100 rounded-lg transition-colors"
+              className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
+              aria-label="Previous month"
             >
               <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-500" />
             </button>
@@ -467,8 +469,10 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
               {formatMonthYear(currentMonth)}
             </h2>
             <button
+              type="button"
               onClick={handleNextMonth}
-              className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-neutral-100 rounded-lg transition-colors"
+              className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
+              aria-label="Next month"
             >
               <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-500" />
             </button>
@@ -641,7 +645,21 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
 
             {/* AI Suggestions Badge */}
             {visibleSuggestions.length > 0 && (
-              <button className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-[13px] font-medium text-gold-700 bg-gold-50 border border-gold-200 rounded-lg hover:bg-gold-100 transition-colors whitespace-nowrap">
+              <button
+                onClick={() => {
+                  // Find and scroll to the AI Recommendations section
+                  const recommendationsSection = document.querySelector('[data-recommendations-panel]');
+                  if (recommendationsSection) {
+                    recommendationsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    success(`${visibleSuggestions.length} AI suggestions available`);
+                  } else {
+                    // Fallback: scroll to bottom of page where recommendations typically are
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    success(`${visibleSuggestions.length} AI suggestions available`);
+                  }
+                }}
+                className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-[13px] font-medium text-gold-700 bg-gold-50 border border-gold-200 rounded-lg hover:bg-gold-100 transition-colors whitespace-nowrap"
+              >
                 <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline">{visibleSuggestions.length} AI Suggestions</span>
                 <span className="sm:hidden">{visibleSuggestions.length} AI</span>

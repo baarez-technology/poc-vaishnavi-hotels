@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight, Calendar, Filter, Download, RefreshCw, Sparkles, ChevronDown, Check, HelpCircle, Undo2, Redo2, Loader2, Play } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Filter, Download, RefreshCw, Sparkles, ChevronDown, Check, HelpCircle, Loader2, Play } from 'lucide-react';
 import { useRMS } from '../../context/RMSContext';
 import { useToast } from '../../contexts/ToastContext';
 import RateCell from './RateCell';
@@ -480,36 +480,6 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
 
           {/* Primary Action Buttons */}
           <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-3">
-            {/* Undo/Redo Buttons */}
-            <div className="flex items-center gap-1 px-1 py-1 bg-neutral-50 rounded-lg border border-neutral-200">
-              <button
-                onClick={() => {
-                  if (canUndo) {
-                    undo();
-                    showToastSuccess('Rate change undone');
-                  }
-                }}
-                disabled={!canUndo}
-                className="p-1 sm:p-1.5 text-neutral-600 hover:text-terra-600 hover:bg-white rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-neutral-600 disabled:hover:bg-transparent"
-                title={`Undo ${canUndo ? '(Ctrl+Z)' : ''}`}
-              >
-                <Undo2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-              <button
-                onClick={() => {
-                  if (canRedo) {
-                    redo();
-                    showToastSuccess('Rate change redone');
-                  }
-                }}
-                disabled={!canRedo}
-                className="p-1 sm:p-1.5 text-neutral-600 hover:text-terra-600 hover:bg-white rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-neutral-600 disabled:hover:bg-transparent"
-                title={`Redo ${canRedo ? '(Ctrl+Shift+Z)' : ''}`}
-              >
-                <Redo2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-            </div>
-
             <button
               onClick={() => setShowKeyboardHelp(!showKeyboardHelp)}
               className="hidden sm:block p-2 text-neutral-400 hover:text-terra-600 hover:bg-terra-50 rounded-lg transition-colors"
@@ -702,6 +672,7 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
                 <div
                   key={index}
                   data-calendar-cell
+                  data-date={dateStr}
                   className={`min-h-[80px] sm:min-h-[130px] rounded-lg border border-neutral-100 bg-neutral-50/50 transition-all ${!isCurrentMonth ? 'opacity-30' : ''} ${isPast ? 'opacity-50 bg-neutral-100' : ''} ${
                     bulkEditMode && isSelected ? 'ring-2 ring-terra-500 bg-terra-50/30' : ''
                   } ${isFocused ? 'ring-2 ring-ocean-500 shadow-md scale-[1.02]' : ''}`}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Calendar, CalendarDays, MapPin, TrendingUp, FileText, AlertCircle, CheckCircle } from 'lucide-react';
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalContent, ModalFooter } from '../ui2/Modal';
 import { Button } from '../ui2/Button';
+import { DatePicker } from '../ui2/DatePicker';
 import { revenueIntelligenceService, CreateEventRequest, Event } from '../../api/services/revenue-intelligence.service';
 
 interface EventModalProps {
@@ -204,15 +205,13 @@ export default function EventModal({ open, onClose, onSuccess }: EventModalProps
             <label className="block text-sm font-medium text-neutral-700 mb-2">
               Start Date <span className="text-rose-500">*</span>
             </label>
-            <input
-              type="date"
+            <DatePicker
               value={formData.startDate}
-              onChange={(e) => handleInputChange('startDate', e.target.value)}
-              min={today}
-              className={`w-full px-4 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-colors ${
-                errors.startDate ? 'border-rose-300 bg-rose-50' : 'border-neutral-300 bg-white'
-              }`}
+              onChange={(value) => handleInputChange('startDate', value)}
+              minDate={today}
+              placeholder="Select start date"
               disabled={loading || success}
+              className="w-full"
             />
             {errors.startDate && (
               <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1">
@@ -225,15 +224,13 @@ export default function EventModal({ open, onClose, onSuccess }: EventModalProps
             <label className="block text-sm font-medium text-neutral-700 mb-2">
               End Date <span className="text-rose-500">*</span>
             </label>
-            <input
-              type="date"
+            <DatePicker
               value={formData.endDate}
-              onChange={(e) => handleInputChange('endDate', e.target.value)}
-              min={formData.startDate || today}
-              className={`w-full px-4 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-colors ${
-                errors.endDate ? 'border-rose-300 bg-rose-50' : 'border-neutral-300 bg-white'
-              }`}
+              onChange={(value) => handleInputChange('endDate', value)}
+              minDate={formData.startDate || today}
+              placeholder="Select end date"
               disabled={loading || success}
+              className="w-full"
             />
             {errors.endDate && (
               <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1">

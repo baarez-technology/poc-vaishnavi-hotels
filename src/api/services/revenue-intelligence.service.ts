@@ -124,59 +124,72 @@ export interface PricingRuleAction {
   value: number | boolean;
 }
 
+// Backend condition types and operators (API expects these enums and operator required)
+const BACKEND_CONDITION_TYPES = ['demand_level', 'occupancy', 'day_of_week', 'lead_time'] as const;
+const BACKEND_OPERATORS = ['eq', 'ne', 'gt', 'lt', 'gte', 'lte', 'in'] as const;
+
 // Transform frontend condition type to backend format
 const transformConditionToBackend = (condition: PricingRuleCondition): any => {
   const { type, value } = condition;
-  
+  const op = condition.operator;
+
   // Map frontend condition types to backend format
-  // Backend expects: 'demand_level', 'occupancy', 'day_of_week', 'lead_time'
-  // Backend expects operator for occupancy and lead_time
-  
+  // Backend expects: 'demand_level', 'occupancy', 'day_of_week', 'lead_time' and operator required
+
   if (type === 'occupancy_above') {
-    return { type: 'occupancy', operator: 'above', value };
+    return { type: 'occupancy', operator: op && BACKEND_OPERATORS.includes(op as any) ? op : 'gte', value };
   }
   if (type === 'occupancy_below') {
-    return { type: 'occupancy', operator: 'below', value };
+    return { type: 'occupancy', operator: op && BACKEND_OPERATORS.includes(op as any) ? op : 'lte', value };
   }
   if (type === 'pickup_above' || type === 'pickup_below') {
-    // Pickup pace conditions might map to lead_time or occupancy
-    // Assuming lead_time for now, but may need adjustment
-    return { type: 'lead_time', operator: type === 'pickup_above' ? 'above' : 'below', value };
+    return { type: 'lead_time', operator: type === 'pickup_above' ? 'gte' : 'lte', value };
   }
   if (type === 'days_to_arrival') {
-    return { type: 'lead_time', operator: condition.operator || 'in_range', value };
+    return { type: 'lead_time', operator: op && BACKEND_OPERATORS.includes(op as any) ? op : 'gte', value };
   }
   if (type === 'day_of_week') {
-    return { type: 'day_of_week', value };
+    return { type: 'day_of_week', operator: op && BACKEND_OPERATORS.includes(op as any) ? op : 'eq', value };
   }
   if (type === 'demand_level') {
-    return { type: 'demand_level', value };
+    return { type: 'demand_level', operator: op && BACKEND_OPERATORS.includes(op as any) ? op : 'eq', value };
   }
   if (type === 'competitor_higher' || type === 'competitor_lower') {
-    // These might not be directly supported - map to occupancy or demand_level
-    // For now, keeping original but may need backend support
-    return { type: 'demand_level', value: type === 'competitor_higher' ? 'high' : 'low' };
+    return { type: 'demand_level', operator: 'eq', value: type === 'competitor_higher' ? 'high' : 'low' };
   }
   if (type === 'event_active') {
-    // Boolean condition - might need special handling
-    return { type: 'demand_level', value: value ? 'high' : 'low' };
+    return { type: 'demand_level', operator: 'eq', value: value ? 'high' : 'low' };
   }
-  
-  // If already in backend format (has operator), return as-is
-  if (condition.operator) {
-    return condition;
+  // API returns rules with condition types like event_type; map to supported type when editing
+  if (type === 'event_type') {
+    const demandValue = typeof value === 'string' && ['high', 'critical', 'moderate', 'low', 'very_low'].includes(value)
+      ? value
+      : 'high';
+    return { type: 'demand_level', operator: 'eq', value: demandValue };
   }
-  
-  // Default: return with type as-is (may fail validation if not supported)
-  return condition;
+
+  // Already in backend format: ensure type is allowed and operator is present
+  if (BACKEND_CONDITION_TYPES.includes(type as any)) {
+    return {
+      type,
+      operator: op && BACKEND_OPERATORS.includes(op as any) ? op : 'eq',
+      value,
+    };
+  }
+
+  // Unknown type (e.g. from API response): map to demand_level so update doesn't 422
+  return { type: 'demand_level', operator: 'eq', value: 'high' };
 };
 
-// Transform frontend action type to backend format
+// Backend action types (API only accepts these)
+const BACKEND_ACTION_TYPES = ['adjust_percent', 'set_rate', 'multiply_by'] as const;
+
+// Transform frontend action type to backend format. Returns null for unsupported types (e.g. apply_min_stay).
 const transformActionToBackend = (action: PricingRuleAction): any => {
   const { type, value } = action;
-  
+
   // Backend expects: 'adjust_percent', 'set_rate', 'multiply_by'
-  
+
   if (type === 'increase_percent') {
     return { type: 'adjust_percent', value: Math.abs(Number(value)) };
   }
@@ -184,19 +197,22 @@ const transformActionToBackend = (action: PricingRuleAction): any => {
     return { type: 'adjust_percent', value: -Math.abs(Number(value)) };
   }
   if (type === 'set_rate') {
-    return { type: 'set_rate', value };
+    return { type: 'set_rate', value: Number(value) };
   }
   if (type === 'set_min_rate' || type === 'set_max_rate') {
-    // These might map to set_rate with constraints, or may need backend support
-    // For now, use set_rate
-    return { type: 'set_rate', value };
+    return { type: 'set_rate', value: Number(value) };
   }
   if (type === 'multiply_by') {
-    return { type: 'multiply_by', value };
+    return { type: 'multiply_by', value: Number(value) };
   }
-  
-  // If already in backend format, return as-is
-  return action;
+
+  // Already in backend format and supported
+  if (BACKEND_ACTION_TYPES.includes(type as any)) {
+    return { type, value: Number(value) };
+  }
+
+  // Unsupported (e.g. apply_min_stay from API response): omit so update doesn't 422
+  return null;
 };
 
 export interface PricingRule {
@@ -1060,14 +1076,16 @@ export const revenueIntelligenceService = {
    * Backend expects: rule_name (not name), snake_case fields, and specific condition/action types.
    */
   async createPricingRule(rule: CreatePricingRuleRequest): Promise<PricingRule> {
+    const conditions = rule.conditions.map(transformConditionToBackend);
+    const actions = rule.actions.map(transformActionToBackend).filter((a): a is NonNullable<typeof a> => a != null);
     const body = {
       rule_name: rule.name, // Backend expects rule_name, not name
       ...(rule.description != null && { description: rule.description }),
       priority: rule.priority,
       is_active: rule.isActive,
       room_types: rule.roomTypes,
-      conditions: rule.conditions.map(transformConditionToBackend),
-      actions: rule.actions.map(transformActionToBackend),
+      conditions,
+      actions,
     };
     const response = await apiClient.post<any>(`${BASE_URL}/pricing-rules`, body);
     return transformRuleResponse(response.data);
@@ -1085,7 +1103,11 @@ export const revenueIntelligenceService = {
     if (rule.isActive != null) body.is_active = rule.isActive;
     if (rule.roomTypes != null) body.room_types = rule.roomTypes;
     if (rule.conditions != null) body.conditions = rule.conditions.map(transformConditionToBackend);
-    if (rule.actions != null) body.actions = rule.actions.map(transformActionToBackend);
+    if (rule.actions != null) {
+      body.actions = rule.actions
+        .map(transformActionToBackend)
+        .filter((a): a is NonNullable<typeof a> => a != null);
+    }
     const response = await apiClient.put<any>(`${BASE_URL}/pricing-rules/${id}`, body);
     return transformRuleResponse(response.data);
   },

@@ -215,10 +215,6 @@ const RuleCard = ({
     try {
       await revenueIntelligenceService.togglePricingRule(rule.id);
 
-      if (onToggle) {
-        onToggle(rule);
-      }
-
       const ruleName = rule.name || rule.rule_name || 'the rule';
       success(
         rule.isActive
@@ -227,8 +223,10 @@ const RuleCard = ({
         { duration: 3000 }
       );
 
+      // Refresh rules list so the button reflects the new active state.
+      // Do not call onToggle(rule) here — the parent's handler also calls the API, which would toggle again and undo the change.
       if (onRuleUpdated) {
-        onRuleUpdated();
+        await onRuleUpdated();
       }
     } catch (err) {
       showError('Failed to toggle rule. Please try again.');

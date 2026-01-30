@@ -1174,7 +1174,7 @@ const RevenueDashboard = () => {
                   ...customDateRange,
                   start: new Date(e.target.value)
                 })}
-                className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-neutral-200 text-xs sm:text-[13px] text-neutral-800 focus:border-terra-400 focus:outline-none focus:ring-2 focus:ring-terra-100 transition-colors"
+                className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-neutral-200 text-xs sm:text-[13px] text-neutral-800 focus:border-terra-400 focus:outline-none focus:ring-2 focus:ring-terra-100 transition-colors appearance-none cursor-pointer hover:border-neutral-300 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
               />
             </div>
             <div>
@@ -1189,7 +1189,7 @@ const RevenueDashboard = () => {
                   end: new Date(e.target.value)
                 })}
                 min={customDateRange.start.toISOString().split('T')[0]}
-                className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-neutral-200 text-xs sm:text-[13px] text-neutral-800 focus:border-terra-400 focus:outline-none focus:ring-2 focus:ring-terra-100 transition-colors"
+                className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-neutral-200 text-xs sm:text-[13px] text-neutral-800 focus:border-terra-400 focus:outline-none focus:ring-2 focus:ring-terra-100 transition-colors appearance-none cursor-pointer hover:border-neutral-300 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
               />
             </div>
             <div className="p-2.5 sm:p-3 rounded-lg bg-terra-50">

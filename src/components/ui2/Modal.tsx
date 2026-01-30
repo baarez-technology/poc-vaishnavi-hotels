@@ -95,9 +95,9 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         className={cn(
-          'relative z-[51] bg-white rounded-[var(--brand-radius-card)] w-full overflow-hidden',
+          'relative z-[51] bg-white rounded-2xl w-full overflow-hidden',
           'animate-scaleIn',
-          'border border-neutral-200 shadow-xl shadow-neutral-900/10',
+          'border border-neutral-200',
           // Flex layout for proper footer positioning
           'flex flex-col',
           // Max height to ensure footer is always visible

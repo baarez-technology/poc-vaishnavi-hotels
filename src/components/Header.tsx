@@ -406,7 +406,7 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed, onMobile
               {/* Profile Dropdown Menu */}
               {isProfileMenuOpen && (
                 <div className={cn(
-                  'absolute right-0 top-full mt-3 w-72 rounded-2xl border overflow-hidden shadow-xl shadow-neutral-900/10 animate-scaleIn origin-top-right',
+                  'absolute right-0 top-full mt-3 w-72 rounded-2xl border overflow-hidden shadow-xl shadow-neutral-900/10 animate-scaleIn origin-top-right z-[200]',
                   isDark
                     ? 'bg-neutral-900 border-neutral-800'
                     : 'bg-white border-neutral-200'

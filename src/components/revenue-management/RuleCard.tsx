@@ -624,7 +624,7 @@ export const RuleSummary = ({ rules }: RuleSummaryProps) => {
             return (
               <div
                 key={p}
-                className={`flex-1 h-7 sm:h-8 rounded flex items-center justify-center text-[10px] sm:text-[11px] font-bold ${
+                className={`flex-1 h-7 sm:h-8 rounded flex flex-col items-center justify-center text-[10px] sm:text-[11px] font-bold ${
                   count > 0
                     ? p === 1
                       ? 'bg-rose-100 text-rose-700'
@@ -635,8 +635,10 @@ export const RuleSummary = ({ rules }: RuleSummaryProps) => {
                           : 'bg-neutral-100 text-neutral-600'
                     : 'bg-neutral-50 text-neutral-300'
                 }`}
+                title={`P${p}: ${count} rule${count !== 1 ? 's' : ''}`}
               >
-                {count}
+                <span className="text-[8px] sm:text-[9px] font-semibold opacity-70">P{p}</span>
+                <span className="text-[10px] sm:text-[11px] font-bold leading-none">{count}</span>
               </div>
             );
           })}

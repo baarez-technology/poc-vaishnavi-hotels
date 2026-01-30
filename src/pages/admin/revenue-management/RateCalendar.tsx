@@ -719,7 +719,7 @@ const RateCalendar = () => {
         </div>
 
         {/* AI Recommendations - Full Width */}
-        <section className="rounded-[10px] bg-white overflow-hidden">
+        <section data-recommendations-panel className="rounded-[10px] bg-white overflow-hidden scroll-mt-4">
           <div className="px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">

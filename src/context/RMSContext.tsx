@@ -12,7 +12,7 @@ import {
   RMSRoomType,
 } from '../api/services/revenue-intelligence.service';
 // Sample data imports - only used as fallback when API fails or for helper functions
-import { generateRateCalendar, rateCodes, seasonalityFactors, dayOfWeekFactors, specialEvents } from '../data/rms/sampleRateHistory';
+import { generateRateCalendar, rateCodes, seasonalityFactors, dayOfWeekFactors, specialEvents, roomTypes as sampleRoomTypes } from '../data/rms/sampleRateHistory';
 import { generatePickupData, calculatePickupMetrics } from '../data/rms/samplePickup';
 import { generateCompetitorRates, getCompetitorInsights, checkRateParity } from '../data/rms/sampleCompetitors';
 import { generateForecast, calculateForecastSummary, generateForecastInsights, getHighImpactDays, getOpportunityDays } from '../data/rms/sampleForecast';
@@ -203,17 +203,32 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loadRoomTypes = useCallback(async () => {
+    // Convert sample room types to RMSRoomType format for fallback
+    const fallbackRoomTypes: RMSRoomType[] = sampleRoomTypes.map((room, index) => ({
+      id: room.id,
+      name: room.name,
+      baseRate: room.baseRate,
+      maxOccupancy: room.maxOccupancy,
+      category: 'standard',
+      slug: room.id.toLowerCase(),
+      dbId: index + 1,
+    }));
+
     try {
       const response = await revenueIntelligenceService.getRoomTypes();
       if (response?.roomTypes && response.roomTypes.length > 0) {
         setRoomTypes(response.roomTypes);
+      } else {
+        // API returned empty, use fallback
+        setRoomTypes(fallbackRoomTypes);
       }
     } catch (err: any) {
       // Only log non-404 errors (404 means endpoint doesn't exist yet, which is expected)
       if (err?.response?.status !== 404) {
         console.error('Failed to load room types:', err);
       }
-      // Keep the sample data fallback (already set in initial state)
+      // Use sample data fallback when API fails
+      setRoomTypes(fallbackRoomTypes);
     }
   }, []);
 

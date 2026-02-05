@@ -57,6 +57,7 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
           phone: preCheckInData.personalInfo.phone,
           address: preCheckInData.personalInfo.address,
           city: preCheckInData.personalInfo.city,
+          state: preCheckInData.personalInfo.state,
           zip_code: preCheckInData.personalInfo.zipCode,
           country: preCheckInData.personalInfo.country,
           floor_preference: preCheckInData.roomPreferences.floor,

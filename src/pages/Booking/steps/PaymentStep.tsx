@@ -1,15 +1,16 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState, useEffect } from 'react';
-import { CreditCard, Lock, MapPin, Shield, CheckCircle, Calendar, User, Building2, ArrowRight, ChevronDown, Mail, KeyRound } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { CreditCard, Lock, MapPin, Shield, CheckCircle, Calendar, User, Building2, ArrowRight, ChevronDown, Mail, KeyRound, Globe } from 'lucide-react';
 import { useBooking } from '@/contexts/BookingContext';
 import { paymentMethodsService } from '@/api/services/payment-methods.service';
 import { bookingService } from '@/api/services/booking.service';
 import { otpService } from '@/api/services/otp.service';
 import { useAuth } from '@/hooks/useAuth';
-import { COUNTRIES } from '@/utils/countries';
+import { Country } from 'country-state-city';
+import { SearchableSelect } from '@/components/ui2/SearchableSelect';
 import toast from 'react-hot-toast';
 
 const paymentSchema = z.object({
@@ -64,10 +65,16 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
     formState: { errors },
     setValue,
     watch,
+    control,
   } = useForm({
     resolver: zodResolver(paymentSchema),
     defaultValues: bookingData.payment,
   });
+
+  const countryOptions = useMemo(
+    () => Country.getAllCountries().map((c) => ({ value: c.isoCode, label: c.name })),
+    []
+  );
 
   // Load saved cards from database
   useEffect(() => {
@@ -279,7 +286,6 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
   const billingAddress = watch('billingAddress');
   const city = watch('city');
   const zipCode = watch('zipCode');
-  const country = watch('country');
 
   const isFieldValid = (fieldName: string, value: any) => {
     return value && value.length > 0 && !errors[fieldName as keyof typeof errors];
@@ -930,29 +936,21 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
               <label className="block text-sm font-semibold text-neutral-900 mb-2">
                 Country <span className="text-red-500">*</span>
               </label>
-              <div className="relative group">
-                <select
-                  {...register('country')}
-                  className={`w-full px-4 py-4 border rounded-lg focus:outline-none focus:ring-2 transition-all font-medium appearance-none ${
-                    errors.country
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20 bg-red-50'
-                      : isFieldValid('country', country)
-                        ? 'border-green-300 focus:border-green-500 focus:ring-green-500/20 bg-green-50'
-                        : 'border-neutral-200 focus:border-primary-500 focus:ring-primary-500/20 bg-neutral-50'
-                  }`}
-                >
-                  <option value="">Select Country</option>
-                  {COUNTRIES.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
-                {isFieldValid('country', country) && (
-                  <CheckCircle className="absolute right-10 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" strokeWidth={2} />
+              <Controller
+                name="country"
+                control={control}
+                render={({ field }) => (
+                  <SearchableSelect
+                    options={countryOptions}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select Country"
+                    icon={<Globe className="w-5 h-5" />}
+                    error={!!errors.country}
+                    searchable
+                  />
                 )}
-              </div>
+              />
               <AnimatePresence>
                 {errors.country && (
                   <motion.p

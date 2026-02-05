@@ -1,15 +1,16 @@
 import { motion } from 'framer-motion';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useEffect } from 'react';
-import { Mail, Phone, MapPin, Globe, Building2, ArrowLeft } from 'lucide-react';
+import { useEffect, useMemo } from 'react';
+import { Mail, Phone, MapPin, Globe, Building2, ArrowLeft, Landmark, Hash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePreCheckIn } from '@/contexts/PreCheckInContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useGeoAddress } from '@/hooks/useGeoAddress';
+import { SearchableSelect } from '@/components/ui2/SearchableSelect';
 import { userService } from '@/api/services/user.service';
 import { guestsService } from '@/api/services/guests.service';
-import { COUNTRIES } from '@/utils/countries';
 import logo from '@/assets/logo.png';
 
 const personalInfoSchema = z.object({
@@ -17,7 +18,8 @@ const personalInfoSchema = z.object({
   phone: z.string().min(10, 'Valid phone number required'),
   address: z.string().min(5, 'Address required'),
   city: z.string().min(2, 'City required'),
-  zipCode: z.string().min(5, 'ZIP code required'),
+  state: z.string().min(1, 'State required'),
+  zipCode: z.string().min(3, 'ZIP/Postal code required'),
   country: z.string().min(2, 'Country required'),
 });
 
@@ -43,43 +45,78 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
+    setValue,
+    control,
   } = useForm({
     resolver: zodResolver(personalInfoSchema),
     defaultValues: preCheckInData.personalInfo,
   });
+
+  const watchedCountry = watch('country');
+  const watchedState = watch('state');
+  const watchedCity = watch('city');
+
+  // Use the reusable geo address hook
+  const { countries, states, cities, hasStates, hasCities } = useGeoAddress({
+    countryCode: watchedCountry,
+    stateCode: watchedState,
+    cityName: watchedCity,
+    onStateReset: () => {
+      setValue('state', '');
+      setValue('city', '');
+    },
+    onCityReset: () => {
+      setValue('city', '');
+    },
+  });
+
+  // Memoize dropdown options
+  const countryOptions = useMemo(
+    () => countries.map((c) => ({ value: c.isoCode, label: c.name })),
+    [countries]
+  );
+
+  const stateOptions = useMemo(
+    () => states.map((s) => ({ value: s.isoCode, label: s.name })),
+    [states]
+  );
+
+  const cityOptions = useMemo(
+    () => cities.map((c) => ({ value: c.name, label: c.name })),
+    [cities]
+  );
 
   // Autofill from user profile and guest preferences when logged in
   useEffect(() => {
     const autofillUserInfo = async () => {
       if (user && (!preCheckInData?.personalInfo?.email || !preCheckInData?.personalInfo?.phone)) {
         try {
-          // First, try to get user profile
           const profile = await userService.getProfile();
           let autofilledData = {
             email: profile.email || preCheckInData?.personalInfo?.email || '',
             phone: profile.phone || preCheckInData?.personalInfo?.phone || '',
             address: profile.address || preCheckInData?.personalInfo?.address || '',
             city: profile.city || preCheckInData?.personalInfo?.city || '',
+            state: profile.state || preCheckInData?.personalInfo?.state || '',
             zipCode: profile.zipCode || preCheckInData?.personalInfo?.zipCode || '',
             country: profile.country || preCheckInData?.personalInfo?.country || '',
           };
 
-          // Try to get guest profile for saved preferences
           try {
             const guests = await guestsService.list({ email: profile.email });
             if (guests && guests.length > 0) {
               const guestProfile = await guestsService.getProfile(guests[0].id);
               if (guestProfile) {
-                // Autofill address data from guest profile if not already set
                 autofilledData = {
                   ...autofilledData,
                   address: autofilledData.address || guestProfile.address || '',
                   city: autofilledData.city || guestProfile.city || '',
+                  state: autofilledData.state || guestProfile.state || '',
                   zipCode: autofilledData.zipCode || guestProfile.postal_code || '',
                   country: autofilledData.country || guestProfile.country || '',
                 };
 
-                // Also autofill room preferences if available
                 if (guestProfile.floor_preference || guestProfile.view_preference || guestProfile.bed_type_preference) {
                   updatePreCheckInData({
                     roomPreferences: {
@@ -131,12 +168,17 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
 
   const currentStepIndex = steps.findIndex(s => s.active);
 
+  const inputBaseClass = "w-full pl-10 pr-4 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white";
+  const errorClass = "border-rose-500 focus:ring-rose-500/20";
+  const normalClass = "border-neutral-200 focus:ring-terra-500/20";
+  const labelClass = "block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2";
+  const errorMsgClass = "mt-1.5 text-[11px] text-rose-600 font-medium";
+
   return (
     <div className="flex min-h-screen bg-white">
       {/* LEFT COLUMN - Vertical Stepper (Hidden on mobile) */}
       <div className="hidden lg:block w-[410px] min-h-screen px-12 py-12 border-r border-neutral-200 bg-white">
         <div className="sticky top-12">
-          {/* Logo */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -150,13 +192,10 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
             />
           </motion.div>
 
-          {/* Vertical Stepper */}
           <div className="space-y-0">
             {steps.map((step, index) => (
               <div key={step.number} className="flex items-start gap-4">
-                {/* Step Indicator Column */}
                 <div className="flex flex-col items-center">
-                  {/* Circle */}
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -169,14 +208,10 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
                   >
                     {step.active ? <div className="w-2 h-2 bg-white rounded-full" /> : step.number}
                   </motion.div>
-
-                  {/* Connector Line */}
                   {index < steps.length - 1 && (
                     <div className="w-px h-10 bg-neutral-200 mt-1.5" />
                   )}
                 </div>
-
-                {/* Step Label */}
                 <motion.div
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -215,7 +250,6 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
             />
             <span className="text-[13px] text-neutral-500">Step {currentStepIndex + 1} of {steps.length}</span>
           </div>
-          {/* Mobile Progress Bar */}
           <div className="w-full bg-neutral-200 rounded-full h-1">
             <div
               className="bg-terra-500 h-1 rounded-full transition-all duration-300"
@@ -225,7 +259,6 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
         </div>
 
         <div className="px-4 py-6 lg:px-10 lg:py-8">
-          {/* Previous Button */}
           <motion.button
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
@@ -236,13 +269,11 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
             <span>Previous</span>
           </motion.button>
 
-          {/* Content Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-white p-6 lg:p-8 rounded-[10px] shadow-sm"
           >
-            {/* Header */}
             <div className="mb-6 lg:mb-8">
               <h1 className="text-lg font-semibold text-neutral-800 mb-2">
                 Personal Information
@@ -252,148 +283,161 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
               </p>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               {/* Email */}
               <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
-                  Email Address
-                </label>
+                <label className={labelClass}>Email Address</label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <input
                     type="email"
                     placeholder="your.email@example.com"
                     {...register('email')}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${
-                      errors.email
-                        ? 'border-rose-500 focus:ring-rose-500/20'
-                        : 'border-neutral-200 focus:ring-terra-500/20'
-                    }`}
+                    className={`${inputBaseClass} ${errors.email ? errorClass : normalClass}`}
                   />
                 </div>
-                {errors.email && (
-                  <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.email.message}</p>
-                )}
+                {errors.email && <p className={errorMsgClass}>{errors.email.message}</p>}
               </div>
 
               {/* Phone */}
               <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
-                  Phone Number
-                </label>
+                <label className={labelClass}>Phone Number</label>
                 <div className="relative">
                   <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <input
                     type="tel"
                     placeholder="+1 (555) 123-4567"
                     {...register('phone')}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${
-                      errors.phone
-                        ? 'border-rose-500 focus:ring-rose-500/20'
-                        : 'border-neutral-200 focus:ring-terra-500/20'
-                    }`}
+                    className={`${inputBaseClass} ${errors.phone ? errorClass : normalClass}`}
                   />
                 </div>
-                {errors.phone && (
-                  <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.phone.message}</p>
-                )}
+                {errors.phone && <p className={errorMsgClass}>{errors.phone.message}</p>}
               </div>
 
               {/* Address */}
               <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
-                  Street Address
-                </label>
+                <label className={labelClass}>Street Address</label>
                 <div className="relative">
                   <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <input
                     type="text"
                     placeholder="123 Main Street, Apt 4B"
                     {...register('address')}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${
-                      errors.address
-                        ? 'border-rose-500 focus:ring-rose-500/20'
-                        : 'border-neutral-200 focus:ring-terra-500/20'
-                    }`}
+                    className={`${inputBaseClass} ${errors.address ? errorClass : normalClass}`}
                   />
                 </div>
-                {errors.address && (
-                  <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.address.message}</p>
-                )}
+                {errors.address && <p className={errorMsgClass}>{errors.address.message}</p>}
               </div>
 
-              {/* City, ZIP, Country Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Country & State Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Country */}
+                <div>
+                  <label className={labelClass}>Country</label>
+                  <Controller
+                    name="country"
+                    control={control}
+                    render={({ field }) => (
+                      <SearchableSelect
+                        options={countryOptions}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select Country"
+                        icon={<Globe className="w-4 h-4" />}
+                        error={!!errors.country}
+                        searchable
+                      />
+                    )}
+                  />
+                  {errors.country && <p className={errorMsgClass}>{errors.country.message}</p>}
+                </div>
+
+                {/* State / Province */}
+                <div>
+                  <label className={labelClass}>State / Province</label>
+                  {hasStates ? (
+                    <Controller
+                      name="state"
+                      control={control}
+                      render={({ field }) => (
+                        <SearchableSelect
+                          options={stateOptions}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Select State"
+                          icon={<Landmark className="w-4 h-4" />}
+                          error={!!errors.state}
+                          disabled={!watchedCountry}
+                          searchable
+                        />
+                      )}
+                    />
+                  ) : (
+                    <div className="relative">
+                      <Landmark className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 z-10" />
+                      <input
+                        type="text"
+                        placeholder={watchedCountry ? 'Enter state or province' : 'Select country first'}
+                        disabled={!watchedCountry}
+                        {...register('state')}
+                        className={`${inputBaseClass} ${errors.state ? errorClass : normalClass} ${!watchedCountry ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      />
+                    </div>
+                  )}
+                  {errors.state && <p className={errorMsgClass}>{errors.state.message}</p>}
+                </div>
+              </div>
+
+              {/* City & ZIP Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* City */}
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
-                    City
-                  </label>
-                  <div className="relative">
-                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                    <input
-                      type="text"
-                      placeholder="New York"
-                      {...register('city')}
-                      className={`w-full pl-9 pr-2 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${
-                        errors.city
-                          ? 'border-rose-500 focus:ring-rose-500/20'
-                          : 'border-neutral-200 focus:ring-terra-500/20'
-                      }`}
+                  <label className={labelClass}>City</label>
+                  {hasCities ? (
+                    <Controller
+                      name="city"
+                      control={control}
+                      render={({ field }) => (
+                        <SearchableSelect
+                          options={cityOptions}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Select City"
+                          icon={<Building2 className="w-4 h-4" />}
+                          error={!!errors.city}
+                          disabled={!watchedState}
+                          searchable
+                        />
+                      )}
                     />
-                  </div>
-                  {errors.city && (
-                    <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.city.message}</p>
+                  ) : (
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 z-10" />
+                      <input
+                        type="text"
+                        placeholder={watchedState ? 'Enter city' : 'Select state first'}
+                        disabled={!watchedCountry}
+                        {...register('city')}
+                        className={`${inputBaseClass} ${errors.city ? errorClass : normalClass} ${!watchedCountry ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      />
+                    </div>
                   )}
+                  {errors.city && <p className={errorMsgClass}>{errors.city.message}</p>}
                 </div>
 
                 {/* ZIP Code */}
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
-                    ZIP Code
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="10001"
-                    {...register('zipCode')}
-                    className={`w-full px-3 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${
-                      errors.zipCode
-                        ? 'border-rose-500 focus:ring-rose-500/20'
-                        : 'border-neutral-200 focus:ring-terra-500/20'
-                    }`}
-                  />
-                  {errors.zipCode && (
-                    <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.zipCode.message}</p>
-                  )}
-                </div>
-
-                {/* Country */}
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
-                    Country
-                  </label>
+                  <label className={labelClass}>ZIP / Postal Code</label>
                   <div className="relative">
-                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 z-10" />
-                    <select
-                      {...register('country')}
-                      className={`w-full pl-9 pr-2 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all appearance-none bg-white text-[13px] ${
-                        errors.country
-                          ? 'border-rose-500 focus:ring-rose-500/20'
-                          : 'border-neutral-200 focus:ring-terra-500/20'
-                      }`}
-                    >
-                      <option value="">Select</option>
-                      {COUNTRIES.map((country) => (
-                        <option key={country.code} value={country.code}>
-                          {country.name}
-                        </option>
-                      ))}
-                    </select>
+                    <Hash className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                    <input
+                      type="text"
+                      placeholder="10001"
+                      {...register('zipCode')}
+                      className={`${inputBaseClass} ${errors.zipCode ? errorClass : normalClass}`}
+                    />
                   </div>
-                  {errors.country && (
-                    <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.country.message}</p>
-                  )}
+                  {errors.zipCode && <p className={errorMsgClass}>{errors.zipCode.message}</p>}
                 </div>
               </div>
 

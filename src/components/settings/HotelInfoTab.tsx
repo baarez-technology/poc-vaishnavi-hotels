@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Upload, Check, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Upload, Check, AlertCircle, Globe, Landmark, Building2 } from 'lucide-react';
 import { useSettingsContext } from '../../contexts/SettingsContext';
 import { TIMEZONES, CURRENCIES } from '../../utils/settings';
 import { Button } from '../ui2/Button';
 import { SelectDropdown } from '../ui2/Input';
+import { SearchableSelect } from '../ui2/SearchableSelect';
+import { Country, State, City } from 'country-state-city';
 
 export default function HotelInfoTab() {
   const { generalSettings, updateGeneralSettings, updateContactInfo, updateAddress, setCurrency, setTimezone, setHotelName, updateBranding } = useSettingsContext();
@@ -54,6 +56,19 @@ export default function HotelInfoTab() {
     }));
     setSaved(false);
   };
+
+  const countryOptions = useMemo(
+    () => Country.getAllCountries().map((c) => ({ value: c.isoCode, label: c.name })),
+    []
+  );
+  const stateOptions = useMemo(
+    () => form.address.country ? State.getStatesOfCountry(form.address.country).map((s) => ({ value: s.isoCode, label: s.name })) : [],
+    [form.address.country]
+  );
+  const cityOptions = useMemo(
+    () => (form.address.country && form.address.state) ? City.getCitiesOfState(form.address.country, form.address.state).map((c) => ({ value: c.name, label: c.name })) : [],
+    [form.address.country, form.address.state]
+  );
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -210,25 +225,70 @@ export default function HotelInfoTab() {
           </div>
 
           <div>
-            <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">City</label>
-            <input
-              type="text"
-              value={form.address.city}
-              onChange={(e) => handleAddressChange('city', e.target.value)}
-              className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:outline-none focus:ring-2 focus:ring-terra-500/20 transition-colors"
-              placeholder="Mumbai"
+            <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">Country</label>
+            <SearchableSelect
+              options={countryOptions}
+              value={form.address.country}
+              onChange={(val) => {
+                handleAddressChange('country', val);
+                handleAddressChange('state', '');
+                handleAddressChange('city', '');
+              }}
+              placeholder="Select Country"
+              icon={<Globe className="w-4 h-4" />}
+              searchable
             />
           </div>
 
           <div>
             <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">State / Province</label>
-            <input
-              type="text"
-              value={form.address.state}
-              onChange={(e) => handleAddressChange('state', e.target.value)}
-              className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:outline-none focus:ring-2 focus:ring-terra-500/20 transition-colors"
-              placeholder="Maharashtra"
-            />
+            {stateOptions.length > 0 ? (
+              <SearchableSelect
+                options={stateOptions}
+                value={form.address.state}
+                onChange={(val) => {
+                  handleAddressChange('state', val);
+                  handleAddressChange('city', '');
+                }}
+                placeholder="Select State"
+                icon={<Landmark className="w-4 h-4" />}
+                disabled={!form.address.country}
+                searchable
+              />
+            ) : (
+              <input
+                type="text"
+                value={form.address.state}
+                onChange={(e) => handleAddressChange('state', e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:outline-none focus:ring-2 focus:ring-terra-500/20 transition-colors"
+                placeholder={form.address.country ? 'Enter state' : 'Select country first'}
+                disabled={!form.address.country}
+              />
+            )}
+          </div>
+
+          <div>
+            <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">City</label>
+            {cityOptions.length > 0 ? (
+              <SearchableSelect
+                options={cityOptions}
+                value={form.address.city}
+                onChange={(val) => handleAddressChange('city', val)}
+                placeholder="Select City"
+                icon={<Building2 className="w-4 h-4" />}
+                disabled={!form.address.state}
+                searchable
+              />
+            ) : (
+              <input
+                type="text"
+                value={form.address.city}
+                onChange={(e) => handleAddressChange('city', e.target.value)}
+                className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:outline-none focus:ring-2 focus:ring-terra-500/20 transition-colors"
+                placeholder={form.address.state ? 'Enter city' : 'Select state first'}
+                disabled={!form.address.country}
+              />
+            )}
           </div>
 
           <div>
@@ -239,17 +299,6 @@ export default function HotelInfoTab() {
               onChange={(e) => handleAddressChange('zip', e.target.value)}
               className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:outline-none focus:ring-2 focus:ring-terra-500/20 transition-colors"
               placeholder="400001"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[13px] font-medium text-neutral-600 mb-1.5">Country</label>
-            <input
-              type="text"
-              value={form.address.country}
-              onChange={(e) => handleAddressChange('country', e.target.value)}
-              className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-[13px] text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:outline-none focus:ring-2 focus:ring-terra-500/20 transition-colors"
-              placeholder="India"
             />
           </div>
         </div>

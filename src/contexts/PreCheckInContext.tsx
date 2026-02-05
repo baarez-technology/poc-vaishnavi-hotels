@@ -17,6 +17,7 @@ export interface PreCheckInData {
     phone: string;
     address: string;
     city: string;
+    state: string;
     zipCode: string;
     country: string;
   };
@@ -88,6 +89,7 @@ const initialData: PreCheckInData = {
     phone: '',
     address: '',
     city: '',
+    state: '',
     zipCode: '',
     country: '',
   },
@@ -145,6 +147,7 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
             phone: existing.phone,
             address: existing.address || '',
             city: existing.city || '',
+            state: existing.state || '',
             zipCode: existing.zip_code || '',
             country: existing.country || '',
           },
@@ -228,6 +231,7 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
         phone: data.personalInfo.phone,
         address: data.personalInfo.address,
         city: data.personalInfo.city,
+        state: data.personalInfo.state,
         zip_code: data.personalInfo.zipCode,
         country: data.personalInfo.country,
         floor_preference: data.roomPreferences.floor === 'any' ? undefined : data.roomPreferences.floor,
@@ -335,6 +339,7 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
       phone: preCheckInData.personalInfo.phone || '',
       address: preCheckInData.personalInfo.address,
       city: preCheckInData.personalInfo.city,
+      state: preCheckInData.personalInfo.state,
       zip_code: preCheckInData.personalInfo.zipCode,
       country: preCheckInData.personalInfo.country,
       // CRITICAL: Include room preferences for AI recommendations

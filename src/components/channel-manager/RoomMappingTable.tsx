@@ -36,14 +36,20 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
     room.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Get mapping for a PMS room type
-  const getMappingForRoom = (pmsRoomId) => {
-    // Try to find by pmsRoomType (name) or pmsRoomTypeId (id)
-    const roomMapping = roomMappings.find(m => 
-      m.pmsRoomType === pmsRoomId || 
-      m.pmsRoomTypeId === pmsRoomId ||
-      m.pmsRoomTypeId?.toString() === pmsRoomId?.toString()
-    );
+  // Get mapping for a PMS room type (match by room.id, room.roomTypeId, or room name so UI updates regardless of API key shape)
+  const getMappingForRoom = (room) => {
+    if (!room) return null;
+    const roomMapping = roomMappings.find(m => {
+      const idStr = room.id?.toString();
+      const typeIdStr = room.roomTypeId != null ? String(room.roomTypeId) : null;
+      return (
+        m.pmsRoomType === room.name ||
+        m.pmsRoomType === idStr ||
+        m.pmsRoomTypeId === room.id ||
+        m.pmsRoomTypeId?.toString() === idStr ||
+        (typeIdStr != null && (m.pmsRoomTypeId === room.roomTypeId || m.pmsRoomTypeId?.toString() === typeIdStr))
+      );
+    });
     if (!roomMapping) return null;
 
     const otaMapping = roomMapping.otaMappings?.find(om => om.otaCode === otaCode);
@@ -51,7 +57,7 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
 
     return {
       id: `${roomMapping.id}-${otaCode}`,
-      pmsRoomType: pmsRoomId,
+      pmsRoomType: room.id,
       otaCode: otaCode,
       otaRoomType: otaMapping.otaRoomType,
       isActive: otaMapping.status === 'active',
@@ -82,16 +88,31 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
     }
     
     try {
+      // Backend accepts numeric id or slug; prefer numeric when available
+      const rawId = mappingData.pmsRoomTypeId ?? mappingData.pmsRoomType;
+      const isNumeric = typeof rawId === 'number' && !Number.isNaN(rawId) ||
+        (typeof rawId === 'string' && /^\d+$/.test(rawId));
+      const pmsRoomTypeId = isNumeric
+        ? (typeof rawId === 'number' ? rawId : parseInt(String(rawId), 10))
+        : String(rawId ?? '');
+      if (pmsRoomTypeId === '' || (typeof pmsRoomTypeId === 'number' && Number.isNaN(pmsRoomTypeId))) {
+        throw new Error('Room type is missing. Please refresh the page and try again.');
+      }
+      const pmsRoomTypeName = mappingData.pmsRoomName ?? mappingData.pmsRoomType ?? '';
+      if (!pmsRoomTypeName) {
+        throw new Error('Room type name is missing. Please refresh the page and try again.');
+      }
       const result = await mapRoom({
-        pmsRoomTypeId: mappingData.pmsRoomType, // Room ID from PMS
-        pmsRoomType: mappingData.pmsRoomName,   // Room Name from PMS
+        pmsRoomTypeId,
+        pmsRoomType: pmsRoomTypeName,
         otaCode: otaCode,
         otaRoomType: mappingData.otaRoomType.trim(),
-        otaRoomId: mappingData.otaRoomType.toUpperCase().replace(/\s+/g, '_'), // Default ID if not provided
-        isActive: true,
-        syncRates: mappingData.syncRates !== false, // Default to true
-        syncAvailability: mappingData.syncAvailability !== false // Default to true
+        otaRoomId: mappingData.otaRoomType.toUpperCase().replace(/\s+/g, '_'),
       });
+      
+      // Ensure UI refreshes by explicitly fetching room mappings
+      // (mapRoom already calls fetchRoomMappings, but we ensure it completes)
+      await fetchRoomMappings();
       
       // Success message is shown in context via mapRoom
       // Return result to indicate success
@@ -224,7 +245,7 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
           {/* Room Mapping Cards */}
           <div className="divide-y divide-neutral-100">
             {filteredRoomTypes.map(room => {
-              const mapping = getMappingForRoom(room.id);
+              const mapping = getMappingForRoom(room);
               const isLinked = mapping?.isActive;
 
               return (
@@ -385,7 +406,7 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
         onSave={handleSaveMapping}
         room={selectedRoom}
         ota={ota}
-        existingMapping={selectedRoom ? getMappingForRoom(selectedRoom.id) : null}
+        existingMapping={selectedRoom ? getMappingForRoom(selectedRoom) : null}
       />
 
       {/* Remove Mapping Modal */}

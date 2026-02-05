@@ -6,22 +6,19 @@
 
 import { useState } from 'react';
 import {
-  Link2, Unlink, Check, X, AlertTriangle, ArrowRight,
+  Link2, Check, AlertTriangle, ArrowRight,
   Sparkles, Settings, Users, ChevronDown, ChevronUp,
-  RefreshCw, BarChart3, CalendarCheck, Layers
+  BarChart3, CalendarCheck, Layers
 } from 'lucide-react';
 import { useChannelManager } from '../../context/ChannelManagerContext';
 import { Button, IconButton } from '../ui2/Button';
 import EditMappingModal from './EditMappingModal';
-import RemoveMappingModal from './RemoveMappingModal';
 import BulkMappingDrawer from './BulkMappingDrawer';
 
 export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' }) {
-  const { roomMappings, otas, roomTypes, mapRoom, unmapRoom, fetchRoomMappings } = useChannelManager();
+  const { roomMappings, otas, roomTypes, mapRoom, fetchRoomMappings } = useChannelManager();
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
-  const [removeModalOpen, setRemoveModalOpen] = useState(false);
-  const [mappingToRemove, setMappingToRemove] = useState(null);
   const [isExpanded, setIsExpanded] = useState(true);
   const [bulkDrawerOpen, setBulkDrawerOpen] = useState(false);
 
@@ -36,14 +33,20 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
     room.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Get mapping for a PMS room type
-  const getMappingForRoom = (pmsRoomId) => {
-    // Try to find by pmsRoomType (name) or pmsRoomTypeId (id)
-    const roomMapping = roomMappings.find(m => 
-      m.pmsRoomType === pmsRoomId || 
-      m.pmsRoomTypeId === pmsRoomId ||
-      m.pmsRoomTypeId?.toString() === pmsRoomId?.toString()
-    );
+  // Get mapping for a PMS room type (match by room.id, room.roomTypeId, or room name so UI updates regardless of API key shape)
+  const getMappingForRoom = (room) => {
+    if (!room) return null;
+    const roomMapping = roomMappings.find(m => {
+      const idStr = room.id?.toString();
+      const typeIdStr = room.roomTypeId != null ? String(room.roomTypeId) : null;
+      return (
+        m.pmsRoomType === room.name ||
+        m.pmsRoomType === idStr ||
+        m.pmsRoomTypeId === room.id ||
+        m.pmsRoomTypeId?.toString() === idStr ||
+        (typeIdStr != null && (m.pmsRoomTypeId === room.roomTypeId || m.pmsRoomTypeId?.toString() === typeIdStr))
+      );
+    });
     if (!roomMapping) return null;
 
     const otaMapping = roomMapping.otaMappings?.find(om => om.otaCode === otaCode);
@@ -51,7 +54,7 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
 
     return {
       id: `${roomMapping.id}-${otaCode}`,
-      pmsRoomType: pmsRoomId,
+      pmsRoomType: room.id,
       otaCode: otaCode,
       otaRoomType: otaMapping.otaRoomType,
       isActive: otaMapping.status === 'active',
@@ -82,15 +85,26 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
     }
     
     try {
+      // Backend accepts numeric id or slug; prefer numeric when available
+      const rawId = mappingData.pmsRoomTypeId ?? mappingData.pmsRoomType;
+      const isNumeric = typeof rawId === 'number' && !Number.isNaN(rawId) ||
+        (typeof rawId === 'string' && /^\d+$/.test(rawId));
+      const pmsRoomTypeId = isNumeric
+        ? (typeof rawId === 'number' ? rawId : parseInt(String(rawId), 10))
+        : String(rawId ?? '');
+      if (pmsRoomTypeId === '' || (typeof pmsRoomTypeId === 'number' && Number.isNaN(pmsRoomTypeId))) {
+        throw new Error('Room type is missing. Please refresh the page and try again.');
+      }
+      const pmsRoomTypeName = mappingData.pmsRoomName ?? mappingData.pmsRoomType ?? '';
+      if (!pmsRoomTypeName) {
+        throw new Error('Room type name is missing. Please refresh the page and try again.');
+      }
       const result = await mapRoom({
-        pmsRoomTypeId: mappingData.pmsRoomType, // Room ID from PMS
-        pmsRoomType: mappingData.pmsRoomName,   // Room Name from PMS
+        pmsRoomTypeId,
+        pmsRoomType: pmsRoomTypeName,
         otaCode: otaCode,
         otaRoomType: mappingData.otaRoomType.trim(),
-        otaRoomId: mappingData.otaRoomType.toUpperCase().replace(/\s+/g, '_'), // Default ID if not provided
-        isActive: true,
-        syncRates: mappingData.syncRates !== false, // Default to true
-        syncAvailability: mappingData.syncAvailability !== false // Default to true
+        otaRoomId: mappingData.otaRoomType.toUpperCase().replace(/\s+/g, '_'),
       });
       
       // Success message is shown in context via mapRoom
@@ -101,22 +115,6 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
       // Error message is shown in context via mapRoom
       // Re-throw so EditMappingModal knows it failed and doesn't close
       throw err;
-    }
-  };
-
-  const handleOpenRemoveModal = (mapping, room) => {
-    setMappingToRemove({ id: mapping.id, roomName: room.name });
-    setRemoveModalOpen(true);
-  };
-
-  const handleCloseRemoveModal = () => {
-    setRemoveModalOpen(false);
-    setMappingToRemove(null);
-  };
-
-  const handleConfirmRemove = () => {
-    if (mappingToRemove) {
-      unmapRoom(mappingToRemove.id);
     }
   };
 
@@ -218,7 +216,7 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
           {/* Room Mapping Cards */}
           <div className="divide-y divide-neutral-100">
             {filteredRoomTypes.map(room => {
-              const mapping = getMappingForRoom(room.id);
+              const mapping = getMappingForRoom(room);
               const isLinked = mapping?.isActive;
 
               return (
@@ -283,14 +281,6 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
                             variant="ghost"
                             size="sm"
                             label="Edit mapping"
-                          />
-                          <IconButton
-                            onClick={() => handleOpenRemoveModal(mapping, room)}
-                            icon={Unlink}
-                            variant="ghost"
-                            size="sm"
-                            label="Remove mapping"
-                            className="text-rose-500 hover:text-rose-600 hover:bg-rose-50"
                           />
                         </div>
                       </div>
@@ -376,16 +366,7 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
         onSave={handleSaveMapping}
         room={selectedRoom}
         ota={ota}
-        existingMapping={selectedRoom ? getMappingForRoom(selectedRoom.id) : null}
-      />
-
-      {/* Remove Mapping Modal */}
-      <RemoveMappingModal
-        isOpen={removeModalOpen}
-        onClose={handleCloseRemoveModal}
-        onConfirm={handleConfirmRemove}
-        roomName={mappingToRemove?.roomName}
-        otaName={ota?.name}
+        existingMapping={selectedRoom ? getMappingForRoom(selectedRoom) : null}
       />
 
       {/* Bulk Mapping Drawer */}

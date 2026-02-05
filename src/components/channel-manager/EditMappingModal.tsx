@@ -52,7 +52,8 @@ export default function EditMappingModal({
     setIsLoading(true);
     try {
       await onSave({
-        pmsRoomType: room.id,
+        pmsRoomTypeId: room.roomTypeId ?? room.id,
+        pmsRoomType: room.name,
         pmsRoomName: room.name,
         otaRoomType: otaRoomType.trim(),
         syncRates,

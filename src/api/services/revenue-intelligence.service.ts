@@ -158,6 +158,38 @@ export interface UpdatePricingRuleRequest {
   actions?: PricingRuleAction[];
 }
 
+/** Backend API expects snake_case and specific condition/action schema */
+interface BackendPricingRuleCondition {
+  type: string;
+  operator: string;
+  value: unknown;
+}
+
+interface BackendPricingRuleAction {
+  type: string;
+  value: number;
+}
+
+interface BackendPricingRuleCreate {
+  rule_name: string;
+  description?: string;
+  room_type_id: number | null;
+  priority: number;
+  is_active: boolean;
+  conditions: BackendPricingRuleCondition[];
+  actions: BackendPricingRuleAction[];
+}
+
+interface BackendPricingRuleUpdate {
+  rule_name?: string;
+  description?: string;
+  room_type_id?: number | null;
+  priority?: number;
+  is_active?: boolean;
+  conditions?: BackendPricingRuleCondition[];
+  actions?: BackendPricingRuleAction[];
+}
+
 export interface ExecuteRulesResponse {
   executedAt: string;
   rulesEvaluated: number;
@@ -488,6 +520,127 @@ export interface DashboardResponse {
 
 const BASE_URL = '/api/v1/revenue-intelligence';
 
+// Backend condition types: demand_level, occupancy, day_of_week, lead_time
+// Backend action types: adjust_percent, set_rate, multiply_by
+const CONDITION_TO_BACKEND: Record<string, { type: string; operator: string }> = {
+  occupancy_above: { type: 'occupancy', operator: 'gte' },
+  occupancy_below: { type: 'occupancy', operator: 'lt' },
+  pickup_above: { type: 'occupancy', operator: 'gte' },
+  pickup_below: { type: 'occupancy', operator: 'lt' },
+  competitor_higher: { type: 'demand_level', operator: 'eq' },
+  competitor_lower: { type: 'demand_level', operator: 'eq' },
+  days_to_arrival: { type: 'lead_time', operator: 'lte' },
+  day_of_week: { type: 'day_of_week', operator: 'in' },
+  demand_level: { type: 'demand_level', operator: 'eq' },
+  event_active: { type: 'demand_level', operator: 'eq' },
+};
+
+const ACTION_TO_BACKEND: Record<string, string> = {
+  increase_percent: 'adjust_percent',
+  decrease_percent: 'adjust_percent',
+  set_rate: 'set_rate',
+  set_min_rate: 'set_rate',
+  set_max_rate: 'set_rate',
+  apply_min_stay: 'multiply_by',
+  apply_cta: 'multiply_by',
+  apply_ctd: 'multiply_by',
+  apply_stop_sell: 'multiply_by',
+};
+
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_TO_NUM: Record<string, number> = { Sun: 6, Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5 };
+
+function toBackendCondition(c: PricingRuleCondition): BackendPricingRuleCondition {
+  const mapping = CONDITION_TO_BACKEND[c.type] ?? { type: 'demand_level', operator: 'eq' };
+  let value: unknown = c.value;
+  if (c.type === 'day_of_week' && Array.isArray(c.value)) {
+    value = (c.value as string[]).map((d) => DAY_TO_NUM[d] ?? 0);
+  }
+  if (c.type === 'days_to_arrival' && typeof c.value === 'object' && c.value !== null && 'min' in (c.value as object)) {
+    const range = c.value as { min?: number; max?: number };
+    value = range.min ?? range.max ?? 0;
+  }
+  if (mapping.type === 'demand_level' && (c.type === 'competitor_higher' || c.type === 'competitor_lower' || c.type === 'event_active')) {
+    value = c.type === 'event_active' ? (c.value ? 'high' : 'low') : 'normal';
+  }
+  return { type: mapping.type, operator: mapping.operator, value };
+}
+
+function toBackendAction(a: PricingRuleAction): BackendPricingRuleAction {
+  const backendType = ACTION_TO_BACKEND[a.type] ?? 'adjust_percent';
+  let num = Number(a.value);
+  if (Number.isNaN(num)) num = 0;
+  if (a.type === 'decrease_percent') num = -Math.abs(num);
+  if (a.type === 'increase_percent') num = Math.abs(num);
+  if (backendType === 'multiply_by' && !['set_rate', 'set_min_rate', 'set_max_rate'].includes(a.type)) num = 1;
+  return { type: backendType, value: num };
+}
+
+function toBackendCreatePayload(rule: CreatePricingRuleRequest): BackendPricingRuleCreate {
+  const room_type_id =
+    !rule.roomTypes?.length || rule.roomTypes[0] === 'ALL' ? null : (parseInt(rule.roomTypes[0] as string, 10) || null);
+  return {
+    rule_name: rule.name,
+    description: rule.description ?? undefined,
+    room_type_id: typeof room_type_id === 'number' && !Number.isNaN(room_type_id) ? room_type_id : null,
+    priority: rule.priority,
+    is_active: rule.isActive,
+    conditions: rule.conditions.map(toBackendCondition),
+    actions: rule.actions.map(toBackendAction),
+  };
+}
+
+function toBackendUpdatePayload(rule: UpdatePricingRuleRequest): BackendPricingRuleUpdate {
+  const out: BackendPricingRuleUpdate = {};
+  if (rule.name !== undefined) out.rule_name = rule.name;
+  if (rule.description !== undefined) out.description = rule.description;
+  if (rule.priority !== undefined) out.priority = rule.priority;
+  if (rule.isActive !== undefined) out.is_active = rule.isActive;
+  if (rule.roomTypes !== undefined) {
+    const first = rule.roomTypes[0];
+    out.room_type_id = !rule.roomTypes.length || first === 'ALL' ? null : (parseInt(first as string, 10) || null);
+    if (out.room_type_id !== null && Number.isNaN(out.room_type_id)) out.room_type_id = null;
+  }
+  if (rule.conditions !== undefined) out.conditions = rule.conditions.map(toBackendCondition);
+  if (rule.actions !== undefined) out.actions = rule.actions.map(toBackendAction);
+  return out;
+}
+
+const NUM_TO_DAY: Record<number, string> = { 0: 'Mon', 1: 'Tue', 2: 'Wed', 3: 'Thu', 4: 'Fri', 5: 'Sat', 6: 'Sun' };
+
+function fromBackendRule(raw: Record<string, unknown>): PricingRule {
+  const id = raw.id as number;
+  const rule_name = (raw.rule_name as string) ?? (raw.name as string);
+  const room_type_id = raw.room_type_id as number | null | undefined;
+  const roomTypes =
+    room_type_id != null ? [String(room_type_id)] : ['ALL'];
+  const conditions = ((raw.conditions as BackendPricingRuleCondition[]) ?? []).map((c) => {
+    let value: unknown = c.value;
+    if (c.type === 'day_of_week' && Array.isArray(c.value)) {
+      value = (c.value as number[]).map((n) => NUM_TO_DAY[n] ?? 'Mon');
+    }
+    return { type: c.type, value };
+  });
+  const actions = ((raw.actions as BackendPricingRuleAction[]) ?? []).map((a) => ({
+    type: a.type,
+    value: a.value,
+  }));
+  return {
+    id,
+    name: rule_name,
+    description: (raw.description as string) ?? '',
+    priority: (raw.priority as number) ?? 3,
+    isActive: (raw.is_active as boolean) ?? true,
+    roomTypes,
+    conditions,
+    actions,
+    createdAt: (raw.created_at as string) ?? '',
+    updatedAt: (raw.updated_at as string) ?? (raw.created_at as string) ?? '',
+    lastTriggered: raw.last_triggered_at as string | undefined,
+    timesTriggered: (raw.times_triggered as number) ?? 0,
+  };
+}
+
 export const revenueIntelligenceService = {
   /**
    * Get real-time KPIs
@@ -762,24 +915,33 @@ export const revenueIntelligenceService = {
    * Get all pricing rules
    */
   async getPricingRules(): Promise<PricingRule[]> {
-    const response = await apiClient.get<PricingRule[]>(`${BASE_URL}/pricing-rules`);
-    return response.data;
+    const response = await apiClient.get<{ rules?: PricingRule[]; data?: PricingRule[] } | PricingRule[]>(
+      `${BASE_URL}/pricing-rules`
+    );
+    const data = response.data as Record<string, unknown> | PricingRule[];
+    const list = Array.isArray(data) ? data : (data?.rules as Record<string, unknown>[] | undefined) ?? [];
+    return (list as Record<string, unknown>[]).map(fromBackendRule);
   },
 
   /**
    * Create a new pricing rule
    */
   async createPricingRule(rule: CreatePricingRuleRequest): Promise<PricingRule> {
-    const response = await apiClient.post<PricingRule>(`${BASE_URL}/pricing-rules`, rule);
-    return response.data;
+    const payload = toBackendCreatePayload(rule);
+    const response = await apiClient.post<Record<string, unknown>>(`${BASE_URL}/pricing-rules`, payload);
+    return fromBackendRule(response.data ?? {});
   },
 
   /**
    * Update an existing pricing rule
    */
   async updatePricingRule(id: number, rule: UpdatePricingRuleRequest): Promise<PricingRule> {
-    const response = await apiClient.put<PricingRule>(`${BASE_URL}/pricing-rules/${id}`, rule);
-    return response.data;
+    const payload = toBackendUpdatePayload(rule);
+    const response = await apiClient.put<Record<string, unknown>>(
+      `${BASE_URL}/pricing-rules/${id}`,
+      payload
+    );
+    return fromBackendRule(response.data ?? {});
   },
 
   /**
@@ -790,10 +952,13 @@ export const revenueIntelligenceService = {
   },
 
   /**
-   * Toggle a pricing rule active/inactive
+   * Toggle a pricing rule active/inactive. Returns the new state so UI can update immediately.
    */
-  async togglePricingRule(id: number): Promise<void> {
-    await apiClient.post(`${BASE_URL}/pricing-rules/${id}/toggle`);
+  async togglePricingRule(id: number): Promise<{ is_active: boolean }> {
+    const response = await apiClient.patch<{ is_active: boolean }>(
+      `${BASE_URL}/pricing-rules/${id}/toggle`
+    );
+    return response.data ?? { is_active: false };
   },
 
   /**

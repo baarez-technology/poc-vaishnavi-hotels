@@ -96,9 +96,15 @@ const PricingRules = () => {
 
   const handleToggleRule = async (rule: PricingRule) => {
     try {
-      await revenueIntelligenceService.togglePricingRule(rule.id);
-      showToast(`Rule ${rule.isActive ? 'disabled' : 'enabled'} successfully`, 'success');
-      // Refresh rules
+      const result = await revenueIntelligenceService.togglePricingRule(rule.id);
+      const newActive = result?.is_active ?? !rule.isActive;
+      setRules((prev) =>
+        prev.map((r) => (r.id === rule.id ? { ...r, isActive: newActive } : r))
+      );
+      showToast(
+        `Rule ${newActive ? 'enabled' : 'disabled'} successfully`,
+        'success'
+      );
       await fetchRules();
     } catch (err) {
       console.error('Failed to toggle rule:', err);
@@ -109,9 +115,8 @@ const PricingRules = () => {
   const handleSaveRule = async () => {
     setIsDrawerOpen(false);
     setEditingRule(null);
-    // Refresh rules after save
     await fetchRules();
-    showToast(editingRule ? 'Rule updated successfully' : 'Rule created successfully', 'success');
+    // Success toast is shown by RuleEditorDrawer to avoid duplicate popups
   };
 
   useEffect(() => {

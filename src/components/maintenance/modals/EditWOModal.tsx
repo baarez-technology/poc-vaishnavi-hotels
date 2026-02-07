@@ -261,7 +261,7 @@ export default function EditWOModal({ isOpen, onClose, onSubmit, workOrder, tech
         </div>
 
         {/* Category, Priority & Status Row */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <DrawerSelect
             label="Category"
             value={formData.category}
@@ -285,7 +285,7 @@ export default function EditWOModal({ isOpen, onClose, onSubmit, workOrder, tech
                   key={priority.value}
                   type="button"
                   onClick={() => handleChange('priority', priority.value)}
-                  className={`flex-1 h-10 px-2 rounded-lg text-[12px] font-semibold transition-all ${
+                  className={`flex-1 h-9 sm:h-10 px-2 rounded-lg text-[11px] sm:text-[12px] font-semibold transition-all ${
                     formData.priority === priority.value
                       ? priority.activeClass
                       : 'bg-white border border-neutral-200 text-neutral-700 hover:border-neutral-300'
@@ -330,8 +330,8 @@ export default function EditWOModal({ isOpen, onClose, onSubmit, workOrder, tech
 
         {/* Mark OOO */}
         {formData.roomNumber && (
-          <div className="p-4 rounded-lg bg-rose-50 border border-rose-100">
-            <label className="flex items-start gap-3 cursor-pointer">
+          <div className="p-3 sm:p-4 rounded-lg bg-rose-50 border border-rose-100">
+            <label className="flex items-start gap-2 sm:gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={formData.isOOO}
@@ -339,11 +339,11 @@ export default function EditWOModal({ isOpen, onClose, onSubmit, workOrder, tech
                 className="mt-0.5 w-4 h-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500/20"
               />
               <div>
-                <div className="flex items-center gap-2 text-rose-700 font-semibold text-[13px]">
-                  <AlertTriangle className="w-4 h-4" />
+                <div className="flex items-center gap-1.5 sm:gap-2 text-rose-700 font-semibold text-[12px] sm:text-[13px]">
+                  <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   Mark Room Out of Order (OOO)
                 </div>
-                <p className="text-[11px] text-rose-600 mt-1">
+                <p className="text-[10px] sm:text-[11px] text-rose-600 mt-1">
                   This will update the room status and prevent new bookings
                 </p>
               </div>

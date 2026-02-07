@@ -6,10 +6,11 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Edit2, Check, X, Tag, Calendar, DollarSign,
+  Edit2, Check, X, Tag, Calendar,
   ChevronDown, ChevronUp, Globe, Clock, Ban, AlertCircle, Info,
   Utensils, Percent, TrendingUp, CheckCircle, XCircle
 } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 import { Tooltip } from '../ui2/Tooltip';
 import { Button, IconButton } from '../ui2/Button';
 
@@ -23,6 +24,7 @@ export default function RatePlanCard({
   onEditEnd,
   disableEdit = false
 }) {
+  const { formatCurrency } = useCurrency();
   const [isEditing, setIsEditing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [editData, setEditData] = useState({});
@@ -111,8 +113,7 @@ export default function RatePlanCard({
     return validationErrors.some(error => error.field === fieldName);
   };
 
-  const formatCurrency = (amount) => `$${amount.toLocaleString()}`;
-
+  
   // Calculate price range
   const prices = Object.values(ratePlan.basePrice);
   const minPrice = Math.min(...prices);

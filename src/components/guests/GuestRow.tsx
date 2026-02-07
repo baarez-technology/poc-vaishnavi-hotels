@@ -45,8 +45,7 @@ export default function GuestRow({ guest, onClick, onEdit, onMessage, onDelete }
 
   return (
     <tr
-      onClick={() => onClick && onClick(guest)}
-      className="group bg-white hover:bg-neutral-50/30 transition-colors duration-100 cursor-pointer"
+      className="group bg-white hover:bg-neutral-50/30 transition-colors duration-100"
     >
       {/* Name */}
       <td className="px-6 py-4 text-sm text-neutral-700 whitespace-nowrap">

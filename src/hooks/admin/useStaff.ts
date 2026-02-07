@@ -161,29 +161,11 @@ export function useStaff() {
   };
 
   /**
-   * Check if shift already exists for a staff member on a given date
-   * @param {string} id - Staff ID
-   * @param {string} date - Date to check (YYYY-MM-DD)
-   * @returns {object|null} - Existing shift entry or null
-   */
-  const checkExistingShift = useCallback((id, date) => {
-    const member = staff.find(m => m.id?.toString() === id?.toString());
-    if (!member || !member.schedule) return null;
-    return member.schedule.find(s => s.date === date) || null;
-  }, [staff]);
-
-  /**
    * Assign shift to staff member
    * @param {string} id - Staff ID
    * @param {object} shiftData - { date, shift, startTime, endTime }
-   * @returns {object} - { success: boolean, isUpdate: boolean, existingShift?: object }
    */
   const assignShift = async (id, shiftData) => {
-    // Check for existing shift
-    const member = staff.find(m => m.id?.toString() === id?.toString());
-    const existingShift = member?.schedule?.find(s => s.date === shiftData.date);
-    const isUpdate = !!existingShift;
-
     try {
       // Call API to assign shift
       await staffService.assignShift(id, {
@@ -202,23 +184,13 @@ export function useStaff() {
         // Update the default shift
         const updatedMember = { ...member, shift: shiftData.shift };
 
-        // Generate hours string from time data
-        const startTime = shiftData.startTime || '08:00';
-        const endTime = shiftData.endTime || '16:00';
-        const hours = `${startTime} - ${endTime}`;
-
-        // Format date as day name for display
-        const dateObj = new Date(shiftData.date);
-        const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
-
-        // Add to schedule with all required fields
+        // Add to schedule with full details
         const newScheduleEntry = {
           date: shiftData.date,
-          day: dayName,
           shift: shiftData.shift,
-          hours: hours,
-          startTime: startTime,
-          endTime: endTime
+          startTime: shiftData.startTime || '08:00',
+          endTime: shiftData.endTime || '16:00',
+          hours: `${shiftData.startTime || '08:00'} - ${shiftData.endTime || '16:00'}`
         };
 
         // Check if date already exists in schedule
@@ -235,8 +207,6 @@ export function useStaff() {
       }
       return member;
     }));
-
-    return { success: true, isUpdate, existingShift };
   };
 
   /**
@@ -468,17 +438,6 @@ export function useStaff() {
     };
   }, [staff]);
 
-  // Calculate available roles from actual staff data
-  const availableRoles = useMemo(() => {
-    const roles = new Set<string>();
-    staff.forEach(s => {
-      if (s.role && typeof s.role === 'string' && s.role.trim()) {
-        roles.add(s.role);
-      }
-    });
-    return Array.from(roles).sort();
-  }, [staff]);
-
   return {
     // Data
     staff: processedStaff,
@@ -490,7 +449,6 @@ export function useStaff() {
     activeDepartment,
     setActiveDepartment,
     departmentCounts,
-    availableRoles,
 
     // Search
     searchQuery,

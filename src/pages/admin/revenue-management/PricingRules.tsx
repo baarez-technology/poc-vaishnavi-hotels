@@ -165,18 +165,18 @@ const PricingRules = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <main className="px-10 py-6 space-y-6">
+      <main className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Header */}
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
               Pricing Rules Engine
             </h1>
-            <p className="text-[13px] text-neutral-500 mt-1">
+            <p className="text-xs sm:text-[13px] text-neutral-500 mt-1">
               Configure automated pricing rules based on conditions
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1 p-1 rounded-lg bg-neutral-100">
               {[
                 { value: 'all', label: 'All' },
@@ -186,7 +186,7 @@ const PricingRules = () => {
                 <button
                   key={option.value}
                   onClick={() => setFilterActive(option.value)}
-                  className={`px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-200 ${
+                  className={`px-2.5 sm:px-4 py-1.5 rounded-lg text-[11px] sm:text-[13px] font-semibold transition-all duration-200 ${
                     filterActive === option.value
                       ? 'bg-white text-neutral-900 shadow-sm'
                       : 'text-neutral-500 hover:text-neutral-900 hover:bg-white/50'
@@ -203,14 +203,16 @@ const PricingRules = () => {
               variant="outline"
               disabled={!Array.isArray(rules) || rules.length === 0}
             >
-              {isRunning ? 'Running...' : 'Run All'}
+              <span className="hidden sm:inline">{isRunning ? 'Running...' : 'Run All'}</span>
+              <span className="sm:hidden">{isRunning ? '...' : 'Run'}</span>
             </Button>
             <Button
               onClick={handleCreateRule}
               icon={Plus}
               variant="primary"
             >
-              Create Rule
+              <span className="hidden sm:inline">Create Rule</span>
+              <span className="sm:hidden">New</span>
             </Button>
           </div>
         </header>
@@ -218,9 +220,9 @@ const PricingRules = () => {
         {/* Summary Stats */}
         <section>
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="rounded-[10px] bg-white p-5 animate-pulse">
+                <div key={i} className="rounded-[10px] bg-white p-4 sm:p-5 animate-pulse">
                   <div className="h-4 bg-neutral-100 rounded w-24 mb-2" />
                   <div className="h-8 bg-neutral-100 rounded w-16" />
                 </div>
@@ -233,17 +235,17 @@ const PricingRules = () => {
 
         {/* Priority Filter */}
         <section className="rounded-[10px] bg-white overflow-hidden">
-          <div className="px-6 py-5 flex items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <div>
-              <h3 className="text-sm font-semibold text-neutral-800">Filter by Priority</h3>
-              <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
+              <h3 className="text-[13px] sm:text-sm font-semibold text-neutral-800">Filter by Priority</h3>
+              <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">
                 Select priority level to filter rules
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-0">
               <button
                 onClick={() => setFilterPriority('all')}
-                className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-[12px] font-semibold transition-all flex-shrink-0 ${
                   filterPriority === 'all'
                     ? 'bg-terra-500 text-white'
                     : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
@@ -255,7 +257,7 @@ const PricingRules = () => {
                 <button
                   key={p}
                   onClick={() => setFilterPriority(String(p))}
-                  className={`w-9 h-9 rounded-lg text-[12px] font-bold transition-all ${
+                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-[11px] sm:text-[12px] font-bold transition-all flex-shrink-0 ${
                     filterPriority === String(p)
                       ? p === 1 ? 'bg-rose-500 text-white'
                       : p === 2 ? 'bg-gold-500 text-white'
@@ -272,8 +274,8 @@ const PricingRules = () => {
               ))}
             </div>
           </div>
-          <div className="px-6 pb-5">
-            <p className="text-[12px] text-neutral-500">
+          <div className="px-4 sm:px-6 pb-4 sm:pb-5">
+            <p className="text-[11px] sm:text-[12px] text-neutral-500">
               Showing <span className="font-semibold text-neutral-800">{filteredRules.length}</span> of {Array.isArray(rules) ? rules.length : 0} rules
             </p>
           </div>
@@ -282,47 +284,48 @@ const PricingRules = () => {
         {/* Rules Grid */}
         <section>
           {isLoading ? (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="rounded-[10px] bg-white p-6 animate-pulse">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-neutral-100 rounded-lg" />
+                <div key={i} className="rounded-[10px] bg-white p-4 sm:p-6 animate-pulse">
+                  <div className="flex items-start justify-between mb-3 sm:mb-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-neutral-100 rounded-lg" />
                       <div>
-                        <div className="h-5 bg-neutral-100 rounded w-40 mb-2" />
-                        <div className="h-4 bg-neutral-100 rounded w-60" />
+                        <div className="h-4 sm:h-5 bg-neutral-100 rounded w-32 sm:w-40 mb-2" />
+                        <div className="h-3 sm:h-4 bg-neutral-100 rounded w-48 sm:w-60" />
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-20 h-8 bg-neutral-100 rounded-lg" />
-                      <div className="w-8 h-8 bg-neutral-100 rounded-lg" />
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <div className="w-16 sm:w-20 h-7 sm:h-8 bg-neutral-100 rounded-lg" />
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 bg-neutral-100 rounded-lg" />
                     </div>
                   </div>
-                  <div className="h-16 bg-neutral-100 rounded" />
+                  <div className="h-12 sm:h-16 bg-neutral-100 rounded" />
                 </div>
               ))}
             </div>
           ) : sortedRules.length === 0 ? (
-            <div className="rounded-[10px] bg-white p-12 text-center">
-              <div className="w-16 h-16 mx-auto mb-5 rounded-lg flex items-center justify-center bg-terra-50">
-                <Zap className="w-8 h-8 text-terra-500" />
+            <div className="rounded-[10px] bg-white p-8 sm:p-12 text-center">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-5 rounded-lg flex items-center justify-center bg-terra-50">
+                <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-terra-500" />
               </div>
-              <h3 className="font-semibold text-[15px] mb-1 text-neutral-900">
+              <h3 className="font-semibold text-[14px] sm:text-[15px] mb-1 text-neutral-900">
                 No Rules Found
               </h3>
-              <p className="text-[13px] mb-6 max-w-md mx-auto text-neutral-500">
+              <p className="text-[12px] sm:text-[13px] mb-4 sm:mb-6 max-w-md mx-auto text-neutral-500">
                 {filterActive !== 'all' || filterPriority !== 'all'
                   ? 'No rules match the current filters'
                   : 'Create your first pricing rule to automate rate adjustments'}
               </p>
               {filterActive === 'all' && filterPriority === 'all' && (
                 <Button onClick={handleCreateRule} variant="primary" icon={Plus}>
-                  Create Your First Rule
+                  <span className="hidden sm:inline">Create Your First Rule</span>
+                  <span className="sm:hidden">Create Rule</span>
                 </Button>
               )}
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {sortedRules.map(rule => (
                 <RuleCard
                   key={rule.id}

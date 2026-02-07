@@ -119,7 +119,6 @@ export interface GuestUpdate {
   preferred_room_type?: string;
   emotion?: string;
   tags?: string[];
-  preferences?: string[] | Record<string, any>;
 }
 
 export interface PreferencesUpdate {

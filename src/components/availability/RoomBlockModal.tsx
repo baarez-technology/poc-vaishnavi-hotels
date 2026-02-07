@@ -117,9 +117,9 @@ export function RoomBlockModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-[10px] max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+      <div className="bg-white rounded-[10px] max-w-2xl w-full max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-br from-gray-50 to-white">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-br from-gray-50 to-white flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-terra-100 flex items-center justify-center">
               <Calendar className="w-5 h-5 text-terra-600" />
@@ -142,7 +142,7 @@ export function RoomBlockModal({
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-5 overflow-y-auto max-h-[calc(90vh-180px)]">
+        <div className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1">
           {/* Block Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -311,7 +311,7 @@ export function RoomBlockModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3 bg-gray-50">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex items-center justify-end gap-3 bg-gray-50 flex-shrink-0">
           <Button
             variant="ghost"
             onClick={onClose}

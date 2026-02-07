@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Building2, Shield, Plug, Palette, Brain, ChevronRight, TrendingUp } from 'lucide-react';
+import { Building2, Shield, Plug, Palette, Brain, ChevronRight, TrendingUp, Menu, X } from 'lucide-react';
 import HotelInfoTab from '../../../components/settings/HotelInfoTab';
 import RoomTypesTab from '../../../components/settings/RoomTypesTab';
 import TaxesTab from '../../../components/settings/TaxesTab';
@@ -84,6 +84,7 @@ export default function SettingsLayout() {
   const [aiSubTab, setAISubTab] = useState<AISubTab>('ai-settings');
   const [revenueSubTab, setRevenueSubTab] = useState<RevenueSubTab>('overbooking');
   const [primaryColor, setPrimaryColor] = useState(defaultSettings.branding.primaryColor);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(BRANDING_KEY);
@@ -173,21 +174,62 @@ export default function SettingsLayout() {
 
   const currentNav = navigationConfig.find((n) => n.id === activeMainTab);
 
+  const handleNavItemClick = (id: MainTab) => {
+    setActiveMainTab(id);
+    setSidebarOpen(false);
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <div className="px-10 py-6">
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6">
         {/* Page Header */}
-        <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">Settings</h1>
-          <p className="text-[13px] text-neutral-500 mt-1">
-            Manage your property configuration and preferences.
-          </p>
+        <header className="mb-4 sm:mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">Settings</h1>
+            <p className="text-[12px] sm:text-[13px] text-neutral-500 mt-1">
+              Manage your property configuration and preferences.
+            </p>
+          </div>
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="lg:hidden w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm"
+          >
+            {sidebarOpen ? (
+              <X className="w-5 h-5 text-neutral-600" />
+            ) : (
+              <Menu className="w-5 h-5 text-neutral-600" />
+            )}
+          </button>
         </header>
 
         {/* Main Layout: Sidebar + Content */}
-        <div className="flex gap-6">
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+          {/* Mobile Sidebar Overlay */}
+          {sidebarOpen && (
+            <div
+              className="fixed inset-0 bg-black/30 z-40 lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+
           {/* Sidebar Navigation */}
-          <div className="w-64 flex-shrink-0">
+          <div
+            className={`${
+              sidebarOpen ? 'fixed inset-y-0 left-0 z-50 w-72 pt-4 px-4 bg-[#F9F7F7]' : 'hidden'
+            } lg:relative lg:block lg:w-64 lg:p-0 flex-shrink-0`}
+          >
+            {/* Mobile Sidebar Header */}
+            <div className="flex items-center justify-between mb-4 lg:hidden">
+              <span className="text-sm font-semibold text-neutral-700">Settings Menu</span>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="w-8 h-8 rounded-lg bg-white flex items-center justify-center"
+              >
+                <X className="w-4 h-4 text-neutral-600" />
+              </button>
+            </div>
+
             <nav className="bg-neutral-50/80 rounded-[10px] overflow-hidden">
               {navigationConfig.map((item, index) => {
                 const Icon = item.icon;
@@ -195,7 +237,7 @@ export default function SettingsLayout() {
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setActiveMainTab(item.id)}
+                    onClick={() => handleNavItemClick(item.id)}
                     className={`w-full flex items-center gap-3 px-3.5 py-3 text-left transition-colors ${
                       index !== navigationConfig.length - 1 ? 'border-b border-neutral-100' : ''
                     } ${
@@ -205,7 +247,7 @@ export default function SettingsLayout() {
                     }`}
                   >
                     <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                         isActive ? 'bg-terra-500 text-white' : 'bg-neutral-100 text-neutral-500'
                       }`}
                     >
@@ -235,16 +277,32 @@ export default function SettingsLayout() {
 
           {/* Content Area */}
           <div className="flex-1 min-w-0">
+            {/* Mobile Active Section Indicator */}
+            <div className="lg:hidden mb-3 flex items-center gap-2">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm"
+              >
+                {currentNav && (
+                  <>
+                    <currentNav.icon className="w-4 h-4 text-terra-500" />
+                    <span className="text-sm font-semibold text-neutral-800">{currentNav.label}</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-neutral-400" />
+                  </>
+                )}
+              </button>
+            </div>
+
             {/* Sub Navigation (if applicable) */}
             {currentNav && currentNav.subTabs.length > 0 && (
-              <div className="bg-white rounded-lg px-1 py-1 mb-4 inline-flex gap-1">
+              <div className="bg-white rounded-lg px-1 py-1 mb-3 sm:mb-4 inline-flex gap-1 overflow-x-auto max-w-full">
                 {currentNav.subTabs.map((tab) => {
                   const isActive = getActiveSubTab() === tab.id;
                   return (
                     <button
                       key={tab.id}
                       onClick={() => setActiveSubTab(tab.id)}
-                      className={`h-8 px-3.5 rounded-md text-xs font-semibold transition-colors ${
+                      className={`h-8 px-3 sm:px-3.5 rounded-md text-[11px] sm:text-xs font-semibold transition-colors whitespace-nowrap ${
                         isActive
                           ? 'bg-terra-500 text-white'
                           : 'text-neutral-600 hover:bg-neutral-100'
@@ -258,7 +316,7 @@ export default function SettingsLayout() {
             )}
 
             {/* Tab Content */}
-            <div className="bg-white rounded-[10px] p-6">
+            <div className="bg-white rounded-[10px] p-4 sm:p-6">
               {renderContent()}
             </div>
           </div>

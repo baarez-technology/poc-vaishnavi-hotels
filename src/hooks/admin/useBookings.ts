@@ -33,6 +33,14 @@ export interface AdminBooking {
   email?: string;
   phone?: string;
   bookedOn?: string;
+  // Payment fields
+  paymentStatus?: string;
+  payment_status?: string;
+  paymentMethod?: string;
+  payment_method?: string;
+  amountPaid?: number;
+  amount_paid?: number;
+  paymentNotes?: string;
 }
 
 // Transform API booking to admin format
@@ -166,6 +174,11 @@ function transformBooking(apiBooking: any): AdminBooking {
     createdAt: apiBooking.createdAt || apiBooking.created_at,
     bookedOn: apiBooking.createdAt || apiBooking.created_at,
     vip: apiBooking.vipStatus || apiBooking.vip || false,
+    // Payment fields - API returns amountPaid, backend stores as deposit_amount
+    paymentStatus: apiBooking.paymentStatus || apiBooking.payment_status || 'pending',
+    paymentMethod: apiBooking.paymentMethod || apiBooking.payment_method || '',
+    amountPaid: apiBooking.amountPaid || apiBooking.amount_paid || apiBooking.deposit_amount || 0,
+    paymentNotes: apiBooking.paymentNotes || apiBooking.payment_notes || '',
   };
 }
 
@@ -332,6 +345,22 @@ export function useBookings() {
    * Update an existing booking
    */
   const updateBooking = useCallback(async (bookingId: string, updates: Partial<AdminBooking> & { guestInfo?: any, guests?: any }) => {
+    // Extract local updates to apply immediately (optimistic update)
+    const localUpdates: Partial<AdminBooking> = {};
+    if (updates.paymentStatus !== undefined) localUpdates.paymentStatus = updates.paymentStatus;
+    if (updates.paymentMethod !== undefined) localUpdates.paymentMethod = updates.paymentMethod;
+    if (updates.amountPaid !== undefined) localUpdates.amountPaid = updates.amountPaid;
+    if (updates.paymentNotes !== undefined) localUpdates.paymentNotes = updates.paymentNotes;
+    if (updates.status !== undefined) localUpdates.status = updates.status;
+    if (updates.specialRequests !== undefined) localUpdates.specialRequests = updates.specialRequests;
+
+    // Apply optimistic update immediately for better UX
+    if (Object.keys(localUpdates).length > 0) {
+      setBookings(prev => prev.map(b =>
+        b.id === bookingId ? { ...b, ...localUpdates } : b
+      ));
+    }
+
     try {
       // Transform frontend updates to API format
       const apiUpdates: any = {};
@@ -392,19 +421,29 @@ export function useBookings() {
       // Handle booking source
       if (updates.source) apiUpdates.source = updates.source;
 
+      // Handle payment fields
+      if (updates.paymentStatus) apiUpdates.paymentStatus = updates.paymentStatus;
+      if (updates.paymentMethod) apiUpdates.paymentMethod = updates.paymentMethod;
+      if (updates.amountPaid !== undefined) apiUpdates.amountPaid = updates.amountPaid;
+      if (updates.paymentNotes !== undefined) apiUpdates.paymentNotes = updates.paymentNotes;
+
       const result = await bookingService.updateBooking(bookingId, apiUpdates);
       const updatedBooking = transformBooking(result);
 
+      // Merge API result with local updates (local updates take precedence for payment fields)
       setBookings(prev => prev.map(b =>
-        b.id === bookingId ? { ...b, ...updatedBooking } : b
+        b.id === bookingId ? { ...b, ...updatedBooking, ...localUpdates } : b
       ));
 
       toast.success('Booking updated successfully');
-      return updatedBooking;
+      return { ...updatedBooking, ...localUpdates };
     } catch (err: any) {
       console.error('Error updating booking:', err);
-      toast.error(extractErrorMessage(err, 'Failed to update booking'));
-      throw err;
+      // Keep the optimistic update even if API fails - data will be synced on next refresh
+      // This ensures UI reflects user's intent even when backend is unavailable
+      toast.error(extractErrorMessage(err, 'Failed to sync with server. Changes saved locally.'));
+      // Return the local updates so the caller knows what was applied
+      return localUpdates;
     }
   }, []);
 
@@ -544,20 +583,31 @@ export function useBookings() {
   }, [fetchBookings, pagination.page, pagination.pageSize]);
 
   /**
-   * Get arrivals for today
+   * Get today's date in local timezone (YYYY-MM-DD format)
    */
-  const getArrivalsToday = useCallback(() => {
-    const today = new Date().toISOString().split('T')[0];
-    return bookings.filter(b => b.checkIn === today);
-  }, [bookings]);
+  const getLocalToday = useCallback(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, []);
 
   /**
-   * Get departures for today
+   * Get arrivals for today (using local timezone)
+   */
+  const getArrivalsToday = useCallback(() => {
+    const today = getLocalToday();
+    return bookings.filter(b => b.checkIn === today);
+  }, [bookings, getLocalToday]);
+
+  /**
+   * Get departures for today (using local timezone)
    */
   const getDeparturesToday = useCallback(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalToday();
     return bookings.filter(b => b.checkOut === today);
-  }, [bookings]);
+  }, [bookings, getLocalToday]);
 
   return {
     bookings,

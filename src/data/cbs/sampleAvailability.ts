@@ -25,20 +25,22 @@ const roomTypes = [
   'Oceanfront Penthouse'
 ];
 
+// Room counts match seed_database.py
 const totalInventory = {
-  'Minimalist Studio': 10,
-  'Coastal Retreat': 8,
-  'Urban Oasis': 8,
-  'Sunset Vista': 6,
-  'Pacific Suite': 6,
-  'Wellness Suite': 4,
-  'Family Sanctuary': 4,
+  'Minimalist Studio': 3,
+  'Coastal Retreat': 3,
+  'Urban Oasis': 4,
+  'Sunset Vista': 4,
+  'Pacific Suite': 3,
+  'Wellness Suite': 2,
+  'Family Sanctuary': 2,
   'Oceanfront Penthouse': 2
 };
 
+// Base rates match seed_database.py
 const baseRates = {
-  'Minimalist Studio': 150,
-  'Coastal Retreat': 199,
+  'Minimalist Studio': 180,
+  'Coastal Retreat': 185,
   'Urban Oasis': 245,
   'Sunset Vista': 315,
   'Pacific Suite': 385,

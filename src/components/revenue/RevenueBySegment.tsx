@@ -6,8 +6,9 @@ import {
   ResponsiveContainer,
   Tooltip
 } from 'recharts';
-import { TrendingUp, Users, DollarSign, AlertCircle, RefreshCw } from 'lucide-react';
+import { TrendingUp, Users, AlertCircle, RefreshCw } from 'lucide-react';
 import { useChannels } from '../../contexts/RevenueDataContext';
+import { useCurrency } from '@/hooks/useCurrency';
 
 // Segment colors mapping
 const SEGMENT_COLORS: Record<string, string> = {
@@ -52,21 +53,21 @@ interface SegmentApiResponse {
   };
 }
 
-const formatCurrency = (value: number) => {
-  if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`;
-  }
-  if (value >= 1000) {
-    return `$${(value / 1000).toFixed(0)}K`;
-  }
-  return `$${value.toLocaleString()}`;
-};
-
 interface TooltipPayload {
   payload: SegmentData;
 }
 
-const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: TooltipPayload[] }) => {
+const CustomTooltip = ({ active, payload, symbol = '$' }: { active?: boolean; payload?: TooltipPayload[]; symbol?: string }) => {
+  const formatCurrencyValue = (value: number) => {
+    if (value >= 1000000) {
+      return `${symbol}${(value / 1000000).toFixed(1)}M`;
+    }
+    if (value >= 1000) {
+      return `${symbol}${(value / 1000).toFixed(0)}K`;
+    }
+    return `${symbol}${value.toLocaleString()}`;
+  };
+
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
@@ -79,11 +80,11 @@ const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Toolti
           <p className="text-[13px] font-semibold text-neutral-900">{data.segment}</p>
         </div>
         <p className="text-lg font-bold mb-2" style={{ color: data.color }}>
-          {formatCurrency(data.value)}
+          {formatCurrencyValue(data.value)}
         </p>
         <div className="space-y-1 text-[11px] text-neutral-500">
           <p>{data.bookings} bookings</p>
-          <p>Avg Rate: ${data.avgRate.toLocaleString()}</p>
+          <p>Avg Rate: {symbol}{data.avgRate.toLocaleString()}</p>
         </div>
       </div>
     );
@@ -155,6 +156,17 @@ const FALLBACK_SEGMENT_DATA: SegmentData[] = [
 
 export default function RevenueBySegment() {
   const { data: channelsResponse, loading, error, refresh } = useChannels();
+  const { symbol } = useCurrency();
+
+  const formatCurrencyValue = (value: number) => {
+    if (value >= 1000000) {
+      return `${symbol}${(value / 1000000).toFixed(1)}M`;
+    }
+    if (value >= 1000) {
+      return `${symbol}${(value / 1000).toFixed(0)}K`;
+    }
+    return `${symbol}${value.toLocaleString()}`;
+  };
 
   // Transform API response to component format
   const data = useMemo(() => {
@@ -228,14 +240,14 @@ export default function RevenueBySegment() {
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CustomTooltip symbol={symbol} />} />
             </PieChart>
           </ResponsiveContainer>
 
           {/* Center Value */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
             <p className="text-[10px] font-medium text-neutral-400 uppercase tracking-wider">Total</p>
-            <p className="text-lg font-bold text-neutral-900">{formatCurrency(totalRevenue)}</p>
+            <p className="text-lg font-bold text-neutral-900">{formatCurrencyValue(totalRevenue)}</p>
           </div>
         </div>
 
@@ -259,7 +271,7 @@ export default function RevenueBySegment() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-[13px] font-semibold text-neutral-900">
-                    {formatCurrency(segment.value)}
+                    {formatCurrencyValue(segment.value)}
                   </span>
                   <span className="text-[10px] font-semibold text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded min-w-[32px] text-center">
                     {percentage}%
@@ -288,12 +300,12 @@ export default function RevenueBySegment() {
         <div className="p-3 rounded-lg bg-neutral-50">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-5 h-5 rounded bg-ocean-100 flex items-center justify-center">
-              <DollarSign className="w-3 h-3 text-ocean-600" />
+              <span className="text-xs font-bold text-ocean-600">{symbol}</span>
             </div>
             <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">Peak Rate</p>
           </div>
           <p className="text-[13px] font-bold text-neutral-900">
-            ${highestAvgRate.toLocaleString()}
+            {symbol}{highestAvgRate.toLocaleString()}
           </p>
         </div>
 

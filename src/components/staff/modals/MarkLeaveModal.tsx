@@ -228,7 +228,7 @@ export default function MarkLeaveModal({ staff, isOpen, onClose, onMarkLeave }) 
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Date Range
           </h4>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
                 Start Date <span className="text-rose-500">*</span>
@@ -273,7 +273,7 @@ export default function MarkLeaveModal({ staff, isOpen, onClose, onMarkLeave }) 
         </div>
 
         {/* Info */}
-        <div className="p-4 bg-gold-50 rounded-lg border border-gold-100">
+        <div className="p-3 sm:p-4 bg-gold-50 rounded-lg border border-gold-100">
           <p className="text-[10px] font-medium text-gold-600 mb-1">Leave Information</p>
           <p className="text-[11px] text-gold-700">
             Staff status will be updated to "On Leave" and this leave will be recorded in their history.

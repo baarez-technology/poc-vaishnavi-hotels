@@ -270,7 +270,7 @@ export default function PreventiveModal({
         />
 
         {/* Category & Frequency Row */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <DrawerSelect
             label="Category"
             value={formData.category}
@@ -326,8 +326,8 @@ export default function PreventiveModal({
         </div>
 
         {/* Active Toggle */}
-        <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-200">
-          <label className="flex items-center gap-3 cursor-pointer">
+        <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-200">
+          <label className="flex items-center gap-2 sm:gap-3 cursor-pointer">
             <input
               type="checkbox"
               checked={formData.isActive}
@@ -335,8 +335,8 @@ export default function PreventiveModal({
               className="w-4 h-4 rounded border-neutral-300 text-terra-500 focus:ring-terra-500/20"
             />
             <div>
-              <span className="font-semibold text-neutral-900 text-[13px]">Active</span>
-              <p className="text-[11px] text-neutral-500 mt-0.5">
+              <span className="font-semibold text-neutral-900 text-[12px] sm:text-[13px]">Active</span>
+              <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-0.5">
                 Active tasks will appear in the maintenance calendar
               </p>
             </div>

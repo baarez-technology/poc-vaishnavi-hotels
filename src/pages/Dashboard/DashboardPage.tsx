@@ -63,7 +63,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <div className="sticky top-20 z-40 bg-white border-b border-neutral-200">
+      <div className="sticky top-20 z-10 bg-white border-b border-neutral-200">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex gap-1 overflow-x-auto scrollbar-hide">
             {tabs.map((tab, index) => {

@@ -32,6 +32,7 @@ import {
   formatCurrency,
 } from '@/utils/admin/guests';
 import { guestsService, type GuestFullProfile } from '@/api/services/guests.service';
+import { Button } from '../../ui2/Button';
 
 export default function GuestDrawer({
   guest,
@@ -454,29 +455,17 @@ export default function GuestDrawer({
         {/* Actions Footer */}
         <div className="flex-shrink-0 bg-white border-t border-neutral-200 px-6 py-4 shadow-lg">
           <div className="grid grid-cols-2 gap-3 mb-3">
-            <button
-              onClick={() => onEdit(guest)}
-              className="px-4 py-3 bg-[#A57865] text-white text-sm font-semibold rounded-xl hover:bg-[#8E6554] hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2 active:scale-95"
-            >
-              <Edit className="w-4 h-4" />
+            <Button variant="primary" onClick={() => onEdit(guest)} icon={Edit}>
               Edit
-            </button>
-            <button
-              onClick={() => onMessage(guest)}
-              className="px-4 py-3 bg-white border-2 border-neutral-200 text-neutral-700 text-sm font-semibold rounded-xl hover:border-[#A57865]/30 hover:bg-neutral-50 hover:shadow-sm transition-all duration-200 flex items-center justify-center gap-2 active:scale-95"
-            >
-              <MessageSquare className="w-4 h-4" />
+            </Button>
+            <Button variant="outline-neutral" onClick={() => onMessage(guest)} icon={MessageSquare}>
               Message
-            </button>
+            </Button>
           </div>
           {guest.status !== 'Blacklisted' && guest.status !== 'blacklisted' && (
-            <button
-              onClick={() => onBlacklist(guest)}
-              className="w-full px-4 py-2.5 bg-red-50 text-red-700 text-sm font-medium rounded-xl hover:bg-red-100 border border-red-200 hover:border-red-300 transition-all duration-200 flex items-center justify-center gap-2 active:scale-95"
-            >
-              <UserX className="w-4 h-4" />
+            <Button variant="danger" onClick={() => onBlacklist(guest)} icon={UserX} fullWidth>
               Blacklist Guest
-            </button>
+            </Button>
           )}
         </div>
       </div>

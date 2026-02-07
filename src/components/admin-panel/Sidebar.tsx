@@ -17,6 +17,7 @@ import {
   Brain,
 } from 'lucide-react';
 import GlimmoraLogo from '../../assets/G white logo.svg';
+import { useSettingsContext } from '../../contexts/SettingsContext';
 
 const navCategories = [
   {
@@ -61,17 +62,27 @@ const navCategories = [
 ];
 
 const Sidebar = () => {
+  const { generalSettings } = useSettingsContext();
+  const hotelName = generalSettings?.hotelName || 'Glimmora';
+  const customLogo = generalSettings?.branding?.logo;
+
   return (
     <div className="h-full bg-gradient-to-b from-white via-[#FAF8F6]/30 to-white border-r border-[#A57865]/20 flex flex-col shadow-sm">
       {/* Brand */}
       <div className="p-6 border-b border-[#A57865]/20 flex-shrink-0">
         <div className="flex items-center gap-3 group cursor-pointer">
-          <div className="w-12 h-12 bg-gradient-to-br from-[#A57865] via-[#8E6554] to-[#A57865] rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-105 group-hover:rotate-3 transition-all duration-300 p-2 shadow-md">
-            <img src={GlimmoraLogo} alt="Glimmora Logo" className="w-full h-full object-contain" />
-          </div>
+          {customLogo ? (
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-105 group-hover:rotate-3 transition-all duration-300 overflow-hidden bg-white border border-neutral-200 shadow-md">
+              <img src={customLogo} alt={hotelName} className="w-full h-full object-contain" />
+            </div>
+          ) : (
+            <div className="w-12 h-12 bg-gradient-to-br from-[#A57865] via-[#8E6554] to-[#A57865] rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-105 group-hover:rotate-3 transition-all duration-300 p-2 shadow-md">
+              <img src={GlimmoraLogo} alt="Glimmora Logo" className="w-full h-full object-contain" />
+            </div>
+          )}
           <div>
             <h1 className="text-2xl font-serif font-bold bg-gradient-to-r from-neutral-800 to-[#A57865] bg-clip-text text-transparent group-hover:from-[#A57865] group-hover:to-[#8E6554] transition-all duration-300">
-              Glimmora
+              {hotelName}
             </h1>
             <p className="text-xs text-neutral-500 font-medium">Admin Portal</p>
           </div>

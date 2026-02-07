@@ -55,15 +55,16 @@ function AnimatedNumber({ value, prefix = '', suffix = '', duration = 1000 }) {
   return <span>{prefix}{displayValue.toLocaleString()}{suffix}</span>;
 }
 
-// Room type configurations with enhanced data - matches database room types
+// Room type configurations with enhanced data - matches database seed_database.py
+// Total: 23 rooms (3+3+4+4+3+2+2+2)
 const ROOM_TYPE_CONFIG = {
-  'Minimalist Studio': { code: 'MINST', color: 'slate', icon: Bed, totalRooms: 10, baseRate: 150, floor: 2 },
-  'Coastal Retreat': { code: 'COAST', color: 'ocean', icon: Bed, totalRooms: 8, baseRate: 199, floor: 2 },
-  'Urban Oasis': { code: 'URBAN', color: 'terra', icon: Bed, totalRooms: 8, baseRate: 245, floor: 3 },
-  'Sunset Vista': { code: 'SUNSET', color: 'gold', icon: Bed, totalRooms: 6, baseRate: 315, floor: 3 },
-  'Pacific Suite': { code: 'PACSUI', color: 'sage', icon: Building2, totalRooms: 6, baseRate: 385, floor: 4 },
-  'Wellness Suite': { code: 'WELLNS', color: 'rose', icon: Building2, totalRooms: 4, baseRate: 425, floor: 4 },
-  'Family Sanctuary': { code: 'FAMILY', color: 'ocean', icon: Home, totalRooms: 4, baseRate: 485, floor: 5 },
+  'Minimalist Studio': { code: 'MINST', color: 'slate', icon: Bed, totalRooms: 3, baseRate: 180, floor: 1 },
+  'Coastal Retreat': { code: 'COAST', color: 'ocean', icon: Bed, totalRooms: 3, baseRate: 185, floor: 2 },
+  'Urban Oasis': { code: 'URBAN', color: 'terra', icon: Bed, totalRooms: 4, baseRate: 245, floor: 2 },
+  'Sunset Vista': { code: 'SUNSET', color: 'gold', icon: Bed, totalRooms: 4, baseRate: 315, floor: 3 },
+  'Pacific Suite': { code: 'PACSUI', color: 'sage', icon: Building2, totalRooms: 3, baseRate: 385, floor: 3 },
+  'Wellness Suite': { code: 'WELLNS', color: 'rose', icon: Building2, totalRooms: 2, baseRate: 425, floor: 4 },
+  'Family Sanctuary': { code: 'FAMILY', color: 'ocean', icon: Home, totalRooms: 2, baseRate: 485, floor: 5 },
   'Oceanfront Penthouse': { code: 'OCNPNT', color: 'gold', icon: Crown, totalRooms: 2, baseRate: 750, floor: 6 }
 };
 
@@ -78,7 +79,16 @@ const CHANNELS = [
 // ============================================
 // PREMIUM KPI CARD
 // ============================================
-function KPICard({ title, value, prefix = '', suffix = '', subtitle, icon: Icon, trend, accentColor = 'terra', delay = 0 }) {
+function KPICard({ title, value, prefix = '', suffix = '', subtitle, icon: Icon, trend, accentColor = 'terra' }: {
+  title: string;
+  value: number | string;
+  prefix?: string;
+  suffix?: string;
+  subtitle: string;
+  icon: any;
+  trend?: { value: string; isPositive: boolean } | null;
+  accentColor?: string;
+}) {
   const isPositive = trend?.isPositive !== false;
 
   const bgColorMap = {
@@ -98,36 +108,36 @@ function KPICard({ title, value, prefix = '', suffix = '', subtitle, icon: Icon,
   };
 
   return (
-    <div className="relative overflow-hidden rounded-[10px] bg-white p-6">
+    <div className="relative overflow-hidden rounded-[10px] bg-white p-4 sm:p-6">
       {/* Header with Icon */}
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
         <div className={cn(
-          'w-8 h-8 rounded-lg flex items-center justify-center',
+          'w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center',
           bgColorMap[accentColor]
         )}>
-          <Icon className={cn('w-4 h-4', textColorMap[accentColor])} />
+          <Icon className={cn('w-3.5 h-3.5 sm:w-4 sm:h-4', textColorMap[accentColor])} />
         </div>
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 truncate">
           {title}
         </p>
       </div>
 
       {/* Value */}
-      <p className="text-[28px] font-semibold tracking-tight text-neutral-900 mb-2">
+      <p className="text-xl sm:text-[28px] font-semibold tracking-tight text-neutral-900 mb-1 sm:mb-2">
         <AnimatedNumber value={typeof value === 'number' ? value : parseInt(value) || 0} prefix={prefix} suffix={suffix} />
       </p>
 
       {/* Comparison */}
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] text-neutral-400 font-medium">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium truncate">
           {subtitle || 'vs Last Period'}
         </p>
         {trend && (
           <div className={cn(
-            'flex items-center gap-1 text-[11px] font-semibold',
+            'flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold flex-shrink-0',
             isPositive ? 'text-sage-600' : 'text-rose-600'
           )}>
-            {isPositive ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+            {isPositive ? <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : <ArrowDownRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
             {trend.value}
           </div>
         )}
@@ -141,13 +151,13 @@ function KPICard({ title, value, prefix = '', suffix = '', subtitle, icon: Icon,
 // ============================================
 function EditorialTabs({ activeTab, onTabChange }) {
   const tabs = [
-    { id: 'calendar', label: 'Calendar View', icon: Calendar },
-    { id: 'inventory', label: 'Room Inventory', icon: LayoutGrid },
-    { id: 'rates', label: 'Rate Manager', icon: DollarSign },
+    { id: 'calendar', label: 'Calendar View', shortLabel: 'Calendar', icon: Calendar },
+    { id: 'inventory', label: 'Room Inventory', shortLabel: 'Inventory', icon: LayoutGrid },
+    { id: 'rates', label: 'Rate Manager', shortLabel: 'Rates', icon: DollarSign },
   ];
 
   return (
-    <div className="flex items-center gap-1 p-1.5 rounded-lg bg-neutral-100">
+    <div className="flex items-center gap-1 p-1 sm:p-1.5 rounded-lg bg-neutral-100 overflow-x-auto max-w-full">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -157,14 +167,15 @@ function EditorialTabs({ activeTab, onTabChange }) {
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
             className={cn(
-              'relative flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-200',
+              'relative flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-[13px] font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0',
               isActive
                 ? 'bg-white text-neutral-900 shadow-sm'
                 : 'text-neutral-600 hover:text-neutral-900'
             )}
           >
-            <Icon className="w-4 h-4" />
-            <span>{tab.label}</span>
+            <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">{tab.label}</span>
+            <span className="sm:hidden">{tab.shortLabel}</span>
           </button>
         );
       })}
@@ -177,41 +188,41 @@ function EditorialTabs({ activeTab, onTabChange }) {
 // ============================================
 function ChannelSyncStatus() {
   return (
-    <div className="rounded-[10px] bg-white p-5">
-      <div className="flex items-center justify-between mb-4">
+    <div className="rounded-[10px] bg-white p-4 sm:p-5">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
         <div className="flex items-center gap-2">
-          <Wifi className="w-4 h-4 text-neutral-400" />
-          <span className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+          <Wifi className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400" />
+          <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
             Channel Status
           </span>
         </div>
-        <button className="text-[11px] font-semibold text-terra-600 px-2 py-1 rounded-lg hover:bg-terra-50 transition-colors">
+        <button className="text-[10px] sm:text-[11px] font-semibold text-terra-600 px-2 py-1 rounded-lg hover:bg-terra-50 transition-colors">
           Sync All
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
         {CHANNELS.map((channel) => (
           <div
             key={channel.id}
-            className="flex items-center gap-3 p-3 rounded-lg bg-neutral-50/50 hover:bg-neutral-50 transition-colors"
+            className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg bg-neutral-50/50 hover:bg-neutral-50 transition-colors"
           >
             <div className={cn(
-              'w-8 h-8 rounded-lg flex items-center justify-center',
+              'w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0',
               channel.status === 'connected' && 'bg-sage-50',
               channel.status === 'syncing' && 'bg-gold-50',
               channel.status === 'error' && 'bg-rose-50'
             )}>
-              {channel.status === 'connected' && <CheckCircle className="w-4 h-4 text-sage-600" />}
-              {channel.status === 'syncing' && <RefreshCw className="w-4 h-4 text-gold-600 animate-spin" />}
-              {channel.status === 'error' && <AlertCircle className="w-4 h-4 text-rose-600" />}
+              {channel.status === 'connected' && <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sage-600" />}
+              {channel.status === 'syncing' && <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gold-600 animate-spin" />}
+              {channel.status === 'error' && <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-600" />}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-neutral-800 truncate">
+              <p className="text-xs sm:text-[13px] font-semibold text-neutral-800 truncate">
                 {channel.name}
               </p>
               <p className={cn(
-                'text-[10px] font-medium',
+                'text-[9px] sm:text-[10px] font-medium',
                 channel.status === 'error' ? 'text-rose-500' : 'text-neutral-400'
               )}>
                 {channel.lastSync}
@@ -259,47 +270,47 @@ function OccupancyHeatmap({ dates, availabilityData, selectedRoomTypes, isDark }
 
   return (
     <div className={cn(
-      'rounded-2xl p-5 transition-all duration-300',
+      'rounded-2xl p-4 sm:p-5 transition-all duration-300',
       isDark
         ? 'bg-neutral-900/80 border border-neutral-800'
         : 'bg-white border border-neutral-200/60'
     )}>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
         <div className="flex items-center gap-2">
-          <BarChart3 className={cn('w-4 h-4', isDark ? 'text-neutral-500' : 'text-neutral-400')} />
+          <BarChart3 className={cn('w-3.5 h-3.5 sm:w-4 sm:h-4', isDark ? 'text-neutral-500' : 'text-neutral-400')} />
           <span className={cn(
-            'text-xs font-semibold uppercase tracking-wider',
+            'text-[10px] sm:text-xs font-semibold uppercase tracking-wider',
             isDark ? 'text-neutral-500' : 'text-neutral-400'
           )}>
             14-Day Forecast
           </span>
         </div>
-        <div className="flex items-center gap-1 text-[10px]">
+        <div className="flex items-center gap-1 text-[9px] sm:text-[10px]">
           <span className={isDark ? 'text-neutral-500' : 'text-neutral-400'}>Low</span>
           <div className="flex gap-0.5">
-            <span className="w-3 h-3 rounded bg-ocean-500" />
-            <span className="w-3 h-3 rounded bg-sage-500" />
-            <span className="w-3 h-3 rounded bg-terra-500" />
-            <span className="w-3 h-3 rounded bg-gold-500" />
-            <span className="w-3 h-3 rounded bg-rose-500" />
+            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-ocean-500" />
+            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-sage-500" />
+            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-terra-500" />
+            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-gold-500" />
+            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-rose-500" />
           </div>
           <span className={isDark ? 'text-neutral-500' : 'text-neutral-400'}>High</span>
         </div>
       </div>
 
-      <div className="flex gap-1">
+      <div className="flex gap-0.5 sm:gap-1">
         {heatmapData.map((day) => (
           <Tooltip key={day.date} content={`${day.dayOfWeek} ${day.dayOfMonth}: ${day.occupancy}%`}>
             <div className="flex-1 group cursor-pointer">
               <div
                 className={cn(
-                  'h-16 rounded-lg transition-all duration-200 group-hover:scale-105 group-hover:ring-2 group-hover:ring-white/20',
+                  'h-12 sm:h-16 rounded-lg transition-all duration-200 group-hover:scale-105 group-hover:ring-2 group-hover:ring-white/20',
                   getHeatColor(day.occupancy)
                 )}
                 style={{ opacity: 0.3 + (day.occupancy / 100) * 0.7 }}
               />
               <p className={cn(
-                'text-[9px] text-center mt-1 font-medium',
+                'text-[8px] sm:text-[9px] text-center mt-1 font-medium',
                 day.isToday ? 'text-terra-500' : isDark ? 'text-neutral-500' : 'text-neutral-400'
               )}>
                 {day.dayOfMonth}
@@ -318,151 +329,153 @@ function OccupancyHeatmap({ dates, availabilityData, selectedRoomTypes, isDark }
 function QuickStatsStrip({ stats, todayStats, isDark }) {
   return (
     <div className={cn(
-      'rounded-2xl p-4 flex items-center justify-between gap-6 overflow-x-auto',
+      'rounded-2xl p-3 sm:p-4 overflow-x-auto',
       isDark
         ? 'bg-gradient-to-r from-terra-950/50 via-neutral-900/80 to-ocean-950/50 border border-neutral-800'
         : 'bg-gradient-to-r from-terra-50 via-white to-ocean-50 border border-neutral-200/60'
     )}>
-      {/* Arrivals */}
-      <div className="flex items-center gap-3 min-w-fit">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sage-400 to-sage-600 flex items-center justify-center shadow-lg shadow-sage-500/20">
-          <LogIn className="w-5 h-5 text-white" />
+      <div className="flex items-center justify-between gap-3 sm:gap-6 min-w-max">
+        {/* Arrivals */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-fit">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-sage-400 to-sage-600 flex items-center justify-center shadow-lg shadow-sage-500/20">
+            <LogIn className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          </div>
+          <div>
+            <p className={cn(
+              'text-base sm:text-xl font-bold',
+              isDark ? 'text-white' : 'text-neutral-900'
+            )}>
+              {todayStats.arrivals}
+            </p>
+            <p className={cn(
+              'text-[9px] sm:text-[10px] font-medium uppercase tracking-wider',
+              isDark ? 'text-neutral-500' : 'text-neutral-400'
+            )}>
+              Arrivals
+            </p>
+          </div>
         </div>
-        <div>
-          <p className={cn(
-            'text-xl font-bold',
-            isDark ? 'text-white' : 'text-neutral-900'
-          )}>
-            {todayStats.arrivals}
-          </p>
-          <p className={cn(
-            'text-[10px] font-medium uppercase tracking-wider',
-            isDark ? 'text-neutral-500' : 'text-neutral-400'
-          )}>
-            Arrivals
-          </p>
-        </div>
-      </div>
 
-      <div className={cn('h-8 w-px', isDark ? 'bg-neutral-800' : 'bg-neutral-200')} />
+        <div className={cn('h-6 sm:h-8 w-px flex-shrink-0', isDark ? 'bg-neutral-800' : 'bg-neutral-200')} />
 
-      {/* Departures */}
-      <div className="flex items-center gap-3 min-w-fit">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-ocean-400 to-ocean-600 flex items-center justify-center shadow-lg shadow-ocean-500/20">
-          <LogOut className="w-5 h-5 text-white" />
+        {/* Departures */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-fit">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-ocean-400 to-ocean-600 flex items-center justify-center shadow-lg shadow-ocean-500/20">
+            <LogOut className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          </div>
+          <div>
+            <p className={cn(
+              'text-base sm:text-xl font-bold',
+              isDark ? 'text-white' : 'text-neutral-900'
+            )}>
+              {todayStats.departures}
+            </p>
+            <p className={cn(
+              'text-[9px] sm:text-[10px] font-medium uppercase tracking-wider',
+              isDark ? 'text-neutral-500' : 'text-neutral-400'
+            )}>
+              Departures
+            </p>
+          </div>
         </div>
-        <div>
-          <p className={cn(
-            'text-xl font-bold',
-            isDark ? 'text-white' : 'text-neutral-900'
-          )}>
-            {todayStats.departures}
-          </p>
-          <p className={cn(
-            'text-[10px] font-medium uppercase tracking-wider',
-            isDark ? 'text-neutral-500' : 'text-neutral-400'
-          )}>
-            Departures
-          </p>
-        </div>
-      </div>
 
-      <div className={cn('h-8 w-px', isDark ? 'bg-neutral-800' : 'bg-neutral-200')} />
+        <div className={cn('h-6 sm:h-8 w-px flex-shrink-0', isDark ? 'bg-neutral-800' : 'bg-neutral-200')} />
 
-      {/* In House */}
-      <div className="flex items-center gap-3 min-w-fit">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center shadow-lg shadow-gold-500/20">
-          <Bed className="w-5 h-5 text-white" />
+        {/* In House */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-fit">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center shadow-lg shadow-gold-500/20">
+            <Bed className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          </div>
+          <div>
+            <p className={cn(
+              'text-base sm:text-xl font-bold',
+              isDark ? 'text-white' : 'text-neutral-900'
+            )}>
+              {todayStats.inHouse || stats.totalSold}
+            </p>
+            <p className={cn(
+              'text-[9px] sm:text-[10px] font-medium uppercase tracking-wider',
+              isDark ? 'text-neutral-500' : 'text-neutral-400'
+            )}>
+              In-House
+            </p>
+          </div>
         </div>
-        <div>
-          <p className={cn(
-            'text-xl font-bold',
-            isDark ? 'text-white' : 'text-neutral-900'
-          )}>
-            {todayStats.inHouse || stats.totalSold}
-          </p>
-          <p className={cn(
-            'text-[10px] font-medium uppercase tracking-wider',
-            isDark ? 'text-neutral-500' : 'text-neutral-400'
-          )}>
-            In-House
-          </p>
-        </div>
-      </div>
 
-      <div className={cn('h-8 w-px', isDark ? 'bg-neutral-800' : 'bg-neutral-200')} />
+        <div className={cn('h-6 sm:h-8 w-px flex-shrink-0 hidden sm:block', isDark ? 'bg-neutral-800' : 'bg-neutral-200')} />
 
-      {/* Reserved (confirmed but not checked in) */}
-      <div className="flex items-center gap-3 min-w-fit">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-ocean-400 to-ocean-600 flex items-center justify-center shadow-lg shadow-ocean-500/20">
-          <Calendar className="w-5 h-5 text-white" />
+        {/* Reserved (confirmed but not checked in) - hidden on mobile */}
+        <div className="hidden sm:flex items-center gap-2 sm:gap-3 min-w-fit">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-ocean-400 to-ocean-600 flex items-center justify-center shadow-lg shadow-ocean-500/20">
+            <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          </div>
+          <div>
+            <p className={cn(
+              'text-base sm:text-xl font-bold text-ocean-500'
+            )}>
+              {stats.totalReserved || 0}
+            </p>
+            <p className={cn(
+              'text-[9px] sm:text-[10px] font-medium uppercase tracking-wider',
+              isDark ? 'text-neutral-500' : 'text-neutral-400'
+            )}>
+              Reserved
+            </p>
+          </div>
         </div>
-        <div>
-          <p className={cn(
-            'text-xl font-bold text-ocean-500'
-          )}>
-            {stats.totalReserved || 0}
-          </p>
-          <p className={cn(
-            'text-[10px] font-medium uppercase tracking-wider',
-            isDark ? 'text-neutral-500' : 'text-neutral-400'
-          )}>
-            Reserved
-          </p>
-        </div>
-      </div>
 
-      <div className={cn('h-8 w-px', isDark ? 'bg-neutral-800' : 'bg-neutral-200')} />
+        <div className={cn('h-6 sm:h-8 w-px flex-shrink-0 hidden sm:block', isDark ? 'bg-neutral-800' : 'bg-neutral-200')} />
 
-      {/* Available */}
-      <div className="flex items-center gap-3 min-w-fit">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-terra-400 to-terra-600 flex items-center justify-center shadow-lg shadow-terra-500/20">
-          <Home className="w-5 h-5 text-white" />
+        {/* Available - hidden on mobile */}
+        <div className="hidden sm:flex items-center gap-2 sm:gap-3 min-w-fit">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-terra-400 to-terra-600 flex items-center justify-center shadow-lg shadow-terra-500/20">
+            <Home className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          </div>
+          <div>
+            <p className={cn(
+              'text-base sm:text-xl font-bold text-sage-500'
+            )}>
+              {stats.totalAvailable}
+            </p>
+            <p className={cn(
+              'text-[9px] sm:text-[10px] font-medium uppercase tracking-wider',
+              isDark ? 'text-neutral-500' : 'text-neutral-400'
+            )}>
+              Available
+            </p>
+          </div>
         </div>
-        <div>
-          <p className={cn(
-            'text-xl font-bold text-sage-500'
-          )}>
-            {stats.totalAvailable}
-          </p>
-          <p className={cn(
-            'text-[10px] font-medium uppercase tracking-wider',
-            isDark ? 'text-neutral-500' : 'text-neutral-400'
-          )}>
-            Available
-          </p>
-        </div>
-      </div>
 
-      <div className={cn('h-8 w-px', isDark ? 'bg-neutral-800' : 'bg-neutral-200')} />
+        <div className={cn('h-6 sm:h-8 w-px flex-shrink-0 hidden lg:block', isDark ? 'bg-neutral-800' : 'bg-neutral-200')} />
 
-      {/* Demand */}
-      <div className="flex items-center gap-3 min-w-fit">
-        <div className={cn(
-          'w-10 h-10 rounded-xl flex items-center justify-center',
-          stats.occupancyRate >= 80
-            ? 'bg-gradient-to-br from-rose-400 to-rose-600 shadow-lg shadow-rose-500/20'
-            : 'bg-gradient-to-br from-neutral-400 to-neutral-600 shadow-lg shadow-neutral-500/20'
-        )}>
-          {stats.occupancyRate >= 80 ? (
-            <Flame className="w-5 h-5 text-white" />
-          ) : (
-            <Snowflake className="w-5 h-5 text-white" />
-          )}
-        </div>
-        <div>
-          <p className={cn(
-            'text-xl font-bold',
-            stats.occupancyRate >= 80 ? 'text-rose-500' : isDark ? 'text-white' : 'text-neutral-900'
+        {/* Demand - hidden on mobile */}
+        <div className="hidden lg:flex items-center gap-2 sm:gap-3 min-w-fit">
+          <div className={cn(
+            'w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center',
+            stats.occupancyRate >= 80
+              ? 'bg-gradient-to-br from-rose-400 to-rose-600 shadow-lg shadow-rose-500/20'
+              : 'bg-gradient-to-br from-neutral-400 to-neutral-600 shadow-lg shadow-neutral-500/20'
           )}>
-            {stats.occupancyRate >= 80 ? 'High' : 'Normal'}
-          </p>
-          <p className={cn(
-            'text-[10px] font-medium uppercase tracking-wider',
-            isDark ? 'text-neutral-500' : 'text-neutral-400'
-          )}>
-            Demand
-          </p>
+            {stats.occupancyRate >= 80 ? (
+              <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            ) : (
+              <Snowflake className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            )}
+          </div>
+          <div>
+            <p className={cn(
+              'text-base sm:text-xl font-bold',
+              stats.occupancyRate >= 80 ? 'text-rose-500' : isDark ? 'text-white' : 'text-neutral-900'
+            )}>
+              {stats.occupancyRate >= 80 ? 'High' : 'Normal'}
+            </p>
+            <p className={cn(
+              'text-[9px] sm:text-[10px] font-medium uppercase tracking-wider',
+              isDark ? 'text-neutral-500' : 'text-neutral-400'
+            )}>
+              Demand
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -475,7 +488,7 @@ function QuickStatsStrip({ stats, todayStats, isDark }) {
 function RoomTypeFilterPills({ selectedRoomTypes, onToggle, isDark, roomTypeConfig }) {
   return (
     <div className={cn(
-      'flex items-center gap-1 p-1 rounded-xl',
+      'flex items-center gap-1 p-1 rounded-xl overflow-x-auto max-w-full',
       isDark ? 'bg-neutral-800/50' : 'bg-neutral-100'
     )}>
       {Object.entries(roomTypeConfig).map(([name, config]) => (
@@ -483,7 +496,7 @@ function RoomTypeFilterPills({ selectedRoomTypes, onToggle, isDark, roomTypeConf
           key={name}
           onClick={() => onToggle(name)}
           className={cn(
-            'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200',
+            'flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0',
             selectedRoomTypes.includes(name)
               ? isDark
                 ? 'bg-terra-500 text-white shadow-lg shadow-terra-500/20'
@@ -493,8 +506,8 @@ function RoomTypeFilterPills({ selectedRoomTypes, onToggle, isDark, roomTypeConf
                 : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'
           )}
         >
-          <config.icon className="w-3.5 h-3.5" />
-          {config.code}
+          <config.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+          <span className="hidden sm:inline">{config.code}</span>
         </button>
       ))}
     </div>
@@ -680,28 +693,28 @@ function RoomInventoryGrid({ rooms, isDark }) {
 
   return (
     <div className={cn(
-      'rounded-2xl p-6 transition-all duration-300',
+      'rounded-2xl p-4 sm:p-6 transition-all duration-300',
       isDark
         ? 'bg-neutral-900/80 border border-neutral-800'
         : 'bg-white border border-neutral-200/60'
     )}>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className={cn(
-            'w-10 h-10 rounded-xl flex items-center justify-center',
+            'w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center',
             isDark ? 'bg-terra-500/20' : 'bg-terra-100'
           )}>
-            <Map className={cn('w-5 h-5', isDark ? 'text-terra-400' : 'text-terra-600')} />
+            <Map className={cn('w-4 h-4 sm:w-5 sm:h-5', isDark ? 'text-terra-400' : 'text-terra-600')} />
           </div>
           <div>
             <h3 className={cn(
-              'text-lg font-sans font-semibold',
+              'text-base sm:text-lg font-sans font-semibold',
               isDark ? 'text-white' : 'text-neutral-900'
             )}>
               Room Inventory
             </h3>
             <p className={cn(
-              'text-xs',
+              'text-[10px] sm:text-xs',
               isDark ? 'text-neutral-500' : 'text-neutral-400'
             )}>
               Real-time room status by floor
@@ -709,41 +722,41 @@ function RoomInventoryGrid({ rooms, isDark }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-sage-500" />
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[10px] sm:text-xs">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-sage-500" />
             <span className={isDark ? 'text-neutral-400' : 'text-neutral-500'}>Available</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-ocean-500" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-ocean-500" />
             <span className={isDark ? 'text-neutral-400' : 'text-neutral-500'}>Reserved</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-terra-500" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-terra-500" />
             <span className={isDark ? 'text-neutral-400' : 'text-neutral-500'}>Occupied</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-gold-500" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-gold-500" />
             <span className={isDark ? 'text-neutral-400' : 'text-neutral-500'}>Maintenance</span>
           </div>
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {floors.map(floor => (
-          <div key={floor} className="flex items-center gap-4">
+          <div key={floor} className="flex items-center gap-2 sm:gap-4">
             <div className={cn(
-              'w-16 flex-shrink-0 text-right',
+              'w-12 sm:w-16 flex-shrink-0 text-right',
               isDark ? 'text-neutral-500' : 'text-neutral-400'
             )}>
-              <span className="text-sm font-semibold">Floor {floor}</span>
+              <span className="text-xs sm:text-sm font-semibold">Floor {floor}</span>
             </div>
-            <div className="flex-1 flex flex-wrap gap-2">
+            <div className="flex-1 flex flex-wrap gap-1.5 sm:gap-2">
               {roomsByFloor[floor]?.map(room => (
                 <Tooltip key={room.number} content={`${room.number} - ${room.type} (${room.status})`}>
                   <div
                     className={cn(
-                      'w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold text-white cursor-pointer',
+                      'w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-bold text-white cursor-pointer',
                       'transition-all duration-200 hover:scale-110 hover:shadow-lg',
                       getStatusColor(room.status)
                     )}
@@ -1263,9 +1276,9 @@ export default function CMSAvailability() {
     });
 
     console.log('✅ Merged Room Type Config:', merged);
-    console.log('📌 Using fallback?', Object.keys(merged).length === 0);
 
-    return Object.keys(merged).length > 0 ? merged : ROOM_TYPE_CONFIG;
+    // No fallback - return only real data from backend
+    return merged;
   }, [cmsAvailability.roomTypeConfig, cmsAvailability.availabilityData, cmsAvailability.isLoading, cmsAvailability.error]);
 
   // State
@@ -1279,6 +1292,29 @@ export default function CMSAvailability() {
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
   const [blockToEdit, setBlockToEdit] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [isBulkWizardOpen, setIsBulkWizardOpen] = useState(false);
+  const [quickActionLoading, setQuickActionLoading] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    variant: 'primary' | 'warning' | 'danger';
+    onConfirm: () => void;
+  } | null>(null);
+
+  // Bulk Update Wizard state
+  const [bulkWizardData, setBulkWizardData] = useState<{
+    startDate: string;
+    endDate: string;
+    selectedAction: 'close' | 'open' | 'minStay' | 'cta' | null;
+    minStayValue: number;
+  }>({
+    startDate: '',
+    endDate: '',
+    selectedAction: null,
+    minStayValue: 2
+  });
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
   // Initialize selected room types when room config loads
   useEffect(() => {
@@ -1461,35 +1497,53 @@ export default function CMSAvailability() {
     return () => clearTimeout(timer);
   }, [scrollToToday]);
 
-  // SSE Integration for real-time availability and restrictions updates
+// SSE Integration for real-time availability and restrictions updates
   useChannelManagerSSEEvents({
     onAvailabilityUpdated: () => {
-      console.log('[CMS Availability] 🔄 Refreshing availability data due to SSE event');
+      console.log('[CMS Availability] Refreshing availability data due to SSE event');
       cmsAvailability.fetchAvailabilityData();
       cmsAvailability.fetchRoomBlocks();
     },
     onRestrictionsUpdated: () => {
-      console.log('[CMS Availability] 🔒 Refreshing availability data due to restrictions update');
+      console.log('[CMS Availability] Refreshing availability data due to restrictions update');
       cmsAvailability.fetchAvailabilityData();
     },
     refetchData: () => {
-      console.log('[CMS Availability] 🔄 Refetching all data due to SSE event');
+      console.log('[CMS Availability] Refetching all data due to SSE event');
       cmsAvailability.fetchAvailabilityData();
       cmsAvailability.fetchRoomBlocks();
     },
   });
 
-  // Export availability data to CSV
+  // Export availability data to CSV with timeout protection
   const handleExport = useCallback(() => {
+    // Prevent multiple clicks
+    if (isExporting) return;
+
     setIsExporting(true);
     info('Exporting availability data...');
+
+    // Set a timeout to prevent infinite loading state
+    const exportTimeout = setTimeout(() => {
+      setIsExporting(false);
+      showError('Export timed out. Please try again.');
+    }, 30000); // 30 second timeout
 
     // Use setTimeout to allow UI to update before processing
     setTimeout(() => {
       try {
         // Check if we have data to export
         if (!dates.length || !selectedRoomTypes.length) {
-          showError('No data available to export');
+          clearTimeout(exportTimeout);
+          showError('No data available to export. Please ensure room types are selected.');
+          setIsExporting(false);
+          return;
+        }
+
+        // Check if availability data exists
+        if (!availabilityData || Object.keys(availabilityData).length === 0) {
+          clearTimeout(exportTimeout);
+          showError('No availability data loaded. Please wait for data to load and try again.');
           setIsExporting(false);
           return;
         }
@@ -1498,7 +1552,7 @@ export default function CMSAvailability() {
         const headers = ['Date', 'Room Type', 'Total Rooms', 'Sold', 'Reserved', 'Blocked', 'Remaining', 'Status', 'Base Rate', 'Min Stay', 'Max Stay', 'CTA', 'CTD'];
 
         // Build CSV rows using local availabilityData
-        const rows = [];
+        const rows: (string | number)[][] = [];
         dates.forEach(dateObj => {
           selectedRoomTypes.forEach(roomType => {
             const avail = availabilityData[dateObj.date]?.[roomType];
@@ -1523,7 +1577,8 @@ export default function CMSAvailability() {
         });
 
         if (rows.length === 0) {
-          showError('No availability data found to export');
+          clearTimeout(exportTimeout);
+          showError('No availability data found to export. The calendar may be empty.');
           setIsExporting(false);
           return;
         }
@@ -1546,15 +1601,17 @@ export default function CMSAvailability() {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
 
-        success('Availability data exported successfully');
+        clearTimeout(exportTimeout);
+        success(`Availability data exported successfully (${rows.length} records)`);
       } catch (err) {
+        clearTimeout(exportTimeout);
         console.error('Export failed:', err);
-        showError('Failed to export availability data');
+        showError(`Failed to export: ${err instanceof Error ? err.message : 'Unknown error'}`);
       } finally {
         setIsExporting(false);
       }
     }, 100);
-  }, [dates, selectedRoomTypes, availabilityData, info, success, showError]);
+  }, [dates, selectedRoomTypes, availabilityData, info, success, showError, isExporting]);
 
   // Handlers
   const handleCellClick = (date, roomType) => {
@@ -1621,6 +1678,246 @@ export default function CMSAvailability() {
     );
   };
 
+  // Quick Action: Close Weekends (apply CTA to both Saturday AND Sunday)
+  const handleCloseWeekends = useCallback(async () => {
+    setQuickActionLoading('closeWeekends');
+    try {
+      const weekendDates: string[] = [];
+      dates.forEach(dateObj => {
+        if (dateObj.isWeekend) {
+          weekendDates.push(dateObj.date);
+        }
+      });
+
+      if (weekendDates.length === 0) {
+        showError('No weekend dates found in the current date range');
+        return;
+      }
+
+      // Apply CTA (Closed to Arrival) to ALL weekend dates (both Saturday AND Sunday)
+      for (const roomType of selectedRoomTypes) {
+        for (const date of weekendDates) {
+          await cmsAvailability.updateRestrictions(date, roomType, { CTA: true });
+        }
+      }
+
+      await cmsAvailability.refetch();
+      success(`Weekend arrivals blocked for ${weekendDates.length} days across ${selectedRoomTypes.length} room types`);
+    } catch (err) {
+      console.error('Close weekends failed:', err);
+      showError('Failed to close weekends. Please try again.');
+    } finally {
+      setQuickActionLoading(null);
+      setConfirmDialog(null);
+    }
+  }, [dates, selectedRoomTypes, cmsAvailability, success, showError]);
+
+  // Quick Action: Apply Weekend Rate (+15%)
+  const handleApplyWeekendRate = useCallback(async () => {
+    setQuickActionLoading('weekendRate');
+    try {
+      const weekendDates: string[] = [];
+      dates.forEach(dateObj => {
+        if (dateObj.isWeekend) {
+          weekendDates.push(dateObj.date);
+        }
+      });
+
+      if (weekendDates.length === 0) {
+        showError('No weekend dates found in the current date range');
+        return;
+      }
+
+      // Apply 15% rate increase for weekends
+      for (const roomType of selectedRoomTypes) {
+        const config = roomTypeConfig[roomType];
+        if (config?.baseRate) {
+          const newRate = Math.round(config.baseRate * 1.15);
+          // Update rate for each weekend date
+          for (const date of weekendDates) {
+            await cmsAvailability.updateAvailability(date, roomType, { baseRate: newRate });
+          }
+        }
+      }
+
+      await cmsAvailability.refetch();
+      success(`Weekend rates increased by 15% for ${weekendDates.length} days`);
+    } catch (err) {
+      console.error('Apply weekend rate failed:', err);
+      showError('Failed to apply weekend rates. Please try again.');
+    } finally {
+      setQuickActionLoading(null);
+      setConfirmDialog(null);
+    }
+  }, [dates, selectedRoomTypes, roomTypeConfig, cmsAvailability, success, showError]);
+
+  // Quick Action: Set Minimum Stay (2 Nights)
+  const handleSetMinStay = useCallback(async () => {
+    setQuickActionLoading('minStay');
+    try {
+      // Apply min stay of 2 nights to ALL dates and room types
+      for (const roomType of selectedRoomTypes) {
+        for (const dateObj of dates) {
+          await cmsAvailability.updateRestrictions(dateObj.date, roomType, { minStay: 2 });
+        }
+      }
+
+      await cmsAvailability.refetch();
+      success(`Minimum 2-night stay applied to all ${selectedRoomTypes.length} room types for ${dates.length} days`);
+    } catch (err) {
+      console.error('Set min stay failed:', err);
+      showError('Failed to set minimum stay. Please try again.');
+    } finally {
+      setQuickActionLoading(null);
+      setConfirmDialog(null);
+    }
+  }, [dates, selectedRoomTypes, cmsAvailability, success, showError]);
+
+  // Quick Action: Stop Sell All Rooms
+  const handleStopSellAll = useCallback(async () => {
+    setQuickActionLoading('stopSell');
+    try {
+      // Close all room types for all dates
+      for (const roomType of selectedRoomTypes) {
+        for (const dateObj of dates) {
+          await cmsAvailability.closeRoomType(dateObj.date, roomType);
+        }
+      }
+
+      await cmsAvailability.refetch();
+      success(`Stop sell applied - all ${selectedRoomTypes.length} room types are now closed for ${dates.length} days`);
+    } catch (err) {
+      console.error('Stop sell failed:', err);
+      showError('Failed to stop sell. Please try again.');
+    } finally {
+      setQuickActionLoading(null);
+      setConfirmDialog(null);
+    }
+  }, [dates, selectedRoomTypes, cmsAvailability, success, showError]);
+
+  // Bulk Update Handler
+  const handleBulkUpdate = useCallback(async () => {
+    if (!bulkWizardData.selectedAction) {
+      showError('Please select an action to apply');
+      return;
+    }
+    if (!bulkWizardData.startDate || !bulkWizardData.endDate) {
+      showError('Please select start and end dates');
+      return;
+    }
+    if (selectedRoomTypes.length === 0) {
+      showError('Please select at least one room type');
+      return;
+    }
+
+    setIsBulkUpdating(true);
+    try {
+      // Generate dates in range
+      const start = new Date(bulkWizardData.startDate);
+      const end = new Date(bulkWizardData.endDate);
+      const datesToUpdate: string[] = [];
+
+      const current = new Date(start);
+      while (current <= end) {
+        const year = current.getFullYear();
+        const month = String(current.getMonth() + 1).padStart(2, '0');
+        const day = String(current.getDate()).padStart(2, '0');
+        datesToUpdate.push(`${year}-${month}-${day}`);
+        current.setDate(current.getDate() + 1);
+      }
+
+      // Apply action based on selection
+      for (const roomType of selectedRoomTypes) {
+        for (const date of datesToUpdate) {
+          switch (bulkWizardData.selectedAction) {
+            case 'close':
+              await cmsAvailability.closeRoomType(date, roomType);
+              break;
+            case 'open':
+              await cmsAvailability.openRoomType(date, roomType);
+              break;
+            case 'minStay':
+              await cmsAvailability.updateRestrictions(date, roomType, { minStay: bulkWizardData.minStayValue });
+              break;
+            case 'cta':
+              await cmsAvailability.updateRestrictions(date, roomType, { CTA: true });
+              break;
+          }
+        }
+      }
+
+      await cmsAvailability.refetch();
+      success(`Bulk update applied: ${bulkWizardData.selectedAction} for ${datesToUpdate.length} days across ${selectedRoomTypes.length} room types`);
+      setIsBulkWizardOpen(false);
+      setBulkWizardData({ startDate: '', endDate: '', selectedAction: null, minStayValue: 2 });
+    } catch (err) {
+      console.error('Bulk update failed:', err);
+      showError('Bulk update failed. Please try again.');
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  }, [bulkWizardData, selectedRoomTypes, cmsAvailability, success, showError]);
+
+  // Quick Actions configuration
+  const quickActions = [
+    {
+      id: 'closeWeekends',
+      icon: Ban,
+      title: 'Close Weekends',
+      description: 'Block weekend check-ins (Sat & Sun)',
+      accent: 'terra',
+      onClick: () => setConfirmDialog({
+        isOpen: true,
+        title: 'Close Weekends to Arrival',
+        message: 'This will prevent check-ins on ALL Saturdays AND Sundays for the next 30 days across all selected room types.',
+        variant: 'warning',
+        onConfirm: handleCloseWeekends
+      })
+    },
+    {
+      id: 'weekendRate',
+      icon: TrendingUp,
+      title: 'Weekend +15%',
+      description: 'Apply premium weekend pricing',
+      accent: 'ocean',
+      onClick: () => setConfirmDialog({
+        isOpen: true,
+        title: 'Apply Weekend Rate (+15%)',
+        message: 'This will increase rates by 15% for all Saturdays and Sundays in the next 30 days.',
+        variant: 'primary',
+        onConfirm: handleApplyWeekendRate
+      })
+    },
+    {
+      id: 'minStay',
+      icon: Clock,
+      title: 'Min 2-Night',
+      description: 'Set minimum stay restriction',
+      accent: 'gold',
+      onClick: () => setConfirmDialog({
+        isOpen: true,
+        title: 'Set Minimum Stay (2 Nights)',
+        message: 'This will require a minimum 2-night stay for all room types across all dates.',
+        variant: 'primary',
+        onConfirm: handleSetMinStay
+      })
+    },
+    {
+      id: 'stopSell',
+      icon: AlertTriangle,
+      title: 'Stop Sell All',
+      description: 'Block ALL bookings immediately',
+      accent: 'rose',
+      onClick: () => setConfirmDialog({
+        isOpen: true,
+        title: 'Stop Sell All Rooms',
+        message: 'WARNING: This will close ALL room types and prevent ANY new bookings. This is a drastic action.',
+        variant: 'danger',
+        onConfirm: handleStopSellAll
+      })
+    }
+  ];
+
   return (
     <div className={cn(
       'min-h-screen transition-colors duration-500',
@@ -1634,97 +1931,135 @@ export default function CMSAvailability() {
           : 'bg-gradient-to-br from-terra-50/50 via-transparent to-ocean-50/30'
       )} />
 
-      <div className="relative max-w-[1600px] mx-auto px-6 lg:px-10 py-8 space-y-8">
+      <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6 lg:space-y-8">
         {/* ============================================ */}
         {/* HEADER SECTION */}
         {/* ============================================ */}
-        <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
+        <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 sm:gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="space-y-1 sm:space-y-2">
+            <div className="flex items-center gap-2 sm:gap-3">
               <div className={cn(
-                'w-10 h-10 rounded-xl flex items-center justify-center',
+                'w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center',
                 isDark ? 'bg-terra-500/20' : 'bg-terra-100'
               )}>
-                <Calendar className={cn('w-5 h-5', isDark ? 'text-terra-400' : 'text-terra-600')} />
+                <Calendar className={cn('w-4 h-4 sm:w-5 sm:h-5', isDark ? 'text-terra-400' : 'text-terra-600')} />
               </div>
               <span className={cn(
-                'text-xs font-semibold uppercase tracking-[0.2em]',
+                'text-[10px] sm:text-xs font-semibold uppercase tracking-[0.2em]',
                 isDark ? 'text-neutral-500' : 'text-neutral-400'
               )}>
                 Central Management System
               </span>
             </div>
             <h1 className={cn(
-              'text-4xl lg:text-5xl font-sans font-light tracking-tight',
+              'text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-sans font-light tracking-tight',
               isDark ? 'text-white' : 'text-neutral-900'
             )}>
               Availability Manager
             </h1>
             <p className={cn(
-              'text-lg max-w-xl',
+              'text-sm sm:text-base lg:text-lg max-w-xl',
               isDark ? 'text-neutral-400' : 'text-neutral-500'
             )}>
-              Orchestrate inventory, restrictions, and rates with precision across all channels.
+              <span className="hidden sm:inline">Orchestrate inventory, restrictions, and rates with precision across all channels.</span>
+              <span className="sm:hidden">Manage inventory & rates across channels.</span>
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <button
               onClick={handleExport}
               disabled={isExporting}
               className={cn(
-                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
+                'flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all',
                 isDark
-                  ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-                  : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50',
-                isExporting && 'opacity-50 cursor-not-allowed'
+                  ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700 disabled:opacity-50'
+                  : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50 disabled:opacity-50'
               )}
             >
-              {isExporting ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <Download className="w-4 h-4" />
-              )}
-              {isExporting ? 'Exporting...' : 'Export'}
+              <Download className={cn('w-3.5 h-3.5 sm:w-4 sm:h-4', isExporting && 'animate-pulse')} />
+              <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export'}</span>
             </button>
             <button className={cn(
-              'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
+              'flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all',
               isDark
                 ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
                 : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50'
             )}>
-              <Upload className="w-4 h-4" />
-              Import
+              <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Import</span>
             </button>
             <button
               onClick={() => setIsBlockModalOpen(true)}
               className={cn(
-                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
+                'flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all',
                 isDark
                   ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
                   : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50'
               )}
             >
-              <Ban className="w-4 h-4" />
-              Block Rooms
+              <Ban className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Block Rooms</span>
             </button>
             <button
               onClick={() => {
                 cmsAvailability.resetAvailability();
                 success('Synced with all channels');
               }}
-              className="flex items-center gap-2 px-5 py-2.5 bg-terra-500 hover:bg-terra-600 text-white rounded-xl font-medium shadow-lg shadow-terra-500/20 transition-all duration-300 hover:scale-[1.02]"
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-terra-500 hover:bg-terra-600 text-white rounded-xl text-xs sm:text-sm font-medium shadow-lg shadow-terra-500/20 transition-all duration-300 hover:scale-[1.02]"
             >
-              <RefreshCw className="w-4 h-4" />
-              Sync Channels
+              <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">Sync</span>
+              <span className="hidden sm:inline">Channels</span>
             </button>
           </div>
         </header>
 
         {/* ============================================ */}
+        {/* LOADING / ERROR STATES */}
+        {/* ============================================ */}
+        {cmsAvailability.isLoading && (
+          <div className={cn(
+            'p-8 rounded-xl text-center',
+            isDark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white border border-neutral-200'
+          )}>
+            <RefreshCw className={cn('w-8 h-8 mx-auto mb-4 animate-spin', isDark ? 'text-terra-400' : 'text-terra-600')} />
+            <p className={cn('text-lg font-medium', isDark ? 'text-neutral-300' : 'text-neutral-700')}>
+              Loading availability data from database...
+            </p>
+          </div>
+        )}
+
+        {cmsAvailability.error && !cmsAvailability.isLoading && (
+          <div className={cn(
+            'p-8 rounded-xl border-2',
+            isDark ? 'bg-rose-950/30 border-rose-800 text-rose-300' : 'bg-rose-50 border-rose-200 text-rose-700'
+          )}>
+            <div className="flex items-start gap-4">
+              <AlertTriangle className="w-8 h-8 flex-shrink-0" />
+              <div>
+                <h3 className="text-lg font-bold mb-2">Database Connection Error</h3>
+                <p className="mb-4">{cmsAvailability.error}</p>
+                <button
+                  onClick={() => cmsAvailability.refetch()}
+                  className={cn(
+                    'px-4 py-2 rounded-lg font-medium transition-all',
+                    isDark ? 'bg-rose-800 hover:bg-rose-700 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white'
+                  )}
+                >
+                  <RefreshCw className="w-4 h-4 inline mr-2" />
+                  Retry Connection
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ============================================ */}
         {/* KPI CARDS */}
         {/* ============================================ */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        {!cmsAvailability.isLoading && !cmsAvailability.error && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
           <KPICard
             title="Occupancy Rate"
             value={stats.occupancyRate}
@@ -1733,8 +2068,6 @@ export default function CMSAvailability() {
             icon={Percent}
             trend={{ value: stats.occupancyRate >= 80 ? 'High' : stats.occupancyRate >= 60 ? 'Medium' : 'Low', isPositive: stats.occupancyRate >= 60 }}
             accentColor="terra"
-            delay={0}
-            isDark={isDark}
           />
           <KPICard
             title="Available Rooms"
@@ -1742,8 +2075,6 @@ export default function CMSAvailability() {
             subtitle={`of ${stats.totalRooms} total`}
             icon={Home}
             accentColor="sage"
-            delay={1}
-            isDark={isDark}
           />
           <KPICard
             title="Sold Out Days"
@@ -1751,8 +2082,6 @@ export default function CMSAvailability() {
             subtitle="Next 30 days"
             icon={CalendarX}
             accentColor={stats.closedDays > 10 ? 'rose' : 'gold'}
-            delay={2}
-            isDark={isDark}
           />
           <KPICard
             title="High Demand"
@@ -1760,8 +2089,6 @@ export default function CMSAvailability() {
             subtitle="Days at 80%+ (30d)"
             icon={TrendingUp}
             accentColor="ocean"
-            delay={3}
-            isDark={isDark}
           />
           <KPICard
             title="Restrictions"
@@ -1769,52 +2096,100 @@ export default function CMSAvailability() {
             subtitle="Active CTA/CTD (30d)"
             icon={Lock}
             accentColor="gold"
-            delay={4}
-            isDark={isDark}
           />
         </div>
+        )}
 
         {/* ============================================ */}
         {/* QUICK STATS STRIP */}
         {/* ============================================ */}
+        {!cmsAvailability.isLoading && !cmsAvailability.error && (
         <QuickStatsStrip stats={stats} todayStats={todayActivityStats} isDark={isDark} />
+        )}
 
         {/* ============================================ */}
         {/* TABS & CONTROLS */}
         {/* ============================================ */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <EditorialTabs activeTab={activeTab} onTabChange={setActiveTab} isDark={isDark} />
+        {!cmsAvailability.isLoading && !cmsAvailability.error && (
+        <div className="flex flex-col gap-3 sm:gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+            <EditorialTabs activeTab={activeTab} onTabChange={setActiveTab} isDark={isDark} />
 
-          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto">
+              <div className="hidden md:block">
+                <RoomTypeFilterPills
+                  selectedRoomTypes={selectedRoomTypes}
+                  onToggle={toggleRoomType}
+                  isDark={isDark}
+                  roomTypeConfig={roomTypeConfig}
+                />
+              </div>
+
+              <button
+                onClick={() => setShowPickup(!showPickup)}
+                className={cn(
+                  'flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-medium transition-all duration-200 whitespace-nowrap',
+                  showPickup
+                    ? isDark ? 'bg-terra-500/20 text-terra-400' : 'bg-terra-100 text-terra-700'
+                    : isDark ? 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700' : 'bg-white text-neutral-500 border border-neutral-200 hover:bg-neutral-50'
+                )}
+              >
+                <Activity className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                Pickup
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Room Type Filter Pills */}
+          <div className="md:hidden">
             <RoomTypeFilterPills
               selectedRoomTypes={selectedRoomTypes}
               onToggle={toggleRoomType}
               isDark={isDark}
               roomTypeConfig={roomTypeConfig}
             />
-
-            <button
-              onClick={() => setShowPickup(!showPickup)}
-              className={cn(
-                'flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200',
-                showPickup
-                  ? isDark ? 'bg-terra-500/20 text-terra-400' : 'bg-terra-100 text-terra-700'
-                  : isDark ? 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700' : 'bg-white text-neutral-500 border border-neutral-200 hover:bg-neutral-50'
-              )}
-            >
-              <Activity className="w-3.5 h-3.5" />
-              Pickup
-            </button>
           </div>
         </div>
+        )}
 
         {/* ============================================ */}
         {/* MAIN CONTENT AREA */}
         {/* ============================================ */}
-        {activeTab === 'calendar' && (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {!cmsAvailability.isLoading && !cmsAvailability.error && activeTab === 'calendar' && selectedRoomTypes.length === 0 && (
+          <div className={cn(
+            'p-12 rounded-2xl text-center',
+            isDark ? 'bg-neutral-900/80 border border-neutral-800' : 'bg-white border border-neutral-200'
+          )}>
+            <div className={cn(
+              'w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center',
+              isDark ? 'bg-neutral-800' : 'bg-neutral-100'
+            )}>
+              <Bed className={cn('w-8 h-8', isDark ? 'text-neutral-600' : 'text-neutral-400')} />
+            </div>
+            <h3 className={cn('text-xl font-semibold mb-2', isDark ? 'text-white' : 'text-neutral-900')}>
+              No Room Types Found
+            </h3>
+            <p className={cn('text-sm mb-6 max-w-md mx-auto', isDark ? 'text-neutral-400' : 'text-neutral-500')}>
+              The availability calendar requires room types to be set up in your database.
+              Please add room types through the Rooms management page first.
+            </p>
+            <button
+              onClick={() => cmsAvailability.refetch()}
+              className={cn(
+                'px-6 py-3 rounded-xl font-medium transition-all inline-flex items-center gap-2',
+                isDark ? 'bg-terra-500/20 text-terra-400 hover:bg-terra-500/30' : 'bg-terra-100 text-terra-700 hover:bg-terra-200'
+              )}
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh Data
+            </button>
+          </div>
+        )}
+
+        {!cmsAvailability.isLoading && !cmsAvailability.error && activeTab === 'calendar' && selectedRoomTypes.length > 0 && (
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
             {/* Calendar Grid - 3 columns */}
-            <div className="lg:col-span-3 space-y-4">
+            <div className="xl:col-span-3 space-y-4">
               {/* Quick Actions Bar */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -2060,6 +2435,79 @@ export default function CMSAvailability() {
 
             {/* Sidebar Widgets - 1 column */}
             <div className="space-y-6">
+              {/* Quick Actions Panel */}
+              <div className={cn(
+                'rounded-2xl p-5 transition-all duration-300',
+                isDark
+                  ? 'bg-neutral-900/80 border border-neutral-800'
+                  : 'bg-white border border-neutral-200/60'
+              )}>
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className={cn('w-4 h-4', isDark ? 'text-terra-400' : 'text-terra-600')} />
+                  <span className={cn(
+                    'text-xs font-semibold uppercase tracking-wider',
+                    isDark ? 'text-neutral-400' : 'text-neutral-500'
+                  )}>
+                    Quick Actions
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {quickActions.map((action) => (
+                    <button
+                      key={action.id}
+                      onClick={action.onClick}
+                      disabled={quickActionLoading !== null}
+                      className={cn(
+                        'p-3 rounded-xl text-left transition-all duration-200',
+                        isDark
+                          ? 'bg-neutral-800/50 hover:bg-neutral-800 border border-neutral-700/50'
+                          : 'bg-neutral-50 hover:bg-neutral-100 border border-neutral-200',
+                        quickActionLoading === action.id && 'opacity-50 cursor-wait',
+                        quickActionLoading !== null && quickActionLoading !== action.id && 'opacity-50 cursor-not-allowed'
+                      )}
+                    >
+                      <div className={cn(
+                        'w-8 h-8 rounded-lg flex items-center justify-center mb-2',
+                        action.accent === 'terra' && (isDark ? 'bg-terra-500/20' : 'bg-terra-100'),
+                        action.accent === 'ocean' && (isDark ? 'bg-ocean-500/20' : 'bg-ocean-100'),
+                        action.accent === 'gold' && (isDark ? 'bg-gold-500/20' : 'bg-gold-100'),
+                        action.accent === 'rose' && (isDark ? 'bg-rose-500/20' : 'bg-rose-100')
+                      )}>
+                        {quickActionLoading === action.id ? (
+                          <RefreshCw className={cn(
+                            'w-4 h-4 animate-spin',
+                            action.accent === 'terra' && 'text-terra-500',
+                            action.accent === 'ocean' && 'text-ocean-500',
+                            action.accent === 'gold' && 'text-gold-500',
+                            action.accent === 'rose' && 'text-rose-500'
+                          )} />
+                        ) : (
+                          <action.icon className={cn(
+                            'w-4 h-4',
+                            action.accent === 'terra' && 'text-terra-500',
+                            action.accent === 'ocean' && 'text-ocean-500',
+                            action.accent === 'gold' && 'text-gold-500',
+                            action.accent === 'rose' && 'text-rose-500'
+                          )} />
+                        )}
+                      </div>
+                      <p className={cn(
+                        'text-xs font-semibold',
+                        isDark ? 'text-white' : 'text-neutral-900'
+                      )}>
+                        {action.title}
+                      </p>
+                      <p className={cn(
+                        'text-[10px]',
+                        isDark ? 'text-neutral-500' : 'text-neutral-400'
+                      )}>
+                        {action.description}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <OccupancyHeatmap
                 dates={dates}
                 availabilityData={availabilityData}
@@ -2094,11 +2542,11 @@ export default function CMSAvailability() {
           </div>
         )}
 
-        {activeTab === 'inventory' && (
+        {!cmsAvailability.isLoading && !cmsAvailability.error && activeTab === 'inventory' && (
           <RoomInventoryGrid rooms={rooms} isDark={isDark} />
         )}
 
-        {activeTab === 'rates' && (
+        {!cmsAvailability.isLoading && !cmsAvailability.error && activeTab === 'rates' && (
           <div className={cn(
             'rounded-2xl p-12 text-center',
             isDark ? 'bg-neutral-900/80 border border-neutral-800' : 'bg-white border border-neutral-200/60'
@@ -2195,6 +2643,277 @@ export default function CMSAvailability() {
         existingBlock={blockToEdit}
         roomTypes={cmsAvailability.roomTypes?.map(rt => ({ id: rt.id, name: rt.name })) || []}
       />
+
+      {/* Confirmation Dialog for Quick Actions */}
+      {confirmDialog?.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setConfirmDialog(null)}
+          />
+          <div className={cn(
+            'relative z-10 w-full max-w-md mx-4 rounded-2xl p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200',
+            isDark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white'
+          )}>
+            <div className={cn(
+              'w-12 h-12 rounded-xl flex items-center justify-center mb-4',
+              confirmDialog.variant === 'danger' && (isDark ? 'bg-rose-500/20' : 'bg-rose-100'),
+              confirmDialog.variant === 'warning' && (isDark ? 'bg-gold-500/20' : 'bg-gold-100'),
+              confirmDialog.variant === 'primary' && (isDark ? 'bg-ocean-500/20' : 'bg-ocean-100')
+            )}>
+              <AlertTriangle className={cn(
+                'w-6 h-6',
+                confirmDialog.variant === 'danger' && 'text-rose-500',
+                confirmDialog.variant === 'warning' && 'text-gold-500',
+                confirmDialog.variant === 'primary' && 'text-ocean-500'
+              )} />
+            </div>
+            <h3 className={cn(
+              'text-lg font-semibold mb-2',
+              isDark ? 'text-white' : 'text-neutral-900'
+            )}>
+              {confirmDialog.title}
+            </h3>
+            <p className={cn(
+              'text-sm mb-6',
+              isDark ? 'text-neutral-400' : 'text-neutral-600'
+            )}>
+              {confirmDialog.message}
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setConfirmDialog(null)}
+                className={cn(
+                  'flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors',
+                  isDark
+                    ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                )}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDialog.onConfirm}
+                disabled={quickActionLoading !== null}
+                className={cn(
+                  'flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-colors flex items-center justify-center gap-2',
+                  confirmDialog.variant === 'danger' && 'bg-rose-500 hover:bg-rose-600',
+                  confirmDialog.variant === 'warning' && 'bg-gold-500 hover:bg-gold-600',
+                  confirmDialog.variant === 'primary' && 'bg-ocean-500 hover:bg-ocean-600',
+                  quickActionLoading !== null && 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                {quickActionLoading !== null ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Applying...
+                  </>
+                ) : (
+                  'Apply'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Update Wizard Modal */}
+      <Drawer
+        isOpen={isBulkWizardOpen}
+        onClose={() => {
+          setIsBulkWizardOpen(false);
+          setBulkWizardData({ startDate: '', endDate: '', selectedAction: null, minStayValue: 2 });
+        }}
+        title="Bulk Update Wizard"
+        size="lg"
+      >
+        <div className="p-6 space-y-6">
+          <p className={cn(
+            'text-sm',
+            isDark ? 'text-neutral-400' : 'text-neutral-600'
+          )}>
+            Use bulk update to modify availability, rates, or restrictions for multiple dates and room types at once.
+          </p>
+
+          {/* Date Range Selection */}
+          <div className="space-y-3">
+            <label className={cn(
+              'text-xs font-semibold uppercase tracking-wider',
+              isDark ? 'text-neutral-500' : 'text-neutral-400'
+            )}>
+              Date Range
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={cn('text-xs mb-1 block', isDark ? 'text-neutral-400' : 'text-neutral-500')}>
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  value={bulkWizardData.startDate || dates[0]?.date || ''}
+                  onChange={(e) => setBulkWizardData(prev => ({ ...prev, startDate: e.target.value }))}
+                  className={cn(
+                    'w-full px-3 py-2 rounded-lg text-sm',
+                    isDark
+                      ? 'bg-neutral-800 border-neutral-700 text-white'
+                      : 'bg-neutral-50 border-neutral-200 text-neutral-900',
+                    'border focus:ring-2 focus:ring-terra-500/50 focus:border-terra-500'
+                  )}
+                />
+              </div>
+              <div>
+                <label className={cn('text-xs mb-1 block', isDark ? 'text-neutral-400' : 'text-neutral-500')}>
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  value={bulkWizardData.endDate || dates[dates.length - 1]?.date || ''}
+                  onChange={(e) => setBulkWizardData(prev => ({ ...prev, endDate: e.target.value }))}
+                  className={cn(
+                    'w-full px-3 py-2 rounded-lg text-sm',
+                    isDark
+                      ? 'bg-neutral-800 border-neutral-700 text-white'
+                      : 'bg-neutral-50 border-neutral-200 text-neutral-900',
+                    'border focus:ring-2 focus:ring-terra-500/50 focus:border-terra-500'
+                  )}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Room Types Selection */}
+          <div className="space-y-3">
+            <label className={cn(
+              'text-xs font-semibold uppercase tracking-wider',
+              isDark ? 'text-neutral-500' : 'text-neutral-400'
+            )}>
+              Room Types ({selectedRoomTypes.length} selected)
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {Object.keys(roomTypeConfig).map(roomType => (
+                <button
+                  key={roomType}
+                  onClick={() => toggleRoomType(roomType)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                    selectedRoomTypes.includes(roomType)
+                      ? isDark ? 'bg-terra-500/20 text-terra-400 border border-terra-500/30' : 'bg-terra-100 text-terra-700 border border-terra-200'
+                      : isDark ? 'bg-neutral-800 text-neutral-400 border border-neutral-700' : 'bg-neutral-100 text-neutral-600 border border-neutral-200'
+                  )}
+                >
+                  {roomTypeConfig[roomType]?.code || roomType}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Action Selection */}
+          <div className="space-y-3">
+            <label className={cn(
+              'text-xs font-semibold uppercase tracking-wider',
+              isDark ? 'text-neutral-500' : 'text-neutral-400'
+            )}>
+              Action
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { id: 'close' as const, label: 'Close Rooms', icon: Ban, color: 'rose' },
+                { id: 'open' as const, label: 'Open Rooms', icon: Unlock, color: 'sage' },
+                { id: 'minStay' as const, label: 'Set Min Stay', icon: Clock, color: 'gold' },
+                { id: 'cta' as const, label: 'Close to Arrival', icon: LogIn, color: 'ocean' },
+              ].map(action => (
+                <button
+                  key={action.id}
+                  onClick={() => setBulkWizardData(prev => ({ ...prev, selectedAction: action.id }))}
+                  className={cn(
+                    'p-4 rounded-xl text-left transition-all duration-200 border',
+                    bulkWizardData.selectedAction === action.id
+                      ? isDark
+                        ? 'bg-terra-500/20 border-terra-500/50 ring-2 ring-terra-500/30'
+                        : 'bg-terra-50 border-terra-300 ring-2 ring-terra-200'
+                      : isDark
+                        ? 'bg-neutral-800/50 hover:bg-neutral-800 border-neutral-700/50'
+                        : 'bg-white hover:bg-neutral-50 border-neutral-200'
+                  )}
+                >
+                  <div className={cn(
+                    'w-8 h-8 rounded-lg flex items-center justify-center mb-2',
+                    action.color === 'rose' && (isDark ? 'bg-rose-500/20' : 'bg-rose-100'),
+                    action.color === 'sage' && (isDark ? 'bg-sage-500/20' : 'bg-sage-100'),
+                    action.color === 'gold' && (isDark ? 'bg-gold-500/20' : 'bg-gold-100'),
+                    action.color === 'ocean' && (isDark ? 'bg-ocean-500/20' : 'bg-ocean-100')
+                  )}>
+                    <action.icon className={cn(
+                      'w-4 h-4',
+                      action.color === 'rose' && 'text-rose-500',
+                      action.color === 'sage' && 'text-sage-500',
+                      action.color === 'gold' && 'text-gold-500',
+                      action.color === 'ocean' && 'text-ocean-500'
+                    )} />
+                  </div>
+                  <p className={cn(
+                    'text-sm font-semibold',
+                    isDark ? 'text-white' : 'text-neutral-900'
+                  )}>
+                    {action.label}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Min Stay Value Input (only shown when minStay action selected) */}
+          {bulkWizardData.selectedAction === 'minStay' && (
+            <div className="space-y-3">
+              <label className={cn(
+                'text-xs font-semibold uppercase tracking-wider',
+                isDark ? 'text-neutral-500' : 'text-neutral-400'
+              )}>
+                Minimum Nights
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="30"
+                value={bulkWizardData.minStayValue}
+                onChange={(e) => setBulkWizardData(prev => ({ ...prev, minStayValue: parseInt(e.target.value) || 2 }))}
+                className={cn(
+                  'w-full px-3 py-2 rounded-lg text-sm',
+                  isDark
+                    ? 'bg-neutral-800 border-neutral-700 text-white'
+                    : 'bg-neutral-50 border-neutral-200 text-neutral-900',
+                  'border focus:ring-2 focus:ring-terra-500/50 focus:border-terra-500'
+                )}
+              />
+            </div>
+          )}
+
+          {/* Apply Button */}
+          <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800">
+            <button
+              onClick={handleBulkUpdate}
+              disabled={isBulkUpdating || !bulkWizardData.selectedAction}
+              className={cn(
+                'w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200',
+                'bg-terra-500 text-white hover:bg-terra-600',
+                (isBulkUpdating || !bulkWizardData.selectedAction) && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              {isBulkUpdating ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Applying...
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  Apply Bulk Update
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </Drawer>
     </div>
   );
 }

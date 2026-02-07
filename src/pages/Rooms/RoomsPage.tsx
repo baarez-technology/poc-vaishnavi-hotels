@@ -22,7 +22,6 @@ import { formatCurrency } from '@/utils/helpers/format';
 import type { Room } from '@/api/types/booking.types';
 import { RoomsSearchWidget, SearchData } from '@/components/rooms/RoomsSearchWidget';
 import { roomTypesService } from '@/api/services/roomTypes.service';
-import { useCBS } from '@/context/CBSContext';
 
 type ViewMode = 'grid' | 'list';
 type SortOption = 'price-low' | 'price-high' | 'rating' | 'popularity';
@@ -34,53 +33,10 @@ export const RoomsPage = () => {
   const filterButtonRef = useRef<HTMLButtonElement>(null);
   const [searchParams] = useSearchParams();
 
-  // Get CBS context for dynamic rates from availability
-  const { availability } = useCBS();
-
-  // Rooms state - loaded from API
+  // Rooms state - loaded from API (prices come directly from database)
   const [rooms, setRooms] = useState<Room[]>(mockRooms);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Mapping from old room types to CBS room type names
-  const TYPE_TO_CBS_NAME: Record<string, string> = {
-    'Standard': 'Minimalist Studio',
-    'Premium': 'Coastal Retreat',
-    'Deluxe': 'Urban Oasis',
-    'Suite': 'Pacific Suite'
-  };
-
-  // Helper function to get current rate from CBS availability
-  const getCBSRate = (roomName: string): number | null => {
-    if (!availability || !roomName) return null;
-
-    // Get today's date in YYYY-MM-DD format
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    const todayStr = `${year}-${month}-${day}`;
-
-    // Check if we have availability data for today
-    if (availability[todayStr] && availability[todayStr][roomName]) {
-      return availability[todayStr][roomName].rate;
-    }
-    return null;
-  };
-
-  // Apply CBS rates to rooms
-  const applyDynamicRates = (roomsList: Room[]): Room[] => {
-    return roomsList.map(room => {
-      // Try room.name first, then map room.type to CBS name
-      const cbsName = room.name || TYPE_TO_CBS_NAME[(room as any).type] || '';
-      const cbsRate = getCBSRate(cbsName);
-      if (cbsRate !== null && cbsRate > 0) {
-        console.log(`[RoomsPage] Applying CBS rate for ${cbsName}: $${cbsRate}`);
-        return { ...room, price: cbsRate };
-      }
-      return room;
-    });
-  };
 
   // View and filter state
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -95,7 +51,7 @@ export const RoomsPage = () => {
     children: parseInt(searchParams.get('children') || '0'),
   });
 
-  // Fetch rooms from API
+  // Fetch rooms from API - prices come directly from the database (RoomType.base_price)
   useEffect(() => {
     const fetchRooms = async () => {
       try {
@@ -112,29 +68,26 @@ export const RoomsPage = () => {
         console.log('[RoomsPage] API returned:', apiRooms);
         console.log('[RoomsPage] Is array:', Array.isArray(apiRooms), 'Length:', apiRooms?.length);
         if (Array.isArray(apiRooms) && apiRooms.length > 0) {
-          console.log('[RoomsPage] Using API data, first room slug:', apiRooms[0]?.slug);
-          // Apply dynamic CBS rates from availability
-          const roomsWithDynamicRates = applyDynamicRates(apiRooms);
-          setRooms(roomsWithDynamicRates);
+          console.log('[RoomsPage] Using API data, first room slug:', apiRooms[0]?.slug, 'price:', apiRooms[0]?.price);
+          // Use API prices directly (they come from RoomType.base_price in the database)
+          setRooms(apiRooms);
         } else {
           console.log('[RoomsPage] Falling back to mock data');
-          // Fallback to mock data if API returns empty - also apply CBS rates
-          const roomsWithDynamicRates = applyDynamicRates(mockRooms);
-          setRooms(roomsWithDynamicRates);
+          // Fallback to mock data if API returns empty
+          setRooms(mockRooms);
         }
       } catch (err) {
         console.error('Failed to fetch rooms from API:', err);
         setError('Failed to load rooms');
-        // Keep using mock data as fallback - apply CBS rates
-        const roomsWithDynamicRates = applyDynamicRates(mockRooms);
-        setRooms(roomsWithDynamicRates);
+        // Keep using mock data as fallback
+        setRooms(mockRooms);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchRooms();
-  }, [searchData.checkIn, searchData.checkOut, searchData.adults, searchData.children, availability]);
+  }, [searchData.checkIn, searchData.checkOut, searchData.adults, searchData.children]);
 
   // Filter state
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
@@ -615,128 +568,128 @@ export const RoomsPage = () => {
             )}
             </div>
 
-        {/* Pagination Info */}
-        {filteredAndSortedRooms.length > 0 && (
-          <div className="mb-6 text-sm text-neutral-600">
-            Showing <span className="font-semibold text-neutral-900">{startIndex + 1}-{Math.min(endIndex, filteredAndSortedRooms.length)}</span> of <span className="font-semibold text-neutral-900">{filteredAndSortedRooms.length}</span> suites
-          </div>
-        )}
-
-        {/* Room Grid/List */}
-        <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6' : 'space-y-4 sm:space-y-6'}>
-          {paginatedRooms.map((room) => (
-            <RoomCard
-              key={room.id}
-              room={room}
-              viewMode={viewMode}
-              searchData={searchData}
-              nights={nights}
-              navigate={navigate}
-              getCategoryBadgeColor={getCategoryBadgeColor}
-            />
-          ))}
-        </div>
-
-        {/* No Results */}
-        {filteredAndSortedRooms.length === 0 && (
-          <div className="text-center py-24 px-6">
-            <p className="text-neutral-600 text-xl mb-8 font-medium">
-              No suites found matching your criteria
-            </p>
-            <Button variant="primary" onClick={clearFilters} className="font-semibold px-8 py-4">
-              Clear Filters
-            </Button>
-          </div>
-        )}
-
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-6 rounded-xl border border-neutral-200">
-            {/* Page info */}
-            <div className="text-sm text-neutral-600">
-              Page <span className="font-semibold text-neutral-900">{currentPage}</span> of <span className="font-semibold text-neutral-900">{totalPages}</span>
-            </div>
-
-            {/* Pagination buttons */}
-            <div className="flex items-center gap-1.5">
-              {/* First page */}
-              <button
-                onClick={() => handlePageChange(1)}
-                disabled={currentPage === 1}
-                className="p-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                aria-label="First page"
-              >
-                <ChevronsLeft size={16} className="text-neutral-600" />
-              </button>
-
-              {/* Previous page */}
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="p-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                aria-label="Previous page"
-              >
-                <ChevronLeft size={16} className="text-neutral-600" />
-              </button>
-
-              {/* Page numbers */}
-              <div className="hidden sm:flex items-center gap-1 mx-1">
-                {getPageNumbers().map((page, index) => (
-                  page === '...' ? (
-                    <span key={`ellipsis-${index}`} className="px-2 text-neutral-400">
-                      ···
-                    </span>
-                  ) : (
-                    <button
-                      key={page}
-                      onClick={() => handlePageChange(page as number)}
-                      className={`min-w-[36px] px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                        currentPage === page
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-white text-neutral-700 hover:bg-neutral-50 border border-neutral-200'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  )
-                ))}
+            {/* Pagination Info */}
+            {filteredAndSortedRooms.length > 0 && (
+              <div className="mb-6 text-sm text-neutral-600">
+                Showing <span className="font-semibold text-neutral-900">{startIndex + 1}-{Math.min(endIndex, filteredAndSortedRooms.length)}</span> of <span className="font-semibold text-neutral-900">{filteredAndSortedRooms.length}</span> suites
               </div>
+            )}
 
-              {/* Next page */}
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="p-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                aria-label="Next page"
-              >
-                <ChevronRight size={16} className="text-neutral-600" />
-              </button>
-
-              {/* Last page */}
-              <button
-                onClick={() => handlePageChange(totalPages)}
-                disabled={currentPage === totalPages}
-                className="p-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                aria-label="Last page"
-              >
-                <ChevronsRight size={16} className="text-neutral-600" />
-              </button>
+            {/* Room Grid/List */}
+            <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6' : 'space-y-4 sm:space-y-6'}>
+              {paginatedRooms.map((room) => (
+                <RoomCard
+                  key={room.id}
+                  room={room}
+                  viewMode={viewMode}
+                  searchData={searchData}
+                  nights={nights}
+                  navigate={navigate}
+                  getCategoryBadgeColor={getCategoryBadgeColor}
+                />
+              ))}
             </div>
 
-            {/* Results info */}
-            <div className="hidden sm:block text-sm text-neutral-600">
-              <span className="font-semibold text-neutral-900">
-                {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredAndSortedRooms.length)}
-              </span>
-              <span className="font-medium"> of </span>
-              <span className="font-semibold text-neutral-900">{filteredAndSortedRooms.length}</span>
-              <span className="font-medium"> suites</span>
-            </div>
+            {/* No Results */}
+            {filteredAndSortedRooms.length === 0 && (
+              <div className="text-center py-24 px-6">
+                <p className="text-neutral-600 text-xl mb-8 font-medium">
+                  No suites found matching your criteria
+                </p>
+                <Button variant="primary" onClick={clearFilters} className="font-semibold px-8 py-4">
+                  Clear Filters
+                </Button>
+              </div>
+            )}
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-xl border border-neutral-200">
+                {/* Page info */}
+                <div className="text-sm text-neutral-600">
+                  Page <span className="font-semibold text-neutral-900">{currentPage}</span> of <span className="font-semibold text-neutral-900">{totalPages}</span>
+                </div>
+
+                {/* Pagination buttons */}
+                <div className="flex items-center gap-1.5">
+                  {/* First page */}
+                  <button
+                    onClick={() => handlePageChange(1)}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    aria-label="First page"
+                  >
+                    <ChevronsLeft size={16} className="text-neutral-600" />
+                  </button>
+
+                  {/* Previous page */}
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft size={16} className="text-neutral-600" />
+                  </button>
+
+                  {/* Page numbers */}
+                  <div className="hidden sm:flex items-center gap-1 mx-1">
+                    {getPageNumbers().map((page, index) => (
+                      page === '...' ? (
+                        <span key={`ellipsis-${index}`} className="px-2 text-neutral-400">
+                          ···
+                        </span>
+                      ) : (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page as number)}
+                          className={`min-w-[36px] px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                            currentPage === page
+                              ? 'bg-primary-600 text-white'
+                              : 'bg-white text-neutral-700 hover:bg-neutral-50 border border-neutral-200'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      )
+                    ))}
+                  </div>
+
+                  {/* Next page */}
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight size={16} className="text-neutral-600" />
+                  </button>
+
+                  {/* Last page */}
+                  <button
+                    onClick={() => handlePageChange(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    aria-label="Last page"
+                  >
+                    <ChevronsRight size={16} className="text-neutral-600" />
+                  </button>
+                </div>
+
+                {/* Results info */}
+                <div className="hidden sm:block text-sm text-neutral-600">
+                  <span className="font-semibold text-neutral-900">
+                    {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredAndSortedRooms.length)}
+                  </span>
+                  <span className="font-medium"> of </span>
+                  <span className="font-semibold text-neutral-900">{filteredAndSortedRooms.length}</span>
+                  <span className="font-medium"> suites</span>
+                </div>
+              </div>
+            )}
+
           </div>
-        )}
-
-        </div>
-        {/* END MAIN CONTENT AREA */}
+          {/* END MAIN CONTENT AREA */}
 
         </div>
         {/* END Two Column Layout */}

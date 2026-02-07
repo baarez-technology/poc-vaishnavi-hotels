@@ -241,7 +241,7 @@ const RunnerDashboard = () => {
 
       {/* KPI Cards - 12 Column Grid matching admin dashboard */}
       <div className="grid grid-cols-12 gap-6 mb-6">
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Active Pickups"
             value={stats.pendingPickups + stats.inProgressPickups}
@@ -250,7 +250,7 @@ const RunnerDashboard = () => {
             color="terra"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Active Deliveries"
             value={stats.pendingDeliveries + stats.inTransitDeliveries}
@@ -259,7 +259,7 @@ const RunnerDashboard = () => {
             color="ocean"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Avg Completion"
             value={averageCompletionTime}
@@ -268,7 +268,7 @@ const RunnerDashboard = () => {
             color="gold"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Completed Today"
             value={stats.completedPickups + stats.deliveredDeliveries}
@@ -282,7 +282,7 @@ const RunnerDashboard = () => {
       {/* Main Content - 12 Column Grid */}
       <div className="grid grid-cols-12 gap-6 mb-6">
         {/* Active Pickups - 8 columns */}
-        <div className="col-span-12 lg:col-span-8">
+        <div className="col-span-12 xl:col-span-8">
           <SectionCard
             title="Active Pickups"
             subtitle={`${activePickups.length} pickup${activePickups.length !== 1 ? 's' : ''} pending`}
@@ -365,13 +365,13 @@ const RunnerDashboard = () => {
         </div>
 
         {/* Quick Actions - 4 columns on desktop, full width on mobile */}
-        <div className="col-span-12 lg:col-span-4">
+        <div className="col-span-12 xl:col-span-4">
           <SectionCard
             title="Quick Actions"
             subtitle="Common tasks"
             className="h-full"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3 pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 gap-3 pt-4">
               <button
                 onClick={() => navigate('/staff/runner/pickups')}
                 className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-terra-50 text-left hover:bg-terra-100 transition-all group"
@@ -421,7 +421,7 @@ const RunnerDashboard = () => {
       {/* Active Deliveries & Today's Summary - 8 + 4 = 12 columns */}
       <div className="grid grid-cols-12 gap-6">
         {/* Active Deliveries - 8 columns */}
-        <div className="col-span-12 lg:col-span-8">
+        <div className="col-span-12 xl:col-span-8">
           <SectionCard
             title="Active Deliveries"
             subtitle={`${activeDeliveries.length} deliver${activeDeliveries.length !== 1 ? 'ies' : 'y'} pending`}
@@ -503,13 +503,13 @@ const RunnerDashboard = () => {
         </div>
 
         {/* Today's Summary - 4 columns on desktop */}
-        <div className="col-span-12 lg:col-span-4">
+        <div className="col-span-12 xl:col-span-4">
           <SectionCard
             title="Today's Summary"
             subtitle="Performance overview"
             className="h-full"
           >
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-1 gap-3 pt-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-1 gap-3 pt-4">
               <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-50/50">
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-terra-50 flex items-center justify-center flex-shrink-0">

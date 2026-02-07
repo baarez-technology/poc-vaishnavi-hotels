@@ -211,10 +211,10 @@ const PickupChart = ({ dateRange = 14, chartType = 'area', showYoYComparison = t
 
   if (isLoading) {
     return (
-      <div className="h-96 flex items-center justify-center">
+      <div className="h-64 sm:h-96 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <RefreshCw className="w-8 h-8 text-terra-500 animate-spin" />
-          <p className="text-sm text-neutral-500">Loading pickup data...</p>
+          <RefreshCw className="w-6 h-6 sm:w-8 sm:h-8 text-terra-500 animate-spin" />
+          <p className="text-xs sm:text-sm text-neutral-500">Loading pickup data...</p>
         </div>
       </div>
     );
@@ -222,13 +222,13 @@ const PickupChart = ({ dateRange = 14, chartType = 'area', showYoYComparison = t
 
   if (error) {
     return (
-      <div className="h-96 flex items-center justify-center">
+      <div className="h-64 sm:h-96 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <AlertCircle className="w-8 h-8 text-rose-500" />
-          <p className="text-sm text-neutral-500">{error}</p>
+          <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-rose-500" />
+          <p className="text-xs sm:text-sm text-neutral-500">{error}</p>
           <button
             onClick={handleRefresh}
-            className="px-4 py-2 text-sm font-medium text-terra-600 hover:bg-terra-50 rounded-lg transition-colors"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-terra-600 hover:bg-terra-50 rounded-lg transition-colors"
           >
             Retry
           </button>
@@ -243,13 +243,13 @@ const PickupChart = ({ dateRange = 14, chartType = 'area', showYoYComparison = t
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="absolute top-0 right-0 p-2 text-neutral-400 hover:text-neutral-600 transition-colors z-10"
+          className="absolute top-0 right-0 p-1.5 sm:p-2 text-neutral-400 hover:text-neutral-600 transition-colors z-10"
           title="Refresh data"
         >
-          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
         </button>
 
-        <div className="h-96 px-4 py-6">
+        <div className="h-64 sm:h-96 px-0 sm:px-4 py-4 sm:py-6">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 10 }}>
               <defs>
@@ -321,13 +321,13 @@ const PickupChart = ({ dateRange = 14, chartType = 'area', showYoYComparison = t
       <button
         onClick={handleRefresh}
         disabled={isRefreshing}
-        className="absolute top-0 right-0 p-2 text-neutral-400 hover:text-neutral-600 transition-colors z-10"
+        className="absolute top-0 right-0 p-1.5 sm:p-2 text-neutral-400 hover:text-neutral-600 transition-colors z-10"
         title="Refresh data"
       >
-        <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+        <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
       </button>
 
-      <div className="h-96 px-4 py-6">
+      <div className="h-64 sm:h-96 px-0 sm:px-4 py-4 sm:py-6">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 10 }}>
             <defs>
@@ -470,10 +470,10 @@ export const PickupSummaryCard = ({ period = 'next7Days' }: PickupSummaryCardPro
 
   if (isLoading) {
     return (
-      <div className="relative overflow-hidden rounded-[10px] bg-white p-6 animate-pulse">
-        <div className="h-8 bg-neutral-100 rounded w-24 mb-4" />
-        <div className="h-10 bg-neutral-100 rounded w-20 mb-2" />
-        <div className="h-6 bg-neutral-100 rounded w-16" />
+      <div className="relative overflow-hidden rounded-[10px] bg-white p-4 sm:p-6 animate-pulse">
+        <div className="h-6 sm:h-8 bg-neutral-100 rounded w-20 sm:w-24 mb-3 sm:mb-4" />
+        <div className="h-8 sm:h-10 bg-neutral-100 rounded w-16 sm:w-20 mb-2" />
+        <div className="h-5 sm:h-6 bg-neutral-100 rounded w-14 sm:w-16" />
       </div>
     );
   }
@@ -481,13 +481,13 @@ export const PickupSummaryCard = ({ period = 'next7Days' }: PickupSummaryCardPro
   if (!metrics) return null;
 
   return (
-    <div className="relative overflow-hidden rounded-[10px] bg-white p-6">
+    <div className="relative overflow-hidden rounded-[10px] bg-white p-4 sm:p-6">
       {/* Header with Icon and Title */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${style.bg}`}>
-          <Calendar className={`w-4 h-4 ${style.icon}`} />
+      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+        <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center ${style.bg}`}>
+          <Calendar className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${style.icon}`} />
         </div>
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
           {period === 'next7Days'
             ? 'Next 7 Days'
             : period === 'next14Days'
@@ -497,34 +497,34 @@ export const PickupSummaryCard = ({ period = 'next7Days' }: PickupSummaryCardPro
       </div>
 
       {/* Main Value */}
-      <p className="text-[28px] font-semibold tracking-tight text-neutral-900 mb-2">
+      <p className="text-xl sm:text-[28px] font-semibold tracking-tight text-neutral-900 mb-1.5 sm:mb-2">
         {metrics.avgBookings}{' '}
-        <span className="text-[15px] font-medium text-neutral-400">avg bookings</span>
+        <span className="text-[13px] sm:text-[15px] font-medium text-neutral-400">avg bookings</span>
       </p>
 
       {/* Progress */}
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-[11px] text-neutral-400 font-medium">Avg Progress</p>
-        <p className="text-[15px] font-semibold text-neutral-800">{metrics.avgProgress}%</p>
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Avg Progress</p>
+        <p className="text-[13px] sm:text-[15px] font-semibold text-neutral-800">{metrics.avgProgress}%</p>
       </div>
 
       {/* Pace Indicators */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-sage-50">
-          <TrendingUp className="w-3 h-3 text-sage-600" />
-          <span className="text-[11px] font-semibold text-sage-600">{metrics.strongDays} strong</span>
+      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 flex-wrap">
+        <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-sage-50">
+          <TrendingUp className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-sage-600" />
+          <span className="text-[10px] sm:text-[11px] font-semibold text-sage-600">{metrics.strongDays} strong</span>
         </div>
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-rose-50">
-          <AlertCircle className="w-3 h-3 text-rose-600" />
-          <span className="text-[11px] font-semibold text-rose-600">{metrics.criticalDays} critical</span>
+        <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-rose-50">
+          <AlertCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-rose-600" />
+          <span className="text-[10px] sm:text-[11px] font-semibold text-rose-600">{metrics.criticalDays} critical</span>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="pt-3 border-t border-neutral-100">
+      <div className="pt-2 sm:pt-3 border-t border-neutral-100">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] text-neutral-400 font-medium">Rooms to Sell</span>
-          <span className="text-[15px] font-semibold text-terra-600">{metrics.totalRemaining}</span>
+          <span className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Rooms to Sell</span>
+          <span className="text-[13px] sm:text-[15px] font-semibold text-terra-600">{metrics.totalRemaining}</span>
         </div>
       </div>
     </div>

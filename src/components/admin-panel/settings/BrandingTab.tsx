@@ -4,9 +4,14 @@ import { FONT_FAMILIES, defaultSettings, deepMerge } from '@/utils/admin/setting
 
 const STORAGE_KEY = 'glimmora_branding';
 
-const PRESET_COLORS = [
-  '#A57865', '#4E5840', '#5C9BA4', '#CDB261', '#C8B29D',
-  '#8E6554', '#3D4731', '#4A8A99', '#B5A051', '#B09D8A'
+const PRIMARY_COLORS = [
+  '#A57865', '#4E5840', '#5C9BA4', '#CDB261',
+  // '#C8B29D',
+];
+
+const ACCENT_COLORS = [
+  '#8E6554', '#3D4731', '#4A8A99', '#B5A051',
+  // '#B09D8A',
 ];
 
 const BUTTON_STYLES = [
@@ -94,7 +99,7 @@ export default function BrandingTab() {
                 </label>
                 <div className="flex items-center gap-4">
                   <div className="flex gap-2 flex-wrap">
-                    {PRESET_COLORS.slice(0, 5).map((color) => (
+                    {PRIMARY_COLORS.map((color) => (
                       <button
                         key={color}
                         onClick={() => handleChange('primaryColor', color)}
@@ -131,7 +136,7 @@ export default function BrandingTab() {
                 </label>
                 <div className="flex items-center gap-4">
                   <div className="flex gap-2 flex-wrap">
-                    {PRESET_COLORS.slice(5).map((color) => (
+                    {ACCENT_COLORS.map((color) => (
                       <button
                         key={color}
                         onClick={() => handleChange('accentColor', color)}

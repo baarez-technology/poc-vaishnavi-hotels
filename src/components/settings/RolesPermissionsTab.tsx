@@ -44,13 +44,22 @@ export default function RolesPermissionsTab() {
     saveRoles(newRoles);
   };
 
+  const getPermissionTypes = (module) => {
+    if (module === 'reports') return ['view', 'edit', 'export'];
+    if (module === 'dashboard' || module === 'revenueAI' || module === 'reputationAI' || module === 'crm' || module === 'settings' || module === 'aiAssistant') {
+      return ['view', 'edit'];
+    }
+    return ['view', 'edit', 'delete'];
+  };
+
   const toggleAllPermissions = (roleId, module, value) => {
     const newRoles = roles.map((role) => {
       if (role.id !== roleId) return role;
-      const permissions = role.permissions[module] || {};
+      // Use getPermissionTypes to get all permission types for this module
+      const permTypes = getPermissionTypes(module);
       const updated = {};
-      Object.keys(permissions).forEach((key) => {
-        updated[key] = value;
+      permTypes.forEach((perm) => {
+        updated[perm] = value;
       });
       return {
         ...role,
@@ -63,12 +72,24 @@ export default function RolesPermissionsTab() {
     saveRoles(newRoles);
   };
 
-  const getPermissionTypes = (module) => {
-    if (module === 'reports') return ['view', 'edit', 'export'];
-    if (module === 'dashboard' || module === 'revenueAI' || module === 'reputationAI' || module === 'crm' || module === 'settings' || module === 'aiAssistant') {
-      return ['view', 'edit'];
-    }
-    return ['view', 'edit', 'delete'];
+  // Grant or revoke all permissions for a role across all modules
+  const setAllPermissionsForRole = (roleId, value) => {
+    const newRoles = roles.map((role) => {
+      if (role.id !== roleId) return role;
+      const newPermissions = {};
+      PERMISSION_MODULES.forEach((mod) => {
+        const permTypes = getPermissionTypes(mod.id);
+        newPermissions[mod.id] = {};
+        permTypes.forEach((perm) => {
+          newPermissions[mod.id][perm] = value;
+        });
+      });
+      return {
+        ...role,
+        permissions: newPermissions
+      };
+    });
+    saveRoles(newRoles);
   };
 
   const countPermissions = (role) => {
@@ -85,19 +106,19 @@ export default function RolesPermissionsTab() {
   };
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="max-w-5xl space-y-4 sm:space-y-6">
       {/* Header */}
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-neutral-900">
+          <h1 className="text-base sm:text-lg font-semibold text-neutral-900">
             Roles & Permissions
           </h1>
-          <p className="text-sm text-neutral-500 mt-1">
-            Configure access levels and permissions for each role in your organization
+          <p className="text-[12px] sm:text-sm text-neutral-500 mt-1">
+            Configure access levels and permissions for each role
           </p>
         </div>
         {saved && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-sage-50 text-sage-600 rounded-lg">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-sage-50 text-sage-600 rounded-lg self-start">
             <Check className="w-3.5 h-3.5" />
             <span className="text-xs font-medium">Saved</span>
           </div>
@@ -118,18 +139,18 @@ export default function RolesPermissionsTab() {
               {/* Role Header */}
               <button
                 onClick={() => setExpandedRole(isExpanded ? null : role.id)}
-                className="w-full px-6 py-4 flex items-center justify-between hover:bg-neutral-50 transition-colors border-b border-neutral-100"
+                className="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between hover:bg-neutral-50 transition-colors border-b border-neutral-100"
               >
-                <div className="text-left">
-                  <h3 className="text-sm font-medium text-neutral-900">{role.name}</h3>
-                  <p className="text-xs text-neutral-500 mt-0.5">{role.description}</p>
+                <div className="text-left min-w-0 flex-1">
+                  <h3 className="text-[13px] sm:text-sm font-medium text-neutral-900">{role.name}</h3>
+                  <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5 truncate">{role.description}</p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
                   <div className="text-right">
-                    <p className="text-sm font-medium text-neutral-900">
+                    <p className="text-[13px] sm:text-sm font-medium text-neutral-900">
                       {permCount.enabled}/{permCount.total}
                     </p>
-                    <p className="text-xs text-neutral-500 mt-0.5">permissions</p>
+                    <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5 hidden sm:block">permissions</p>
                   </div>
                   {isExpanded ? (
                     <ChevronUp className="w-4 h-4 text-neutral-400" />
@@ -141,22 +162,23 @@ export default function RolesPermissionsTab() {
 
               {/* Permissions Matrix */}
               {isExpanded && (
-                <div className="p-6">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
+                <div className="p-4 sm:p-6">
+                  <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                    <table className="w-full min-w-[400px]">
                       <thead>
                         <tr className="border-b border-neutral-100">
-                          <th className="text-left py-2.5 px-3 text-xs font-medium text-neutral-500">
+                          <th className="text-left py-2 sm:py-2.5 px-2 sm:px-3 text-[10px] sm:text-xs font-medium text-neutral-500">
                             Module
                           </th>
-                          <th className="text-center py-2.5 px-3 text-xs font-medium text-neutral-500 w-20">
+                          <th className="text-center py-2 sm:py-2.5 px-2 sm:px-3 text-[10px] sm:text-xs font-medium text-neutral-500 w-14 sm:w-20">
                             View
                           </th>
-                          <th className="text-center py-2.5 px-3 text-xs font-medium text-neutral-500 w-20">
+                          <th className="text-center py-2 sm:py-2.5 px-2 sm:px-3 text-[10px] sm:text-xs font-medium text-neutral-500 w-14 sm:w-20">
                             Edit
                           </th>
-                          <th className="text-center py-2.5 px-3 text-xs font-medium text-neutral-500 w-24">
-                            Delete/Export
+                          <th className="text-center py-2 sm:py-2.5 px-2 sm:px-3 text-[10px] sm:text-xs font-medium text-neutral-500 w-16 sm:w-24">
+                            <span className="hidden sm:inline">Delete/Export</span>
+                            <span className="sm:hidden">Del/Exp</span>
                           </th>
                         </tr>
                       </thead>
@@ -170,13 +192,13 @@ export default function RolesPermissionsTab() {
                               key={mod.id}
                               className={index !== PERMISSION_MODULES.length - 1 ? 'border-b border-neutral-100' : ''}
                             >
-                              <td className="py-3 px-3">
-                                <span className="text-sm text-neutral-700">
+                              <td className="py-2.5 sm:py-3 px-2 sm:px-3">
+                                <span className="text-[11px] sm:text-sm text-neutral-700">
                                   {mod.label}
                                 </span>
                               </td>
                               {permTypes.map((perm) => (
-                                <td key={perm} className="py-3 px-3 text-center">
+                                <td key={perm} className="py-2.5 sm:py-3 px-2 sm:px-3 text-center">
                                   <label className="inline-flex items-center justify-center cursor-pointer">
                                     <input
                                       type="checkbox"
@@ -188,7 +210,7 @@ export default function RolesPermissionsTab() {
                                 </td>
                               ))}
                               {permTypes.length < 3 && (
-                                <td className="py-3 px-3 text-center">
+                                <td className="py-2.5 sm:py-3 px-2 sm:px-3 text-center">
                                   <span className="text-neutral-300">-</span>
                                 </td>
                               )}
@@ -200,27 +222,19 @@ export default function RolesPermissionsTab() {
                   </div>
 
                   {/* Quick Actions */}
-                  <div className="flex items-center gap-4 mt-5 pt-4 border-t border-neutral-100">
-                    <span className="text-xs text-neutral-500">Quick actions:</span>
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-4 sm:mt-5 pt-3 sm:pt-4 border-t border-neutral-100">
+                    <span className="text-[10px] sm:text-xs text-neutral-500">Quick actions:</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        PERMISSION_MODULES.forEach((mod) => {
-                          toggleAllPermissions(role.id, mod.id, true);
-                        });
-                      }}
+                      onClick={() => setAllPermissionsForRole(role.id, true)}
                     >
                       Grant all
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        PERMISSION_MODULES.forEach((mod) => {
-                          toggleAllPermissions(role.id, mod.id, false);
-                        });
-                      }}
+                      onClick={() => setAllPermissionsForRole(role.id, false)}
                     >
                       Revoke all
                     </Button>
@@ -234,12 +248,12 @@ export default function RolesPermissionsTab() {
 
       {/* Legend Card */}
       <div className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <h4 className="text-sm font-medium text-neutral-900">Legend</h4>
-          <p className="text-xs text-neutral-500 mt-0.5">Understanding permission indicators</p>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+          <h4 className="text-[13px] sm:text-sm font-medium text-neutral-900">Legend</h4>
+          <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">Understanding permission indicators</p>
         </div>
-        <div className="p-6">
-          <div className="flex flex-wrap gap-6">
+        <div className="p-4 sm:p-6">
+          <div className="flex flex-wrap gap-4 sm:gap-6">
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -247,7 +261,7 @@ export default function RolesPermissionsTab() {
                 readOnly
                 className="w-4 h-4 rounded border-neutral-300 text-terra-500 focus:ring-terra-500 cursor-default"
               />
-              <span className="text-xs text-neutral-600">Permission granted</span>
+              <span className="text-[10px] sm:text-xs text-neutral-600">Permission granted</span>
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -256,11 +270,11 @@ export default function RolesPermissionsTab() {
                 readOnly
                 className="w-4 h-4 rounded border-neutral-300 text-terra-500 focus:ring-terra-500 cursor-default"
               />
-              <span className="text-xs text-neutral-600">Permission denied</span>
+              <span className="text-[10px] sm:text-xs text-neutral-600">Permission denied</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-neutral-300 text-sm w-4 text-center">-</span>
-              <span className="text-xs text-neutral-600">Not applicable</span>
+              <span className="text-[10px] sm:text-xs text-neutral-600">Not applicable</span>
             </div>
           </div>
         </div>

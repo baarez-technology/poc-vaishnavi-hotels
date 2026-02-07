@@ -111,12 +111,12 @@ const CompetitorRates = () => {
 
   // Empty State Component
   const EmptyState = ({ icon: Icon, title, description, action }) => (
-    <div className="bg-white rounded-[10px] p-12 text-center">
-      <div className="w-16 h-16 mx-auto rounded-lg flex items-center justify-center mb-4 bg-terra-50">
-        <Icon className="w-8 h-8 text-terra-500" />
+    <div className="bg-white rounded-[10px] p-8 sm:p-12 text-center">
+      <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto rounded-lg flex items-center justify-center mb-3 sm:mb-4 bg-terra-50">
+        <Icon className="w-6 h-6 sm:w-8 sm:h-8 text-terra-500" />
       </div>
-      <h3 className="text-[15px] font-semibold text-neutral-900 mb-1">{title}</h3>
-      <p className="text-[13px] text-neutral-500 mb-6">{description}</p>
+      <h3 className="text-sm sm:text-[15px] font-semibold text-neutral-900 mb-1">{title}</h3>
+      <p className="text-xs sm:text-[13px] text-neutral-500 mb-4 sm:mb-6">{description}</p>
       {action}
     </div>
   );
@@ -142,15 +142,14 @@ const CompetitorRates = () => {
   // Skeleton Loader for KPI Cards
   const SkeletonKPICard = ({ index = 0 }) => (
     <div
-      className="bg-white rounded-[10px] p-5 animate-pulse"
+      className="bg-white rounded-[10px] p-3 sm:p-5 animate-pulse"
       style={{ animationDelay: `${index * 100}ms` }}
     >
-      <div className="flex items-center gap-3 mb-4">
-        <div className="h-8 w-8 rounded-lg bg-neutral-100" />
-        <div className="h-3 w-24 rounded bg-neutral-100" />
+      <div className="mb-2 sm:mb-3">
+        <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-neutral-100" />
       </div>
-      <div className="h-7 w-20 rounded bg-neutral-100 mb-2" />
-      <div className="h-3 w-16 rounded bg-neutral-100" />
+      <div className="h-2.5 w-14 sm:w-20 rounded bg-neutral-100 mb-1.5 sm:mb-2" />
+      <div className="h-5 sm:h-7 w-12 sm:w-16 rounded bg-neutral-100" />
     </div>
   );
 
@@ -168,24 +167,23 @@ const CompetitorRates = () => {
 
     return (
       <div
-        className="rounded-[10px] bg-white p-5"
+        className="rounded-[10px] bg-white p-3 sm:p-5"
         style={{ animationDelay: `${index * 100}ms` }}
       >
-        <div className="flex items-center gap-3 mb-4">
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${style.bg}`}>
-            <Icon className={`w-4 h-4 ${style.icon}`} />
+        <div className="flex items-start justify-between mb-2 sm:mb-3">
+          <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${style.bg}`}>
+            <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${style.icon}`} />
           </div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-            {title}
-          </p>
         </div>
-
-        <p className="text-[28px] font-semibold tracking-tight text-neutral-900 mb-2">
+        <p className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-wider text-neutral-400 mb-1 truncate">
+          {title}
+        </p>
+        <p className="text-base sm:text-xl font-semibold tracking-tight text-neutral-900">
           {value}
         </p>
 
         {subtitle && (
-          <p className="text-[11px] text-neutral-400 font-medium">{subtitle}</p>
+          <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-1">{subtitle}</p>
         )}
       </div>
     );
@@ -193,30 +191,31 @@ const CompetitorRates = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <main className="px-10 py-6 space-y-6">
+      <main className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
             Competitor Rate Shopper
           </h1>
-          <p className="text-[13px] text-neutral-500 mt-1">
+          <p className="text-xs sm:text-[13px] text-neutral-500 mt-1">
             Monitor competitor pricing and optimize your rate positioning
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-1 p-1 rounded-lg bg-neutral-100">
             {[7, 14, 30].map((days) => (
               <button
                 key={days}
                 onClick={() => setDateRange(days)}
-                className={`px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-200 ${
+                className={`px-2 sm:px-4 py-1.5 rounded-lg text-xs sm:text-[13px] font-semibold transition-all duration-200 ${
                   dateRange === days
                     ? 'bg-white text-neutral-900 shadow-sm'
                     : 'text-neutral-500 hover:text-neutral-900 hover:bg-white/50'
                 }`}
               >
-                {days} Days
+                <span className="sm:hidden">{days}d</span>
+                <span className="hidden sm:inline">{days} Days</span>
               </button>
             ))}
           </div>
@@ -226,20 +225,20 @@ const CompetitorRates = () => {
             icon={RefreshCw}
             variant="primary"
           >
-            Refresh Rates
+            <span className="hidden sm:inline">Refresh Rates</span>
           </Button>
         </div>
       </header>
 
       {/* Summary Stats */}
-      <section className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4">
         {isInitialLoading ? (
           <>
             {[0, 1, 2, 3, 4].map((i) => (
               <SkeletonKPICard key={i} index={i} />
             ))}
           </>
-        ) : (
+        ) : competitorInsights ? (
           <>
             <KPICard
               title="Avg Gap vs Market"
@@ -277,23 +276,23 @@ const CompetitorRates = () => {
               index={4}
             />
           </>
-        )}
+        ) : null}
       </section>
 
       {/* Recommendations */}
       {competitorInsights?.recommendations && Array.isArray(competitorInsights.recommendations) && competitorInsights.recommendations.length > 0 && (
-        <section className="p-5 rounded-[10px] bg-gold-50 border border-gold-200">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-gold-100">
-              <AlertTriangle className="w-5 h-5 text-gold-600" />
+        <section className="p-3 sm:p-5 rounded-[10px] bg-gold-50 border border-gold-200">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-gold-100">
+              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-gold-600" />
             </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-gold-800 mb-2">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xs sm:text-sm font-semibold text-gold-800 mb-2">
                 Rate Strategy Recommendations
               </h3>
               <ul className="space-y-2">
-                {competitorInsights.recommendations.map((rec, index) => (
-                  <li key={index} className="text-[13px] flex items-start gap-2 text-gold-700">
+                {competitorInsights.recommendations.map((rec: string, index: number) => (
+                  <li key={index} className="text-[11px] sm:text-[13px] flex items-start gap-2 text-gold-700">
                     <span className="w-1.5 h-1.5 rounded-full bg-gold-500 mt-1.5 flex-shrink-0" />
                     <span>{rec}</span>
                   </li>
@@ -338,10 +337,10 @@ const CompetitorRates = () => {
             />
           ) : (
             <section className="rounded-[10px] bg-white overflow-hidden">
-              <div className="px-6 py-5 flex items-center justify-between">
+              <div className="px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-semibold text-neutral-800">Competitor Profiles</h3>
-                  <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
+                  <h3 className="text-xs sm:text-sm font-semibold text-neutral-800">Competitor Profiles</h3>
+                  <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">
                     Compare rates across {competitorList.length} competitor hotels
                   </p>
                 </div>
@@ -351,10 +350,10 @@ const CompetitorRates = () => {
                     aria-label="Select date for competitor comparison"
                     aria-haspopup="listbox"
                     aria-expanded={isDropdownOpen}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-200 bg-white hover:border-neutral-300 transition-all"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-200 bg-white hover:border-neutral-300 transition-all w-full sm:w-auto justify-between sm:justify-start"
                   >
                     <Calendar className="w-4 h-4 text-terra-500" />
-                    <span className="text-[13px] font-medium text-neutral-900">
+                    <span className="text-xs sm:text-[13px] font-medium text-neutral-900">
                       {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                     </span>
                     <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
@@ -377,7 +376,7 @@ const CompetitorRates = () => {
                               setSelectedDate(date);
                               setIsDropdownOpen(false);
                             }}
-                            className={`w-full flex items-center justify-between px-3 py-2.5 text-[13px] font-medium rounded-lg transition-all ${
+                            className={`w-full flex items-center justify-between px-3 py-2.5 text-xs sm:text-[13px] font-medium rounded-lg transition-all ${
                               selectedDate === date
                                 ? 'bg-terra-50 text-terra-700'
                                 : 'text-neutral-700 hover:bg-neutral-50'
@@ -396,7 +395,7 @@ const CompetitorRates = () => {
                   )}
                 </div>
               </div>
-              <div className="px-6 pb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                 {competitorList.map(comp => (
                   <CompetitorCard
                     key={comp.id}

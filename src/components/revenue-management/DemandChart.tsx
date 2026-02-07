@@ -74,6 +74,7 @@ const DemandChart = ({
       ]);
 
       setForecastData(forecastResponse.forecasts || []);
+      // Ensure events is always an array
       setEvents(Array.isArray(eventsResponse) ? eventsResponse : []);
     } catch (err) {
       console.error('Failed to fetch demand forecast:', err);
@@ -97,11 +98,14 @@ const DemandChart = ({
 
   // Transform API data to chart format
   const chartData = useMemo(() => {
+    // Ensure events is an array before using it
+    const eventsArray = Array.isArray(events) ? events : [];
+    
     return forecastData.map((item) => {
       const date = new Date(item.date);
-      const event = Array.isArray(events) ? events.find(
+      const event = eventsArray.find(
         (e) => item.date >= e.startDate && item.date <= e.endDate
-      ) : undefined;
+      );
 
       // Calculate confidence bands (upper and lower bounds based on confidence level)
       const confidenceMargin = (100 - item.confidence_level) / 100;
@@ -240,19 +244,20 @@ const DemandChart = ({
 
   // Get event dates for reference lines
   const eventDates = useMemo(() => {
-    return Array.isArray(events) ? events.map((event) => ({
+    const eventsArray = Array.isArray(events) ? events : [];
+    return eventsArray.map((event) => ({
       date: event.startDate,
       name: event.name,
       type: event.type,
-    })) : [];
+    }));
   }, [events]);
 
   if (isLoading) {
     return (
-      <div className="h-80 flex items-center justify-center">
+      <div className="h-64 sm:h-80 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <RefreshCw className="w-8 h-8 text-terra-500 animate-spin" />
-          <p className="text-sm text-neutral-500">Loading demand forecast...</p>
+          <RefreshCw className="w-6 h-6 sm:w-8 sm:h-8 text-terra-500 animate-spin" />
+          <p className="text-xs sm:text-sm text-neutral-500">Loading demand forecast...</p>
         </div>
       </div>
     );
@@ -260,13 +265,13 @@ const DemandChart = ({
 
   if (error) {
     return (
-      <div className="h-80 flex items-center justify-center">
+      <div className="h-64 sm:h-80 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <AlertCircle className="w-8 h-8 text-rose-500" />
-          <p className="text-sm text-neutral-500">{error}</p>
+          <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-rose-500" />
+          <p className="text-xs sm:text-sm text-neutral-500">{error}</p>
           <button
             onClick={handleRefresh}
-            className="px-4 py-2 text-sm font-medium text-terra-600 hover:bg-terra-50 rounded-lg transition-colors"
+            className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-terra-600 hover:bg-terra-50 rounded-lg transition-colors"
           >
             Retry
           </button>
@@ -281,15 +286,15 @@ const DemandChart = ({
       <button
         onClick={handleRefresh}
         disabled={isRefreshing}
-        className="absolute top-0 right-0 p-2 text-neutral-400 hover:text-neutral-600 transition-colors z-10"
+        className="absolute top-0 right-0 p-1.5 sm:p-2 text-neutral-400 hover:text-neutral-600 transition-colors z-10"
         title="Refresh forecast"
       >
-        <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+        <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
       </button>
 
-      <div className="h-80">
+      <div className="h-64 sm:h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+          <ComposedChart data={chartData} margin={{ top: 10, right: 5, left: -15, bottom: 0 }}>
             <defs>
               <linearGradient id="colorOccupancy" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#A57865" stopOpacity={0.3} />
@@ -303,26 +308,28 @@ const DemandChart = ({
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E4E0" />
             <XAxis
               dataKey="displayDate"
-              tick={{ fontSize: 10, fill: '#6A6A6A' }}
+              tick={{ fontSize: 9, fill: '#6A6A6A' }}
               axisLine={{ stroke: '#E5E4E0' }}
               tickLine={false}
-              interval={Math.floor(dateRange / 10)}
+              interval={Math.floor(dateRange / 7)}
             />
             <YAxis
               yAxisId="left"
-              tick={{ fontSize: 11, fill: '#6A6A6A' }}
+              tick={{ fontSize: 9, fill: '#6A6A6A' }}
               axisLine={false}
               tickLine={false}
               domain={[0, 100]}
               tickFormatter={(value) => `${value}%`}
+              width={35}
             />
             <YAxis
               yAxisId="right"
               orientation="right"
-              tick={{ fontSize: 11, fill: '#6A6A6A' }}
+              tick={{ fontSize: 9, fill: '#6A6A6A' }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(value) => `$${value}`}
+              width={35}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
@@ -545,7 +552,7 @@ export const ForecastSummaryCards = ({ className }: ForecastSummaryCardsProps) =
     return (
       <>
         {periods.map(({ key }) => (
-          <div key={key} className="rounded-[10px] bg-white p-5 animate-pulse">
+          <div key={key} className="rounded-[10px] bg-white p-3 sm:p-5 animate-pulse">
             <div className="h-4 bg-neutral-100 rounded w-24 mb-4" />
             <div className="h-8 bg-neutral-100 rounded w-16 mb-2" />
             <div className="h-4 bg-neutral-100 rounded w-20" />
@@ -562,51 +569,51 @@ export const ForecastSummaryCards = ({ className }: ForecastSummaryCardsProps) =
         if (!data) return null;
 
         return (
-          <div key={key} className={`rounded-[10px] bg-white p-5 ${className || ''}`}>
-            <div className="flex items-start justify-between mb-4">
-              <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+          <div key={key} className={`rounded-[10px] bg-white p-3 sm:p-5 ${className || ''}`}>
+            <div className="flex items-start justify-between mb-3 sm:mb-4">
+              <p className="text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
                 {label}
               </p>
-              <div className="w-10 h-10 rounded-lg bg-terra-50 flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-terra-500" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-terra-50 flex items-center justify-center flex-shrink-0">
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-terra-500" />
               </div>
             </div>
 
-            <div className="space-y-3 mb-4">
+            <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-medium text-neutral-500">Avg Occupancy</span>
-                <span className="text-xl font-bold text-neutral-900">{data.avgOccupancy}%</span>
+                <span className="text-[10px] sm:text-[11px] font-medium text-neutral-500">Avg Occupancy</span>
+                <span className="text-lg sm:text-xl font-bold text-neutral-900">{data.avgOccupancy}%</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-medium text-neutral-500">Avg ADR</span>
-                <span className="text-xl font-bold text-neutral-900">${data.avgADR}</span>
+                <span className="text-[10px] sm:text-[11px] font-medium text-neutral-500">Avg ADR</span>
+                <span className="text-lg sm:text-xl font-bold text-neutral-900">${data.avgADR}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-medium text-neutral-500">Avg RevPAR</span>
-                <span className="text-xl font-bold text-terra-600">${data.avgRevPAR}</span>
+                <span className="text-[10px] sm:text-[11px] font-medium text-neutral-500">Avg RevPAR</span>
+                <span className="text-lg sm:text-xl font-bold text-terra-600">${data.avgRevPAR}</span>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-neutral-100 mb-3">
+            <div className="pt-3 sm:pt-4 border-t border-neutral-100 mb-2 sm:mb-3">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                <span className="text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
                   Total Revenue
                 </span>
-                <span className="text-lg font-bold text-sage-600">
+                <span className="text-base sm:text-lg font-bold text-sage-600">
                   ${data.totalRevenue.toLocaleString()}
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 text-[11px]">
+            <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-[11px]">
               <span className="flex items-center gap-1">
-                <Flame className="w-3.5 h-3.5 text-rose-500" />
+                <Flame className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-rose-500" />
                 <span className="font-medium text-neutral-600">
                   {data.compressionDays} compression
                 </span>
               </span>
               <span className="flex items-center gap-1">
-                <Snowflake className="w-3.5 h-3.5 text-ocean-400" />
+                <Snowflake className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-ocean-400" />
                 <span className="font-medium text-neutral-600">{data.lowDemandDays} low</span>
               </span>
             </div>

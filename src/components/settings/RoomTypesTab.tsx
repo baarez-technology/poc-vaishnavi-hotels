@@ -6,6 +6,7 @@ import EditRoomTypeModal from './EditRoomTypeModal';
 import { Button } from '../ui2/Button';
 import { roomTypesService, RoomTypeUpdate } from '../../api/services/roomTypes.service';
 import { useToast } from '../../contexts/ToastContext';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface RoomType {
   id: string;
@@ -31,6 +32,7 @@ export default function RoomTypesTab() {
   const [isSaving, setIsSaving] = useState(false);
 
   const toast = useToast();
+  const { currency } = useCurrency();
 
   // Fetch room types from API
   const fetchRoomTypes = async () => {
@@ -119,7 +121,7 @@ export default function RoomTypesTab() {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: currency,
       maximumFractionDigits: 0
     }).format(price);
   };
@@ -154,21 +156,22 @@ export default function RoomTypesTab() {
   }
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="max-w-5xl space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-neutral-900">Room Types</h1>
-          <p className="text-sm text-neutral-500 mt-1">
+          <h1 className="text-base sm:text-lg font-semibold text-neutral-900">Room Types</h1>
+          <p className="text-[12px] sm:text-sm text-neutral-500 mt-1">
             Manage your room categories and pricing
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Button variant="outline" icon={RefreshCw} onClick={fetchRoomTypes} disabled={isLoading}>
-            Refresh
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
           <Button variant="primary" icon={Plus} onClick={() => setShowAddModal(true)}>
-            Add Room Type
+            <span className="hidden sm:inline">Add Room Type</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </div>
       </div>
@@ -181,13 +184,13 @@ export default function RoomTypesTab() {
             className="bg-neutral-50/50 rounded-[10px] overflow-hidden"
           >
             {/* Card Header */}
-            <div className="px-6 py-4 border-b border-neutral-100">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-[13px] font-semibold text-neutral-800">{room.name}</h3>
-                  <p className="text-[11px] text-neutral-500 mt-0.5 line-clamp-1">{room.description}</p>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-[12px] sm:text-[13px] font-semibold text-neutral-800 truncate">{room.name}</h3>
+                  <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-0.5 line-clamp-1">{room.description}</p>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -207,34 +210,34 @@ export default function RoomTypesTab() {
             </div>
 
             {/* Card Content */}
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               {/* Price and Occupancy */}
-              <div className="flex items-center gap-6">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-6">
                 <div>
-                  <span className="text-lg font-semibold text-neutral-900">{formatPrice(room.price)}</span>
-                  <span className="text-xs text-neutral-500 ml-1">/night</span>
+                  <span className="text-base sm:text-lg font-semibold text-neutral-900">{formatPrice(room.price)}</span>
+                  <span className="text-[10px] sm:text-xs text-neutral-500 ml-1">/night</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-neutral-500">
-                  <Users className="w-4 h-4" />
-                  <span className="text-xs">Up to {room.maxGuests} guests</span>
+                  <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="text-[10px] sm:text-xs">Up to {room.maxGuests} guests</span>
                 </div>
               </div>
 
               {/* Amenities */}
               <div>
-                <p className="block text-[13px] font-medium text-neutral-600 mb-1.5">Amenities</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {room.amenities.slice(0, 5).map((amenity, idx) => (
+                <p className="block text-[12px] sm:text-[13px] font-medium text-neutral-600 mb-1.5">Amenities</p>
+                <div className="flex flex-wrap gap-1 sm:gap-1.5">
+                  {room.amenities.slice(0, 4).map((amenity, idx) => (
                     <span
                       key={`${amenity}-${idx}`}
-                      className="px-2.5 py-1 bg-neutral-100 text-neutral-600 text-xs rounded-md"
+                      className="px-2 sm:px-2.5 py-0.5 sm:py-1 bg-neutral-100 text-neutral-600 text-[10px] sm:text-xs rounded-md"
                     >
                       {getAmenityLabel(amenity)}
                     </span>
                   ))}
-                  {room.amenities.length > 5 && (
-                    <span className="px-2.5 py-1 bg-neutral-100 text-neutral-500 text-xs rounded-md">
-                      +{room.amenities.length - 5} more
+                  {room.amenities.length > 4 && (
+                    <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 bg-neutral-100 text-neutral-500 text-[10px] sm:text-xs rounded-md">
+                      +{room.amenities.length - 4} more
                     </span>
                   )}
                 </div>
@@ -243,19 +246,19 @@ export default function RoomTypesTab() {
               {/* Features/Inclusions */}
               {room.features && room.features.length > 0 && (
                 <div>
-                  <p className="block text-[13px] font-medium text-neutral-600 mb-1.5">Features</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {room.features.slice(0, 4).map((feature, idx) => (
+                  <p className="block text-[12px] sm:text-[13px] font-medium text-neutral-600 mb-1.5">Features</p>
+                  <div className="flex flex-wrap gap-1 sm:gap-1.5">
+                    {room.features.slice(0, 3).map((feature, idx) => (
                       <span
                         key={idx}
-                        className="px-2.5 py-1 bg-neutral-50 text-neutral-600 text-xs rounded-md border border-neutral-200"
+                        className="px-2 sm:px-2.5 py-0.5 sm:py-1 bg-neutral-50 text-neutral-600 text-[10px] sm:text-xs rounded-md border border-neutral-200"
                       >
                         {feature}
                       </span>
                     ))}
-                    {room.features.length > 4 && (
-                      <span className="px-2.5 py-1 bg-neutral-50 text-neutral-500 text-xs rounded-md border border-neutral-200">
-                        +{room.features.length - 4} more
+                    {room.features.length > 3 && (
+                      <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 bg-neutral-50 text-neutral-500 text-[10px] sm:text-xs rounded-md border border-neutral-200">
+                        +{room.features.length - 3} more
                       </span>
                     )}
                   </div>
@@ -265,9 +268,9 @@ export default function RoomTypesTab() {
 
             {/* Delete Confirmation */}
             {deleteConfirm === room.id && (
-              <div className="px-6 py-4 bg-neutral-50 border-t border-neutral-200">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-neutral-600">Delete this room type?</p>
+              <div className="px-4 sm:px-6 py-3 sm:py-4 bg-neutral-50 border-t border-neutral-200">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <p className="text-[12px] sm:text-sm text-neutral-600">Delete this room type?</p>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"

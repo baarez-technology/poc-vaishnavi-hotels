@@ -100,31 +100,31 @@ function KPICard({ title, value, prefix = '', suffix = '', trend, trendValue, ic
   return (
     <div
       style={{ animationDelay: `${delay * 100}ms` }}
-      className="relative overflow-hidden rounded-[10px] bg-white p-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
+      className="relative overflow-hidden rounded-[10px] bg-white p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
     >
       {/* Header with Icon and Title */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${bgColorMap[accentColor]}`}>
-          <Icon className={`w-4 h-4 ${textColorMap[accentColor]}`} />
+      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+        <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${bgColorMap[accentColor]}`}>
+          <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${textColorMap[accentColor]}`} />
         </div>
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 truncate">
           {title}
         </p>
       </div>
 
       {/* Value */}
-      <p className="text-[28px] font-semibold tracking-tight text-neutral-900 mb-2">
+      <p className="text-xl sm:text-[28px] font-semibold tracking-tight text-neutral-900 mb-1.5 sm:mb-2">
         <AnimatedNumber value={value} prefix={prefix} suffix={suffix} />
       </p>
 
       {/* Comparison */}
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] text-neutral-400 font-medium">vs Last Month</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">vs Last Month</p>
         {trend && (
-          <div className={`flex items-center gap-1 text-[11px] font-semibold ${
+          <div className={`flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-[11px] font-semibold ${
             isPositive ? 'text-sage-600' : 'text-rose-600'
           }`}>
-            {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+            {isPositive ? <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : <TrendingDown className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
             {trendValue}
           </div>
         )}
@@ -141,11 +141,11 @@ function PremiumSearchBar({ value, onChange }) {
 
   return (
     <div
-      className={`relative h-11 rounded-lg overflow-hidden transition-all duration-300 ${
-        isFocused ? 'w-[400px] ring-2 ring-terra-500/30' : 'w-[320px]'
+      className={`relative h-10 sm:h-11 rounded-lg overflow-hidden transition-all duration-300 w-full sm:w-auto ${
+        isFocused ? 'sm:w-[400px] ring-2 ring-terra-500/30' : 'sm:w-[280px] lg:w-[320px]'
       } bg-white border border-neutral-200`}
     >
-      <Search className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${
+      <Search className={`absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${
         isFocused ? 'text-terra-400' : 'text-neutral-400'
       }`} />
       <input
@@ -155,12 +155,12 @@ function PremiumSearchBar({ value, onChange }) {
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         placeholder="Search guests, bookings..."
-        className="w-full h-full pl-11 pr-4 bg-transparent text-[13px] font-medium focus:outline-none text-neutral-900 placeholder:text-neutral-400"
+        className="w-full h-full pl-10 sm:pl-11 pr-10 sm:pr-4 bg-transparent text-xs sm:text-[13px] font-medium focus:outline-none text-neutral-900 placeholder:text-neutral-400"
       />
       {value && (
         <button
           onClick={() => onChange('')}
-          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full transition-colors hover:bg-neutral-100"
+          className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 p-1 rounded-full transition-colors hover:bg-neutral-100"
         >
           <X className="w-3.5 h-3.5 text-neutral-400" />
         </button>
@@ -208,14 +208,14 @@ function FilterChips({ filters, onFilterChange, onClearFilters }) {
   const hasFilters = filters.status !== 'all' || filters.source !== 'all';
 
   return (
-    <div className="flex items-center gap-3">
-      {/* Status Pills */}
-      <div className="flex items-center gap-1 p-1 rounded-lg bg-neutral-100">
+    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+      {/* Status Pills - scrollable on mobile */}
+      <div className="flex items-center gap-1 p-1 rounded-lg bg-neutral-100 overflow-x-auto max-w-full">
         {statusOptions.slice(0, 5).map((option) => (
           <button
             key={option.value}
             onClick={() => onFilterChange('status', option.value)}
-            className={`px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-200 ${
+            className={`px-2 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-[13px] font-semibold transition-all duration-200 whitespace-nowrap ${
               filters.status === option.value
                 ? 'bg-terra-500 text-white'
                 : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'
@@ -230,19 +230,19 @@ function FilterChips({ filters, onFilterChange, onClearFilters }) {
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className={`h-10 px-4 rounded-lg text-[13px] font-semibold flex items-center gap-2 transition-all ${
+          className={`h-9 sm:h-10 px-3 sm:px-4 rounded-lg text-[11px] sm:text-[13px] font-semibold flex items-center gap-1.5 sm:gap-2 transition-all ${
             filters.source !== 'all'
               ? 'bg-terra-50 text-terra-600 border border-terra-200'
               : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
           }`}
         >
-          <SlidersHorizontal className="w-4 h-4" />
-          {filters.source !== 'all' ? sourceOptions.find(s => s.value === filters.source)?.label : 'Channel'}
-          <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+          <SlidersHorizontal className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline">{filters.source !== 'all' ? sourceOptions.find(s => s.value === filters.source)?.label : 'Channel'}</span>
+          <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
         </button>
 
         {showFilters && (
-          <div className="absolute top-full right-0 mt-2 w-48 rounded-lg bg-white shadow-lg border border-neutral-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="absolute top-full right-0 mt-2 w-44 sm:w-48 rounded-lg bg-white shadow-lg border border-neutral-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
             {sourceOptions.map((option) => (
               <button
                 key={option.value}
@@ -250,7 +250,7 @@ function FilterChips({ filters, onFilterChange, onClearFilters }) {
                   onFilterChange('source', option.value);
                   setShowFilters(false);
                 }}
-                className={`w-full px-4 py-2.5 text-left text-[13px] font-medium transition-colors ${
+                className={`w-full px-3 sm:px-4 py-2 sm:py-2.5 text-left text-[11px] sm:text-[13px] font-medium transition-colors ${
                   filters.source === option.value
                     ? 'bg-terra-50 text-terra-600'
                     : 'text-neutral-700 hover:bg-neutral-50'
@@ -267,10 +267,10 @@ function FilterChips({ filters, onFilterChange, onClearFilters }) {
       {hasFilters && (
         <button
           onClick={onClearFilters}
-          className="h-10 px-3 rounded-lg text-[13px] font-medium flex items-center gap-2 bg-neutral-100 text-neutral-500 hover:bg-neutral-200 animate-in fade-in duration-200"
+          className="h-9 sm:h-10 px-2.5 sm:px-3 rounded-lg text-[11px] sm:text-[13px] font-medium flex items-center gap-1.5 sm:gap-2 bg-neutral-100 text-neutral-500 hover:bg-neutral-200 animate-in fade-in duration-200"
         >
-          <RefreshCw className="w-4 h-4" />
-          Reset
+          <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline">Reset</span>
         </button>
       )}
     </div>
@@ -282,14 +282,14 @@ function FilterChips({ filters, onFilterChange, onClearFilters }) {
 // ============================================
 function EditorialTabs({ activeTab, onTabChange, counts }) {
   const tabs = [
-    { id: 'all', label: 'All Reservations', icon: Calendar, count: counts.all },
-    { id: 'arrivals', label: 'Arriving Today', icon: LogIn, count: counts.arrivals },
-    { id: 'inhouse', label: 'In-House', icon: Bed, count: counts.inhouse },
-    { id: 'departures', label: 'Departing Today', icon: LogOut, count: counts.departures },
+    { id: 'all', label: 'All Reservations', shortLabel: 'All', icon: Calendar, count: counts.all },
+    { id: 'arrivals', label: 'Arriving Today', shortLabel: 'Arrivals', icon: LogIn, count: counts.arrivals },
+    { id: 'inhouse', label: 'In-House', shortLabel: 'In-House', icon: Bed, count: counts.inhouse },
+    { id: 'departures', label: 'Departing Today', shortLabel: 'Departures', icon: LogOut, count: counts.departures },
   ];
 
   return (
-    <div className="flex items-center gap-1 p-1 rounded-lg bg-neutral-100">
+    <div className="flex items-center gap-1 p-1 rounded-lg bg-neutral-100 overflow-x-auto max-w-full">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -298,16 +298,17 @@ function EditorialTabs({ activeTab, onTabChange, counts }) {
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`relative flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-semibold transition-all duration-300 ${
+            className={`relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg text-[11px] sm:text-[13px] font-semibold transition-all duration-300 whitespace-nowrap ${
               isActive
                 ? 'bg-white text-neutral-900 shadow-sm'
                 : 'text-neutral-600 hover:text-neutral-900'
             }`}
           >
-            <Icon className="w-4 h-4" />
-            <span>{tab.label}</span>
+            <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">{tab.label}</span>
+            <span className="sm:hidden">{tab.shortLabel}</span>
             {tab.count > 0 && (
-              <span className={`ml-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+              <span className={`ml-0.5 sm:ml-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[11px] font-semibold ${
                 isActive
                   ? 'bg-terra-500 text-white'
                   : 'bg-neutral-200 text-neutral-600'
@@ -336,17 +337,18 @@ function ViewToggle({ view, onViewChange }) {
             : 'text-neutral-400 hover:text-neutral-700'
         }`}
       >
-        <LayoutGrid className="w-5 h-5" />
+        <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5" />
       </button>
+      {/* Hide table view on mobile - cards view is better suited */}
       <button
         onClick={() => onViewChange('table')}
-        className={`p-2 rounded-lg transition-all ${
+        className={`hidden sm:block p-2 rounded-lg transition-all ${
           view === 'table'
             ? 'bg-white text-neutral-900 shadow-sm'
             : 'text-neutral-400 hover:text-neutral-700'
         }`}
       >
-        <Table2 className="w-5 h-5" />
+        <Table2 className="w-4 h-4 sm:w-5 sm:h-5" />
       </button>
     </div>
   );
@@ -390,105 +392,106 @@ function BookingCard({ booking, onClick, index = 0 }) {
       }`} />
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-4">
+        <div className="flex items-start justify-between gap-2 mb-3 sm:mb-4">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             {/* Avatar */}
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-semibold text-[11px] text-white ${
+            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center font-semibold text-[10px] sm:text-[11px] text-white flex-shrink-0 ${
               booking.vip ? 'bg-gradient-to-br from-gold-400 to-gold-600' : 'bg-gradient-to-br from-terra-400 to-terra-600'
             }`}>
               {booking.guest?.split(' ').filter(n => n).map(n => n[0]).join('') || 'G' || 'G'}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="text-[13px] font-semibold text-neutral-800">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <p className="text-xs sm:text-[13px] font-semibold text-neutral-800 truncate">
                   {booking.guest}
                 </p>
                 {booking.vip && (
-                  <Crown className="w-3.5 h-3.5 text-gold-500" />
+                  <Crown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gold-500 flex-shrink-0" />
                 )}
               </div>
-              <p className="text-[10px] font-medium text-neutral-400">
+              <p className="text-[9px] sm:text-[10px] font-medium text-neutral-400">
                 {booking.id}
               </p>
             </div>
           </div>
 
           {/* Status */}
-          <span className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border ${getStatusStyle(booking.status)}`}>
+          <span className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[9px] sm:text-[11px] font-medium border flex-shrink-0 ${getStatusStyle(booking.status)}`}>
             {status?.label}
           </span>
         </div>
 
         {/* Stay Details */}
-        <div className="grid grid-cols-3 gap-4 p-4 rounded-lg mb-4 bg-neutral-50/50">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg mb-3 sm:mb-4 bg-neutral-50/50">
           <div className="text-center">
-            <p className="text-[11px] mb-1 text-neutral-400">Check-in</p>
-            <p className="text-[13px] font-semibold text-neutral-900">
+            <p className="text-[9px] sm:text-[11px] mb-0.5 sm:mb-1 text-neutral-400">Check-in</p>
+            <p className="text-[11px] sm:text-[13px] font-semibold text-neutral-900">
               {formatDate(booking.checkIn)}
             </p>
           </div>
           <div className="text-center border-x border-neutral-200">
-            <p className="text-[11px] mb-1 text-neutral-400">Duration</p>
-            <p className="text-[13px] font-semibold text-neutral-900">
+            <p className="text-[9px] sm:text-[11px] mb-0.5 sm:mb-1 text-neutral-400">Duration</p>
+            <p className="text-[11px] sm:text-[13px] font-semibold text-neutral-900">
               {booking.nights}N
             </p>
           </div>
           <div className="text-center">
-            <p className="text-[11px] mb-1 text-neutral-400">Check-out</p>
-            <p className="text-[13px] font-semibold text-neutral-900">
+            <p className="text-[9px] sm:text-[11px] mb-0.5 sm:mb-1 text-neutral-400">Check-out</p>
+            <p className="text-[11px] sm:text-[13px] font-semibold text-neutral-900">
               {formatDate(booking.checkOut)}
             </p>
           </div>
         </div>
 
         {/* Room Info */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Bed className="w-4 h-4 text-neutral-400" />
-            <span className="text-[13px] font-medium text-neutral-900">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3 sm:mb-4">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Bed className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400" />
+            <span className="text-[11px] sm:text-[13px] font-medium text-neutral-900">
               Room {booking.room}
             </span>
-            <span className="text-[11px] text-neutral-400">
+            <span className="text-[9px] sm:text-[11px] text-neutral-400 hidden sm:inline">
               • {booking.roomType}
             </span>
           </div>
-          <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium ${source?.color}`}>
+          <div className={`flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg text-[9px] sm:text-[11px] font-medium ${source?.color}`}>
             <span>{source?.icon}</span>
-            <span>{booking.source}</span>
+            <span className="hidden sm:inline">{booking.source}</span>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-4 border-t border-dashed border-neutral-200">
+        <div className="flex items-center justify-between gap-3 pt-3 sm:pt-4 border-t border-dashed border-neutral-200">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <p className="text-[11px] text-neutral-400">Total</p>
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+              <p className="text-[9px] sm:text-[11px] text-neutral-400">Total</p>
               {booking.balance > 0 && (
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-amber-100 text-amber-700">
+                <span className="px-1 sm:px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-medium bg-amber-100 text-amber-700">
                   ${booking.balance.toLocaleString()} due
                 </span>
               )}
               {booking.paymentStatus === 'paid' && (
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-sage-100 text-sage-700">
+                <span className="px-1 sm:px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-medium bg-sage-100 text-sage-700">
                   Paid ✓
                 </span>
               )}
             </div>
-            <p className="text-xl font-semibold text-neutral-900">
+            <p className="text-lg sm:text-xl font-semibold text-neutral-900">
               ${booking.amount.toLocaleString()}
             </p>
             {booking.amountPaid > 0 && booking.balance > 0 && (
-              <p className="text-[10px] text-neutral-500 mt-1">
+              <p className="text-[9px] sm:text-[10px] text-neutral-500 mt-0.5 sm:mt-1">
                 ${booking.amountPaid.toLocaleString()} paid
               </p>
             )}
           </div>
 
-          <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-semibold transition-all bg-neutral-100 text-neutral-600 group-hover:bg-terra-500 group-hover:text-white">
-            View Details
-            <ArrowRight className="w-4 h-4" />
+          <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-[13px] font-semibold transition-all bg-neutral-100 text-neutral-600 group-hover:bg-terra-500 group-hover:text-white">
+            <span className="hidden sm:inline">View Details</span>
+            <span className="sm:hidden">View</span>
+            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </div>
         </div>
       </div>
@@ -637,31 +640,31 @@ function BookingDetailDrawer({ booking, isOpen, onClose, onStatusChange }) {
       />
 
       {/* Drawer */}
-      <div className="fixed right-0 top-0 bottom-0 w-full max-w-lg z-[70] overflow-hidden animate-in slide-in-from-right duration-300 bg-white">
+      <div className="fixed right-0 top-0 bottom-0 w-full sm:max-w-lg z-[70] overflow-hidden animate-in slide-in-from-right duration-300 bg-white">
         {/* Header */}
-        <div className="sticky top-0 z-10 px-6 py-5 border-b bg-white/90 border-neutral-200 backdrop-blur-xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-lg flex items-center justify-center font-semibold text-[13px] text-white ${
+        <div className="sticky top-0 z-10 px-4 sm:px-6 py-4 sm:py-5 border-b bg-white/90 border-neutral-200 backdrop-blur-xl">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center font-semibold text-[11px] sm:text-[13px] text-white flex-shrink-0 ${
                 booking.vip ? 'bg-gradient-to-br from-gold-400 to-gold-600' : 'bg-gradient-to-br from-terra-400 to-terra-600'
               }`}>
                 {booking.guest?.split(' ').filter(n => n).map(n => n[0]).join('') || 'G' || 'G'}
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-semibold text-neutral-900">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <h2 className="text-base sm:text-lg font-semibold text-neutral-900 truncate">
                     {booking.guest}
                   </h2>
-                  {booking.vip && <Crown className="w-4 h-4 text-gold-500" />}
+                  {booking.vip && <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gold-500 flex-shrink-0" />}
                 </div>
-                <p className="text-[11px] font-medium text-neutral-400">
+                <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400">
                   {booking.id}
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg transition-colors hover:bg-neutral-100"
+              className="p-2 rounded-lg transition-colors hover:bg-neutral-100 flex-shrink-0"
             >
               <X className="w-5 h-5 text-neutral-400" />
             </button>
@@ -716,50 +719,50 @@ function BookingDetailDrawer({ booking, isOpen, onClose, onStatusChange }) {
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto h-[calc(100vh-180px)] px-6 py-6 space-y-6">
+        <div className="overflow-y-auto h-[calc(100vh-180px)] px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
           {/* Stay Details */}
           <div className="grid grid-cols-3 gap-1 p-1 rounded-lg overflow-hidden bg-neutral-50">
-            <div className="p-4 rounded-lg text-center bg-white">
-              <p className="text-[11px] font-medium mb-1 text-neutral-400">Check-in</p>
-              <p className="text-[13px] font-semibold text-neutral-900">
+            <div className="p-2.5 sm:p-4 rounded-lg text-center bg-white">
+              <p className="text-[9px] sm:text-[11px] font-medium mb-0.5 sm:mb-1 text-neutral-400">Check-in</p>
+              <p className="text-[11px] sm:text-[13px] font-semibold text-neutral-900">
                 {formatDate(booking.checkIn)}
               </p>
             </div>
-            <div className="p-4 rounded-lg text-center bg-white">
-              <p className="text-[11px] font-medium mb-1 text-neutral-400">Duration</p>
-              <p className="text-[13px] font-semibold text-neutral-900">
+            <div className="p-2.5 sm:p-4 rounded-lg text-center bg-white">
+              <p className="text-[9px] sm:text-[11px] font-medium mb-0.5 sm:mb-1 text-neutral-400">Duration</p>
+              <p className="text-[11px] sm:text-[13px] font-semibold text-neutral-900">
                 {booking.nights} nights
               </p>
             </div>
-            <div className="p-4 rounded-lg text-center bg-white">
-              <p className="text-[11px] font-medium mb-1 text-neutral-400">Check-out</p>
-              <p className="text-[13px] font-semibold text-neutral-900">
+            <div className="p-2.5 sm:p-4 rounded-lg text-center bg-white">
+              <p className="text-[9px] sm:text-[11px] font-medium mb-0.5 sm:mb-1 text-neutral-400">Check-out</p>
+              <p className="text-[11px] sm:text-[13px] font-semibold text-neutral-900">
                 {formatDate(booking.checkOut)}
               </p>
             </div>
           </div>
 
           {/* Room & Guests */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-lg bg-neutral-50">
-              <div className="flex items-center gap-2 mb-2">
-                <Bed className="w-4 h-4 text-neutral-400" />
-                <span className="text-[11px] font-medium text-neutral-400">Room</span>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="p-3 sm:p-4 rounded-lg bg-neutral-50">
+              <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                <Bed className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400" />
+                <span className="text-[10px] sm:text-[11px] font-medium text-neutral-400">Room</span>
               </div>
-              <p className="text-lg font-semibold text-neutral-900">
+              <p className="text-base sm:text-lg font-semibold text-neutral-900">
                 {booking.room || 'Unassigned'}
               </p>
-              <p className="text-[11px] text-neutral-500">{booking.roomType}</p>
+              <p className="text-[10px] sm:text-[11px] text-neutral-500">{booking.roomType}</p>
             </div>
-            <div className="p-4 rounded-lg bg-neutral-50">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="w-4 h-4 text-neutral-400" />
-                <span className="text-[11px] font-medium text-neutral-400">Guests</span>
+            <div className="p-3 sm:p-4 rounded-lg bg-neutral-50">
+              <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400" />
+                <span className="text-[10px] sm:text-[11px] font-medium text-neutral-400">Guests</span>
               </div>
-              <p className="text-lg font-semibold text-neutral-900">
+              <p className="text-base sm:text-lg font-semibold text-neutral-900">
                 {booking.guests}
               </p>
-              <p className="text-[11px] text-neutral-500">
+              <p className="text-[10px] sm:text-[11px] text-neutral-500">
                 {booking.guests === 1 ? 'Adult' : 'Adults'}
               </p>
             </div>
@@ -873,25 +876,26 @@ function BookingDetailDrawer({ booking, isOpen, onClose, onStatusChange }) {
 // ============================================
 function LuxuryPagination({ currentPage, totalPages, onPageChange }) {
   const pages = [];
-  for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+  const maxPagesToShow = typeof window !== 'undefined' && window.innerWidth < 640 ? 3 : 5;
+  for (let i = 1; i <= Math.min(totalPages, maxPagesToShow); i++) {
     pages.push(i);
   }
 
   return (
-    <div className="flex items-center justify-center gap-2">
+    <div className="flex items-center justify-center gap-1 sm:gap-2">
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-100"
+        className="p-1.5 sm:p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-100"
       >
-        <ChevronLeft className="w-5 h-5 text-neutral-400" />
+        <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-400" />
       </button>
 
       {pages.map((page) => (
         <button
           key={page}
           onClick={() => onPageChange(page)}
-          className={`w-10 h-10 rounded-lg text-[13px] font-semibold transition-all ${
+          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-[11px] sm:text-[13px] font-semibold transition-all ${
             currentPage === page
               ? 'bg-terra-500 text-white'
               : 'text-neutral-600 hover:bg-neutral-100'
@@ -901,12 +905,12 @@ function LuxuryPagination({ currentPage, totalPages, onPageChange }) {
         </button>
       ))}
 
-      {totalPages > 5 && (
+      {totalPages > maxPagesToShow && (
         <>
-          <span className="text-neutral-400">...</span>
+          <span className="text-neutral-400 text-sm">...</span>
           <button
             onClick={() => onPageChange(totalPages)}
-            className={`w-10 h-10 rounded-lg text-[13px] font-semibold transition-all ${
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-[11px] sm:text-[13px] font-semibold transition-all ${
               currentPage === totalPages
                 ? 'bg-terra-500 text-white'
                 : 'text-neutral-600 hover:bg-neutral-100'
@@ -920,9 +924,9 @@ function LuxuryPagination({ currentPage, totalPages, onPageChange }) {
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-100"
+        className="p-1.5 sm:p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-100"
       >
-        <ChevronRight className="w-5 h-5 text-neutral-400" />
+        <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-400" />
       </button>
     </div>
   );
@@ -1184,43 +1188,44 @@ export default function CMSBookings() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <main className="px-10 py-6">
+      <main className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6">
         {/* ============================================ */}
         {/* HEADER SECTION */}
         {/* ============================================ */}
-        <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-terra-50">
-                <Calendar className="w-5 h-5 text-terra-600" />
+        <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 sm:gap-6 mb-4 sm:mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="space-y-1.5 sm:space-y-2">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center bg-terra-50 flex-shrink-0">
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-terra-600" />
               </div>
-              <span className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+              <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
                 Reservations
               </span>
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
               Booking Management
             </h1>
-            <p className="text-[13px] text-neutral-500 font-medium">
+            <p className="text-[11px] sm:text-[13px] text-neutral-500 font-medium hidden sm:block">
               Orchestrate your guest experiences with precision and elegance.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={fetchBookings}
               disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded-lg text-[13px] font-semibold transition-all duration-300 disabled:opacity-50"
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded-lg text-[11px] sm:text-[13px] font-semibold transition-all duration-300 disabled:opacity-50"
             >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
+              <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Refresh</span>
             </button>
             <button
               onClick={() => setIsNewBookingOpen(true)}
-              className="flex items-center gap-2.5 px-5 py-2.5 bg-terra-500 hover:bg-terra-600 text-white rounded-lg text-[13px] font-semibold transition-all duration-300 hover:scale-[1.01] active:scale-[0.99]"
+              className="flex items-center gap-1.5 sm:gap-2.5 px-3 sm:px-5 py-2 sm:py-2.5 bg-terra-500 hover:bg-terra-600 text-white rounded-lg text-[11px] sm:text-[13px] font-semibold transition-all duration-300 hover:scale-[1.01] active:scale-[0.99]"
             >
-              <Plus className="w-4 h-4" />
-              New Reservation
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">New Reservation</span>
+              <span className="sm:hidden">New</span>
             </button>
           </div>
         </header>
@@ -1228,62 +1233,54 @@ export default function CMSBookings() {
         {/* ============================================ */}
         {/* KPI GRID */}
         {/* ============================================ */}
-        <div className="grid grid-cols-12 gap-6 mb-6">
-          <div className="col-span-12 sm:col-span-6 lg:col-span-3">
-            <KPICard
-              title="Revenue Collected"
-              value={stats.totalRevenue}
-              subtitle={stats.pendingRevenue > 0 ? `$${stats.pendingRevenue.toLocaleString()} pending` : null}
-              prefix="$"
-              trend="up"
-              trendValue="+12.5%"
-              icon={DollarSign}
-              accentColor="terra"
-              delay={0}
-            />
-          </div>
-          <div className="col-span-12 sm:col-span-6 lg:col-span-3">
-            <KPICard
-              title="Active Bookings"
-              value={counts.all}
-              trend="up"
-              trendValue="+8"
-              icon={Calendar}
-              accentColor="ocean"
-              delay={1}
-            />
-          </div>
-          <div className="col-span-12 sm:col-span-6 lg:col-span-3">
-            <KPICard
-              title="Guests In-House"
-              value={stats.totalGuests}
-              icon={Users}
-              accentColor="sage"
-              delay={2}
-            />
-          </div>
-          <div className="col-span-12 sm:col-span-6 lg:col-span-3">
-            <KPICard
-              title="VIP Guests"
-              value={stats.vipGuests}
-              icon={Crown}
-              accentColor="gold"
-              delay={3}
-            />
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
+          <KPICard
+            title="Revenue Collected"
+            value={stats.totalRevenue}
+            subtitle={stats.pendingRevenue > 0 ? `$${stats.pendingRevenue.toLocaleString()} pending` : null}
+            prefix="$"
+            trend="up"
+            trendValue="+12.5%"
+            icon={DollarSign}
+            accentColor="terra"
+            delay={0}
+          />
+          <KPICard
+            title="Active Bookings"
+            value={counts.all}
+            trend="up"
+            trendValue="+8"
+            icon={Calendar}
+            accentColor="ocean"
+            delay={1}
+          />
+          <KPICard
+            title="Guests In-House"
+            value={stats.totalGuests}
+            icon={Users}
+            accentColor="sage"
+            delay={2}
+          />
+          <KPICard
+            title="VIP Guests"
+            value={stats.vipGuests}
+            icon={Crown}
+            accentColor="gold"
+            delay={3}
+          />
         </div>
 
         {/* ============================================ */}
         {/* TABS & CONTROLS */}
         {/* ============================================ */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-6 mb-3 sm:mb-6">
           <EditorialTabs
             activeTab={activeTab}
             onTabChange={setActiveTab}
             counts={counts}
           />
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <ViewToggle view={viewMode} onViewChange={setViewMode} />
           </div>
         </div>
@@ -1291,7 +1288,7 @@ export default function CMSBookings() {
         {/* ============================================ */}
         {/* SEARCH & FILTERS */}
         {/* ============================================ */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-6 mb-4 sm:mb-6">
           <PremiumSearchBar value={searchQuery} onChange={setSearchQuery} />
           <FilterChips
             filters={filters}
@@ -1333,7 +1330,7 @@ export default function CMSBookings() {
         ) : viewMode === 'cards' ? (
           <>
             {paginatedBookings.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                 {paginatedBookings.map((booking, index) => (
                   <BookingCard
                     key={booking.id}
@@ -1344,12 +1341,12 @@ export default function CMSBookings() {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-20 rounded-[10px] bg-neutral-50 animate-in fade-in duration-300">
-                <Calendar className="w-12 h-12 mb-4 text-neutral-300" />
-                <h3 className="text-sm font-semibold mb-2 text-neutral-900">
+              <div className="flex flex-col items-center justify-center py-12 sm:py-20 rounded-[10px] bg-neutral-50 animate-in fade-in duration-300">
+                <Calendar className="w-10 h-10 sm:w-12 sm:h-12 mb-3 sm:mb-4 text-neutral-300" />
+                <h3 className="text-xs sm:text-sm font-semibold mb-1.5 sm:mb-2 text-neutral-900">
                   No reservations found
                 </h3>
-                <p className="text-[13px] text-neutral-500">
+                <p className="text-[11px] sm:text-[13px] text-neutral-500 text-center px-4">
                   {searchQuery || filters.status !== 'all' || filters.source !== 'all'
                     ? 'Try adjusting your filters or search query'
                     : 'No bookings available. Create your first reservation to get started.'}
@@ -1361,30 +1358,33 @@ export default function CMSBookings() {
           <>
             {paginatedBookings.length > 0 ? (
               <div className="rounded-[10px] bg-white overflow-hidden">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-neutral-50/30">
-                      <th className="py-4 px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Guest</th>
-                      <th className="py-4 px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Check-in</th>
-                      <th className="py-4 px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Nights</th>
-                      <th className="py-4 px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Room</th>
-                      <th className="py-4 px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Status</th>
-                      <th className="py-4 px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Source</th>
-                      <th className="py-4 px-6 text-right text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Amount</th>
-                      <th className="py-4 px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-100">
-                    {paginatedBookings.map((booking, index) => (
-                      <BookingTableRow
-                        key={booking.id}
-                        booking={booking}
-                        onClick={handleBookingClick}
-                        index={index}
-                      />
-                    ))}
-                  </tbody>
-                </table>
+                {/* Horizontal scroll wrapper for mobile/tablet */}
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[800px]">
+                    <thead>
+                      <tr className="bg-neutral-50/30">
+                        <th className="py-3 sm:py-4 px-4 sm:px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Guest</th>
+                        <th className="py-3 sm:py-4 px-4 sm:px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Check-in</th>
+                        <th className="py-3 sm:py-4 px-4 sm:px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Nights</th>
+                        <th className="py-3 sm:py-4 px-4 sm:px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Room</th>
+                        <th className="py-3 sm:py-4 px-4 sm:px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Status</th>
+                        <th className="py-3 sm:py-4 px-4 sm:px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Source</th>
+                        <th className="py-3 sm:py-4 px-4 sm:px-6 text-right text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Amount</th>
+                        <th className="py-3 sm:py-4 px-4 sm:px-6 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-100">
+                      {paginatedBookings.map((booking, index) => (
+                        <BookingTableRow
+                          key={booking.id}
+                          booking={booking}
+                          onClick={handleBookingClick}
+                          index={index}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-20 rounded-[10px] bg-neutral-50 animate-in fade-in duration-300">
@@ -1406,15 +1406,17 @@ export default function CMSBookings() {
         {/* PAGINATION */}
         {/* ============================================ */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between pt-6">
-            <p className="text-[13px] text-neutral-400 font-medium">
-              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredBookings.length)} of {filteredBookings.length} reservations
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 pt-4 sm:pt-6">
+            <p className="text-[11px] sm:text-[13px] text-neutral-400 font-medium order-2 sm:order-1">
+              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredBookings.length)} of {filteredBookings.length}
             </p>
-            <LuxuryPagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-            />
+            <div className="order-1 sm:order-2">
+              <LuxuryPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </div>
           </div>
         )}
       </main>

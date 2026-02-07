@@ -57,9 +57,7 @@ export default function InventoryTable({
   };
 
   const handleStockUpdate = (itemId, isAddition) => {
-    // Default to 1 if no quantity entered - allows direct +/- button clicks
-    const inputValue = stockInput[itemId];
-    const quantity = inputValue ? parseInt(inputValue, 10) : 1;
+    const quantity = parseInt(stockInput[itemId] || 0, 10);
     if (quantity > 0) {
       onUpdateStock(itemId, quantity, isAddition);
       setStockInput(prev => ({ ...prev, [itemId]: '' }));
@@ -85,48 +83,48 @@ export default function InventoryTable({
   const lowStockCount = inventory.filter(item => item.stockLevel <= item.minStock).length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Header Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-neutral-200 p-4">
-          <div className="flex items-center gap-2 text-neutral-500 mb-1">
-            <Package className="w-4 h-4" />
-            <span className="text-xs font-medium">Total Items</span>
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        <div className="bg-white rounded-xl border border-neutral-200 p-3 sm:p-4">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-neutral-500 mb-1">
+            <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="text-[10px] sm:text-xs font-medium">Total Items</span>
           </div>
-          <p className="text-2xl font-bold text-neutral-900">{inventory.length}</p>
+          <p className="text-lg sm:text-2xl font-bold text-neutral-900">{inventory.length}</p>
         </div>
-        <div className="bg-white rounded-xl border border-neutral-200 p-4">
-          <div className="flex items-center gap-2 text-rose-500 mb-1">
-            <AlertTriangle className="w-4 h-4" />
-            <span className="text-xs font-medium">Low Stock</span>
+        <div className="bg-white rounded-xl border border-neutral-200 p-3 sm:p-4">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-rose-500 mb-1">
+            <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="text-[10px] sm:text-xs font-medium">Low Stock</span>
           </div>
-          <p className="text-2xl font-bold text-rose-600">{lowStockCount}</p>
+          <p className="text-lg sm:text-2xl font-bold text-rose-600">{lowStockCount}</p>
         </div>
-        <div className="bg-white rounded-xl border border-neutral-200 p-4">
-          <div className="flex items-center gap-2 text-neutral-500 mb-1">
-            <span className="text-xs font-medium">Total Value</span>
+        <div className="bg-white rounded-xl border border-neutral-200 p-3 sm:p-4">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-neutral-500 mb-1">
+            <span className="text-[10px] sm:text-xs font-medium">Total Value</span>
           </div>
-          <p className="text-2xl font-bold text-neutral-900">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p className="text-lg sm:text-2xl font-bold text-neutral-900">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl border border-neutral-200 p-4">
-        <div className="flex flex-wrap items-center gap-4">
+      <div className="bg-white rounded-xl border border-neutral-200 p-3 sm:p-4">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
           {/* Search */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+          <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
+            <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400" />
             <input
               type="text"
               placeholder="Search items..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
+              className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 border border-neutral-200 rounded-lg text-[12px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
             />
           </div>
 
           {/* Category */}
-          <div className="min-w-[160px]">
+          <div className="min-w-[120px] sm:min-w-[160px]">
             <CustomDropdown
               options={[
                 { value: 'all', label: 'All Categories' },
@@ -142,7 +140,7 @@ export default function InventoryTable({
           </div>
 
           {/* Stock Filter */}
-          <div className="min-w-[160px]">
+          <div className="min-w-[120px] sm:min-w-[160px]">
             <CustomDropdown
               options={[
                 { value: 'all', label: 'All Stock Levels' },
@@ -158,10 +156,11 @@ export default function InventoryTable({
           {/* Add Item Button */}
           <button
             onClick={onAddItem}
-            className="flex items-center gap-2 px-4 py-2 bg-[#A57865] text-white rounded-lg text-sm font-medium hover:bg-[#A57865]/90 transition-colors"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-[#A57865] text-white rounded-lg text-[12px] sm:text-sm font-medium hover:bg-[#A57865]/90 transition-colors"
           >
-            <Plus className="w-4 h-4" />
-            Add Item
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Add Item</span>
+            <span className="sm:hidden">Add</span>
           </button>
         </div>
       </div>

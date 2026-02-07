@@ -11,9 +11,21 @@ export default defineConfig({
     allowedHosts: [
       '.pinggy.link',
       '.pinggy.io',
+      '.ngrok-free.app',
+      '.ngrok.io',
       'localhost',
       '127.0.0.1',
     ],
+    // Disable browser caching in development
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    },
+    // Force HMR to work properly
+    hmr: {
+      overlay: true,
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
@@ -41,6 +53,10 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
+        // Ensure content hash in filenames for cache busting
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
           ui: ['framer-motion', 'lucide-react'],

@@ -36,8 +36,9 @@ export default function BookingWidgets({ bookings = [], className = '' }) {
 
   // Calculate occupancy metrics
   const occupancyData = useMemo(() => {
-    const checkedIn = bookings.filter(b => b.status === 'CHECKED-IN').length;
-    const confirmed = bookings.filter(b => b.status === 'CONFIRMED').length;
+    // Use case-insensitive comparison (API returns lowercase)
+    const checkedIn = bookings.filter(b => b.status?.toLowerCase() === 'checked-in').length;
+    const confirmed = bookings.filter(b => b.status?.toLowerCase() === 'confirmed').length;
     const totalRooms = 50; // Simulated total rooms
 
     return {

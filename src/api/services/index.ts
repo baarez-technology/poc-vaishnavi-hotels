@@ -52,9 +52,6 @@ export * from './overbooking.service';
 // Maintenance
 export * from './maintenance.service';
 
-// Inventory Management
-export * from './inventory.service';
-
 // CRM AI Services
 export * from './crm-ai.service';
 export * from './ab-testing.service';

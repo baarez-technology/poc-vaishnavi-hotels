@@ -422,7 +422,7 @@ const EquipmentIssues = () => {
 
       {/* KPI Cards - 12 Column Grid matching admin dashboard */}
       <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Pending"
             value={issuesByStatus.pending}
@@ -431,7 +431,7 @@ const EquipmentIssues = () => {
             color="gold"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="In Progress"
             value={issuesByStatus.in_progress}
@@ -440,7 +440,7 @@ const EquipmentIssues = () => {
             color="ocean"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Critical"
             value={issuesByStatus.critical}
@@ -449,7 +449,7 @@ const EquipmentIssues = () => {
             color="danger"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Resolved"
             value={issuesByStatus.resolved}

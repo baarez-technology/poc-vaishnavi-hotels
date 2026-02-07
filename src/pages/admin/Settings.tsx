@@ -1,13 +1,14 @@
 export default function Settings() {
   return (
-    <div className="max-w-[1440px] mx-auto px-8 py-8 space-y-8">
-      <div>
-        <h1 className="text-neutral-900 font-sans  text-3xl font-semibold mb-2">Settings</h1>
-        <p className="text-neutral-600 text-sm">Configure system preferences and integrations</p>
-      </div>
+    <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">Settings</h1>
+          <p className="text-[12px] sm:text-[13px] text-neutral-500 mt-1">Configure system preferences and integrations</p>
+        </div>
 
-      <div className="bg-white rounded-xl p-8 border border-neutral-200 transition-all duration-200">
-        <div className="text-center py-12">
+      <div className="bg-white rounded-[10px] p-4 sm:p-6 lg:p-8 transition-all duration-200">
+        <div className="text-center py-8 sm:py-12">
           <div className="w-16 h-16 bg-[#A57865]/10 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
             <svg
               className="w-8 h-8 text-[#A57865]"
@@ -29,12 +30,13 @@ export default function Settings() {
               />
             </svg>
           </div>
-          <h3 className="text-xl font-semibold text-neutral-900 mb-2">System Settings</h3>
-          <p className="text-neutral-600 max-w-md mx-auto">
+          <h3 className="text-lg sm:text-xl font-semibold text-neutral-900 mb-2">System Settings</h3>
+          <p className="text-sm text-neutral-600 max-w-md mx-auto px-4">
             This is the Settings page. Future UI will include property configuration,
             user management, integrations, billing, and system preferences.
           </p>
         </div>
+      </div>
       </div>
     </div>
   );

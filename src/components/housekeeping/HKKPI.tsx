@@ -1,6 +1,6 @@
 import { AlertTriangle, Clock, CheckCircle, ShieldCheck, Users, Zap, Timer, ClipboardCheck, TrendingUp, TrendingDown } from 'lucide-react';
 
-export default function HKKPI({ rooms, staff, onStatusClick }) {
+export default function HKKPI({ rooms, staff }) {
   // Calculate KPIs
   const dirty = rooms.filter(r => r.status === 'dirty').length;
   const inProgress = rooms.filter(r => r.status === 'in_progress').length;
@@ -35,9 +35,7 @@ export default function HKKPI({ rooms, staff, onStatusClick }) {
       iconColor: 'text-rose-600',
       trend: dirty > 10 ? 'up' : 'down',
       trendValue: dirty > 10 ? '+3' : '-2',
-      trendColor: dirty > 10 ? 'text-rose-600' : 'text-sage-600',
-      statusFilter: 'dirty',
-      clickable: true
+      trendColor: dirty > 10 ? 'text-rose-600' : 'text-sage-600'
     },
     {
       id: 'in_progress',
@@ -49,9 +47,7 @@ export default function HKKPI({ rooms, staff, onStatusClick }) {
       iconColor: 'text-gold-700',
       trend: 'neutral',
       trendValue: '0',
-      trendColor: 'text-neutral-500',
-      statusFilter: 'in_progress',
-      clickable: true
+      trendColor: 'text-neutral-500'
     },
     {
       id: 'clean',
@@ -63,9 +59,7 @@ export default function HKKPI({ rooms, staff, onStatusClick }) {
       iconColor: 'text-sage-600',
       trend: clean > 20 ? 'up' : 'down',
       trendValue: clean > 20 ? '+5' : '-1',
-      trendColor: clean > 20 ? 'text-sage-600' : 'text-rose-600',
-      statusFilter: 'clean',
-      clickable: true
+      trendColor: clean > 20 ? 'text-sage-600' : 'text-rose-600'
     },
     {
       id: 'inspected',
@@ -77,9 +71,7 @@ export default function HKKPI({ rooms, staff, onStatusClick }) {
       iconColor: 'text-sage-600',
       trend: 'up',
       trendValue: '+2',
-      trendColor: 'text-sage-600',
-      statusFilter: 'inspected',
-      clickable: true
+      trendColor: 'text-sage-600'
     },
     {
       id: 'avg_time',
@@ -91,8 +83,7 @@ export default function HKKPI({ rooms, staff, onStatusClick }) {
       iconColor: 'text-terra-600',
       trend: avgCleaningTime <= 25 ? 'down' : 'up',
       trendValue: avgCleaningTime <= 25 ? '-3m' : '+5m',
-      trendColor: avgCleaningTime <= 25 ? 'text-sage-600' : 'text-rose-600',
-      clickable: false
+      trendColor: avgCleaningTime <= 25 ? 'text-sage-600' : 'text-rose-600'
     },
     {
       id: 'staff',
@@ -104,8 +95,7 @@ export default function HKKPI({ rooms, staff, onStatusClick }) {
       iconColor: 'text-sage-600',
       trend: 'neutral',
       trendValue: `/${staff?.length || 0}`,
-      trendColor: 'text-neutral-900',
-      clickable: false
+      trendColor: 'text-neutral-900'
     },
     {
       id: 'urgent',
@@ -117,9 +107,7 @@ export default function HKKPI({ rooms, staff, onStatusClick }) {
       iconColor: urgent > 0 ? 'text-rose-600' : 'text-sage-600',
       trend: urgent > 3 ? 'up' : 'down',
       trendValue: urgent > 3 ? '+2' : '0',
-      trendColor: urgent > 3 ? 'text-rose-600' : 'text-sage-600',
-      priorityFilter: 'high',
-      clickable: true
+      trendColor: urgent > 3 ? 'text-rose-600' : 'text-sage-600'
     },
     {
       id: 'pending',
@@ -131,24 +119,12 @@ export default function HKKPI({ rooms, staff, onStatusClick }) {
       iconColor: 'text-gold-700',
       trend: pendingInspection > 5 ? 'up' : 'neutral',
       trendValue: pendingInspection > 5 ? `${pendingInspection} waiting` : 'On track',
-      trendColor: pendingInspection > 5 ? 'text-gold-700' : 'text-sage-600',
-      statusFilter: 'clean',
-      clickable: true
+      trendColor: pendingInspection > 5 ? 'text-gold-700' : 'text-sage-600'
     }
   ];
 
-  const handleKPIClick = (kpi) => {
-    if (!kpi.clickable || !onStatusClick) return;
-
-    if (kpi.statusFilter) {
-      onStatusClick({ type: 'status', value: kpi.statusFilter });
-    } else if (kpi.priorityFilter) {
-      onStatusClick({ type: 'priority', value: kpi.priorityFilter });
-    }
-  };
-
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
       {kpis.map((kpi) => {
         const Icon = kpi.icon;
         const TrendIcon = kpi.trend === 'up' ? TrendingUp : kpi.trend === 'down' ? TrendingDown : null;
@@ -156,36 +132,30 @@ export default function HKKPI({ rooms, staff, onStatusClick }) {
         return (
           <div
             key={kpi.id}
-            onClick={() => handleKPIClick(kpi)}
-            className={`bg-white rounded-[10px] p-6 transition-all ${
-              kpi.clickable && onStatusClick
-                ? 'cursor-pointer hover:shadow-md hover:border-terra-200 border border-transparent'
-                : ''
-            }`}
-            title={kpi.clickable ? `Click to filter by ${kpi.title.toLowerCase()}` : undefined}
+            className="bg-white rounded-[10px] p-4 sm:p-6"
           >
-            {/* Header with Icon and Title */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${kpi.iconBgColor}`}>
-                <Icon className={`w-4 h-4 ${kpi.iconColor}`} />
+              {/* Header with Icon and Title */}
+              <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${kpi.iconBgColor}`}>
+                  <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${kpi.iconColor}`} />
+                </div>
+                <p className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 truncate">
+                  {kpi.title}
+                </p>
               </div>
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
-                {kpi.title}
-              </p>
-            </div>
 
-            {/* Value + Trend Row */}
-            <div className="flex items-center justify-between">
-              <p className="text-[28px] font-semibold tracking-tight text-neutral-900">
-                {kpi.value}
-              </p>
-              <p className={`text-[11px] font-medium ${kpi.trendColor} flex items-center gap-1`}>
-                {TrendIcon && (
-                  <TrendIcon className="w-3 h-3" />
-                )}
-                <span>{kpi.trendValue}</span>
-              </p>
-            </div>
+              {/* Value + Trend Row */}
+              <div className="flex items-center justify-between">
+                <p className="text-xl sm:text-[28px] font-semibold tracking-tight text-neutral-900">
+                  {kpi.value}
+                </p>
+                <p className={`text-[10px] sm:text-[11px] font-medium ${kpi.trendColor} flex items-center gap-1`}>
+                  {TrendIcon && (
+                    <TrendIcon className="w-3 h-3" />
+                  )}
+                  <span className="hidden sm:inline">{kpi.trendValue}</span>
+                </p>
+              </div>
           </div>
         );
       })}

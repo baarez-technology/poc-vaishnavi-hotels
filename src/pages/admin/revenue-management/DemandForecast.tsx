@@ -290,24 +290,24 @@ const DemandForecast = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <main className="px-10 py-6 space-y-6">
+      <main className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Header */}
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
               Demand Forecast
             </h1>
-            <p className="text-[13px] text-neutral-500 mt-1">
+            <p className="text-xs sm:text-[13px] text-neutral-500 mt-1">
               AI-powered demand predictions and pricing recommendations
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1 p-1 rounded-lg bg-neutral-100">
               {[14, 30, 60, 90].map((days) => (
                 <button
                   key={days}
                   onClick={() => setDateRange(days)}
-                  className={`px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-200 ${
+                  className={`px-2 sm:px-4 py-1.5 rounded-lg text-xs sm:text-[13px] font-semibold transition-all duration-200 ${
                     dateRange === days
                       ? 'bg-white text-neutral-900 shadow-sm'
                       : 'text-neutral-500 hover:text-neutral-900 hover:bg-white/50'
@@ -323,7 +323,7 @@ const DemandForecast = () => {
               icon={RefreshCw}
               variant="primary"
             >
-              Regenerate
+              <span className="hidden sm:inline">Regenerate</span>
             </Button>
           </div>
         </header>
@@ -331,63 +331,63 @@ const DemandForecast = () => {
         {/* Summary Cards */}
         <section>
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="rounded-[10px] bg-white p-5 animate-pulse">
+                <div key={i} className="rounded-[10px] bg-white p-3 sm:p-5 animate-pulse">
                   <div className="h-4 bg-neutral-100 rounded w-24 mb-2" />
                   <div className="h-8 bg-neutral-100 rounded w-16" />
                 </div>
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="rounded-[10px] bg-white p-5">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="rounded-[10px] bg-white p-3 sm:p-5">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-ocean-100 flex items-center justify-center">
-                    <Target className="w-4 h-4 text-ocean-600" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-ocean-100 flex items-center justify-center flex-shrink-0">
+                    <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-ocean-600" />
                   </div>
-                  <span className="text-[11px] text-neutral-500 font-medium uppercase tracking-wide">
+                  <span className="text-[9px] sm:text-[11px] text-neutral-500 font-medium uppercase tracking-wide">
                     Avg Occupancy
                   </span>
                 </div>
-                <p className="text-2xl font-bold text-neutral-900">{forecastSummary.avgOccupancy}%</p>
-                <p className="text-[11px] text-neutral-400 mt-1">Next {dateRange} days</p>
+                <p className="text-xl sm:text-2xl font-bold text-neutral-900">{forecastSummary.avgOccupancy}%</p>
+                <p className="text-[10px] sm:text-[11px] text-neutral-400 mt-1">Next {dateRange} days</p>
               </div>
-              <div className="rounded-[10px] bg-white p-5">
+              <div className="rounded-[10px] bg-white p-3 sm:p-5">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-sage-100 flex items-center justify-center">
-                    <Zap className="w-4 h-4 text-sage-600" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-sage-100 flex items-center justify-center flex-shrink-0">
+                    <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sage-600" />
                   </div>
-                  <span className="text-[11px] text-neutral-500 font-medium uppercase tracking-wide">
+                  <span className="text-[9px] sm:text-[11px] text-neutral-500 font-medium uppercase tracking-wide">
                     Confidence
                   </span>
                 </div>
-                <p className="text-2xl font-bold text-neutral-900">{forecastSummary.avgConfidence}%</p>
-                <p className="text-[11px] text-neutral-400 mt-1">Model accuracy</p>
+                <p className="text-xl sm:text-2xl font-bold text-neutral-900">{forecastSummary.avgConfidence}%</p>
+                <p className="text-[10px] sm:text-[11px] text-neutral-400 mt-1">Model accuracy</p>
               </div>
-              <div className="rounded-[10px] bg-white p-5">
+              <div className="rounded-[10px] bg-white p-3 sm:p-5">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center">
-                    <Flame className="w-4 h-4 text-rose-600" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-rose-100 flex items-center justify-center flex-shrink-0">
+                    <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-600" />
                   </div>
-                  <span className="text-[11px] text-neutral-500 font-medium uppercase tracking-wide">
+                  <span className="text-[9px] sm:text-[11px] text-neutral-500 font-medium uppercase tracking-wide">
                     High Demand
                   </span>
                 </div>
-                <p className="text-2xl font-bold text-neutral-900">{forecastSummary.highDemandDays}</p>
-                <p className="text-[11px] text-neutral-400 mt-1">Peak days ahead</p>
+                <p className="text-xl sm:text-2xl font-bold text-neutral-900">{forecastSummary.highDemandDays}</p>
+                <p className="text-[10px] sm:text-[11px] text-neutral-400 mt-1">Peak days ahead</p>
               </div>
-              <div className="rounded-[10px] bg-white p-5">
+              <div className="rounded-[10px] bg-white p-3 sm:p-5">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-gold-100 flex items-center justify-center">
-                    <Calendar className="w-4 h-4 text-gold-600" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gold-100 flex items-center justify-center flex-shrink-0">
+                    <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gold-600" />
                   </div>
-                  <span className="text-[11px] text-neutral-500 font-medium uppercase tracking-wide">
+                  <span className="text-[9px] sm:text-[11px] text-neutral-500 font-medium uppercase tracking-wide">
                     Low Demand
                   </span>
                 </div>
-                <p className="text-2xl font-bold text-neutral-900">{forecastSummary.lowDemandDays}</p>
-                <p className="text-[11px] text-neutral-400 mt-1">Opportunity days</p>
+                <p className="text-xl sm:text-2xl font-bold text-neutral-900">{forecastSummary.lowDemandDays}</p>
+                <p className="text-[10px] sm:text-[11px] text-neutral-400 mt-1">Opportunity days</p>
               </div>
             </div>
           )}
@@ -395,11 +395,11 @@ const DemandForecast = () => {
 
         {/* AI Insights */}
         {!isLoading && forecastInsights.length > 0 && (
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {forecastInsights.map((insight, index) => (
               <div
                 key={index}
-                className={`p-5 rounded-[10px] border transition-colors ${
+                className={`p-3 sm:p-5 rounded-[10px] border transition-colors ${
                   insight.type === 'compression'
                     ? 'bg-rose-50 border-rose-200'
                     : insight.type === 'weak_demand'
@@ -407,8 +407,8 @@ const DemandForecast = () => {
                       : 'bg-ocean-50 border-ocean-200'
                 }`}
               >
-                <div className="flex items-start gap-4">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                     insight.type === 'compression'
                       ? 'bg-rose-100'
                       : insight.type === 'weak_demand'
@@ -416,15 +416,15 @@ const DemandForecast = () => {
                         : 'bg-ocean-100'
                   }`}>
                     {insight.type === 'compression' ? (
-                      <Flame className="w-5 h-5 text-rose-600" />
+                      <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-rose-600" />
                     ) : insight.type === 'weak_demand' ? (
-                      <Snowflake className="w-5 h-5 text-gold-600" />
+                      <Snowflake className="w-4 h-4 sm:w-5 sm:h-5 text-gold-600" />
                     ) : (
-                      <Sparkles className="w-5 h-5 text-ocean-600" />
+                      <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-ocean-600" />
                     )}
                   </div>
-                  <div className="flex-1">
-                    <h4 className={`text-sm font-semibold mb-1 ${
+                  <div className="flex-1 min-w-0">
+                    <h4 className={`text-xs sm:text-sm font-semibold mb-1 ${
                       insight.type === 'compression'
                         ? 'text-rose-800'
                         : insight.type === 'weak_demand'
@@ -433,12 +433,12 @@ const DemandForecast = () => {
                     }`}>
                       {insight.title}
                     </h4>
-                    <p className="text-[13px] text-neutral-600 leading-relaxed">
+                    <p className="text-[11px] sm:text-[13px] text-neutral-600 leading-relaxed">
                       {insight.message}
                     </p>
                     {insight.potentialRevenue && (
-                      <p className="text-[13px] font-semibold text-sage-600 mt-2 flex items-center gap-1">
-                        <TrendingUp className="w-4 h-4" />
+                      <p className="text-[11px] sm:text-[13px] font-semibold text-sage-600 mt-2 flex items-center gap-1">
+                        <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         +${insight.potentialRevenue.toLocaleString()} potential
                       </p>
                     )}
@@ -451,38 +451,38 @@ const DemandForecast = () => {
 
         {/* Simulation Result Banner */}
         {selectedSimulation?.result && (
-          <section className="rounded-[10px] bg-terra-50 border border-terra-200 p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-terra-100 flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-terra-600" />
+          <section className="rounded-[10px] bg-terra-50 border border-terra-200 p-3 sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-terra-100 flex items-center justify-center flex-shrink-0">
+                  <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-terra-600" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-terra-800">
+                  <h4 className="text-xs sm:text-sm font-semibold text-terra-800">
                     Simulation Result: {selectedSimulation.type === 'surge' ? 'Rate Increase' : 'Promotion'}
                   </h4>
-                  <p className="text-[13px] text-terra-600">
+                  <p className="text-[11px] sm:text-[13px] text-terra-600">
                     {selectedSimulation.result.recommendation}
                   </p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-terra-700">
+              <div className="text-left sm:text-right pl-11 sm:pl-0">
+                <p className="text-xl sm:text-2xl font-bold text-terra-700">
                   {selectedSimulation.result.projected.revenue_change_percent > 0 ? '+' : ''}
                   {selectedSimulation.result.projected.revenue_change_percent.toFixed(1)}%
                 </p>
-                <p className="text-[11px] text-terra-500">
+                <p className="text-[10px] sm:text-[11px] text-terra-500">
                   ${selectedSimulation.result.projected.revenue.toLocaleString()} projected
                 </p>
               </div>
             </div>
             <div className="mt-3 pt-3 border-t border-terra-200 flex items-center justify-between">
-              <p className="text-[11px] text-terra-500">
+              <p className="text-[10px] sm:text-[11px] text-terra-500">
                 Confidence: {Math.round(selectedSimulation.result.confidence * 100)}%
               </p>
               <button
                 onClick={() => setSelectedSimulation(null)}
-                className="text-[11px] font-medium text-terra-600 hover:text-terra-800"
+                className="text-[10px] sm:text-[11px] font-medium text-terra-600 hover:text-terra-800"
               >
                 Dismiss
               </button>
@@ -492,22 +492,22 @@ const DemandForecast = () => {
 
         {/* Chart */}
         <section className="rounded-[10px] bg-white overflow-hidden">
-          <div className="px-6 py-5 flex items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
             <div>
-              <h3 className="text-sm font-semibold text-neutral-800">Demand Forecast Chart</h3>
-              <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
+              <h3 className="text-[13px] sm:text-sm font-semibold text-neutral-800">Demand Forecast Chart</h3>
+              <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">
                 Predicted demand trends and occupancy levels with confidence intervals
               </p>
             </div>
             {events.length > 0 && (
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-neutral-500">{events.length} events in range</span>
+                <span className="text-[10px] sm:text-[11px] text-neutral-500">{events.length} events in range</span>
               </div>
             )}
           </div>
-          <div className="px-6 pb-6">
+          <div className="px-2 sm:px-6 pb-4 sm:pb-6">
             {isLoading ? (
-              <div className="h-80 bg-neutral-50 rounded-lg animate-pulse" />
+              <div className="h-64 sm:h-80 bg-neutral-50 rounded-lg animate-pulse" />
             ) : (
               <DemandChart dateRange={dateRange} />
             )}
@@ -515,45 +515,45 @@ const DemandForecast = () => {
         </section>
 
         {/* High Impact & Opportunity Days */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
           {/* High Impact Days */}
           <section className="rounded-[10px] bg-white overflow-hidden">
-            <div className="px-6 py-5">
-              <h3 className="text-sm font-semibold text-neutral-800">High Impact Days</h3>
-              <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
+            <div className="px-4 sm:px-6 py-4 sm:py-5">
+              <h3 className="text-[13px] sm:text-sm font-semibold text-neutral-800">High Impact Days</h3>
+              <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">
                 Peak demand periods requiring attention
               </p>
             </div>
-            <div className="px-6 pb-6 space-y-3">
+            <div className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-2 sm:space-y-3">
               {isLoading ? (
                 [...Array(3)].map((_, i) => (
-                  <div key={i} className="p-4 rounded-lg border border-neutral-100 animate-pulse">
+                  <div key={i} className="p-3 sm:p-4 rounded-lg border border-neutral-100 animate-pulse">
                     <div className="h-5 bg-neutral-100 rounded w-32 mb-2" />
                     <div className="h-4 bg-neutral-100 rounded w-48" />
                   </div>
                 ))
               ) : highImpactDays.length === 0 ? (
-                <div className="p-6 text-center text-neutral-500 text-sm">
+                <div className="p-4 sm:p-6 text-center text-neutral-500 text-xs sm:text-sm">
                   No high impact days in the selected range
                 </div>
               ) : (
                 highImpactDays.slice(0, 5).map((day) => (
                   <div
                     key={day.date}
-                    className="p-4 rounded-lg border border-neutral-100 bg-neutral-50/50"
+                    className="p-3 sm:p-4 rounded-lg border border-neutral-100 bg-neutral-50/50"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-medium text-neutral-900">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] sm:text-[13px] font-medium text-neutral-900">
                           {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                         </span>
                         <DemandLevelBadge level={day.demandLevel as 'critical' | 'high' | 'moderate' | 'low' | 'very_low'} />
                       </div>
-                      <span className="text-[15px] font-bold text-rose-600">
+                      <span className="text-[13px] sm:text-[15px] font-bold text-rose-600">
                         {Math.round(day.demandIndex * 100)}%
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 text-[10px] sm:text-[11px]">
                       <span className="text-neutral-500">
                         {day.event ? day.event.name : 'High demand expected'}
                       </span>
@@ -561,14 +561,14 @@ const DemandForecast = () => {
                         {day.forecast.occupancy}% occ | ${day.forecast.adr} ADR
                       </span>
                     </div>
-                    <div className="mt-2 pt-2 border-t border-dashed border-neutral-200 flex items-center justify-between">
-                      <span className="text-[11px] font-medium text-sage-600">
+                    <div className="mt-2 pt-2 border-t border-dashed border-neutral-200 flex items-center justify-between gap-2">
+                      <span className="text-[10px] sm:text-[11px] font-medium text-sage-600">
                         {day.priceRecommendation.message}
                       </span>
                       <button
                         onClick={() => handleSimulateSurge(day.date)}
                         disabled={isSimulating}
-                        className="px-2 py-1 text-[11px] font-medium text-terra-600 hover:bg-terra-50 rounded transition-colors disabled:opacity-50"
+                        className="px-2 py-1 text-[10px] sm:text-[11px] font-medium text-terra-600 hover:bg-terra-50 rounded transition-colors disabled:opacity-50 whitespace-nowrap"
                       >
                         {isSimulating && selectedSimulation?.date === day.date ? 'Simulating...' : 'Simulate'}
                       </button>
@@ -581,42 +581,42 @@ const DemandForecast = () => {
 
           {/* Opportunity Days */}
           <section className="rounded-[10px] bg-white overflow-hidden">
-            <div className="px-6 py-5">
-              <h3 className="text-sm font-semibold text-neutral-800">Opportunity Days</h3>
-              <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
+            <div className="px-4 sm:px-6 py-4 sm:py-5">
+              <h3 className="text-[13px] sm:text-sm font-semibold text-neutral-800">Opportunity Days</h3>
+              <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">
                 Low demand periods needing promotional strategies
               </p>
             </div>
-            <div className="px-6 pb-6 space-y-3">
+            <div className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-2 sm:space-y-3">
               {isLoading ? (
                 [...Array(3)].map((_, i) => (
-                  <div key={i} className="p-4 rounded-lg border border-neutral-100 animate-pulse">
+                  <div key={i} className="p-3 sm:p-4 rounded-lg border border-neutral-100 animate-pulse">
                     <div className="h-5 bg-neutral-100 rounded w-32 mb-2" />
                     <div className="h-4 bg-neutral-100 rounded w-48" />
                   </div>
                 ))
               ) : opportunityDays.length === 0 ? (
-                <div className="p-6 text-center text-neutral-500 text-sm">
+                <div className="p-4 sm:p-6 text-center text-neutral-500 text-xs sm:text-sm">
                   No low demand days in the selected range
                 </div>
               ) : (
                 opportunityDays.slice(0, 5).map((day) => (
                   <div
                     key={day.date}
-                    className="p-4 rounded-lg border border-neutral-100 bg-neutral-50/50"
+                    className="p-3 sm:p-4 rounded-lg border border-neutral-100 bg-neutral-50/50"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-medium text-neutral-900">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] sm:text-[13px] font-medium text-neutral-900">
                           {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                         </span>
                         <DemandLevelBadge level={day.demandLevel as 'critical' | 'high' | 'moderate' | 'low' | 'very_low'} />
                       </div>
-                      <span className="text-[15px] font-bold text-gold-600">
+                      <span className="text-[13px] sm:text-[15px] font-bold text-gold-600">
                         {Math.round(day.demandIndex * 100)}%
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 text-[10px] sm:text-[11px]">
                       <span className="text-neutral-500">
                         Low demand expected
                       </span>
@@ -624,14 +624,14 @@ const DemandForecast = () => {
                         {day.forecast.occupancy}% occ | ${day.forecast.adr} ADR
                       </span>
                     </div>
-                    <div className="mt-2 pt-2 border-t border-dashed border-neutral-200 flex items-center justify-between">
-                      <span className="text-[11px] font-medium text-gold-600">
+                    <div className="mt-2 pt-2 border-t border-dashed border-neutral-200 flex items-center justify-between gap-2">
+                      <span className="text-[10px] sm:text-[11px] font-medium text-gold-600">
                         {day.priceRecommendation.message}
                       </span>
                       <button
                         onClick={() => handleSimulateDrop(day.date)}
                         disabled={isSimulating}
-                        className="px-2 py-1 text-[11px] font-medium text-terra-600 hover:bg-terra-50 rounded transition-colors disabled:opacity-50"
+                        className="px-2 py-1 text-[10px] sm:text-[11px] font-medium text-terra-600 hover:bg-terra-50 rounded transition-colors disabled:opacity-50 whitespace-nowrap"
                       >
                         {isSimulating && selectedSimulation?.date === day.date ? 'Simulating...' : 'Simulate'}
                       </button>

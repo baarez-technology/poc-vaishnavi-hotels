@@ -10,7 +10,7 @@ import { useSearchParams } from 'react-router-dom';
 import {
   Download, RefreshCw, CheckCircle, XCircle, AlertTriangle,
   Calendar, Activity, Eye, ChevronDown, Check,
-  ChevronLeft, ChevronRight, Loader2, FileText, FileSpreadsheet
+  ChevronLeft, ChevronRight, Loader2, FileText, FileSpreadsheet, X, Clock
 } from 'lucide-react';
 import { useChannelManager } from '../../../context/ChannelManagerContext';
 import { useChannelManagerSSEEvents } from '../../../hooks/useChannelManagerSSEEvents';
@@ -103,16 +103,16 @@ function SelectDropdown({ value, onChange, options, placeholder = 'Select...', c
         ref={triggerRef}
         type="button"
         onClick={handleToggle}
-        className={`h-9 px-3.5 rounded-lg text-[13px] bg-white border text-left flex items-center justify-between gap-2 transition-all ${
+        className={`h-9 sm:h-10 px-3 sm:px-3.5 rounded-lg text-xs sm:text-[13px] bg-white border text-left flex items-center justify-between gap-2 transition-all ${
           isOpen
             ? 'border-terra-400 ring-2 ring-terra-500/10'
             : 'border-neutral-200 hover:border-neutral-300'
         } ${className}`}
       >
-        <span className={selectedOption ? 'text-neutral-700' : 'text-neutral-400'}>
+        <span className={`truncate ${selectedOption ? 'text-neutral-700' : 'text-neutral-400'}`}>
           {selectedOption?.label || placeholder}
         </span>
-        <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && position && createPortal(
@@ -133,14 +133,14 @@ function SelectDropdown({ value, onChange, options, placeholder = 'Select...', c
                 key={option.value}
                 type="button"
                 onClick={() => handleSelect(option.value)}
-                className={`w-full px-3 py-2.5 text-left text-[13px] flex items-center justify-between transition-colors ${
+                className={`w-full px-3 py-2 sm:py-2.5 text-left text-xs sm:text-[13px] flex items-center justify-between transition-colors ${
                   value === option.value
                     ? 'bg-terra-50 text-terra-700 font-medium'
                     : 'text-neutral-700 hover:bg-neutral-50'
                 }`}
               >
-                <span>{option.label}</span>
-                {value === option.value && <Check className="w-4 h-4 text-terra-500" />}
+                <span className="truncate">{option.label}</span>
+                {value === option.value && <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-terra-500 flex-shrink-0" />}
               </button>
             ))}
           </div>
@@ -176,6 +176,9 @@ export default function SyncLogs() {
     clearLogs,
   } = useChannelManager();
 
+  // Get initial OTA filter from URL parameter
+  const urlOtaParam = searchParams.get('ota');
+
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [selectedLog, setSelectedLog] = useState(null);
@@ -184,20 +187,20 @@ export default function SyncLogs() {
   const [totalCount, setTotalCount] = useState(0);
   const [exportLoading, setExportLoading] = useState(false);
 
-  // Filter states - single select dropdowns
-  // Initialize otaFilter from URL query parameter if present
-  const [otaFilter, setOTAFilter] = useState(() => {
-    const otaFromUrl = searchParams.get('ota');
-    if (otaFromUrl) {
-      // Find matching OTA code
-      const matchingOTA = otas.find(o => o.code === otaFromUrl || o.code.toLowerCase() === otaFromUrl.toLowerCase());
-      return matchingOTA ? matchingOTA.code : 'all';
-    }
-    return 'all';
+  // Cached stats that persist across tab changes
+  const [cachedStats, setCachedStats] = useState({
+    total: 0,
+    success: 0,
+    error: 0,
+    warning: 0,
+    pending: 0
   });
+
+  // Filter states - single select dropdowns (initialize from URL if present)
+  const [otaFilter, setOTAFilter] = useState(urlOtaParam || 'all');
   const [actionFilter, setActionFilter] = useState('all');
 
-  const { toast } = useToast();
+  const toast = useToast();
 
   const connectedOTAs = otas.filter(o => o.status === 'connected');
 
@@ -209,6 +212,34 @@ export default function SyncLogs() {
       setSearchParams({}, { replace: true });
     }
   }, [otaFilter, setSearchParams]);
+
+  // Fetch stats counts for all statuses (independent of current tab filter)
+  const fetchStats = useCallback(async () => {
+    try {
+      const baseFilters: any = { pageSize: 1 }; // Only need counts, not data
+      if (otaFilter !== 'all') baseFilters.otaCode = otaFilter;
+      if (actionFilter !== 'all') baseFilters.action = actionFilter;
+
+      // Fetch counts for each status in parallel
+      const [allRes, successRes, errorRes, warningRes, pendingRes] = await Promise.all([
+        fetchSyncLogs({ ...baseFilters, page: 1 }),
+        fetchSyncLogs({ ...baseFilters, page: 1, status: 'success' }),
+        fetchSyncLogs({ ...baseFilters, page: 1, status: 'error' }),
+        fetchSyncLogs({ ...baseFilters, page: 1, status: 'warning' }),
+        fetchSyncLogs({ ...baseFilters, page: 1, status: 'pending' }),
+      ]);
+
+      setCachedStats({
+        total: allRes.total || 0,
+        success: successRes.total || 0,
+        error: errorRes.total || 0,
+        warning: warningRes.total || 0,
+        pending: pendingRes.total || 0,
+      });
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  }, [otaFilter, actionFilter, fetchSyncLogs]);
 
   // Refetch data function for SSE
   const refetchData = useCallback(async () => {
@@ -228,11 +259,21 @@ export default function SyncLogs() {
     const response = await fetchSyncLogs(filters);
     setTotalPages(response.totalPages || 1);
     setTotalCount(response.total || 0);
+
+    // Update the current tab's count in cachedStats
+    if (activeTab === 'all') {
+      setCachedStats(prev => ({ ...prev, total: response.total || 0 }));
+    } else {
+      setCachedStats(prev => ({ ...prev, [activeTab]: response.total || 0 }));
+    }
   }, [currentPage, activeTab, otaFilter, actionFilter, fetchSyncLogs]);
 
   // Register SSE event handlers for real-time updates
   useChannelManagerSSEEvents({
-    onSyncStatus: refetchData,
+    onSyncStatus: () => {
+      refetchData();
+      fetchStats();
+    },
     refetchData,
   });
 
@@ -241,6 +282,25 @@ export default function SyncLogs() {
     refetchData();
   }, [refetchData]);
 
+  // Fetch stats on mount and when OTA/action filters change (not on tab change)
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  // Get the filtered OTA name for display
+  const filteredOTAName = useMemo(() => {
+    if (otaFilter === 'all') return null;
+    const ota = otas.find(o => o.code === otaFilter);
+    return ota?.name || otaFilter;
+  }, [otaFilter, otas]);
+
+  // Clear OTA filter and URL param
+  const clearOTAFilter = () => {
+    setOTAFilter('all');
+    setSearchParams({});
+    setCurrentPage(1);
+  };
+
   // Check if any filters are active
   const hasActiveFilters = otaFilter !== 'all' || actionFilter !== 'all';
 
@@ -248,6 +308,7 @@ export default function SyncLogs() {
   const clearFilters = () => {
     setOTAFilter('all');
     setActionFilter('all');
+    setSearchParams({});
     setCurrentPage(1);
   };
 
@@ -274,47 +335,82 @@ export default function SyncLogs() {
   // Paginated logs (already paginated by API, but apply search filter)
   const paginatedLogs = filteredLogs;
 
-  // Stats
-  const stats = {
-    total: syncLogs.length,
-    success: syncLogs.filter(l => l.status === 'success').length,
-    error: syncLogs.filter(l => l.status === 'error').length,
-    warning: syncLogs.filter(l => l.status === 'warning').length
-  };
+  // Use cached stats (fetched independently of tab filter)
+  const stats = cachedStats;
 
   const handleRefresh = () => {
     triggerManualSync('ALL');
   };
 
+  // Client-side CSV export fallback
+  const generateClientSideCSV = (logs: typeof syncLogs) => {
+    const headers = ['Timestamp', 'Channel', 'Channel Code', 'Action', 'Status', 'Message'];
+    const rows = logs.map(log => {
+      const otaInfo = getOTAInfo(log.otaCode);
+      const actionConfig = actionTypes[log.action] || { label: log.action };
+      return [
+        new Date(log.timestamp).toISOString(),
+        otaInfo.name,
+        log.otaCode,
+        actionConfig.label,
+        log.status,
+        `"${(log.message || '').replace(/"/g, '""')}"` // Escape quotes in CSV
+      ].join(',');
+    });
+    return [headers.join(','), ...rows].join('\n');
+  };
+
   const handleExport = async (format: 'csv' | 'excel' | 'pdf' = 'csv') => {
     if (exportLoading) return; // Prevent multiple clicks
-    
+
     setExportLoading(true);
     try {
       const filters: any = { format };
       if (activeTab !== 'all') filters.status = activeTab;
       if (otaFilter !== 'all') filters.otaCode = otaFilter;
       if (actionFilter !== 'all') filters.action = actionFilter;
-      
-      const blob = await channelManagerService.exportSyncLogs(filters);
+
+      let blob: Blob;
+      let useClientSide = false;
+
+      try {
+        blob = await channelManagerService.exportSyncLogs(filters);
+
+        // Validate blob response
+        if (!blob || blob.size === 0) {
+          throw new Error('Empty response');
+        }
+      } catch (apiError) {
+        // Fallback to client-side CSV export if API fails
+        console.warn('API export failed, using client-side fallback:', apiError);
+        useClientSide = true;
+
+        if (format !== 'csv') {
+          toast.warning(`${format.toUpperCase()} export requires server. Exporting as CSV instead.`);
+        }
+
+        const csvContent = generateClientSideCSV(filteredLogs);
+        blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      }
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      
-      // Set appropriate file extension based on format
-      const extension = format === 'pdf' ? 'pdf' : format === 'excel' ? 'xlsx' : 'csv';
-      const mimeType = format === 'pdf' ? 'application/pdf' : format === 'excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/csv';
-      
+
+      // Set appropriate file extension based on format (use csv for client-side fallback)
+      const extension = useClientSide ? 'csv' : (format === 'pdf' ? 'pdf' : format === 'excel' ? 'xlsx' : 'csv');
+
       a.download = `sync-logs-${new Date().toISOString().split('T')[0]}.${extension}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
-      toast.success(`Sync logs exported successfully as ${format.toUpperCase()}`);
-    } catch (err) {
+
+      toast.success(`Sync logs exported successfully as ${extension.toUpperCase()}`);
+    } catch (err: any) {
       console.error('Error exporting logs:', err);
-      toast.error('Failed to export sync logs. Please try again.');
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to export sync logs. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setExportLoading(false);
     }
@@ -323,6 +419,7 @@ export default function SyncLogs() {
   // Tab configuration matching BookingList style
   const tabs = [
     { id: 'all', label: 'All Logs', icon: Calendar, count: stats.total },
+    { id: 'pending', label: 'Pending', icon: Clock, count: stats.pending },
     { id: 'success', label: 'Success', icon: CheckCircle, count: stats.success },
     { id: 'error', label: 'Errors', icon: XCircle, count: stats.error },
     { id: 'warning', label: 'Warnings', icon: AlertTriangle, count: stats.warning }
@@ -352,6 +449,7 @@ export default function SyncLogs() {
       case 'success': return CheckCircle;
       case 'error': return XCircle;
       case 'warning': return AlertTriangle;
+      case 'pending': return Clock;
       default: return Calendar;
     }
   };
@@ -398,62 +496,98 @@ export default function SyncLogs() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <div className="px-10 py-6 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
         {/* Page Header */}
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
-              Sync Logs
-            </h1>
-            <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
-              Monitor channel synchronization activity
+            <div className="flex items-baseline gap-2 sm:gap-3 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
+                Sync Logs
+              </h1>
+              {filteredOTAName && (
+                <span className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[11px] sm:text-xs font-semibold bg-terra-50 text-terra-700 border border-terra-200 translate-y-[-1px]">
+                  {filteredOTAName}
+                  <button
+                    onClick={clearOTAFilter}
+                    className="p-0.5 hover:bg-terra-100 rounded transition-colors -mr-0.5"
+                    title="Clear filter"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+            </div>
+            <p className="text-xs sm:text-[13px] text-neutral-500 mt-0.5 sm:mt-1">
+              {filteredOTAName ? (
+                <>
+                  <span className="hidden sm:inline">Showing sync activity for {filteredOTAName}</span>
+                  <span className="sm:hidden">{filteredOTAName} sync activity</span>
+                </>
+              ) : (
+                <>
+                  <span className="hidden sm:inline">Monitor channel synchronization activity</span>
+                  <span className="sm:hidden">Channel sync activity</span>
+                </>
+              )}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <DropdownMenu
-              trigger={
-                <Button 
-                  variant="outline" 
-                  icon={Download} 
-                  disabled={exportLoading}
-                  loading={exportLoading}
-                >
-                  {exportLoading ? 'Exporting...' : 'Export'}
-                </Button>
-              }
-              align="end"
-            >
-              <DropdownMenuItem
-                icon={FileText}
-                onSelect={() => handleExport('pdf')}
-                disabled={exportLoading}
-              >
-                Export as PDF
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                icon={FileSpreadsheet}
-                onSelect={() => handleExport('excel')}
-                disabled={exportLoading}
-              >
-                Export as Excel
-              </DropdownMenuItem>
-              <DropdownMenuItem
+          <div className="flex items-center gap-2 sm:gap-3">
+            {exportLoading ? (
+              <Button
+                variant="outline"
                 icon={Download}
-                onSelect={() => handleExport('csv')}
-                disabled={exportLoading}
+                disabled
+                loading
+                className="text-xs sm:text-sm pointer-events-none"
               >
-                Export as CSV
-              </DropdownMenuItem>
-            </DropdownMenu>
+                <span className="hidden sm:inline">Exporting...</span>
+                <span className="sm:hidden">...</span>
+              </Button>
+            ) : (
+              <DropdownMenu
+                trigger={
+                  <Button
+                    variant="outline"
+                    icon={Download}
+                    className="text-xs sm:text-sm"
+                  >
+                    <span className="hidden sm:inline">Export</span>
+                    <span className="sm:hidden">Export</span>
+                  </Button>
+                }
+                align="end"
+              >
+                <DropdownMenuItem
+                  icon={FileText}
+                  onSelect={() => handleExport('pdf')}
+                >
+                  Export as PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  icon={FileSpreadsheet}
+                  onSelect={() => handleExport('excel')}
+                >
+                  Export as Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  icon={Download}
+                  onSelect={() => handleExport('csv')}
+                >
+                  Export as CSV
+                </DropdownMenuItem>
+              </DropdownMenu>
+            )}
             <Button
               variant="primary"
               icon={RefreshCw}
               onClick={handleRefresh}
               disabled={syncingOTAs.length > 0}
               loading={syncingOTAs.length > 0}
+              className="text-xs sm:text-sm"
             >
-              Sync Now
+              <span className="hidden sm:inline">Sync Now</span>
+              <span className="sm:hidden">Sync</span>
             </Button>
           </div>
         </header>
@@ -463,22 +597,22 @@ export default function SyncLogs() {
           {/* Header Section */}
           <div className="border-b border-neutral-100">
             {/* Tab Navigation - Underline style matching BookingList */}
-            <div className="px-6 pt-4 flex items-center justify-between">
+            <div className="px-3 sm:px-6 pt-3 sm:pt-4 flex items-center justify-between overflow-x-auto">
               <div className="flex items-center gap-0.5">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => { setActiveTab(tab.id); setCurrentPage(1); }}
-                    className={`relative px-4 py-3 text-[13px] font-semibold transition-all duration-150 ${
+                    className={`relative px-2.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-[13px] font-semibold transition-all duration-150 whitespace-nowrap ${
                       activeTab === tab.id
                         ? 'text-neutral-900'
                         : 'text-neutral-500 hover:text-neutral-700'
                     }`}
                   >
-                    <span className="flex items-center gap-2">
-                      <tab.icon className="w-4 h-4" />
-                      {tab.label}
-                      <span className={`px-1.5 py-0.5 rounded text-[11px] font-semibold tabular-nums ${
+                    <span className="flex items-center gap-1.5 sm:gap-2">
+                      <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <span>{tab.label}</span>
+                      <span className={`px-1 sm:px-1.5 py-0.5 rounded text-[9px] sm:text-[11px] font-semibold tabular-nums ${
                         activeTab === tab.id
                           ? 'bg-terra-500 text-white'
                           : 'bg-neutral-100 text-neutral-500'
@@ -497,59 +631,72 @@ export default function SyncLogs() {
           </div>
 
           {/* Search & Filters Bar */}
-          <div className="px-6 py-4 bg-neutral-50/30 border-b border-neutral-100">
-            <div className="flex items-center gap-3">
+          <div className="px-3 sm:px-6 py-3 sm:py-4 bg-neutral-50/30 border-b border-neutral-100">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
               {/* Search */}
-              <div className="flex-1 max-w-md">
+              <div className="flex-1 sm:max-w-md">
                 <SearchBar
                   value={searchQuery}
                   onChange={(val) => { setSearchQuery(val); setCurrentPage(1); }}
                   onClear={() => setSearchQuery('')}
-                  placeholder="Search by message, OTA, or action..."
+                  placeholder="Search logs..."
                   size="md"
                 />
               </div>
 
-              {/* Spacer to push filters to right */}
-              <div className="flex-1" />
+              {/* Spacer to push filters to right - hidden on mobile */}
+              <div className="hidden sm:block flex-1" />
 
-              {/* Channel Filter Dropdown */}
-              <SelectDropdown
-                value={otaFilter}
-                onChange={(val) => { setOTAFilter(val); setCurrentPage(1); }}
-                options={channelOptions}
-                placeholder="All Channels"
-                className="min-w-[160px]"
-              />
+              {/* Filter Dropdowns - row on all sizes */}
+              <div className="flex items-center gap-2">
+                {/* Channel Filter Dropdown */}
+                <SelectDropdown
+                  value={otaFilter}
+                  onChange={(val) => {
+                    setOTAFilter(val);
+                    setCurrentPage(1);
+                    // Update URL param when filter changes
+                    if (val === 'all') {
+                      setSearchParams({});
+                    } else {
+                      setSearchParams({ ota: val });
+                    }
+                  }}
+                  options={channelOptions}
+                  placeholder="Channels"
+                  className="flex-1 sm:flex-none sm:min-w-[140px] lg:min-w-[160px]"
+                />
 
-              {/* Action Type Filter Dropdown */}
-              <SelectDropdown
-                value={actionFilter}
-                onChange={(val) => { setActionFilter(val); setCurrentPage(1); }}
-                options={actionOptions}
-                placeholder="All Action Types"
-                className="min-w-[180px]"
-              />
+                {/* Action Type Filter Dropdown */}
+                <SelectDropdown
+                  value={actionFilter}
+                  onChange={(val) => { setActionFilter(val); setCurrentPage(1); }}
+                  options={actionOptions}
+                  placeholder="Actions"
+                  className="flex-1 sm:flex-none sm:min-w-[140px] lg:min-w-[180px]"
+                />
+              </div>
             </div>
           </div>
 
           {/* Table */}
           {filteredLogs.length === 0 ? (
-            <div className="px-6 py-16 text-center">
+            <div className="px-4 sm:px-5 py-8 sm:py-16 text-center">
               <div className="flex flex-col items-center">
-                <div className="w-12 h-12 rounded-lg bg-terra-50 flex items-center justify-center mb-4">
-                  <Activity className="w-5 h-5 text-terra-500" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-terra-50 flex items-center justify-center mb-3 sm:mb-4">
+                  <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-terra-500" />
                 </div>
-                <p className="text-[13px] font-semibold text-neutral-800 mb-1">
+                <p className="text-xs sm:text-[13px] font-semibold text-neutral-800 mb-1">
                   No sync logs found
                 </p>
-                <p className="text-[11px] text-neutral-500 font-medium">
-                  Sync activity will appear here when OTAs are connected and syncing
+                <p className="text-[10px] sm:text-[11px] text-neutral-500 font-medium">
+                  <span className="hidden sm:inline">Sync activity will appear here when OTAs are connected and syncing</span>
+                  <span className="sm:hidden">Sync activity will appear when OTAs are syncing</span>
                 </p>
                 {hasActiveFilters && (
                   <button
                     onClick={clearFilters}
-                    className="mt-4 px-3 py-1.5 text-[12px] font-semibold text-terra-600 hover:text-terra-700 hover:bg-terra-50 rounded-lg transition-colors"
+                    className="mt-3 sm:mt-4 px-3 py-1.5 text-[11px] sm:text-[12px] font-semibold text-terra-600 hover:text-terra-700 hover:bg-terra-50 rounded-lg transition-colors"
                   >
                     Clear all filters
                   </button>
@@ -559,33 +706,25 @@ export default function SyncLogs() {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1000px] border-collapse">
-                  <colgroup>
-                    <col style={{ width: '140px' }} />
-                    <col style={{ width: '180px' }} />
-                    <col style={{ width: '180px' }} />
-                    <col style={{ width: 'auto' }} />
-                    <col style={{ width: '120px' }} />
-                    <col style={{ width: '80px' }} />
-                  </colgroup>
+                <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-neutral-50/30 border-b border-neutral-100">
-                      <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                      <th className="text-left px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
                         Time
                       </th>
-                      <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                      <th className="text-left px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
                         Channel
                       </th>
-                      <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                      <th className="text-left px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
                         Action
                       </th>
-                      <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                      <th className="text-left px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
                         Message
                       </th>
-                      <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                      <th className="text-left px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
                         Status
                       </th>
-                      <th className="px-6 py-4"></th>
+                      <th className="px-2 py-3 sm:py-4 w-10"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -602,26 +741,26 @@ export default function SyncLogs() {
                           className="bg-white hover:bg-neutral-50/50 transition-colors animate-in fade-in slide-in-from-left-2 border-b border-neutral-100 last:border-b-0"
                         >
                           {/* Time */}
-                          <td className="py-4 px-6">
-                            <span className="text-[13px] text-neutral-600 font-medium">
+                          <td className="py-3 sm:py-4 px-4 whitespace-nowrap">
+                            <span className="text-xs sm:text-[13px] text-neutral-600 font-medium">
                               {formatTime(log.timestamp)}
                             </span>
                           </td>
 
                           {/* Channel/OTA */}
-                          <td className="py-4 px-6">
-                            <div className="flex items-center gap-3">
+                          <td className="py-3 sm:py-4 px-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
                               <div
-                                className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0"
+                                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-white text-[9px] sm:text-[10px] font-bold flex-shrink-0"
                                 style={{ backgroundColor: otaInfo.color }}
                               >
                                 {otaInfo.name.substring(0, 2).toUpperCase()}
                               </div>
-                              <div>
-                                <p className="text-[13px] font-semibold text-neutral-800">
+                              <div className="min-w-0">
+                                <p className="text-xs sm:text-[13px] font-semibold text-neutral-800">
                                   {otaInfo.name}
                                 </p>
-                                <p className="text-[10px] text-neutral-400 font-medium">
+                                <p className="text-[9px] sm:text-[10px] text-neutral-400 font-medium">
                                   {log.otaCode}
                                 </p>
                               </div>
@@ -629,29 +768,29 @@ export default function SyncLogs() {
                           </td>
 
                           {/* Action */}
-                          <td className="py-4 px-6">
-                            <p className="text-[13px] font-medium text-neutral-800">
+                          <td className="py-3 sm:py-4 px-4 whitespace-nowrap">
+                            <p className="text-xs sm:text-[13px] font-medium text-neutral-800">
                               {actionConfig.label}
                             </p>
                           </td>
 
                           {/* Message */}
-                          <td className="py-4 px-6">
-                            <p className="text-[13px] text-neutral-500 max-w-[300px] truncate">
+                          <td className="py-3 sm:py-4 px-4">
+                            <p className="text-xs sm:text-[13px] text-neutral-500 max-w-xs lg:max-w-md truncate" title={log.message}>
                               {log.message}
                             </p>
                           </td>
 
                           {/* Status */}
-                          <td className="py-4 px-6">
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium ${getStatusBadgeClasses(log.status)}`}>
-                              <StatusIcon className="w-3 h-3" />
-                              {log.status.charAt(0).toUpperCase() + log.status.slice(1)}
+                          <td className="py-3 sm:py-4 px-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[10px] sm:text-[11px] font-medium ${getStatusBadgeClasses(log.status)}`}>
+                              <StatusIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+                              <span>{log.status.charAt(0).toUpperCase() + log.status.slice(1)}</span>
                             </span>
                           </td>
 
                           {/* Actions - Always visible */}
-                          <td className="py-4 px-6">
+                          <td className="py-3 sm:py-4 px-2 text-center w-10">
                             <IconButton
                               icon={Eye}
                               variant="ghost"
@@ -672,29 +811,31 @@ export default function SyncLogs() {
 
               {/* Pagination - Matching BookingList exactly */}
               {totalPages > 1 && (
-                <div className="px-6 py-4 border-t border-neutral-100 flex items-center justify-between bg-neutral-50/30">
-                  <p className="text-[13px] text-neutral-500">
-                    Showing <span className="font-semibold text-neutral-700">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span>
-                    {' '}to{' '}
+                <div className="px-4 sm:px-5 py-3 sm:py-4 border-t border-neutral-100 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 bg-neutral-50/30">
+                  <p className="text-[11px] sm:text-[13px] text-neutral-500 order-2 sm:order-1">
+                    <span className="hidden sm:inline">Showing </span>
+                    <span className="font-semibold text-neutral-700">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span>
+                    {' '}-{' '}
                     <span className="font-semibold text-neutral-700">{Math.min(currentPage * ITEMS_PER_PAGE, totalCount)}</span>
                     {' '}of{' '}
-                    <span className="font-semibold text-neutral-700">{totalCount}</span> logs
+                    <span className="font-semibold text-neutral-700">{totalCount}</span>
+                    <span className="hidden sm:inline"> logs</span>
                   </p>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5 sm:gap-1 order-1 sm:order-2">
                     <button
                       onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
-                      className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                      className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg transition-colors ${
                         currentPage === 1
                           ? 'text-neutral-300 cursor-not-allowed'
                           : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700'
                       }`}
                     >
-                      <ChevronLeft className="w-4 h-4" />
+                      <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
 
-                    <div className="flex items-center gap-0.5 mx-1">
+                    <div className="flex items-center gap-0.5 mx-0.5 sm:mx-1">
                       {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                         let page;
                         if (totalPages <= 5) {
@@ -710,7 +851,7 @@ export default function SyncLogs() {
                           <button
                             key={page}
                             onClick={() => setCurrentPage(page)}
-                            className={`w-8 h-8 rounded-lg text-[13px] font-semibold transition-colors ${
+                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-xs sm:text-[13px] font-semibold transition-colors ${
                               currentPage === page
                                 ? 'bg-terra-500 text-white'
                                 : 'text-neutral-600 hover:bg-neutral-100'
@@ -725,13 +866,13 @@ export default function SyncLogs() {
                     <button
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
-                      className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                      className={`flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg transition-colors ${
                         currentPage === totalPages
                           ? 'text-neutral-300 cursor-not-allowed'
                           : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700'
                       }`}
                     >
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                   </div>
                 </div>

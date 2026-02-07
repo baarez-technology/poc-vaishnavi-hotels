@@ -170,8 +170,9 @@ const HousekeepingDashboard = () => {
       <DashboardHeader name={profile?.name} />
 
       {/* KPI Cards - 12 Column Grid matching admin dashboard */}
+      {/* xl: for 4-col layout - iPad Pro with sidebar gets 2-col */}
       <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Rooms Cleaned"
             value={stats.cleanRooms}
@@ -180,7 +181,7 @@ const HousekeepingDashboard = () => {
             color="sage"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Pending Tasks"
             value={stats.pendingTasks + stats.inProgressTasks}
@@ -189,7 +190,7 @@ const HousekeepingDashboard = () => {
             color="gold"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="High Priority"
             value={stats.urgentRooms}
@@ -198,7 +199,7 @@ const HousekeepingDashboard = () => {
             color="terra"
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-3">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
             title="Shift Hours Left"
             value={shiftHoursLeft || '--'}
@@ -212,7 +213,7 @@ const HousekeepingDashboard = () => {
       {/* Main Content - 12 Column Grid */}
       <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
         {/* Today's Assigned Rooms - 8 columns */}
-        <div className="col-span-12 lg:col-span-8">
+        <div className="col-span-12 xl:col-span-8">
           <SectionCard
             title="Today's Assigned Rooms"
             subtitle={`${todaysRooms.length} room${todaysRooms.length !== 1 ? 's' : ''} pending`}
@@ -288,13 +289,13 @@ const HousekeepingDashboard = () => {
         </div>
 
         {/* Quick Actions - 4 columns on desktop */}
-        <div className="col-span-12 lg:col-span-4">
+        <div className="col-span-12 xl:col-span-4">
           <SectionCard
             title="Quick Actions"
             subtitle="Common tasks"
             className="h-full"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-3 pt-4">
               <button
                 onClick={() => setScanModalOpen(true)}
                 className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-terra-50 text-left hover:bg-terra-100 transition-all group"
@@ -361,7 +362,7 @@ const HousekeepingDashboard = () => {
       {/* Active Tasks & Recent Alerts - 8 + 4 = 12 columns */}
       <div className="grid grid-cols-12 gap-4 sm:gap-6">
         {/* Active Tasks - 8 columns */}
-        <div className="col-span-12 lg:col-span-8">
+        <div className="col-span-12 xl:col-span-8">
           <SectionCard
             title="Active Tasks"
             subtitle={`${activeTasks.length} task${activeTasks.length !== 1 ? 's' : ''} pending`}
@@ -431,13 +432,13 @@ const HousekeepingDashboard = () => {
         </div>
 
         {/* Today's Summary & Recent Alerts - 4 columns on desktop */}
-        <div className="col-span-12 lg:col-span-4">
+        <div className="col-span-12 xl:col-span-4">
           <SectionCard
             title="Today's Summary"
             subtitle="Performance overview"
             className="h-full"
           >
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-1 gap-3 pt-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-1 gap-3 pt-4">
               <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-50/50">
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-sage-50 flex items-center justify-center flex-shrink-0">

@@ -37,11 +37,11 @@ export function SearchBar({
         placeholder={placeholder}
         autoFocus={autoFocus}
         className={cn(
-          'w-full pl-9 pr-9 bg-white border border-neutral-200 rounded-lg',
+          'appearance-none w-full pl-9 pr-9 bg-white border border-neutral-200 rounded-lg ',
           'text-neutral-900 placeholder:text-neutral-400',
           'transition-all duration-150',
           'focus:outline-none focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10',
-          'hover:border-neutral-300',
+          'hover:border-neutral-300 ',
           sizes[size]
         )}
       />

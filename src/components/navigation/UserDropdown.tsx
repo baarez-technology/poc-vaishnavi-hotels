@@ -77,7 +77,7 @@ export function UserDropdown() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-neutral-200 overflow-hidden z-50"
+            className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-neutral-200 overflow-hidden z-[200]"
           >
             {/* User Info */}
             <div className="p-4 border-b border-neutral-200 bg-neutral-50">

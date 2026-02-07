@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Calendar, Loader2 } from 'lucide-react';
 import { staffService } from '../../../../api/services/staff.service';
+import { Button } from '../../../ui2/Button';
 
 export default function MarkLeaveModal({ staff, isOpen, onClose, onMarkLeave }) {
   const [formData, setFormData] = useState({
@@ -178,26 +179,12 @@ export default function MarkLeaveModal({ staff, isOpen, onClose, onMarkLeave }) 
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 p-6 border-t border-neutral-200">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="px-6 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-all duration-200 disabled:opacity-50"
-          >
+          <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
             Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="px-6 py-2 text-sm font-semibold text-white bg-amber-600 rounded-lg hover:bg-amber-700 hover:shadow transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
-          >
-            {isSubmitting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Calendar className="w-4 h-4" />
-            )}
+          </Button>
+          <Button variant="warning" onClick={handleSubmit} disabled={isSubmitting} icon={isSubmitting ? Loader2 : Calendar} loading={isSubmitting}>
             {isSubmitting ? 'Saving...' : 'Mark Leave'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

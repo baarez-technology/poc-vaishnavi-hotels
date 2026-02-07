@@ -11,30 +11,9 @@ export default function Pagination({
   canGoNext,
   onPrevPage,
   onNextPage,
-  onGoToPage,
   onRowsPerPageChange,
 }) {
   const rowsPerPageOptions = [10, 20, 50];
-
-  // Generate visible page numbers
-  const getPageNumbers = () => {
-    const pages = [];
-    const maxVisible = 5;
-    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let end = Math.min(totalPages, start + maxVisible - 1);
-
-    if (end - start + 1 < maxVisible) {
-      start = Math.max(1, end - maxVisible + 1);
-    }
-
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
-
-    return { pages, start, end };
-  };
-
-  const { pages, start, end } = getPageNumbers();
 
   return (
     <div className="flex items-center justify-between pt-4">
@@ -55,7 +34,7 @@ export default function Pagination({
       </div>
 
       {/* Center: Page info */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-6">
         <span className="text-sm text-neutral-600">
           Showing{' '}
           <span className="font-semibold text-neutral-900">
@@ -64,72 +43,42 @@ export default function Pagination({
           of{' '}
           <span className="font-semibold text-neutral-900">{totalItems}</span>
         </span>
+
+        <div className="h-4 w-px bg-neutral-200" />
+
+        <span className="text-sm text-neutral-600">
+          Page{' '}
+          <span className="font-semibold text-neutral-900">{currentPage}</span>{' '}
+          of{' '}
+          <span className="font-semibold text-neutral-900">{totalPages}</span>
+        </span>
       </div>
 
-      {/* Right: Page numbers and Navigation buttons */}
-      <div className="flex items-center gap-1">
+      {/* Right: Navigation buttons */}
+      <div className="flex items-center gap-2">
         <button
           onClick={onPrevPage}
           disabled={!canGoPrev}
-          className={`flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200 ${
+          className={`flex items-center gap-1.5 h-9 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
             canGoPrev
-              ? 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700'
-              : 'text-neutral-300 cursor-not-allowed'
+              ? 'bg-white hover:bg-neutral-50 text-neutral-700 hover:text-neutral-900 border border-neutral-200 hover:border-[#A57865]/30 focus:outline-none focus:ring-2 focus:ring-[#A57865] active:scale-95'
+              : 'bg-white text-neutral-400 border border-neutral-200 cursor-not-allowed opacity-50'
           }`}
         >
           <ChevronLeft className="w-4 h-4" />
+          Previous
         </button>
-
-        {/* Page Numbers */}
-        <div className="flex items-center gap-1 mx-1">
-          {start > 1 && (
-            <>
-              <button
-                onClick={() => onGoToPage?.(1)}
-                className="w-9 h-9 rounded-lg text-sm font-medium text-neutral-600 hover:bg-neutral-100 transition-colors"
-              >
-                1
-              </button>
-              {start > 2 && <span className="px-1 text-neutral-400">...</span>}
-            </>
-          )}
-
-          {pages.map((page) => (
-            <button
-              key={page}
-              onClick={() => onGoToPage?.(page)}
-              className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-                currentPage === page
-                  ? 'bg-[#A57865] text-white'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              {page}
-            </button>
-          ))}
-
-          {end < totalPages && (
-            <>
-              {end < totalPages - 1 && <span className="px-1 text-neutral-400">...</span>}
-              <button
-                onClick={() => onGoToPage?.(totalPages)}
-                className="w-9 h-9 rounded-lg text-sm font-medium text-neutral-600 hover:bg-neutral-100 transition-colors"
-              >
-                {totalPages}
-              </button>
-            </>
-          )}
-        </div>
 
         <button
           onClick={onNextPage}
           disabled={!canGoNext}
-          className={`flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200 ${
+          className={`flex items-center gap-1.5 h-9 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
             canGoNext
-              ? 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700'
-              : 'text-neutral-300 cursor-not-allowed'
+              ? 'bg-white hover:bg-neutral-50 text-neutral-700 hover:text-neutral-900 border border-neutral-200 hover:border-[#A57865]/30 focus:outline-none focus:ring-2 focus:ring-[#A57865] active:scale-95'
+              : 'bg-white text-neutral-400 border border-neutral-200 cursor-not-allowed opacity-50'
           }`}
         >
+          Next
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>

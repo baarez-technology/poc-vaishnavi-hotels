@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 import { X, Save, Loader2 } from 'lucide-react';
 import { staffService } from '../../../../api/services/staff.service';
+import { Button } from '../../../ui2/Button';
 
 export default function EditStaffModal({ staff, isOpen, onClose, onSave }) {
   const [formData, setFormData] = useState({
@@ -67,8 +68,8 @@ export default function EditStaffModal({ staff, isOpen, onClose, onSave }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-scaleIn">
-        <div className="flex items-center justify-between p-6 border-b border-neutral-200">
+      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden animate-scaleIn flex flex-col">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-neutral-200 flex-shrink-0">
           <div>
             <h2 className="text-2xl font-serif font-semibold text-neutral-900">Edit Staff Details</h2>
             <p className="text-sm text-neutral-600 mt-1">Update information for {staff.name}</p>
@@ -77,7 +78,7 @@ export default function EditStaffModal({ staff, isOpen, onClose, onSave }) {
             <X className="w-5 h-5 text-neutral-600" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 flex-1 overflow-y-auto">
           {error && (<div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>)}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">Full Name *</label>
@@ -114,12 +115,13 @@ export default function EditStaffModal({ staff, isOpen, onClose, onSave }) {
             </select>
           </div>
         </form>
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-neutral-200">
-          <button type="button" onClick={onClose} disabled={isSubmitting} className="px-6 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-all duration-200 disabled:opacity-50">Cancel</button>
-          <button onClick={handleSubmit} disabled={isSubmitting} className="px-6 py-2 text-sm font-semibold text-white bg-[#8E6554] rounded-lg hover:bg-[#A57865] hover:shadow transition-all duration-200 flex items-center gap-2 disabled:opacity-50">
-            {isSubmitting ? (<Loader2 className="w-4 h-4 animate-spin" />) : (<Save className="w-4 h-4" />)}
+        <div className="flex items-center justify-end gap-3 p-4 sm:p-6 border-t border-neutral-200 flex-shrink-0">
+          <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} disabled={isSubmitting} icon={isSubmitting ? Loader2 : Save} loading={isSubmitting}>
             {isSubmitting ? 'Saving...' : 'Save Changes'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

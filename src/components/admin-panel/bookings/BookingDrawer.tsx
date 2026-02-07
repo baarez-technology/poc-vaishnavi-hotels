@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Crown, Mail, Phone, Calendar, Bed, DollarSign, Globe, Sparkles, Edit, XCircle, CheckCircle } from 'lucide-react';
 import { statusConfig, sourceConfig } from '@/data/bookingsData';
+import { useCurrency } from '@/hooks/useCurrency';
+import { Button } from '../../ui2/Button';
 
 export default function BookingDrawer({
   booking,
@@ -12,6 +14,7 @@ export default function BookingDrawer({
   onAssignRoom,
   onCancelBooking,
 }) {
+  const { formatCurrency } = useCurrency();
   const [showStatusSuccess, setShowStatusSuccess] = useState(false);
   // Prevent scrolling and handle ESC key
   useEffect(() => {
@@ -123,10 +126,6 @@ export default function BookingDrawer({
       day: 'numeric',
       year: 'numeric'
     });
-  };
-
-  const formatCurrency = (amount) => {
-    return `$${amount.toLocaleString()}`;
   };
 
   const source = sourceConfig[booking.source];
@@ -370,34 +369,26 @@ export default function BookingDrawer({
 
         {/* Actions Footer */}
         <div className="flex-shrink-0 bg-white border-t border-neutral-200 px-6 py-4 space-y-3 shadow-lg">
-          <button
-            onClick={onEditBooking}
-            className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-[#A57865] hover:bg-[#8E6554] hover:shadow text-white rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:ring-offset-2 active:scale-95"
-          >
-            <Edit className="w-4 h-4" />
+          <Button variant="primary" onClick={onEditBooking} icon={Edit} fullWidth>
             Edit Booking
-          </button>
+          </Button>
 
           <div className="grid grid-cols-2 gap-3">
-            <button
+            <Button
+              variant={!booking.room ? 'warning' : 'outline-neutral'}
               onClick={onAssignRoom}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 ${
-                !booking.room
-                  ? 'bg-amber-500 hover:bg-amber-600 text-white border border-amber-500 focus:ring-amber-500'
-                  : 'bg-white hover:bg-neutral-50 border border-neutral-200 hover:border-[#5C9BA4] text-neutral-700 hover:text-[#5C9BA4] focus:ring-[#5C9BA4]'
-              }`}
+              icon={Bed}
             >
-              <Bed className="w-4 h-4" />
               {!booking.room ? 'Assign Room Now' : 'Reassign Room'}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline-danger"
               onClick={() => onCancelBooking && onCancelBooking()}
               disabled={booking?.status === 'CANCELLED'}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 hover:text-red-700 rounded-xl border border-red-200 hover:border-red-300 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 active:scale-95"
+              icon={XCircle}
             >
-              <XCircle className="w-4 h-4" />
               {booking?.status === 'CANCELLED' ? 'Cancelled' : 'Cancel'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

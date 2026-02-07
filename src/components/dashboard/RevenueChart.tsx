@@ -9,13 +9,14 @@ import {
 } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useCurrency } from '@/hooks/useCurrency';
 
 /**
  * RevenueChart - Premium bar chart with gradient fills
  * Features: Dual bars, custom tooltip, legend, gradient fills
  */
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, symbol = '$' }) => {
   if (!active || !payload?.length) return null;
 
   return (
@@ -38,7 +39,7 @@ const CustomTooltip = ({ active, payload, label }) => {
               </span>
             </div>
             <span className="text-xs font-semibold text-neutral-900">
-              ${entry.value?.toLocaleString()}
+              {symbol}{entry.value?.toLocaleString()}
             </span>
           </div>
         ))}
@@ -48,6 +49,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function RevenueChart({ data, className }) {
+  const { symbol } = useCurrency();
   const totalRevenue = useMemo(() => {
     return data?.reduce((sum, item) => sum + (item.revenue || 0), 0) || 0;
   }, [data]);
@@ -120,12 +122,12 @@ export default function RevenueChart({ data, className }) {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 10, fill: '#A8A29E' }}
-                tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                tickFormatter={(value) => `${symbol}${(value / 1000).toFixed(0)}k`}
                 width={45}
               />
 
               <Tooltip
-                content={<CustomTooltip />}
+                content={<CustomTooltip symbol={symbol} />}
                 cursor={{ fill: 'rgba(165, 120, 101, 0.05)', radius: 8 }}
               />
 

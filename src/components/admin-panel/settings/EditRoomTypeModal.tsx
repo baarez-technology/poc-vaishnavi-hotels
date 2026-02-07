@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, BedDouble, AlertCircle } from 'lucide-react';
+import { X, BedDouble, AlertCircle, Save } from 'lucide-react';
 import { AMENITIES } from '@/utils/admin/settings';
+import { Button } from '../../ui2/Button';
 
 export default function EditRoomTypeModal({ room, onClose, onSave }) {
   const [form, setForm] = useState({
@@ -79,9 +80,9 @@ export default function EditRoomTypeModal({ room, onClose, onSave }) {
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#E5E5E5]">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-[#E5E5E5] flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#5C9BA4]/10 flex items-center justify-center">
               <BedDouble className="w-5 h-5 text-[#5C9BA4]" />
@@ -100,7 +101,7 @@ export default function EditRoomTypeModal({ room, onClose, onSave }) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto flex-1">
           <div className="space-y-6">
             {/* Name */}
             <div>
@@ -228,20 +229,13 @@ export default function EditRoomTypeModal({ room, onClose, onSave }) {
         </form>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-[#E5E5E5] bg-[#FAF7F4]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 rounded-lg text-neutral-600 hover:bg-neutral-200 font-medium transition-colors"
-          >
+        <div className="flex items-center justify-end gap-3 p-4 sm:p-6 border-t border-[#E5E5E5] bg-[#FAF7F4] flex-shrink-0">
+          <Button variant="ghost" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="px-6 py-2.5 rounded-lg bg-[#5C9BA4] text-white font-medium hover:bg-[#4A8A99] transition-colors"
-          >
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} icon={Save}>
             Save Changes
-          </button>
+          </Button>
         </div>
       </div>
     </div>,

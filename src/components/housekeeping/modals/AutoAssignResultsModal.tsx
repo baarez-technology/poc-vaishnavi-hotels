@@ -1,33 +1,29 @@
 /**
  * AutoAssignResultsModal Component
- * Shows detailed results after auto-assignment - Glimmora Design System v5.0
- * Displays which rooms were assigned to which staff members
+ * Shows detailed results after auto-assign operation
+ * Glimmora Design System v5.0
  */
 
-import { CheckCircle2, XCircle, User, BedDouble, Sparkles, ArrowRight } from 'lucide-react';
+import { CheckCircle, XCircle, User, DoorOpen, Sparkles, X } from 'lucide-react';
 import { Drawer } from '../../ui2/Drawer';
 import { Button } from '../../ui2/Button';
 
-interface AssignmentResult {
-  roomNumber: string;
-  roomId?: number;
+interface Assignment {
+  roomId: number;
+  roomNumber?: string;
+  staffId: number;
   staffName: string;
-  staffId?: number;
   score?: number;
-  success?: boolean;
-  message?: string;
 }
 
 interface AutoAssignResultsModalProps {
   isOpen: boolean;
   onClose: () => void;
   results: {
-    success: boolean;
+    assignments: Assignment[];
+    summary: string;
     totalAssigned: number;
-    totalFailed?: number;
-    assignments: AssignmentResult[];
-    staffAssignments: Record<string, string[]>;
-    message?: string;
+    failed?: number;
   } | null;
 }
 
@@ -38,35 +34,36 @@ export default function AutoAssignResultsModal({
 }: AutoAssignResultsModalProps) {
   if (!results) return null;
 
-  const { totalAssigned, totalFailed = 0, assignments, staffAssignments } = results;
+  const { assignments, summary, totalAssigned, failed = 0 } = results;
 
-  // Group assignments by staff for display
-  const staffGroups = Object.entries(staffAssignments || {});
+  // Group assignments by staff member
+  const groupedByStaff = assignments.reduce((acc, assignment) => {
+    const staffName = assignment.staffName || 'Unknown Staff';
+    if (!acc[staffName]) {
+      acc[staffName] = [];
+    }
+    acc[staffName].push(assignment);
+    return acc;
+  }, {} as Record<string, Assignment[]>);
 
   // Custom header
   const renderHeader = () => (
-    <div className="flex items-center gap-3">
-      <div className="w-10 h-10 rounded-lg bg-sage-100 flex items-center justify-center">
-        <Sparkles className="w-5 h-5 text-sage-600" />
-      </div>
-      <div className="flex-1 min-w-0">
+    <div className="flex-1 min-w-0">
+      <div className="flex items-center gap-2 mb-1">
+        <Sparkles className="w-5 h-5 text-terra-500" />
         <h2 className="text-lg font-semibold text-neutral-900 tracking-tight">
-          Auto-Assignment Complete
+          Auto-Assign Complete
         </h2>
-        <p className="text-[13px] text-neutral-500 mt-0.5">
-          {totalAssigned} task{totalAssigned !== 1 ? 's' : ''} assigned successfully
-          {totalFailed > 0 && `, ${totalFailed} failed`}
-        </p>
       </div>
+      <p className="text-[13px] text-neutral-500">
+        {summary}
+      </p>
     </div>
   );
 
   // Footer
   const renderFooter = () => (
-    <div className="flex items-center justify-between w-full">
-      <p className="text-[12px] text-neutral-500">
-        Tasks can be reviewed in the Housekeeping table
-      </p>
+    <div className="flex items-center justify-end">
       <Button variant="primary" size="md" onClick={onClose}>
         Done
       </Button>
@@ -79,151 +76,103 @@ export default function AutoAssignResultsModal({
       onClose={onClose}
       header={renderHeader()}
       footer={renderFooter()}
-      maxWidth="max-w-2xl"
+      maxWidth="max-w-xl"
     >
       <div className="space-y-6">
         {/* Summary Stats */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="p-4 rounded-lg bg-sage-50 border border-sage-100">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-sage-100 flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5 text-sage-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold text-sage-700">{totalAssigned}</p>
-                <p className="text-[11px] font-medium text-sage-600 uppercase tracking-wide">Assigned</p>
-              </div>
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <div className="p-3 sm:p-4 rounded-xl bg-sage-50 border border-sage-100">
+            <div className="flex items-center gap-2 mb-1">
+              <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sage-600" />
+              <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-sage-700">
+                Assigned
+              </span>
             </div>
+            <p className="text-xl sm:text-2xl font-bold text-sage-800">{totalAssigned}</p>
           </div>
-          {totalFailed > 0 && (
-            <div className="p-4 rounded-lg bg-rose-50 border border-rose-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-rose-100 flex items-center justify-center">
-                  <XCircle className="w-5 h-5 text-rose-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-semibold text-rose-700">{totalFailed}</p>
-                  <p className="text-[11px] font-medium text-rose-600 uppercase tracking-wide">Failed</p>
-                </div>
+          {failed > 0 && (
+            <div className="p-3 sm:p-4 rounded-xl bg-rose-50 border border-rose-100">
+              <div className="flex items-center gap-2 mb-1">
+                <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-600" />
+                <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-rose-700">
+                  Failed
+                </span>
               </div>
+              <p className="text-xl sm:text-2xl font-bold text-rose-800">{failed}</p>
             </div>
           )}
         </div>
 
-        {/* Assignment Details by Staff */}
-        {staffGroups.length > 0 && (
+        {/* Assignments by Staff */}
+        {Object.keys(groupedByStaff).length > 0 ? (
           <div>
-            <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
+            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
               Assignment Details
-            </h4>
+            </h3>
             <div className="space-y-3">
-              {staffGroups.map(([staffName, rooms]) => (
+              {Object.entries(groupedByStaff).map(([staffName, staffAssignments]) => (
                 <div
                   key={staffName}
-                  className="p-4 rounded-lg bg-neutral-50 border border-neutral-100 hover:border-neutral-200 transition-colors"
+                  className="p-3 sm:p-4 rounded-xl bg-neutral-50 border border-neutral-100"
                 >
-                  <div className="flex items-start gap-3">
-                    {/* Staff Avatar */}
-                    <div className="w-10 h-10 rounded-full bg-terra-100 flex items-center justify-center flex-shrink-0">
-                      <User className="w-5 h-5 text-terra-600" />
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-terra-100 flex items-center justify-center">
+                      <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-terra-600" />
                     </div>
-
-                    {/* Staff Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <p className="text-[14px] font-semibold text-neutral-900">
-                          {staffName}
-                        </p>
-                        <span className="px-2 py-0.5 rounded-full bg-terra-100 text-terra-700 text-[10px] font-semibold">
-                          {rooms.length} room{rooms.length !== 1 ? 's' : ''}
+                    <div>
+                      <p className="text-[12px] sm:text-[13px] font-semibold text-neutral-900">
+                        {staffName}
+                      </p>
+                      <p className="text-[10px] sm:text-[11px] text-neutral-500">
+                        {staffAssignments.length} room{staffAssignments.length !== 1 ? 's' : ''} assigned
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                    {staffAssignments.map((assignment) => (
+                      <div
+                        key={assignment.roomId}
+                        className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg bg-white border border-neutral-200"
+                      >
+                        <DoorOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-500" />
+                        <span className="text-[11px] sm:text-[12px] font-medium text-neutral-700">
+                          {assignment.roomNumber || `Room ${assignment.roomId}`}
                         </span>
+                        {assignment.score && (
+                          <span className="text-[9px] sm:text-[10px] text-neutral-400 ml-1">
+                            ({Math.round(assignment.score * 100)}%)
+                          </span>
+                        )}
                       </div>
-
-                      {/* Rooms List */}
-                      <div className="flex flex-wrap gap-2">
-                        {rooms.map((room) => (
-                          <div
-                            key={room}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-white border border-neutral-200"
-                          >
-                            <BedDouble className="w-3.5 h-3.5 text-neutral-400" />
-                            <span className="text-[12px] font-medium text-neutral-700">
-                              {room}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Arrow indicator */}
-                    <ArrowRight className="w-4 h-4 text-neutral-300 flex-shrink-0 mt-3" />
+                    ))}
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        )}
-
-        {/* Individual Assignment Details (if needed for debugging) */}
-        {assignments.length > 0 && staffGroups.length === 0 && (
-          <div>
-            <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
-              All Assignments
-            </h4>
-            <div className="space-y-2 max-h-[300px] overflow-y-auto">
-              {assignments.map((assignment, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-neutral-50 border border-neutral-100"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-terra-100 flex items-center justify-center">
-                    <BedDouble className="w-4 h-4 text-terra-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-[13px] font-medium text-neutral-900">
-                      {assignment.roomNumber}
-                    </p>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-neutral-300" />
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-neutral-400" />
-                    <span className="text-[13px] font-medium text-neutral-700">
-                      {assignment.staffName}
-                    </span>
-                  </div>
-                  {assignment.score && (
-                    <span className="px-2 py-0.5 rounded-full bg-sage-100 text-sage-700 text-[10px] font-semibold">
-                      Score: {assignment.score}
-                    </span>
-                  )}
-                </div>
-              ))}
+        ) : (
+          <div className="text-center py-6 sm:py-8">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-neutral-100 flex items-center justify-center mx-auto mb-3">
+              <DoorOpen className="w-5 h-5 sm:w-6 sm:h-6 text-neutral-400" />
             </div>
-          </div>
-        )}
-
-        {/* No assignments message */}
-        {totalAssigned === 0 && (
-          <div className="text-center py-8">
-            <div className="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center mx-auto mb-4">
-              <BedDouble className="w-8 h-8 text-neutral-400" />
-            </div>
-            <p className="text-[14px] font-medium text-neutral-600">
-              No tasks were assigned
+            <p className="text-[12px] sm:text-[13px] font-medium text-neutral-600">
+              No assignments were made
             </p>
-            <p className="text-[12px] text-neutral-500 mt-1">
-              {results.message || 'All rooms may already be assigned or no staff available'}
+            <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-1">
+              All rooms may already be assigned or no staff available
             </p>
           </div>
         )}
 
-        {/* Tip for reviewing */}
-        <div className="p-4 rounded-lg bg-ocean-50 border border-ocean-100">
-          <p className="text-[12px] text-ocean-700">
-            <strong>Tip:</strong> You can review and manage all assigned tasks in the Housekeeping table.
-            Filter by "Status" or use the "By Staff" tab to see assignments grouped by housekeeper.
-          </p>
-        </div>
+        {/* Tip */}
+        {totalAssigned > 0 && (
+          <div className="p-3 rounded-lg bg-terra-50 border border-terra-100">
+            <p className="text-[11px] text-terra-700">
+              <span className="font-semibold">Tip:</span> You can view and manage all assignments in the room list.
+              Click on any room card to see assignment details or reassign staff.
+            </p>
+          </div>
+        )}
       </div>
     </Drawer>
   );

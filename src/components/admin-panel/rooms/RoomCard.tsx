@@ -1,6 +1,8 @@
-import { Building2, Users, Sparkles, Eye, Bed, UsersRound, DollarSign } from 'lucide-react';
+import { Building2, Users, Sparkles, Eye, Bed, UsersRound } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function RoomCard({ room, onClick }) {
+  const { symbol } = useCurrency();
   // Status badge styling
   const getStatusBadge = (status) => {
     const styles = {
@@ -142,11 +144,11 @@ export default function RoomCard({ room, onClick }) {
         </div>
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-white border border-neutral-200 flex items-center justify-center flex-shrink-0">
-            <DollarSign className="w-4 h-4 text-[#4E5840]" />
+            <span className="text-sm font-bold text-[#4E5840]">{symbol}</span>
           </div>
           <div className="flex-1 flex items-center justify-between">
             <span className="text-xs font-medium text-neutral-600">Price</span>
-            <span className="text-sm font-bold text-[#4E5840]">${room.price}/night</span>
+            <span className="text-sm font-bold text-[#4E5840]">{symbol}{room.price}/night</span>
           </div>
         </div>
       </div>

@@ -352,9 +352,9 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
 
   if (isLoading) {
     return (
-      <div className="rounded-[10px] bg-white p-12 flex flex-col items-center justify-center">
-        <Loader2 className="w-8 h-8 text-terra-500 animate-spin mb-4" />
-        <p className="text-[13px] text-neutral-500">Loading competitor data...</p>
+      <div className="rounded-[10px] bg-white p-8 sm:p-12 flex flex-col items-center justify-center">
+        <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 text-terra-500 animate-spin mb-3 sm:mb-4" />
+        <p className="text-[11px] sm:text-[13px] text-neutral-500">Loading competitor data...</p>
       </div>
     );
   }
@@ -363,24 +363,25 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
     <>
       <div className="rounded-[10px] bg-white overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-5 flex items-center justify-between border-b border-neutral-100">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-100">
           <div>
-            <h3 className="text-sm font-semibold text-neutral-800">Competitor Rate Comparison</h3>
-            <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
+            <h3 className="text-xs sm:text-sm font-semibold text-neutral-800">Competitor Rate Comparison</h3>
+            <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">
               Next {dateRange} days{' '}
               {competitorData && `| ${competitors.length} competitors tracked`}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
             {/* Date Range Selector */}
             <div className="relative">
               <button
                 onClick={() => setShowDateRangePicker(!showDateRangePicker)}
-                className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-neutral-700 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors"
+                className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 text-xs sm:text-[13px] font-medium text-neutral-700 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors"
               >
-                <Calendar className="w-4 h-4" />
-                {dateRange} Days
-                <ChevronDown className="w-4 h-4" />
+                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="sm:hidden">{dateRange}d</span>
+                <span className="hidden sm:inline">{dateRange} Days</span>
+                <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
               {showDateRangePicker && (
                 <div className="absolute right-0 mt-2 w-40 py-2 bg-white rounded-lg shadow-xl border border-neutral-100 z-20">
@@ -388,7 +389,7 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
                     <button
                       key={option.value}
                       onClick={() => handleDateRangeChange(option.value)}
-                      className={`w-full px-4 py-2 text-left text-[13px] hover:bg-neutral-50 transition-colors ${
+                      className={`w-full px-4 py-2 text-left text-xs sm:text-[13px] hover:bg-neutral-50 transition-colors ${
                         dateRange === option.value
                           ? 'font-semibold text-terra-600 bg-terra-50'
                           : 'text-neutral-700'
@@ -404,13 +405,14 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
             {/* Toggle Chart View */}
             <button
               onClick={() => setShowTrendChart(!showTrendChart)}
-              className={`px-3 py-2 text-[13px] font-medium rounded-lg transition-colors ${
+              className={`px-2.5 sm:px-3 py-2 text-xs sm:text-[13px] font-medium rounded-lg transition-colors ${
                 showTrendChart
                   ? 'bg-terra-50 text-terra-600'
                   : 'bg-neutral-50 text-neutral-700 hover:bg-neutral-100'
               }`}
             >
-              {showTrendChart ? 'Hide Chart' : 'Show Chart'}
+              <span className="sm:hidden">{showTrendChart ? 'Hide' : 'Chart'}</span>
+              <span className="hidden sm:inline">{showTrendChart ? 'Hide Chart' : 'Show Chart'}</span>
             </button>
 
             {/* Refresh Button */}
@@ -421,30 +423,31 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
               disabled={isRefreshing}
               loading={isRefreshing}
             >
-              Refresh Rates
+              <span className="hidden sm:inline">Refresh Rates</span>
             </Button>
           </div>
         </div>
 
         {/* Rate Trend Chart */}
         {showTrendChart && chartData.length > 0 && (
-          <div className="px-6 py-4 border-b border-neutral-100">
-            <h4 className="text-[13px] font-semibold text-neutral-800 mb-4">Rate Trend Comparison</h4>
-            <div className="h-64">
+          <div className="px-4 sm:px-6 py-4 border-b border-neutral-100">
+            <h4 className="text-xs sm:text-[13px] font-semibold text-neutral-800 mb-3 sm:mb-4">Rate Trend Comparison</h4>
+            <div className="h-48 sm:h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E4E0" />
                   <XAxis
                     dataKey="displayDate"
-                    tick={{ fontSize: 11, fill: '#6A6A6A' }}
+                    tick={{ fontSize: 9, fill: '#6A6A6A' }}
                     axisLine={{ stroke: '#E5E4E0' }}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: '#6A6A6A' }}
+                    tick={{ fontSize: 9, fill: '#6A6A6A' }}
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={(value) => `$${value}`}
+                    width={40}
                   />
                   <Tooltip
                     formatter={(value: number) => [`$${value}`, '']}
@@ -630,25 +633,26 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-neutral-100 flex items-center justify-between bg-white">
-            <p className="text-[13px] text-neutral-400 font-medium">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white">
+            <p className="text-[11px] sm:text-[13px] text-neutral-400 font-medium">
               Showing <span className="font-semibold text-neutral-700">{startIndex + 1}</span> to{' '}
               <span className="font-semibold text-neutral-700">
                 {Math.min(endIndex, tableData.length)}
               </span>{' '}
               of <span className="font-semibold text-neutral-700">{tableData.length}</span> entries
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-all ${
+                className={`px-2 sm:px-3 py-1.5 text-[11px] sm:text-[13px] font-medium rounded-lg transition-all ${
                   currentPage === 1
                     ? 'text-neutral-300 cursor-not-allowed'
                     : 'text-neutral-600 hover:bg-neutral-100'
                 }`}
               >
-                Previous
+                <span className="sm:hidden">Prev</span>
+                <span className="hidden sm:inline">Previous</span>
               </button>
 
               <div className="flex items-center gap-1">
@@ -656,7 +660,7 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`w-10 h-10 text-[13px] font-semibold rounded-lg transition-all ${
+                    className={`w-8 h-8 sm:w-10 sm:h-10 text-[11px] sm:text-[13px] font-semibold rounded-lg transition-all ${
                       currentPage === page
                         ? 'bg-terra-500 text-white'
                         : 'text-neutral-600 hover:bg-neutral-100'
@@ -670,7 +674,7 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
               <button
                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className={`px-3 py-1.5 text-[13px] font-medium rounded-lg transition-all ${
+                className={`px-2 sm:px-3 py-1.5 text-[11px] sm:text-[13px] font-medium rounded-lg transition-all ${
                   currentPage === totalPages
                     ? 'text-neutral-300 cursor-not-allowed'
                     : 'text-neutral-600 hover:bg-neutral-100'
@@ -780,14 +784,14 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
 
         {/* Parity Issues Alert */}
         {parityIssues.length > 0 && (
-          <div className="p-4 border-t border-neutral-100 bg-gold-50">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-gold-500 flex-shrink-0 mt-0.5" />
+          <div className="p-3 sm:p-4 border-t border-neutral-100 bg-gold-50">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-gold-500 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-[13px] font-semibold text-gold-800">
+                <p className="text-[11px] sm:text-[13px] font-semibold text-gold-800">
                   {parityIssues.length} Rate Parity Issues Detected
                 </p>
-                <p className="text-[11px] text-gold-700 mt-1">
+                <p className="text-[10px] sm:text-[11px] text-gold-700 mt-1">
                   {parityIssues.filter((i) => i.gapPercent < -10).length} underpriced days,{' '}
                   {parityIssues.filter((i) => i.gapPercent > 10).length} overpriced days.
                 </p>
@@ -998,23 +1002,23 @@ interface CompetitorCardProps {
 
 export const CompetitorCard = ({ competitor }: CompetitorCardProps) => {
   return (
-    <div className="p-5 rounded-lg border border-neutral-100 bg-neutral-50/50 hover:bg-white transition-colors">
-      <div className="flex items-start justify-between mb-4">
+    <div className="p-3 sm:p-5 rounded-lg border border-neutral-100 bg-neutral-50/50 hover:bg-white transition-colors">
+      <div className="flex items-start justify-between mb-3 sm:mb-4">
         <div>
-          <h4 className="text-[13px] font-semibold text-neutral-900">{competitor.name}</h4>
-          <div className="flex items-center gap-2 mt-1">
+          <h4 className="text-xs sm:text-[13px] font-semibold text-neutral-900">{competitor.name}</h4>
+          <div className="flex items-center gap-1.5 sm:gap-2 mt-1">
             <div className="flex">
               {Array.from({ length: Math.round(competitor.rating) }).map((_, i) => (
-                <span key={i} className="text-gold-400 text-[11px]">
+                <span key={i} className="text-gold-400 text-[10px] sm:text-[11px]">
                   *
                 </span>
               ))}
             </div>
-            <span className="text-[11px] font-medium text-neutral-400">{competitor.distance}</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-400">{competitor.distance}</span>
           </div>
         </div>
         <span
-          className={`px-2 py-1 text-[10px] font-semibold rounded-md ${
+          className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-[9px] sm:text-[10px] font-semibold rounded-md ${
             competitor.isActive ? 'bg-sage-50 text-sage-700' : 'bg-neutral-50 text-neutral-500'
           }`}
         >
@@ -1022,23 +1026,23 @@ export const CompetitorCard = ({ competitor }: CompetitorCardProps) => {
         </span>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1.5 sm:space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-medium text-neutral-500">Today's Rate</span>
-          <span className="text-xl font-bold text-neutral-900">${competitor.todayRate}</span>
+          <span className="text-[10px] sm:text-[11px] font-medium text-neutral-500">Today's Rate</span>
+          <span className="text-lg sm:text-xl font-bold text-neutral-900">${competitor.todayRate}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-medium text-neutral-500">7-Day Avg</span>
-          <span className="text-[13px] font-semibold text-neutral-700">${competitor.avgRate7Day}</span>
+          <span className="text-[10px] sm:text-[11px] font-medium text-neutral-500">7-Day Avg</span>
+          <span className="text-xs sm:text-[13px] font-semibold text-neutral-700">${competitor.avgRate7Day}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-medium text-neutral-500">30-Day Avg</span>
-          <span className="text-[13px] font-semibold text-neutral-700">${competitor.avgRate30Day}</span>
+          <span className="text-[10px] sm:text-[11px] font-medium text-neutral-500">30-Day Avg</span>
+          <span className="text-xs sm:text-[13px] font-semibold text-neutral-700">${competitor.avgRate30Day}</span>
         </div>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-neutral-100">
-        <p className="text-[10px] text-neutral-400">
+      <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-neutral-100">
+        <p className="text-[9px] sm:text-[10px] text-neutral-400">
           Last updated: {new Date(competitor.lastUpdated).toLocaleDateString()}
         </p>
       </div>

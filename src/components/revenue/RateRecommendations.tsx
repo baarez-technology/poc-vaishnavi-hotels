@@ -6,6 +6,7 @@ import revenueIntelligenceService, {
   PricingRecommendation,
 } from '../../api/services/revenue-intelligence.service';
 import { useRecommendations } from '../../contexts/RevenueDataContext';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface RateRecommendationsProps {
   settings?: {
@@ -17,6 +18,7 @@ interface RateRecommendationsProps {
 export default function RateRecommendations({ settings, onRefreshCalendar }: RateRecommendationsProps) {
   const { success, error: showError } = useToast();
   const { data: recommendationsResponse, loading: isLoading, refresh: refreshRecommendations } = useRecommendations();
+  const { currency, symbol } = useCurrency();
 
   // Local state for recommendations (to handle accept/dismiss operations)
   const [localRecommendations, setLocalRecommendations] = useState<PricingRecommendation[]>([]);
@@ -268,7 +270,7 @@ export default function RateRecommendations({ settings, onRefreshCalendar }: Rat
                   <div className="text-right">
                     <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-wider">Current</p>
                     <p className="text-[13px] font-medium text-neutral-500 mt-0.5">
-                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(rec.current_rate)}
+                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: currency, maximumFractionDigits: 0 }).format(rec.current_rate)}
                     </p>
                   </div>
 
@@ -277,7 +279,7 @@ export default function RateRecommendations({ settings, onRefreshCalendar }: Rat
                   <div className="text-right">
                     <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-wider">Recommended</p>
                     <p className="text-[15px] font-bold text-neutral-900 mt-0.5">
-                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(rec.recommended_rate)}
+                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: currency, maximumFractionDigits: 0 }).format(rec.recommended_rate)}
                     </p>
                   </div>
                 </div>

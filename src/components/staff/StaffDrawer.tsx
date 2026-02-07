@@ -14,16 +14,6 @@ import {
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 
-// Helper function to get default hours based on shift type
-const getDefaultHours = (shift) => {
-  const hours = {
-    morning: '08:00 - 16:00',
-    evening: '16:00 - 00:00',
-    night: '00:00 - 08:00'
-  };
-  return hours[shift] || '08:00 - 16:00';
-};
-
 export default function StaffDrawer({
   staff,
   isOpen,
@@ -85,19 +75,19 @@ export default function StaffDrawer({
 
   // Custom header with avatar and status
   const renderHeader = () => (
-    <div className="flex items-start gap-4">
-      <div className="w-14 h-14 rounded-xl bg-terra-100 flex items-center justify-center text-terra-600 font-bold text-xl flex-shrink-0">
+    <div className="flex items-start gap-3 sm:gap-4">
+      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-terra-100 flex items-center justify-center text-terra-600 font-bold text-lg sm:text-xl flex-shrink-0">
         {staff.avatar}
       </div>
       <div className="flex-1 min-w-0">
-        <h2 className="text-lg font-semibold text-neutral-900 tracking-tight">
+        <h2 className="text-base sm:text-lg font-semibold text-neutral-900 tracking-tight">
           {staff.name}
         </h2>
         <div className="flex items-center gap-1.5 mt-1">
           <Briefcase className="w-3.5 h-3.5 text-neutral-400" />
-          <p className="text-[13px] text-neutral-500">{staff.role}</p>
+          <p className="text-[12px] sm:text-[13px] text-neutral-500">{staff.role}</p>
         </div>
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 mt-2 rounded-md text-[11px] font-semibold border ${statusConfig.badge}`}>
+        <span className={`inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 mt-2 rounded-md text-[10px] sm:text-[11px] font-semibold border ${statusConfig.badge}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`}></span>
           {statusConfig.label}
         </span>
@@ -132,7 +122,7 @@ export default function StaffDrawer({
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Contact Information
           </h4>
-          <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100 space-y-3">
+          <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100 space-y-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-white border border-neutral-200 flex items-center justify-center flex-shrink-0">
                 <Phone className="w-4 h-4 text-terra-500" />
@@ -170,7 +160,7 @@ export default function StaffDrawer({
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Performance
           </h4>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <div className="p-3 rounded-lg bg-neutral-50 border border-neutral-100">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-7 h-7 rounded-lg bg-white border border-neutral-200 flex items-center justify-center">
@@ -214,33 +204,23 @@ export default function StaffDrawer({
         {staff.schedule && staff.schedule.length > 0 && (
           <div>
             <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
-              Schedule ({staff.schedule.length} shifts)
+              Schedule
             </h4>
-            <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100 space-y-2 max-h-64 overflow-y-auto">
-              {staff.schedule.map((item, index) => {
-                // Support both old format (date only) and new format (day, hours)
-                const displayDay = item.day || (item.date ? new Date(item.date).toLocaleDateString('en-US', { weekday: 'long' }) : 'Unknown');
-                const displayDate = item.date ? new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-                const displayHours = item.hours || (item.startTime && item.endTime ? `${item.startTime} - ${item.endTime}` : getDefaultHours(item.shift));
-
-                return (
-                  <div key={index} className="flex items-center justify-between py-2 border-b border-neutral-200 last:border-0">
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-lg bg-white border border-neutral-200 flex items-center justify-center flex-shrink-0">
-                        <Clock className="w-3.5 h-3.5 text-terra-500" />
-                      </div>
-                      <div>
-                        <span className="text-[13px] font-semibold text-neutral-900">{displayDay}</span>
-                        {displayDate && <p className="text-[10px] text-neutral-500">{displayDate}</p>}
-                      </div>
+            <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100 space-y-2">
+              {staff.schedule.map((item, index) => (
+                <div key={index} className="flex items-center justify-between py-2 border-b border-neutral-200 last:border-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-white border border-neutral-200 flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-3.5 h-3.5 text-terra-500" />
                     </div>
-                    <div className="text-right">
-                      <p className="text-[11px] font-medium text-neutral-700 capitalize">{item.shift} Shift</p>
-                      <p className="text-[11px] text-neutral-500">{displayHours}</p>
-                    </div>
+                    <span className="text-[13px] font-semibold text-neutral-900">{item.day}</span>
                   </div>
-                );
-              })}
+                  <div className="text-right">
+                    <p className="text-[11px] font-medium text-neutral-700 capitalize">{item.shift}</p>
+                    <p className="text-[11px] text-neutral-500">{item.hours}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -289,7 +269,7 @@ export default function StaffDrawer({
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Update Status
           </h4>
-          <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100">
+          <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100">
             <div className="flex items-center gap-2">
               <select
                 value={selectedStatus}

@@ -1,4 +1,5 @@
 import { Crown, Mail, Phone, Calendar, DollarSign, Award, TrendingUp } from 'lucide-react';
+import { Button } from '../../ui2/Button';
 
 export default function TopGuests({ guests: rawGuests }) {
   // Ensure guests array is valid
@@ -140,17 +141,15 @@ export default function TopGuests({ guests: rawGuests }) {
 
             {/* Quick Actions */}
             <div className="mt-3 pt-3 border-t border-neutral-200 flex gap-2">
-              <button className="flex items-center gap-1 px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg text-xs font-medium transition-colors">
-                <Mail className="w-3.5 h-3.5" />
+              <Button variant="ghost" size="sm" icon={Mail}>
                 Email
-              </button>
-              <button className="flex items-center gap-1 px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg text-xs font-medium transition-colors">
-                <Phone className="w-3.5 h-3.5" />
+              </Button>
+              <Button variant="ghost" size="sm" icon={Phone}>
                 Call
-              </button>
-              <button className="flex-1 px-3 py-1.5 bg-[#8E6554] hover:bg-[#A57865] text-white rounded-lg text-xs font-semibold transition-colors">
+              </Button>
+              <Button variant="primary" size="sm" className="flex-1">
                 View Profile
-              </button>
+              </Button>
             </div>
           </div>
         ))}

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Sparkles, TrendingUp, TrendingDown, Check, AlertTriangle } from 'lucide-react';
+import { Button } from '../../ui2/Button';
 
 const ROOM_TYPES = [
   { id: 'minimalist-studio', name: 'Minimalist Studio', baseRate: 150 },
@@ -170,12 +171,12 @@ export default function RateRecommendations({ forecastData, competitorData, sett
           )}
         </p>
         <div className="flex items-center gap-3">
-          <button className="px-4 py-2 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors">
+          <Button variant="ghost">
             Reject All
-          </button>
-          <button className="px-4 py-2 bg-[#A57865] text-white rounded-lg text-sm font-medium hover:bg-[#A57865]/90 transition-colors">
+          </Button>
+          <Button variant="primary">
             Apply All Recommendations
-          </button>
+          </Button>
         </div>
       </div>
     </div>

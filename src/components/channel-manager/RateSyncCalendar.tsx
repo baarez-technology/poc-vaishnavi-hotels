@@ -133,21 +133,24 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
   return (
     <div className="bg-white rounded-[10px] overflow-hidden">
       {/* Calendar Header - matches AvailabilityCalendar */}
-      <div className="px-6 py-5 flex items-center justify-between">
+      <div className="px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h3 className="text-sm font-semibold text-neutral-800">Rate Calendar</h3>
-          <p className="text-[11px] text-neutral-400 font-medium mt-0.5">Click any cell to edit rates & restrictions</p>
+          <h3 className="text-xs sm:text-sm font-semibold text-neutral-800">Rate Calendar</h3>
+          <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">
+            <span className="hidden sm:inline">Click any cell to edit rates & restrictions</span>
+            <span className="sm:hidden">Tap to edit rates</span>
+          </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto">
           {/* Filters */}
           {!selectedRoomType && (
             <DropdownMenu
               align="end"
               trigger={
-                <button className="h-9 px-3 pr-2 rounded-lg text-[12px] bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50 transition-all flex items-center gap-2">
-                  <Bed className="w-3.5 h-3.5 text-neutral-400" />
-                  <span>{activeRoomType}</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />
+                <button className="h-8 sm:h-9 px-2 sm:px-3 pr-1.5 sm:pr-2 rounded-lg text-[11px] sm:text-[12px] bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50 transition-all flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                  <Bed className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-400" />
+                  <span className="truncate max-w-[80px] sm:max-w-none">{activeRoomType}</span>
+                  <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-400" />
                 </button>
               }
             >
@@ -162,9 +165,9 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
           <DropdownMenu
             align="end"
             trigger={
-              <button className="h-9 px-3 pr-2 rounded-lg text-[12px] bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50 transition-all flex items-center gap-2">
-                <span>{getOTALabel()}</span>
-                <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />
+              <button className="h-8 sm:h-9 px-2 sm:px-3 pr-1.5 sm:pr-2 rounded-lg text-[11px] sm:text-[12px] bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50 transition-all flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                <span className="truncate max-w-[70px] sm:max-w-none">{getOTALabel()}</span>
+                <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-400" />
               </button>
             }
           >
@@ -179,19 +182,19 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
           </DropdownMenu>
 
           {/* Navigation */}
-          <div className="flex items-center gap-2 pl-3 border-l border-neutral-200">
+          <div className="flex items-center gap-1.5 sm:gap-2 pl-2 sm:pl-3 border-l border-neutral-200 flex-shrink-0">
             <IconButton
               onClick={handlePrevWeek}
               icon={ChevronLeft}
               variant="outline"
-              size="md"
+              size="sm"
               label="Previous week"
             />
             <IconButton
               onClick={handleNextWeek}
               icon={ChevronRight}
               variant="outline"
-              size="md"
+              size="sm"
               label="Next week"
             />
           </div>
@@ -203,19 +206,19 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
         {/* Metric Labels Column */}
         <div className="flex-shrink-0 border-r border-neutral-200/40 bg-white">
           {/* Corner cell with Calendar icon */}
-          <div className="h-16 bg-neutral-50 border-b border-neutral-200/40 flex items-center justify-center">
-            <Calendar className="w-5 h-5 text-neutral-400" />
+          <div className="h-14 sm:h-16 bg-neutral-50 border-b border-neutral-200/40 flex items-center justify-center">
+            <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-400" />
           </div>
 
           {/* Metric row labels */}
-          {['Rate', 'Availability', 'Min Stay', 'Restrictions'].map((metric, idx) => (
+          {['Rate', 'Avail', 'Min', 'Rest.'].map((metric, idx) => (
             <div
               key={metric}
-              className={`h-11 px-5 flex items-center border-b border-neutral-200/40 ${
+              className={`h-10 sm:h-11 px-2 sm:px-5 flex items-center border-b border-neutral-200/40 ${
                 idx % 2 === 0 ? 'bg-white' : 'bg-neutral-50/30'
               }`}
             >
-              <span className="text-xs whitespace-nowrap font-semibold uppercase tracking-[0.05em] text-neutral-500">
+              <span className="text-[10px] sm:text-xs whitespace-nowrap font-semibold uppercase tracking-[0.05em] text-neutral-500">
                 {metric}
               </span>
             </div>
@@ -249,26 +252,26 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
                                      editingCell?.field === 'availability';
 
               return (
-                <div key={day.date} className="flex-shrink-0 w-20 border-r border-neutral-200/40 last:border-r-0">
+                <div key={day.date} className="flex-shrink-0 w-16 sm:w-20 border-r border-neutral-200/40 last:border-r-0">
                   {/* Date Header */}
-                  <div className={`h-16 flex flex-col items-center justify-center transition-all duration-200 border-b border-neutral-200/40 ${
+                  <div className={`h-14 sm:h-16 flex flex-col items-center justify-center transition-all duration-200 border-b border-neutral-200/40 ${
                     day.isToday
                       ? 'bg-gradient-to-br from-terra-500 to-terra-600 text-white shadow-md shadow-terra-500/20'
                       : day.isWeekend
                         ? 'bg-gradient-to-br from-gold-50 to-gold-100/50 border-l-2 border-gold-200'
                         : 'bg-white'
                   }`}>
-                    <span className={`text-xs font-semibold uppercase tracking-wider ${
+                    <span className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wider ${
                       day.isToday ? 'text-white/90' : day.isWeekend ? 'text-gold-700' : 'text-neutral-500'
                     }`}>
                       {day.dayName}
                     </span>
-                    <span className={`text-xl font-bold tracking-tight ${
+                    <span className={`text-lg sm:text-xl font-bold tracking-tight ${
                       day.isToday ? 'text-white' : day.isWeekend ? 'text-gold-800' : 'text-neutral-900'
                     }`}>
                       {day.dayNum}
                     </span>
-                    <span className={`text-[10px] font-medium uppercase tracking-wider ${
+                    <span className={`text-[9px] sm:text-[10px] font-medium uppercase tracking-wider ${
                       day.isToday ? 'text-white/80' : day.isWeekend ? 'text-gold-600/80' : 'text-neutral-400'
                     }`}>
                       {day.month}
@@ -276,7 +279,7 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
                   </div>
 
                   {/* Rate Cell */}
-                  <div className={`h-11 flex items-center justify-center border-b border-neutral-200/40 transition-colors duration-200 ${
+                  <div className={`h-10 sm:h-11 flex items-center justify-center border-b border-neutral-200/40 transition-colors duration-200 ${
                     day.isToday ? 'bg-terra-50/30' : day.isWeekend ? 'bg-gold-50/20' : 'bg-white'
                   } hover:bg-white group cursor-pointer relative`}>
                     {isEditingRate ? (
@@ -284,7 +287,7 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
                         type="number"
                         value={editValue}
                         onChange={(e) => setEditValue(e.target.value)}
-                        className="w-14 h-7 px-1 text-[12px] text-center rounded-lg bg-white border border-terra-400 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-terra-500/20"
+                        className="w-12 sm:w-14 h-6 sm:h-7 px-1 text-[11px] sm:text-[12px] text-center rounded-lg bg-white border border-terra-400 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-terra-500/20"
                         autoFocus
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') handleEditSave();
@@ -299,18 +302,18 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
                           !hasParity ? 'ring-1 ring-inset ring-gold-400' : ''
                         }`}
                       >
-                        <span className="text-sm font-semibold tracking-tight text-neutral-900 group-hover:text-terra-600 transition-colors">
+                        <span className="text-xs sm:text-sm font-semibold tracking-tight text-neutral-900 group-hover:text-terra-600 transition-colors">
                           ${rate || 0}
                         </span>
                         {!hasParity && (
-                          <AlertCircle className="w-3.5 h-3.5 absolute top-1 right-1 text-gold-500" />
+                          <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 absolute top-0.5 right-0.5 sm:top-1 sm:right-1 text-gold-500" />
                         )}
                       </button>
                     )}
                   </div>
 
                   {/* Availability Cell */}
-                  <div className={`h-11 flex items-center justify-center border-b border-neutral-200/40 transition-colors duration-200 ${
+                  <div className={`h-10 sm:h-11 flex items-center justify-center border-b border-neutral-200/40 transition-colors duration-200 ${
                     day.isToday ? 'bg-terra-50/30' : day.isWeekend ? 'bg-gold-50/20' : 'bg-neutral-50/30'
                   } hover:bg-white group cursor-pointer`}>
                     {isEditingAvail ? (
@@ -318,7 +321,7 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
                         type="number"
                         value={editValue}
                         onChange={(e) => setEditValue(e.target.value)}
-                        className="w-14 h-7 px-1 text-[12px] text-center rounded-lg bg-white border border-terra-400 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-terra-500/20"
+                        className="w-12 sm:w-14 h-6 sm:h-7 px-1 text-[11px] sm:text-[12px] text-center rounded-lg bg-white border border-terra-400 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-terra-500/20"
                         autoFocus
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') handleEditSave();
@@ -331,7 +334,7 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
                         onClick={() => handleEditStart(day.date, activeRoomType, selectedOTA, 'availability', availability)}
                         className="w-full h-full flex items-center justify-center"
                       >
-                        <span className={`px-2.5 py-1 text-xs rounded-lg transition-all duration-200 ${getAvailabilityColor(availability, total)}`}>
+                        <span className={`px-1.5 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-xs rounded-lg transition-all duration-200 ${getAvailabilityColor(availability, total)}`}>
                           {availability}/{total}
                         </span>
                       </button>
@@ -339,23 +342,23 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
                   </div>
 
                   {/* Min Stay Cell */}
-                  <div className={`h-11 flex items-center justify-center border-b border-neutral-200/40 transition-colors duration-200 ${
+                  <div className={`h-10 sm:h-11 flex items-center justify-center border-b border-neutral-200/40 transition-colors duration-200 ${
                     day.isToday ? 'bg-terra-50/30' : day.isWeekend ? 'bg-gold-50/20' : 'bg-white'
                   } hover:bg-white`}>
-                    <span className="text-xs font-semibold text-neutral-600">
-                      {minStay} night{minStay !== 1 ? 's' : ''}
+                    <span className="text-[10px] sm:text-xs font-semibold text-neutral-600">
+                      {minStay}n
                     </span>
                   </div>
 
                   {/* Restrictions Cell */}
-                  <div className={`h-11 flex items-center justify-center gap-1 border-b border-neutral-200/40 transition-colors duration-200 ${
+                  <div className={`h-10 sm:h-11 flex items-center justify-center gap-0.5 sm:gap-1 border-b border-neutral-200/40 transition-colors duration-200 ${
                     day.isToday ? 'bg-terra-50/30' : day.isWeekend ? 'bg-gold-50/20' : 'bg-neutral-50/30'
                   } hover:bg-white`}>
                     {isStopSell && (
                       <Tooltip content="Stop Sell - No bookings allowed" side="top">
                         <button
                           onClick={() => toggleStopSell(day.date, activeRoomType, selectedOTA === 'ALL' ? null : selectedOTA)}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-semibold bg-rose-100 text-rose-700 border border-rose-200/60 shadow-sm hover:shadow-md transition-all duration-200"
+                          className="w-5 h-5 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-semibold bg-rose-100 text-rose-700 border border-rose-200/60 shadow-sm hover:shadow-md transition-all duration-200"
                         >
                           S
                         </button>
@@ -363,14 +366,14 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
                     )}
                     {isCTA && (
                       <Tooltip content="Closed to Arrival - No check-ins" side="top">
-                        <span className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-semibold bg-gold-100 text-gold-700 border border-gold-200/60 shadow-sm">
+                        <span className="w-5 h-5 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-semibold bg-gold-100 text-gold-700 border border-gold-200/60 shadow-sm">
                           A
                         </span>
                       </Tooltip>
                     )}
                     {isCTD && (
                       <Tooltip content="Closed to Departure - No check-outs" side="top">
-                        <span className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-semibold bg-sage-100 text-sage-700 border border-sage-200/60 shadow-sm">
+                        <span className="w-5 h-5 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-semibold bg-sage-100 text-sage-700 border border-sage-200/60 shadow-sm">
                           D
                         </span>
                       </Tooltip>
@@ -378,7 +381,7 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
                     {!hasRestrictions && (
                       <button
                         onClick={() => toggleStopSell(day.date, activeRoomType, selectedOTA === 'ALL' ? null : selectedOTA)}
-                        className="text-xs text-neutral-300 hover:text-neutral-400 transition-colors duration-200"
+                        className="text-[10px] sm:text-xs text-neutral-300 hover:text-neutral-400 transition-colors duration-200"
                       >
                         —
                       </button>
@@ -392,52 +395,52 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
       </div>
 
       {/* Legend - matches AvailabilityCalendar */}
-      <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/50">
-        <div className="flex items-center gap-6 flex-wrap">
-          <span className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Legend</span>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-sage-50 flex items-center justify-center">
-              <CheckCircle className="w-3.5 h-3.5 text-sage-600" />
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 bg-neutral-50/50">
+        <div className="flex items-center gap-3 sm:gap-6 flex-wrap">
+          <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Legend</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-sage-50 flex items-center justify-center">
+              <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-sage-600" />
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">Available</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">Available</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-gold-50 flex items-center justify-center">
-              <AlertCircle className="w-3.5 h-3.5 text-gold-600" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-gold-50 flex items-center justify-center">
+              <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gold-600" />
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">Low Stock</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">Low Stock</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-rose-50 flex items-center justify-center">
-              <XCircle className="w-3.5 h-3.5 text-rose-600" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-rose-50 flex items-center justify-center">
+              <XCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-rose-600" />
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">Sold Out</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">Sold Out</span>
           </div>
-          <div className="h-4 w-px bg-neutral-200" />
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-rose-100 flex items-center justify-center">
-              <span className="text-[10px] font-semibold text-rose-700">S</span>
+          <div className="h-4 w-px bg-neutral-200 hidden sm:block" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-rose-100 flex items-center justify-center">
+              <span className="text-[9px] sm:text-[10px] font-semibold text-rose-700">S</span>
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">Stop Sell</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">Stop Sell</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-gold-100 flex items-center justify-center">
-              <span className="text-[10px] font-semibold text-gold-700">A</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-gold-100 flex items-center justify-center">
+              <span className="text-[9px] sm:text-[10px] font-semibold text-gold-700">A</span>
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">CTA</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">CTA</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-sage-100 flex items-center justify-center">
-              <span className="text-[10px] font-semibold text-sage-700">D</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-sage-100 flex items-center justify-center">
+              <span className="text-[9px] sm:text-[10px] font-semibold text-sage-700">D</span>
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">CTD</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">CTD</span>
           </div>
-          <div className="h-4 w-px bg-neutral-200" />
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-gold-50 flex items-center justify-center border border-gold-200">
-              <AlertCircle className="w-3.5 h-3.5 text-gold-600" />
+          <div className="h-4 w-px bg-neutral-200 hidden sm:block" />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-gold-50 flex items-center justify-center border border-gold-200">
+              <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gold-600" />
             </div>
-            <span className="text-[11px] font-medium text-neutral-600">Parity Issue</span>
+            <span className="text-[10px] sm:text-[11px] font-medium text-neutral-600 hidden sm:inline">Parity</span>
           </div>
         </div>
       </div>

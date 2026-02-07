@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, User, Clock, CheckCircle2, AlertCircle, Play, CheckCircle, Ban, RotateCcw, Edit, Sparkles, Loader2, XCircle } from 'lucide-react';
+import { Button } from '../../ui2/Button';
 
 export default function RoomDrawer({
   room,
@@ -63,37 +64,13 @@ export default function RoomDrawer({
 
   if (!isOpen || !room) return null;
 
-  // Get housekeeper from room data - check both assignedStaff object and assignedStaffName
-  const housekeeper = (() => {
-    // First check for assignedStaff object (from StaffView/RoomCard pattern)
-    if (room.assignedStaff?.name) {
-      return {
-        name: room.assignedStaff.name,
-        avatar: room.assignedStaff.avatar || room.assignedStaff.name.charAt(0).toUpperCase(),
-        tasksAssigned: room.assignedStaff.tasksAssigned || '-',
-        efficiency: room.assignedStaff.efficiency || '-'
-      };
-    }
-    // Fallback to assignedStaffName string (from API)
-    if (room.assignedStaffName) {
-      return {
-        name: room.assignedStaffName,
-        avatar: room.assignedStaffName.charAt(0).toUpperCase(),
-        tasksAssigned: '-',
-        efficiency: '-'
-      };
-    }
-    // Check if assignedTo exists but name isn't populated
-    if (room.assignedTo) {
-      return {
-        name: `Staff #${room.assignedTo}`,
-        avatar: 'S',
-        tasksAssigned: '-',
-        efficiency: '-'
-      };
-    }
-    return null;
-  })();
+  // Get housekeeper from room data (comes from API)
+  const housekeeper = room.assignedStaffName ? {
+    name: room.assignedStaffName,
+    avatar: room.assignedStaffName?.charAt(0).toUpperCase(),
+    tasksAssigned: '-',
+    efficiency: '-'
+  } : null;
 
   // Calculate progress
   const totalTasks = room.checklist?.length || 0;
@@ -172,11 +149,11 @@ export default function RoomDrawer({
       >
         {/* Modal */}
         <div
-          className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-scaleIn"
+          className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden animate-scaleIn flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="p-6 border-b border-neutral-200 bg-gradient-to-r from-[#FAF8F6] to-white">
+          <div className="p-4 sm:p-6 border-b border-neutral-200 bg-gradient-to-r from-[#FAF8F6] to-white flex-shrink-0">
             <div className="flex items-center justify-between mb-2">
               <div>
                 <h2 className="text-3xl font-serif font-bold text-neutral-900 mb-1">
@@ -194,7 +171,7 @@ export default function RoomDrawer({
           </div>
 
           {/* Content */}
-          <div className="overflow-y-auto max-h-[calc(90vh-260px)] custom-scrollbar p-6 pb-4 space-y-6">
+          <div className="overflow-y-auto flex-1 custom-scrollbar p-4 sm:p-6 pb-4 space-y-6">
           {/* Status Section */}
           <div>
             <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-wide mb-3">Status</h3>
@@ -225,35 +202,23 @@ export default function RoomDrawer({
               <div className="flex flex-wrap gap-2">
                 {/* Start Cleaning */}
                 {room.cleaningStatus === 'not_started' && room.status === 'dirty' && (
-                  <button
-                    onClick={() => onStartCleaning(room.id)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#5C9BA4] hover:bg-[#4A8A94] text-white rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow active:scale-95"
-                  >
-                    <Play className="w-4 h-4" />
+                  <Button variant="secondary" onClick={() => onStartCleaning(room.id)} icon={Play}>
                     Start Cleaning
-                  </button>
+                  </Button>
                 )}
 
                 {/* Mark as Cleaned */}
                 {(room.cleaningStatus === 'in_progress' || room.status === 'dirty') && (
-                  <button
-                    onClick={() => onMarkCleaned(room.id)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#4E5840] hover:bg-[#3D4633] text-white rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow active:scale-95"
-                  >
-                    <CheckCircle className="w-4 h-4" />
+                  <Button variant="success" onClick={() => onMarkCleaned(room.id)} icon={CheckCircle}>
                     Mark Cleaned
-                  </button>
+                  </Button>
                 )}
 
                 {/* Mark as Dirty */}
                 {room.status === 'clean' && (
-                  <button
-                    onClick={() => onMarkDirty(room.id)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#CDB261] hover:bg-[#B89E50] text-white rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow active:scale-95"
-                  >
-                    <RotateCcw className="w-4 h-4" />
+                  <Button variant="warning" onClick={() => onMarkDirty(room.id)} icon={RotateCcw}>
                     Mark Dirty
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -262,21 +227,13 @@ export default function RoomDrawer({
           {/* Block/Unblock Actions */}
           <div>
             {room.status === 'out_of_service' ? (
-              <button
-                onClick={() => onUnblockRoom(room.id)}
-                className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-[#4E5840] hover:bg-[#3D4633] text-white rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98]"
-              >
-                <CheckCircle className="w-5 h-5" />
+              <Button variant="success" onClick={() => onUnblockRoom(room.id)} icon={CheckCircle} fullWidth>
                 Unblock Room
-              </button>
+              </Button>
             ) : (
-              <button
-                onClick={() => onBlockRoom(room.id, 'Maintenance required')}
-                className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-[#A57865] hover:bg-[#8E6554] text-white rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow active:scale-[0.98]"
-              >
-                <Ban className="w-5 h-5" />
+              <Button variant="primary" onClick={() => onBlockRoom(room.id, 'Maintenance required')} icon={Ban} fullWidth>
                 Block Room
-              </button>
+              </Button>
             )}
           </div>
 
@@ -436,7 +393,7 @@ export default function RoomDrawer({
           </div>
 
           {/* Footer CTA */}
-          <div className="p-6 border-t border-neutral-200 bg-gradient-to-r from-[#FAF8F6] to-white">
+          <div className="p-4 sm:p-6 border-t border-neutral-200 bg-gradient-to-r from-[#FAF8F6] to-white flex-shrink-0">
             <div className="text-center px-4 py-3 bg-[#A57865]/5 rounded-xl border border-[#A57865]/20 transition-all duration-200">
               <p className="text-sm font-semibold text-[#A57865]">
                 Use the actions above to manage this room's cleaning status

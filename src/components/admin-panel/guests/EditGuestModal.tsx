@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Save, Tag, Plus } from 'lucide-react';
+import { X, Save, Tag, Plus, Globe } from 'lucide-react';
 import {
-  COUNTRIES,
   GUEST_TAGS,
   GUEST_STATUS_CONFIG,
   EMOTION_CONFIG,
   calculateLoyaltyTier,
   LOYALTY_TIERS,
 } from '@/utils/admin/guests';
+import { Button } from '../../ui2/Button';
+import { SearchableSelect } from '../../ui2/SearchableSelect';
+import { Country } from 'country-state-city';
 
 export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSaving }) {
   const [formData, setFormData] = useState({
@@ -138,6 +140,15 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
     });
   };
 
+  const countryOptions = useMemo(
+    () =>
+      Country.getAllCountries().map((c) => ({
+        label: c.name,
+        value: c.name,
+      })),
+    []
+  );
+
   const filteredTags = GUEST_TAGS.filter(
     (tag) =>
       !formData.tags.includes(tag) &&
@@ -256,18 +267,15 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Country
                   </label>
-                  <select
-                    name="country"
+                  <SearchableSelect
+                    options={countryOptions}
                     value={formData.country}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl hover:border-neutral-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:ring-offset-2 focus:bg-white transition-all duration-200 cursor-pointer"
-                  >
-                    {COUNTRIES.map((country) => (
-                      <option key={country} value={country}>
-                        {country}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) =>
+                      setFormData((prev) => ({ ...prev, country: val }))
+                    }
+                    placeholder="Select country"
+                    icon={Globe}
+                  />
                 </div>
 
                 <div>
@@ -429,22 +437,12 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
         {/* Actions Footer */}
         <div className="flex-shrink-0 bg-white border-t border-neutral-200 px-6 py-4 shadow-lg">
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-6 py-3 bg-neutral-100 hover:bg-neutral-200 hover:shadow-sm text-neutral-700 hover:text-neutral-900 rounded-xl transition-all duration-200 font-medium focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2 active:scale-95"
-            >
+            <Button variant="ghost" onClick={onClose} className="flex-1">
               Cancel
-            </button>
-            <button
-              type="submit"
-              form="edit-guest-form"
-              disabled={isSaving}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-[#A57865] hover:bg-[#8E6554] hover:shadow text-white disabled:bg-neutral-300 disabled:cursor-not-allowed rounded-xl transition-all duration-200 font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:ring-offset-2 active:scale-95"
-            >
-              <Save className="w-4 h-4" />
+            </Button>
+            <Button variant="primary" type="submit" form="edit-guest-form" disabled={isSaving} icon={Save} loading={isSaving} className="flex-1">
               {isSaving ? 'Saving...' : 'Save Changes'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

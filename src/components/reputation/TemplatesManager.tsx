@@ -316,6 +316,7 @@ function TestDrawer({ isOpen, onClose, template }: TestDrawerProps) {
 
 export default function TemplatesManager() {
   const {
+    templates: contextTemplates,
     loadTemplates,
     createTemplate,
     updateTemplate,
@@ -323,7 +324,19 @@ export default function TemplatesManager() {
     isLoading
   } = useReputation();
 
-  const [templates, setTemplates] = useState<Template[]>([]);
+  // Map context templates to local Template interface
+  const templates: Template[] = (contextTemplates || []).map(t => ({
+    id: t.id,
+    name: t.name,
+    type: (t.sentiment || 'positive') as TemplateType,
+    tone: (t.tone || 'professional') as TemplateTone,
+    content: t.content,
+    is_default: t.is_default,
+    is_active: t.is_active,
+    language: t.language,
+    created_at: t.created_at,
+    updated_at: t.updated_at
+  }));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [testDrawerOpen, setTestDrawerOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
@@ -337,14 +350,16 @@ export default function TemplatesManager() {
     fetchTemplates();
   }, []);
 
+  // Expand first template when templates load
+  useEffect(() => {
+    if (templates.length > 0 && expandedIds.size === 0) {
+      setExpandedIds(new Set([String(templates[0].id)]));
+    }
+  }, [templates]);
+
   const fetchTemplates = async () => {
     try {
-      const data = await loadTemplates();
-      setTemplates(data || []);
-      // Expand first template by default if available
-      if (data && data.length > 0 && expandedIds.size === 0) {
-        setExpandedIds(new Set([String(data[0].id)]));
-      }
+      await loadTemplates();
     } catch (error) {
       console.error('Failed to load templates:', error);
     }
@@ -387,20 +402,27 @@ export default function TemplatesManager() {
   };
 
   const handleSubmit = async (data: Partial<Template>) => {
+    // Map frontend 'type' field to backend 'sentiment' field
+    const apiData = {
+      name: data.name,
+      content: data.content,
+      sentiment: data.type || 'positive', // Map type -> sentiment
+      tone: data.tone || 'professional',
+      is_default: data.is_default
+    };
+
     if (editingTemplate) {
-      await updateTemplate(editingTemplate.id, data);
+      await updateTemplate(Number(editingTemplate.id), apiData);
     } else {
-      await createTemplate(data as any);
+      await createTemplate(apiData as any);
     }
-    await fetchTemplates();
   };
 
   const handleDelete = async () => {
     if (deletingTemplate) {
       setIsDeleting(true);
       try {
-        await deleteTemplate(deletingTemplate.id);
-        await fetchTemplates();
+        await deleteTemplate(Number(deletingTemplate.id));
         setDeletingTemplate(null);
       } catch (error) {
         console.error('Failed to delete template:', error);
@@ -483,16 +505,17 @@ export default function TemplatesManager() {
 
               <div className="space-y-3">
                 {typeTemplates.map(template => {
-                  const isExpanded = expandedIds.has(template.id);
+                  const templateId = String(template.id);
+                  const isExpanded = expandedIds.has(templateId);
 
                   return (
                     <div
-                      key={template.id}
+                      key={templateId}
                       className={`rounded-xl border ${config.borderColor} overflow-hidden`}
                     >
                       <div
                         className={`px-4 py-3 ${config.bgColor} cursor-pointer`}
-                        onClick={() => toggleExpanded(template.id)}
+                        onClick={() => toggleExpanded(templateId)}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -523,7 +546,7 @@ export default function TemplatesManager() {
                                 <span className="capitalize">{template.tone}</span>
                                 <span className="text-neutral-300">|</span>
                                 <span>
-                                  Updated {new Date(template.updated_at).toLocaleDateString()}
+                                  Updated {new Date(template.updated_at || template.created_at).toLocaleDateString()}
                                 </span>
                               </div>
                             </div>

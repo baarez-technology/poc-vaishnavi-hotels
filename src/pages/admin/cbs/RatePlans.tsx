@@ -164,58 +164,60 @@ export default function CBSRatePlans() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <div className="px-10 py-6 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
         {/* Page Header */}
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
               Rate Plans
             </h1>
-            <p className="text-[13px] text-neutral-500 mt-1">
-              Manage pricing strategies, restrictions, and distribution channels
+            <p className="text-xs sm:text-[13px] text-neutral-500 mt-0.5 sm:mt-1">
+              <span className="hidden sm:inline">Manage pricing strategies, restrictions, and distribution channels</span>
+              <span className="sm:hidden">Manage pricing & restrictions</span>
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" icon={Download}>
-              Export
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Button variant="outline" icon={Download} className="text-xs sm:text-sm px-3 sm:px-4">
+              <span className="hidden sm:inline">Export</span>
             </Button>
-            <Button onClick={() => setShowNewModal(true)} variant="primary" icon={Plus}>
-              New Rate Plan
+            <Button onClick={() => setShowNewModal(true)} variant="primary" icon={Plus} className="text-xs sm:text-sm px-3 sm:px-4">
+              <span className="hidden sm:inline">New Rate Plan</span>
+              <span className="sm:hidden">New</span>
             </Button>
           </div>
         </header>
 
         {/* KPI Cards */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
           {kpiCards.map((kpi, index) => {
             const colors = accentColors[kpi.accent];
             const isPositive = kpi.changeType === 'positive';
             return (
               <div
                 key={index}
-                className="rounded-[10px] bg-white p-6"
+                className="rounded-[10px] bg-white p-4 sm:p-6"
               >
                 {/* Header with Icon */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colors.icon}`}>
-                    <kpi.icon className="w-4 h-4" />
+                <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                  <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center ${colors.icon}`}>
+                    <kpi.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+                  <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 truncate">
                     {kpi.title}
                   </p>
                 </div>
 
                 {/* Value */}
-                <p className="text-[28px] font-semibold tracking-tight text-neutral-900 mb-2">
+                <p className="text-xl sm:text-[28px] font-semibold tracking-tight text-neutral-900 mb-1 sm:mb-2">
                   {kpi.value}
                 </p>
 
                 {/* Comparison */}
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] text-neutral-400 font-medium">{kpi.subtitle}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium truncate">{kpi.subtitle}</p>
                   {kpi.change && (
-                    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${
+                    <span className={`inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold flex-shrink-0 ${
                       isPositive ? 'text-sage-600' : 'text-neutral-500'
                     }`}>
                       {isPositive && <span className="w-1.5 h-1.5 rounded-full bg-sage-500" />}
@@ -232,28 +234,28 @@ export default function CBSRatePlans() {
         <section className="rounded-[10px] bg-white overflow-hidden">
           <button
             onClick={() => setIsInsightsExpanded(!isInsightsExpanded)}
-            className="w-full px-6 py-5 flex items-center justify-between transition-colors hover:bg-neutral-50/50"
+            className="w-full px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between transition-colors hover:bg-neutral-50/50"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <div className="text-left">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-neutral-800">
+                  <h3 className="text-xs sm:text-sm font-semibold text-neutral-800">
                     AI Pricing Insights
                   </h3>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider bg-gold-100 text-gold-700">
+                  <span className="px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-semibold uppercase tracking-wider bg-gold-100 text-gold-700">
                     Smart
                   </span>
                 </div>
-                <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
+                <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">
                   Personalized recommendations
                 </p>
               </div>
             </div>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-neutral-50 hover:bg-neutral-100 transition-colors">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-neutral-50 hover:bg-neutral-100 transition-colors flex-shrink-0">
               {isInsightsExpanded ? (
-                <ChevronUp className="w-4 h-4 text-neutral-400" />
+                <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400" />
               ) : (
-                <ChevronDown className="w-4 h-4 text-neutral-400" />
+                <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400" />
               )}
             </div>
           </button>
@@ -261,34 +263,34 @@ export default function CBSRatePlans() {
           <div className={`transition-all duration-300 ease-out overflow-hidden ${
             isInsightsExpanded ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
           }`}>
-            <div className="px-6 pb-6 pt-2 space-y-3 border-t border-neutral-100">
+            <div className="px-4 sm:px-6 pb-4 sm:pb-6 pt-2 space-y-2 sm:space-y-3 border-t border-neutral-100">
               {stats.active > 0 ? (
-                <div className="flex items-start gap-3 p-4 rounded-lg bg-sage-50/50">
-                  <div className="w-2 h-2 rounded-full bg-sage-500 mt-1.5 flex-shrink-0" />
+                <div className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg bg-sage-50/50">
+                  <div className="w-2 h-2 rounded-full bg-sage-500 mt-1 sm:mt-1.5 flex-shrink-0" />
                   <div>
-                    <p className="text-[13px] font-semibold text-sage-700">Revenue Active</p>
-                    <p className="text-[11px] mt-0.5 text-neutral-500 font-medium">
+                    <p className="text-xs sm:text-[13px] font-semibold text-sage-700">Revenue Active</p>
+                    <p className="text-[10px] sm:text-[11px] mt-0.5 text-neutral-500 font-medium">
                       {stats.active} rate plan{stats.active !== 1 ? 's are' : ' is'} currently accepting bookings
                     </p>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-start gap-3 p-4 rounded-lg bg-rose-50/50">
-                  <div className="w-2 h-2 rounded-full bg-rose-500 mt-1.5 flex-shrink-0" />
+                <div className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg bg-rose-50/50">
+                  <div className="w-2 h-2 rounded-full bg-rose-500 mt-1 sm:mt-1.5 flex-shrink-0" />
                   <div>
-                    <p className="text-[13px] font-semibold text-rose-600">Action Required</p>
-                    <p className="text-[11px] mt-0.5 text-neutral-500 font-medium">
+                    <p className="text-xs sm:text-[13px] font-semibold text-rose-600">Action Required</p>
+                    <p className="text-[10px] sm:text-[11px] mt-0.5 text-neutral-500 font-medium">
                       No active rate plans - activate at least one to start accepting bookings
                     </p>
                   </div>
                 </div>
               )}
               {stats.inactive > 0 && (
-                <div className="flex items-start gap-3 p-4 rounded-lg bg-gold-50/50">
-                  <div className="w-2 h-2 rounded-full bg-gold-500 mt-1.5 flex-shrink-0" />
+                <div className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg bg-gold-50/50">
+                  <div className="w-2 h-2 rounded-full bg-gold-500 mt-1 sm:mt-1.5 flex-shrink-0" />
                   <div>
-                    <p className="text-[13px] font-semibold text-gold-700">Optimization Opportunity</p>
-                    <p className="text-[11px] mt-0.5 text-neutral-500 font-medium">
+                    <p className="text-xs sm:text-[13px] font-semibold text-gold-700">Optimization Opportunity</p>
+                    <p className="text-[10px] sm:text-[11px] mt-0.5 text-neutral-500 font-medium">
                       {stats.inactive} inactive plan{stats.inactive !== 1 ? 's' : ''} available for seasonal campaigns
                     </p>
                   </div>
@@ -299,16 +301,16 @@ export default function CBSRatePlans() {
         </section>
 
         {/* Search & Filters */}
-        <section className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <section className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
           {/* Search */}
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400" />
             <input
               type="text"
-              placeholder="Search rate plans by name, description..."
+              placeholder="Search rate plans..."
               value={searchQuery}
               onChange={(e) => handleFilterChange(setSearchQuery, e.target.value)}
-              className="w-full h-10 pl-9 pr-4 rounded-lg text-sm bg-white border border-neutral-200 text-neutral-900 placeholder-neutral-400 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
+              className="w-full h-9 sm:h-10 pl-8 sm:pl-9 pr-3 sm:pr-4 rounded-lg text-xs sm:text-sm bg-white border border-neutral-200 text-neutral-900 placeholder-neutral-400 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
             />
           </div>
 
@@ -316,9 +318,9 @@ export default function CBSRatePlans() {
           <DropdownMenu
             align="end"
             trigger={
-              <button className="h-10 w-[140px] px-4 pr-3 rounded-lg text-sm bg-white border border-neutral-200 text-neutral-700 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150 flex items-center justify-between">
+              <button className="h-9 sm:h-10 w-full sm:w-[140px] px-3 sm:px-4 pr-2.5 sm:pr-3 rounded-lg text-xs sm:text-sm bg-white border border-neutral-200 text-neutral-700 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150 flex items-center justify-between">
                 <span>{filterStatus === 'all' ? 'All Status' : filterStatus === 'active' ? 'Active' : 'Inactive'}</span>
-                <ChevronDown className="w-4 h-4 text-neutral-400" />
+                <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400" />
               </button>
             }
           >
@@ -336,36 +338,37 @@ export default function CBSRatePlans() {
 
         {/* Rate Plans List */}
         {filteredRatePlans.length === 0 ? (
-          <section className="rounded-[10px] p-12 text-center bg-white">
-            <div className="w-16 h-16 rounded-lg mx-auto mb-5 flex items-center justify-center bg-neutral-50">
-              <Tag className="w-8 h-8 text-neutral-300" />
+          <section className="rounded-[10px] p-8 sm:p-12 text-center bg-white">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg mx-auto mb-4 sm:mb-5 flex items-center justify-center bg-neutral-50">
+              <Tag className="w-6 h-6 sm:w-8 sm:h-8 text-neutral-300" />
             </div>
-            <h3 className="text-lg font-semibold mb-2 text-neutral-900">
+            <h3 className="text-base sm:text-lg font-semibold mb-2 text-neutral-900">
               No rate plans found
             </h3>
-            <p className="text-[13px] mb-6 max-w-md mx-auto text-neutral-500">
+            <p className="text-xs sm:text-[13px] mb-4 sm:mb-6 max-w-md mx-auto text-neutral-500">
               {searchQuery || filterStatus !== 'all'
                 ? 'Try adjusting your search or filters to find what you\'re looking for'
                 : 'Get started by creating your first rate plan to begin accepting bookings'
               }
             </p>
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
               {(searchQuery || filterStatus !== 'all') && (
                 <Button
                   onClick={() => { setSearchQuery(''); setFilterStatus('all'); setCurrentPage(1); }}
                   variant="outline"
+                  className="w-full sm:w-auto text-xs sm:text-sm"
                 >
                   Clear Filters
                 </Button>
               )}
-              <Button onClick={() => setShowNewModal(true)} variant="primary" icon={Plus}>
+              <Button onClick={() => setShowNewModal(true)} variant="primary" icon={Plus} className="w-full sm:w-auto text-xs sm:text-sm">
                 Create Rate Plan
               </Button>
             </div>
           </section>
         ) : (
           <>
-            <section className="space-y-4">
+            <section className="space-y-3 sm:space-y-4">
               {paginatedRatePlans.map((ratePlan, index) => (
                 <RatePlanCard
                   key={ratePlan.id}
@@ -383,7 +386,7 @@ export default function CBSRatePlans() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <section className="flex items-center justify-between pt-4">
+              <section className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 pt-3 sm:pt-4">
                 <PaginationInfo
                   currentPage={currentPage}
                   pageSize={ITEMS_PER_PAGE}

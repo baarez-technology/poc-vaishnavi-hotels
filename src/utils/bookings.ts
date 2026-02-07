@@ -158,11 +158,11 @@ export function calculateBookingAmount(roomType, nights, taxRate = 0.12) {
   };
 }
 
-// Format currency
-export function formatCurrency(amount) {
+// Format currency - prefer using useCurrency hook in components for dynamic currency
+export function formatCurrency(amount, currency = 'USD') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: currency,
     minimumFractionDigits: 0,
   }).format(amount);
 }
@@ -269,15 +269,24 @@ export function sortBookings(bookings, sortKey, sortDirection = 'asc') {
   });
 }
 
-// Get arrivals for today
+// Get local today's date string in YYYY-MM-DD format
+function getLocalTodayString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Get arrivals for today (uses local timezone)
 export function getArrivalsToday(bookings) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalTodayString();
   return bookings.filter(b => b.checkIn === today);
 }
 
-// Get departures for today
+// Get departures for today (uses local timezone)
 export function getDeparturesToday(bookings) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalTodayString();
   return bookings.filter(b => b.checkOut === today);
 }
 

@@ -10,6 +10,7 @@ import {
   calculateRepeatRate,
   generateId
 } from '@/utils/admin/crm';
+import { Button } from '../../ui2/Button';
 
 const SEGMENT_COLORS = [
   '#A57865', '#4E5840', '#5C9BA4', '#CDB261', '#8E6554',
@@ -144,9 +145,9 @@ export default function CreateSegmentModal({ isOpen, onClose, onSave, guests, lo
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-scale-in">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden animate-scale-in flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-neutral-200 bg-[#FAF7F4]">
+        <div className="flex items-center justify-between p-4 border-b border-neutral-200 bg-[#FAF7F4] flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-[#A57865]/10 flex items-center justify-center">
               <Users className="w-5 h-5 text-[#A57865]" />
@@ -165,7 +166,7 @@ export default function CreateSegmentModal({ isOpen, onClose, onSave, guests, lo
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-180px)] p-4 space-y-6">
+        <div className="overflow-y-auto flex-1 p-4 space-y-6">
           {/* Basic Info */}
           <div className="space-y-4">
             <div>
@@ -444,20 +445,13 @@ export default function CreateSegmentModal({ isOpen, onClose, onSave, guests, lo
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-4 border-t border-neutral-200 bg-neutral-50">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-200 rounded-lg transition-colors"
-          >
+        <div className="flex items-center justify-end gap-3 p-4 border-t border-neutral-200 bg-neutral-50 flex-shrink-0">
+          <Button variant="ghost" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={!formData.name.trim()}
-            className="px-6 py-2 bg-[#A57865] text-white text-sm font-medium rounded-lg hover:bg-[#A57865]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} disabled={!formData.name.trim()} icon={Plus}>
             Create Segment
-          </button>
+          </Button>
         </div>
       </div>
 

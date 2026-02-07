@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, UserPlus, Loader2 } from 'lucide-react';
 import { guestsService, Guest } from '@/api/services/guests.service';
+import { Button } from '../../../ui2/Button';
 
 export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
   const [selectedGuest, setSelectedGuest] = useState('');
@@ -149,20 +150,12 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 p-6 border-t border-neutral-200">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-6 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-all duration-200"
-          >
+          <Button variant="ghost" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="px-6 py-2 text-sm font-semibold text-white bg-[#8E6554] rounded-lg hover:bg-[#A57865] hover:shadow transition-all duration-200 flex items-center gap-2"
-          >
-            <UserPlus className="w-4 h-4" />
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} icon={UserPlus}>
             Assign Guest
-          </button>
+          </Button>
         </div>
       </div>
     </div>

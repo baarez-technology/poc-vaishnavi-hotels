@@ -202,7 +202,7 @@ const PickupRequests = () => {
 
       {/* KPI Cards - 12 Column Grid matching admin dashboard */}
       <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
-        <div className="col-span-12 sm:col-span-6 lg:col-span-4">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-4">
           <StatCard
             title="Pending"
             value={stats.pending}
@@ -212,7 +212,7 @@ const PickupRequests = () => {
             onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-4">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-4">
           <StatCard
             title="In Progress"
             value={stats.in_progress}
@@ -222,7 +222,7 @@ const PickupRequests = () => {
             onClick={() => setStatusFilter(statusFilter === 'in_progress' ? 'all' : 'in_progress')}
           />
         </div>
-        <div className="col-span-12 sm:col-span-6 lg:col-span-4">
+        <div className="col-span-12 sm:col-span-6 xl:col-span-4">
           <StatCard
             title="Completed"
             value={stats.completed}

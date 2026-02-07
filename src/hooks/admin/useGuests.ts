@@ -187,8 +187,6 @@ export function useGuests() {
       if (updates.emotion) apiUpdates.emotion = updates.emotion;
       // Handle tags updates
       if (updates.tags) apiUpdates.tags = updates.tags;
-      // Handle preferences updates
-      if (updates.preferences) apiUpdates.preferences = updates.preferences;
 
       const updatedGuest = await guestsService.update(String(id), apiUpdates);
       const transformedGuest = transformApiGuest(updatedGuest);

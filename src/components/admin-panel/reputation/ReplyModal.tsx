@@ -1,5 +1,6 @@
 import { X, Sparkles, Send } from 'lucide-react';
 import { useState } from 'react';
+import { Button } from '../../ui2/Button';
 
 export default function ReplyModal({ review, isOpen, onClose, onSubmit, generateReply }) {
   const [replyText, setReplyText] = useState('');
@@ -37,9 +38,9 @@ export default function ReplyModal({ review, isOpen, onClose, onSubmit, generate
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-neutral-200 p-6 flex items-center justify-between">
+        <div className="bg-white border-b border-neutral-200 p-4 sm:p-6 flex items-center justify-between flex-shrink-0">
           <h3 className="text-2xl font-serif font-semibold text-neutral-900">
             Reply to Review
           </h3>
@@ -51,7 +52,7 @@ export default function ReplyModal({ review, isOpen, onClose, onSubmit, generate
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6 flex-1 overflow-y-auto">
           {/* Original Review */}
           <div className="p-4 bg-[#FAF8F6] rounded-xl border border-neutral-200">
             <div className="flex items-center justify-between mb-3">
@@ -132,29 +133,15 @@ export default function ReplyModal({ review, isOpen, onClose, onSubmit, generate
 
           {/* Actions */}
           <div className="flex gap-3">
-            <button
-              onClick={handleSubmit}
-              disabled={!replyText.trim()}
-              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-[#8E6554] hover:bg-[#A57865] text-white rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Send className="w-5 h-5" />
+            <Button variant="primary" onClick={handleSubmit} disabled={!replyText.trim()} icon={Send} className="flex-1">
               Send Reply
-            </button>
-            <button
-              onClick={() => {
-                setReplyText('');
-                setUseAI(false);
-              }}
-              className="py-3 px-6 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 rounded-xl font-medium transition-colors"
-            >
+            </Button>
+            <Button variant="ghost" onClick={() => { setReplyText(''); setUseAI(false); }}>
               Clear
-            </button>
-            <button
-              onClick={onClose}
-              className="py-3 px-6 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 rounded-xl font-medium transition-colors"
-            >
+            </Button>
+            <Button variant="ghost" onClick={onClose}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       </div>

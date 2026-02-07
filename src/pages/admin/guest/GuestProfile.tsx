@@ -249,7 +249,7 @@ function AIIntelligencePanel({ guestId, guestName }: AIIntelligencePanelProps) {
       {isExpanded && (
         <div className="px-6 pb-6 space-y-4">
           {/* Score Cards */}
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {/* Health Score */}
             <div className={`${healthColor.bg} rounded-xl p-4 border ${healthColor.ring}/30`}>
               <div className="flex items-center gap-2 mb-2">
@@ -659,7 +659,7 @@ export default function GuestProfile() {
 
   if (isLoading) {
     return (
-      <div className="max-w-[1440px] mx-auto px-8 py-8">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div className="flex items-center justify-center py-16">
           <Loader2 className="w-8 h-8 animate-spin text-[#A57865]" />
           <span className="ml-3 text-neutral-500">Loading guest profile...</span>
@@ -670,7 +670,7 @@ export default function GuestProfile() {
 
   if (error || !guest) {
     return (
-      <div className="max-w-[1440px] mx-auto px-8 py-8">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div className="text-center py-16">
           <p className="text-neutral-500">{error || 'Guest not found'}</p>
           <button
@@ -695,55 +695,55 @@ export default function GuestProfile() {
     : [];
 
   return (
-    <div className="max-w-[1440px] mx-auto px-8 py-8 space-y-8">
+    <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Back Button */}
       <button
         onClick={() => navigate('/admin/guests')}
         className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors group"
       >
-        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-        <span className="font-medium">Back to Guests</span>
+        <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-1 transition-transform" />
+        <span className="font-medium text-sm sm:text-base">Back to Guests</span>
       </button>
 
       {/* Header */}
-      <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-[#A57865]/10 via-[#C8B29D]/10 to-[#5C9BA4]/10 px-8 py-6">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-6">
-              <div className="w-20 h-20 bg-[#A57865]/10 rounded-2xl flex items-center justify-center">
-                <span className="text-3xl font-bold text-[#A57865]">
+      <div className="bg-white rounded-xl sm:rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-[#A57865]/10 via-[#C8B29D]/10 to-[#5C9BA4]/10 px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="flex items-center gap-4 sm:gap-6">
+              <div className="w-14 h-14 sm:w-20 sm:h-20 bg-[#A57865]/10 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
+                <span className="text-xl sm:text-3xl font-bold text-[#A57865]">
                   {guest.name.charAt(0).toUpperCase()}
                 </span>
               </div>
-              <div>
-                <h1 className="text-3xl font-sans font-bold text-neutral-900">{guest.name}</h1>
-                <p className="text-neutral-600 mt-1">{guest.email}</p>
-                <div className="flex items-center gap-2 mt-3 flex-wrap">
-                  <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold ${tierConfig.bgColor} ${tierConfig.textColor}`}>
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-sans font-bold text-neutral-900 truncate">{guest.name}</h1>
+                <p className="text-sm sm:text-base text-neutral-600 mt-0.5 sm:mt-1 truncate">{guest.email}</p>
+                <div className="flex items-center gap-1.5 sm:gap-2 mt-2 sm:mt-3 flex-wrap">
+                  <span className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold ${tierConfig.bgColor} ${tierConfig.textColor}`}>
                     <Award className="w-3 h-3" />
                     {tierConfig.icon} {loyaltyTier}
                   </span>
-                  <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${statusConfig.bgColor} ${statusConfig.textColor}`}>
+                  <span className={`inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold ${statusConfig.bgColor} ${statusConfig.textColor}`}>
                     {statusConfig.label}
                   </span>
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium ${emotionConfig.bgColor || 'bg-yellow-50'} ${emotionConfig.color || 'text-yellow-700'}`}>
-                    <span className="text-sm">{emotionConfig.emoji}</span>
-                    {emotionConfig.label}
+                  <span className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium ${emotionConfig.bgColor || 'bg-yellow-50'} ${emotionConfig.color || 'text-yellow-700'}`}>
+                    <span className="text-xs sm:text-sm">{emotionConfig.emoji}</span>
+                    <span className="hidden xs:inline">{emotionConfig.label}</span>
                   </span>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               <button
                 onClick={() => setIsMessageModalOpen(true)}
-                className="px-4 py-2.5 bg-white border border-neutral-200 text-neutral-700 text-sm font-medium rounded-xl hover:border-[#A57865]/30 hover:bg-neutral-50 transition-all duration-200 flex items-center gap-2"
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 text-neutral-700 text-xs sm:text-sm font-medium rounded-lg sm:rounded-xl hover:border-[#A57865]/30 hover:bg-neutral-50 transition-all duration-200 flex items-center justify-center gap-2"
               >
                 <MessageSquare className="w-4 h-4" />
-                Message
+                <span className="hidden sm:inline">Message</span>
               </button>
-              <button className="px-4 py-2.5 bg-[#A57865] text-white text-sm font-medium rounded-xl hover:bg-[#8E6554] transition-all duration-200 flex items-center gap-2">
+              <button className="flex-1 sm:flex-none px-3 sm:px-4 py-2 sm:py-2.5 bg-[#A57865] text-white text-xs sm:text-sm font-medium rounded-lg sm:rounded-xl hover:bg-[#8E6554] transition-all duration-200 flex items-center justify-center gap-2">
                 <Edit className="w-4 h-4" />
-                Edit Profile
+                <span className="hidden sm:inline">Edit Profile</span>
               </button>
             </div>
           </div>
@@ -754,11 +754,11 @@ export default function GuestProfile() {
       <AIIntelligencePanel guestId={guest.id} guestName={guest.name} />
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Left Column - Contact & Stats */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Contact Information */}
-          <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-neutral-200 shadow-sm p-4 sm:p-6">
             <div className="flex items-center gap-2 pb-3 border-b border-neutral-200 mb-4">
               <div className="w-1 h-5 bg-[#A57865] rounded-full"></div>
               <h3 className="font-bold text-neutral-900">Contact Information</h3>
@@ -801,7 +801,7 @@ export default function GuestProfile() {
           </div>
 
           {/* Stay Statistics */}
-          <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-neutral-200 shadow-sm p-4 sm:p-6">
             <div className="flex items-center gap-2 pb-3 border-b border-neutral-200 mb-4">
               <div className="w-1 h-5 bg-[#4E5840] rounded-full"></div>
               <h3 className="font-bold text-neutral-900">Stay Statistics</h3>
@@ -833,7 +833,7 @@ export default function GuestProfile() {
 
           {/* Tags */}
           {guest.tags && guest.tags.length > 0 && (
-            <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6">
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-neutral-200 shadow-sm p-4 sm:p-6">
               <div className="flex items-center gap-2 pb-3 border-b border-neutral-200 mb-4">
                 <div className="w-1 h-5 bg-[#5C9BA4] rounded-full"></div>
                 <h3 className="font-bold text-neutral-900">Tags</h3>
@@ -854,7 +854,7 @@ export default function GuestProfile() {
 
           {/* Preferences */}
           {guestPreferences.length > 0 && (
-            <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6">
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-neutral-200 shadow-sm p-4 sm:p-6">
               <div className="flex items-center gap-2 pb-3 border-b border-neutral-200 mb-4">
                 <div className="w-1 h-5 bg-[#CDB261] rounded-full"></div>
                 <h3 className="font-bold text-neutral-900">Preferences</h3>
@@ -874,9 +874,9 @@ export default function GuestProfile() {
         </div>
 
         {/* Middle Column - Charts */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Spending Over Time Chart */}
-          <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-neutral-200 shadow-sm p-4 sm:p-6">
             <div className="flex items-center gap-2 pb-3 border-b border-neutral-200 mb-4">
               <div className="w-1 h-5 bg-[#A57865] rounded-full"></div>
               <h3 className="font-bold text-neutral-900">Spending Over Time</h3>
@@ -911,7 +911,7 @@ export default function GuestProfile() {
           </div>
 
           {/* Room Type Preferences */}
-          <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-neutral-200 shadow-sm p-4 sm:p-6">
             <div className="flex items-center gap-2 pb-3 border-b border-neutral-200 mb-4">
               <div className="w-1 h-5 bg-[#5C9BA4] rounded-full"></div>
               <h3 className="font-bold text-neutral-900">Room Type Preferences</h3>
@@ -960,9 +960,9 @@ export default function GuestProfile() {
         </div>
 
         {/* Right Column - Notes & History */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6 md:col-span-2 lg:col-span-1">
           {/* Notes */}
-          <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-neutral-200 shadow-sm p-4 sm:p-6">
             <div className="flex items-center justify-between pb-3 border-b border-neutral-200 mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-1 h-5 bg-[#4E5840] rounded-full"></div>
@@ -1033,7 +1033,7 @@ export default function GuestProfile() {
           </div>
 
           {/* Stay History */}
-          <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-neutral-200 shadow-sm p-4 sm:p-6">
             <div className="flex items-center gap-2 pb-3 border-b border-neutral-200 mb-4">
               <div className="w-1 h-5 bg-[#A57865] rounded-full"></div>
               <h3 className="font-bold text-neutral-900">Stay History ({guest.history?.length || 0})</h3>

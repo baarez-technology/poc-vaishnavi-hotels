@@ -1,43 +1,19 @@
 import { UserCircle, TrendingUp } from 'lucide-react';
 import RoomCard from './RoomCard';
 
-export default function StaffView({ rooms, housekeepers = [], onRoomClick }) {
+export default function StaffView({ rooms, housekeepers, onRoomClick }) {
   // Group rooms by assigned housekeeper
-  // Handles both assignedStaff (object) and assignedTo (ID) formats
   const groupRoomsByStaff = () => {
     const grouped = {};
     const unassigned = [];
 
     rooms.forEach(room => {
-      // Check for assignedStaff object first, then fall back to assignedTo ID
-      let staffId = null;
-
-      if (room.assignedStaff?.id) {
-        staffId = room.assignedStaff.id;
-      } else if (room.assignedTo) {
-        // Handle both string and number IDs
-        staffId = typeof room.assignedTo === 'string' ? parseInt(room.assignedTo, 10) : room.assignedTo;
-        // Fallback to string if parseInt fails
-        if (isNaN(staffId)) staffId = room.assignedTo;
-      }
-
-      if (staffId !== null) {
-        // Check if this staff exists in our housekeepers list
-        const staffExists = housekeepers.some(hk =>
-          hk.id === staffId || hk.id === String(staffId) || String(hk.id) === String(staffId)
-        );
-
-        if (staffExists) {
-          // Normalize the ID for grouping
-          const normalizedId = String(staffId);
-          if (!grouped[normalizedId]) {
-            grouped[normalizedId] = [];
-          }
-          grouped[normalizedId].push(room);
-        } else {
-          // Staff ID doesn't match any known housekeeper
-          unassigned.push(room);
+      if (room.assignedStaff) {
+        const staffId = room.assignedStaff.id;
+        if (!grouped[staffId]) {
+          grouped[staffId] = [];
         }
+        grouped[staffId].push(room);
       } else {
         unassigned.push(room);
       }
@@ -48,19 +24,16 @@ export default function StaffView({ rooms, housekeepers = [], onRoomClick }) {
 
   const { grouped, unassigned } = groupRoomsByStaff();
 
-  // Get housekeeper details - handles both string and number IDs
+  // Get housekeeper details
   const getHousekeeperById = (id) => {
-    return housekeepers.find(hk =>
-      hk.id === id || hk.id === String(id) || String(hk.id) === String(id)
-    );
+    return housekeepers.find(hk => hk.id === id);
   };
 
   return (
     <div className="space-y-6">
       {/* Housekeepers with Assigned Rooms */}
       {housekeepers.map(housekeeper => {
-        // Look up rooms using normalized ID (string)
-        const assignedRooms = grouped[String(housekeeper.id)] || [];
+        const assignedRooms = grouped[housekeeper.id] || [];
 
         if (assignedRooms.length === 0) return null;
 

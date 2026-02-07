@@ -237,7 +237,7 @@ export default function AddGuestModal({ isOpen, onClose, onSubmit, isAdding }) {
             Guest Information
           </h3>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="block text-[13px] font-medium text-neutral-700">
                   First Name <span className="text-rose-500">*</span>
@@ -280,7 +280,7 @@ export default function AddGuestModal({ isOpen, onClose, onSubmit, isAdding }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="block text-[13px] font-medium text-neutral-700">
                   Email <span className="text-rose-500">*</span>
@@ -317,7 +317,7 @@ export default function AddGuestModal({ isOpen, onClose, onSubmit, isAdding }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="block text-[13px] font-medium text-neutral-700">
                   Country

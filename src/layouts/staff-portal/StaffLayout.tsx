@@ -21,10 +21,10 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
 
   return (
     <>
-      {/* Desktop Layout */}
+      {/* Desktop Layout - visible on lg+ (iPad Pro and up) */}
       <div className="hidden lg:flex w-screen h-screen items-center justify-center bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100 overflow-hidden">
-        {/* Fixed Frame Container */}
-        <div className="relative w-full max-w-[1440px] h-full max-h-[1024px] bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100 overflow-hidden flex flex-col rounded-xl">
+        {/* Fixed Frame Container - max constraints only on xl+ for iPad Pro full-screen */}
+        <div className="relative w-full xl:max-w-[1440px] h-full xl:max-h-[1024px] bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100 overflow-hidden flex flex-col xl:rounded-xl">
           {/* Top Row: Sidebar Brand + Header */}
           <div className="flex flex-shrink-0">
             {/* Sidebar Brand Section - Dynamic Width */}

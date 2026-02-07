@@ -193,7 +193,7 @@ export default function AISegmentDetailModal({
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-title"
-          className="w-full max-w-[800px] max-h-[90vh] bg-white shadow-2xl rounded-2xl flex flex-col"
+          className="w-full max-w-[800px] max-h-[calc(100vh-2rem)] sm:max-h-[90vh] bg-white shadow-2xl rounded-2xl flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

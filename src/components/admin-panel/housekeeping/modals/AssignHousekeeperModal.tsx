@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, UserPlus, MapPin, TrendingUp } from 'lucide-react';
+import { Button } from '../../../ui2/Button';
 
 export default function AssignHousekeeperModal({
   room,
@@ -35,9 +36,8 @@ export default function AssignHousekeeperModal({
       mainContent.style.overflow = 'hidden';
     }
 
-    // Pre-select current housekeeper if assigned - handle both assignedTo and assignedStaff
-    const currentAssigned = room?.assignedTo ?? room?.assignedStaff?.id ?? null;
-    setSelectedHousekeeper(currentAssigned);
+    // Pre-select current housekeeper if assigned
+    setSelectedHousekeeper(room?.assignedTo || null);
 
     document.addEventListener('keydown', handleEsc);
 
@@ -131,10 +131,7 @@ export default function AssignHousekeeperModal({
           <div className="space-y-3">
             {housekeepers.map(housekeeper => {
               const taskCount = housekeeper.tasksAssigned || 0;
-              // Normalize ID comparison to handle string/number mismatch
-              const isSelected = selectedHousekeeper !== null &&
-                (selectedHousekeeper === housekeeper.id ||
-                 String(selectedHousekeeper) === String(housekeeper.id));
+              const isSelected = selectedHousekeeper === housekeeper.id;
               const isHighLoad = taskCount > 8;
 
               return (
@@ -204,25 +201,12 @@ export default function AssignHousekeeperModal({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 p-6 border-t border-neutral-200">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-6 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-all duration-200"
-          >
+          <Button variant="ghost" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={handleAssign}
-            disabled={!selectedHousekeeper}
-            className={`px-6 py-2 text-sm font-semibold rounded-lg transition-all duration-200 flex items-center gap-2 ${
-              selectedHousekeeper
-                ? 'text-white bg-[#8E6554] hover:bg-[#A57865] hover:shadow'
-                : 'text-neutral-400 bg-neutral-200 cursor-not-allowed'
-            }`}
-          >
-            <UserPlus className="w-4 h-4" />
+          </Button>
+          <Button variant="primary" onClick={handleAssign} disabled={!selectedHousekeeper} icon={UserPlus}>
             Assign Housekeeper
-          </button>
+          </Button>
         </div>
         </div>
       </div>

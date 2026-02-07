@@ -1,11 +1,12 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useEffect, useRef } from 'react';
-import { Calendar, Plus, Minus, CheckCircle, Clock, BedDouble } from 'lucide-react';
+import { Plus, Minus, CheckCircle, Clock, BedDouble } from 'lucide-react';
 import { useBooking } from '@/contexts/BookingContext';
 import { format } from 'date-fns';
+import DatePicker from '@/components/ui/DatePicker';
 
 const datesSchema = z.object({
   checkIn: z.string().min(1, 'Check-in date is required'),
@@ -37,7 +38,7 @@ export function DatesStep({ onNext }: DatesStepProps) {
   );
 
   const {
-    register,
+    control,
     handleSubmit,
     formState: { errors },
     watch,
@@ -168,21 +169,19 @@ export function DatesStep({ onNext }: DatesStepProps) {
             <label className="block text-sm font-semibold text-neutral-900 mb-2">
               Check-in Date
             </label>
-            <div className="relative">
-              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" strokeWidth={2} />
-              <input
-                type="date"
-                min={today}
-                {...register('checkIn')}
-                className={`w-full pl-12 pr-4 py-4 border rounded-lg focus:outline-none focus:ring-2 transition-all font-medium ${
-                  errors.checkIn
-                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
-                    : hasPreFilledDates
-                      ? 'border-green-300 focus:border-green-500 focus:ring-green-500/20 bg-green-50'
-                      : 'border-neutral-200 focus:border-primary-500 focus:ring-primary-500/20 bg-neutral-50'
-                }`}
-              />
-            </div>
+            <Controller
+              name="checkIn"
+              control={control}
+              render={({ field }) => (
+                <DatePicker
+                  value={field.value}
+                  onChange={(value) => field.onChange(value)}
+                  minDate={today}
+                  placeholder="Select check-in date"
+                  className="w-full"
+                />
+              )}
+            />
             <AnimatePresence>
               {errors.checkIn && (
                 <motion.p
@@ -202,21 +201,19 @@ export function DatesStep({ onNext }: DatesStepProps) {
             <label className="block text-sm font-semibold text-neutral-900 mb-2">
               Check-out Date
             </label>
-            <div className="relative">
-              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" strokeWidth={2} />
-              <input
-                type="date"
-                min={minCheckOut}
-                {...register('checkOut')}
-                className={`w-full pl-12 pr-4 py-4 border rounded-lg focus:outline-none focus:ring-2 transition-all font-medium ${
-                  errors.checkOut
-                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
-                    : hasPreFilledDates
-                      ? 'border-green-300 focus:border-green-500 focus:ring-green-500/20 bg-green-50'
-                      : 'border-neutral-200 focus:border-primary-500 focus:ring-primary-500/20 bg-neutral-50'
-                }`}
-              />
-            </div>
+            <Controller
+              name="checkOut"
+              control={control}
+              render={({ field }) => (
+                <DatePicker
+                  value={field.value}
+                  onChange={(value) => field.onChange(value)}
+                  minDate={minCheckOut}
+                  placeholder="Select check-out date"
+                  className="w-full"
+                />
+              )}
+            />
             <AnimatePresence>
               {errors.checkOut && (
                 <motion.p

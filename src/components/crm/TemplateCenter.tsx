@@ -671,107 +671,104 @@ function ABTestModal({ isOpen, onClose, template, onCreateTest }) {
   if (!isOpen) return null;
 
   return createPortal(
-    <>
-      <div className="fixed inset-0 bg-black/30 z-[60]" onClick={onClose} />
-      <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl max-h-[90vh] bg-white shadow-2xl rounded-2xl flex flex-col">
-          {/* Header */}
-          <div className="flex-shrink-0 p-6 border-b border-neutral-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#CDB261]/10 flex items-center justify-center">
-                  <TestTube2 className="w-5 h-5 text-[#CDB261]" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-neutral-900">A/B Test Suggestions</h2>
-                  <p className="text-sm text-neutral-500">AI-generated test variants for "{template?.name}"</p>
-                </div>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+    <div className="fixed inset-0 z-50">
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed right-0 top-0 bottom-0 w-full sm:max-w-xl flex flex-col bg-white border-l border-neutral-200 shadow-2xl h-screen">
+        {/* Header */}
+        <div className="relative px-4 sm:px-6 py-4 sm:py-5 pr-12 sm:pr-14 border-b border-neutral-100 bg-white flex-shrink-0 z-10">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-[#CDB261]/10 flex items-center justify-center flex-shrink-0">
+              <TestTube2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#CDB261]" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg font-semibold text-neutral-900">A/B Test Suggestions</h2>
+              <p className="text-xs sm:text-sm text-neutral-500 truncate">AI-generated variants for "{template?.name}"</p>
             </div>
           </div>
+          <button
+            onClick={onClose}
+            className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6">
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 text-[#5C9BA4] animate-spin mb-3" />
-                <p className="text-sm text-neutral-500">Generating test variants...</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Original */}
-                <div className="p-4 border border-[#4E5840]/30 bg-[#4E5840]/5 rounded-xl">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="px-2 py-0.5 bg-[#4E5840] text-white text-xs rounded-full">Original</span>
-                    <span className="text-sm font-medium text-neutral-900">{template?.name}</span>
-                  </div>
-                  <p className="text-xs text-neutral-600 line-clamp-2">{template?.body}</p>
-                </div>
-
-                {/* Variants */}
-                {variants.map((variant, idx) => (
-                  <div
-                    key={variant.id}
-                    className={`p-4 border rounded-xl cursor-pointer transition-all ${
-                      selectedVariants.includes(variant.id)
-                        ? 'border-[#5C9BA4] bg-[#5C9BA4]/5'
-                        : 'border-neutral-200 hover:border-neutral-300'
-                    }`}
-                    onClick={() => toggleVariant(variant.id)}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedVariants.includes(variant.id)}
-                        onChange={() => toggleVariant(variant.id)}
-                        className="w-4 h-4 text-[#5C9BA4] rounded border-neutral-300 focus:ring-[#5C9BA4]"
-                      />
-                      <span className="px-2 py-0.5 bg-[#5C9BA4]/10 text-[#5C9BA4] text-xs rounded-full">Variant {String.fromCharCode(65 + idx)}</span>
-                      <span className="text-sm font-medium text-neutral-900">{variant.name}</span>
-                    </div>
-                    {variant.subject && (
-                      <p className="text-xs text-neutral-700 mb-1">
-                        <span className="font-medium">Subject:</span> {variant.subject}
-                      </p>
-                    )}
-                    <p className="text-xs text-neutral-600 line-clamp-2">{variant.body}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="flex-shrink-0 border-t border-neutral-200 p-4 bg-white rounded-b-2xl">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2.5 border border-neutral-200 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreate}
-                disabled={selectedVariants.length === 0 || isLoading}
-                className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                  selectedVariants.length > 0 && !isLoading
-                    ? 'bg-[#CDB261] text-white hover:bg-[#CDB261]/90'
-                    : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
-                }`}
-              >
-                Create A/B Test ({selectedVariants.length} variant{selectedVariants.length !== 1 ? 's' : ''})
-              </button>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 bg-white">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 text-[#5C9BA4] animate-spin mb-3" />
+              <p className="text-sm text-neutral-500">Generating test variants...</p>
             </div>
+          ) : (
+            <div className="space-y-3 sm:space-y-4">
+              {/* Original */}
+              <div className="p-3 sm:p-4 border border-[#4E5840]/30 bg-[#4E5840]/5 rounded-xl">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <span className="px-2 py-0.5 bg-[#4E5840] text-white text-[10px] sm:text-xs rounded-full">Original</span>
+                  <span className="text-xs sm:text-sm font-medium text-neutral-900 truncate">{template?.name}</span>
+                </div>
+                <p className="text-[11px] sm:text-xs text-neutral-600 line-clamp-2">{template?.body}</p>
+              </div>
+
+              {/* Variants */}
+              {variants.map((variant, idx) => (
+                <div
+                  key={variant.id}
+                  className={`p-3 sm:p-4 border rounded-xl cursor-pointer transition-all ${
+                    selectedVariants.includes(variant.id)
+                      ? 'border-[#5C9BA4] bg-[#5C9BA4]/5'
+                      : 'border-neutral-200 hover:border-neutral-300'
+                  }`}
+                  onClick={() => toggleVariant(variant.id)}
+                >
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <input
+                      type="checkbox"
+                      checked={selectedVariants.includes(variant.id)}
+                      onChange={() => toggleVariant(variant.id)}
+                      className="w-4 h-4 text-[#5C9BA4] rounded border-neutral-300 focus:ring-[#5C9BA4]"
+                    />
+                    <span className="px-2 py-0.5 bg-[#5C9BA4]/10 text-[#5C9BA4] text-[10px] sm:text-xs rounded-full">Variant {String.fromCharCode(65 + idx)}</span>
+                    <span className="text-xs sm:text-sm font-medium text-neutral-900 truncate">{variant.name}</span>
+                  </div>
+                  {variant.subject && (
+                    <p className="text-[11px] sm:text-xs text-neutral-700 mb-1">
+                      <span className="font-medium">Subject:</span> {variant.subject}
+                    </p>
+                  )}
+                  <p className="text-[11px] sm:text-xs text-neutral-600 line-clamp-2">{variant.body}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex-shrink-0 border-t border-neutral-100 px-4 sm:px-6 py-4 sm:py-5 bg-neutral-50/50">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 border border-neutral-200 text-neutral-700 rounded-xl text-xs sm:text-sm font-medium hover:bg-neutral-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleCreate}
+              disabled={selectedVariants.length === 0 || isLoading}
+              className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
+                selectedVariants.length > 0 && !isLoading
+                  ? 'bg-[#CDB261] text-white hover:bg-[#CDB261]/90'
+                  : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
+              }`}
+            >
+              <span className="hidden sm:inline">Create A/B Test ({selectedVariants.length} variant{selectedVariants.length !== 1 ? 's' : ''})</span>
+              <span className="sm:hidden">Create ({selectedVariants.length})</span>
+            </button>
           </div>
         </div>
       </div>
-    </>,
+    </div>,
     document.body
   );
 }
@@ -897,247 +894,247 @@ function TemplateModal({ isOpen, onClose, onSave, template, mode }) {
   const smsAnalysis = getSMSAnalysis();
 
   const modalContent = (
-    <>
+    <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/30 z-[60]"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Centered Modal */}
-      <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-        <div
-          className="w-full max-w-2xl max-h-[90vh] bg-white shadow-2xl rounded-2xl flex flex-col"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex-shrink-0 p-6 border-b border-neutral-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-neutral-900">
-                  {mode === 'create' ? 'Create Template' : 'Edit Template'}
-                </h2>
-                <p className="text-sm text-neutral-500">
-                  {formData.type === 'email' ? 'Email template' : 'SMS template'}
-                </p>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      {/* Right-side Drawer */}
+      <div
+        className="fixed right-0 top-0 bottom-0 w-full sm:max-w-xl flex flex-col bg-white border-l border-neutral-200 shadow-2xl h-screen"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="relative px-4 sm:px-6 py-4 sm:py-5 pr-12 sm:pr-14 border-b border-neutral-100 bg-white flex-shrink-0 z-10">
+          <div>
+            <h2 className="text-base sm:text-lg font-semibold text-neutral-900">
+              {mode === 'create' ? 'Create Template' : 'Edit Template'}
+            </h2>
+            <p className="text-xs sm:text-sm text-neutral-500">
+              {formData.type === 'email' ? 'Email template' : 'SMS template'}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 bg-white space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div>
+              <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Template Name *</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g., Welcome Email"
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Type</label>
+              <CustomDropdown
+                options={TEMPLATE_TYPE_OPTIONS}
+                value={formData.type}
+                onChange={(value) => setFormData(prev => ({ ...prev, type: value }))}
+                className="w-full"
+              />
             </div>
           </div>
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2 block">Template Name *</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g., Welcome Email"
-                  className="w-full px-4 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2 block">Type</label>
-                <CustomDropdown
-                  options={TEMPLATE_TYPE_OPTIONS}
-                  value={formData.type}
-                  onChange={(value) => setFormData(prev => ({ ...prev, type: value }))}
-                  className="w-full"
-                />
-              </div>
-            </div>
-
-            {formData.type === 'email' && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-medium text-neutral-500 uppercase tracking-wide">Subject Line *</label>
-                  <button
-                    onClick={handleGenerateSubjectLine}
-                    disabled={isAIProcessing || !formData.body.trim()}
-                    className="flex items-center gap-1.5 text-xs text-[#5C9BA4] hover:text-[#5C9BA4]/80 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isAIProcessing ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Wand2 className="w-3 h-3" />
-                    )}
-                    Generate Subject Line
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  value={formData.subject}
-                  onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
-                  placeholder="e.g., Welcome to Glimmora, {{guest.firstName}}!"
-                  className="w-full px-4 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
-                />
-
-                {/* Subject Suggestions */}
-                {showSubjectSuggestions && subjectSuggestions.length > 0 && (
-                  <div className="mt-2 p-3 bg-[#5C9BA4]/5 border border-[#5C9BA4]/20 rounded-xl animate-in slide-in-from-top-2 duration-200">
-                    <p className="text-xs text-neutral-600 mb-2 flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-[#5C9BA4]" />
-                      AI Suggestions (click to use):
-                    </p>
-                    <div className="space-y-1.5">
-                      {subjectSuggestions.map((suggestion, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => selectSubjectSuggestion(suggestion)}
-                          className="w-full text-left px-3 py-2 text-sm bg-white border border-neutral-200 rounded-lg hover:bg-[#5C9BA4]/10 hover:border-[#5C9BA4] transition-colors"
-                        >
-                          {suggestion}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
+          {formData.type === 'email' && (
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-medium text-neutral-500 uppercase tracking-wide">Message Body *</label>
-                <div className="flex items-center gap-2">
-                  {/* AI Assist Button */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowAIAssist(!showAIAssist)}
-                      disabled={isAIProcessing || !formData.body.trim()}
-                      className="flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-[#5C9BA4] to-[#A57865] text-white text-xs rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-                    >
-                      {isAIProcessing ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <Sparkles className="w-3 h-3" />
-                      )}
-                      AI Assist
-                    </button>
-
-                    {/* AI Assist Dropdown */}
-                    {showAIAssist && (
-                      <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-neutral-200 rounded-xl shadow-lg z-10 py-1 animate-in slide-in-from-top-2 duration-200">
-                        {AI_ASSIST_OPTIONS.map(({ value, label, icon: Icon }) => (
-                          <button
-                            key={value}
-                            onClick={() => handleAIAssist(value)}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-[#5C9BA4]/10 transition-colors"
-                          >
-                            <Icon className="w-4 h-4 text-[#5C9BA4]" />
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    onClick={() => setShowTagsHelp(!showTagsHelp)}
-                    className="flex items-center gap-1 text-xs text-[#5C9BA4] hover:text-[#5C9BA4]/80"
-                  >
-                    <Info className="w-3 h-3" />
-                    Personalization Tags
-                  </button>
-                </div>
+              <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide">Subject Line *</label>
+                <button
+                  onClick={handleGenerateSubjectLine}
+                  disabled={isAIProcessing || !formData.body.trim()}
+                  className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-[#5C9BA4] hover:text-[#5C9BA4]/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isAIProcessing ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Wand2 className="w-3 h-3" />
+                  )}
+                  <span className="hidden sm:inline">Generate Subject Line</span>
+                  <span className="sm:hidden">Generate</span>
+                </button>
               </div>
+              <input
+                type="text"
+                value={formData.subject}
+                onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
+                placeholder="e.g., Welcome to Glimmora, {{guest.firstName}}!"
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
+              />
 
-              {showTagsHelp && (
-                <div className="mb-2 p-3 bg-[#5C9BA4]/5 border border-[#5C9BA4]/20 rounded-xl">
-                  <p className="text-xs text-neutral-600 mb-2">Click to insert:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {PERSONALIZATION_TAGS.map(({ tag, description }) => (
+              {/* Subject Suggestions */}
+              {showSubjectSuggestions && subjectSuggestions.length > 0 && (
+                <div className="mt-2 p-2 sm:p-3 bg-[#5C9BA4]/5 border border-[#5C9BA4]/20 rounded-xl animate-in slide-in-from-top-2 duration-200">
+                  <p className="text-[10px] sm:text-xs text-neutral-600 mb-1.5 sm:mb-2 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-[#5C9BA4]" />
+                    AI Suggestions (click to use):
+                  </p>
+                  <div className="space-y-1 sm:space-y-1.5">
+                    {subjectSuggestions.map((suggestion, idx) => (
                       <button
-                        key={tag}
-                        onClick={() => insertTag(tag)}
-                        title={description}
-                        className="px-2 py-1 text-xs bg-white border border-neutral-200 rounded-lg hover:bg-[#5C9BA4]/10 hover:border-[#5C9BA4] transition-colors"
+                        key={idx}
+                        onClick={() => selectSubjectSuggestion(suggestion)}
+                        className="w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-white border border-neutral-200 rounded-lg hover:bg-[#5C9BA4]/10 hover:border-[#5C9BA4] transition-colors"
                       >
-                        {tag}
+                        {suggestion}
                       </button>
                     ))}
                   </div>
                 </div>
               )}
+            </div>
+          )}
 
-              <textarea
-                value={formData.body}
-                onChange={(e) => setFormData(prev => ({ ...prev, body: e.target.value }))}
-                placeholder="Write your message here..."
-                rows={formData.type === 'email' ? 10 : 4}
-                className="w-full px-4 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865] resize-none font-mono"
-              />
-
-              {/* SMS Character Count with AI Suggestions */}
-              {formData.type === 'sms' && (
-                <div className="mt-2 p-3 bg-neutral-50 rounded-xl">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-sm font-medium ${
-                        smsAnalysis.status === 'optimal' ? 'text-emerald-600' :
-                        smsAnalysis.status === 'caution' ? 'text-amber-600' :
-                        smsAnalysis.status === 'warning' ? 'text-rose-600' :
-                        'text-[#5C9BA4]'
-                      }`}>
-                        {smsAnalysis.charCount}/160
-                      </span>
-                      <span className="text-xs text-neutral-500">{smsAnalysis.message}</span>
-                    </div>
-                    {smsAnalysis.status === 'warning' && (
-                      <button
-                        onClick={() => handleAIAssist('make-shorter')}
-                        disabled={isAIProcessing}
-                        className="flex items-center gap-1 text-xs text-[#5C9BA4] hover:text-[#5C9BA4]/80"
-                      >
-                        <Wand2 className="w-3 h-3" />
-                        Shorten with AI
-                      </button>
+          <div>
+            <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+              <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide">Message Body *</label>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                {/* AI Assist Button */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowAIAssist(!showAIAssist)}
+                    disabled={isAIProcessing || !formData.body.trim()}
+                    className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 bg-gradient-to-r from-[#5C9BA4] to-[#A57865] text-white text-[10px] sm:text-xs rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                  >
+                    {isAIProcessing ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3 h-3" />
                     )}
-                  </div>
-                  {smsAnalysis.segments > 1 && (
-                    <div className="mt-2 pt-2 border-t border-neutral-200">
-                      <div className="flex items-center gap-1.5 text-xs text-amber-600">
-                        <AlertCircle className="w-3.5 h-3.5" />
-                        <span>This message will be sent as {smsAnalysis.segments} SMS segments, which may increase costs.</span>
-                      </div>
+                    <span className="hidden sm:inline">AI Assist</span>
+                    <span className="sm:hidden">AI</span>
+                  </button>
+
+                  {/* AI Assist Dropdown */}
+                  {showAIAssist && (
+                    <div className="absolute right-0 top-full mt-1 w-40 sm:w-48 bg-white border border-neutral-200 rounded-xl shadow-lg z-10 py-1 animate-in slide-in-from-top-2 duration-200">
+                      {AI_ASSIST_OPTIONS.map(({ value, label, icon: Icon }) => (
+                        <button
+                          key={value}
+                          onClick={() => handleAIAssist(value)}
+                          className="w-full flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-neutral-700 hover:bg-[#5C9BA4]/10 transition-colors"
+                        >
+                          <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#5C9BA4]" />
+                          {label}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
-              )}
-            </div>
-          </div>
 
-          {/* Footer */}
-          <div className="flex-shrink-0 border-t border-neutral-200 p-4 bg-white rounded-b-2xl">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2.5 border border-neutral-200 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={!isValid}
-                className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                  isValid
-                    ? 'bg-[#4E5840] text-white hover:bg-[#3d4632]'
-                    : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
-                }`}
-              >
-                {mode === 'create' ? 'Create Template' : 'Save Changes'}
-              </button>
+                <button
+                  onClick={() => setShowTagsHelp(!showTagsHelp)}
+                  className="flex items-center gap-1 text-[10px] sm:text-xs text-[#5C9BA4] hover:text-[#5C9BA4]/80"
+                >
+                  <Info className="w-3 h-3" />
+                  <span className="hidden sm:inline">Personalization Tags</span>
+                  <span className="sm:hidden">Tags</span>
+                </button>
+              </div>
             </div>
+
+            {showTagsHelp && (
+              <div className="mb-2 p-2 sm:p-3 bg-[#5C9BA4]/5 border border-[#5C9BA4]/20 rounded-xl">
+                <p className="text-[10px] sm:text-xs text-neutral-600 mb-1.5 sm:mb-2">Click to insert:</p>
+                <div className="flex flex-wrap gap-1">
+                  {PERSONALIZATION_TAGS.map(({ tag, description }) => (
+                    <button
+                      key={tag}
+                      onClick={() => insertTag(tag)}
+                      title={description}
+                      className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs bg-white border border-neutral-200 rounded-lg hover:bg-[#5C9BA4]/10 hover:border-[#5C9BA4] transition-colors"
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <textarea
+              value={formData.body}
+              onChange={(e) => setFormData(prev => ({ ...prev, body: e.target.value }))}
+              placeholder="Write your message here..."
+              rows={formData.type === 'email' ? 8 : 4}
+              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865] resize-none font-mono"
+            />
+
+            {/* SMS Character Count with AI Suggestions */}
+            {formData.type === 'sms' && (
+              <div className="mt-2 p-2 sm:p-3 bg-neutral-50 rounded-xl">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <span className={`text-xs sm:text-sm font-medium ${
+                      smsAnalysis.status === 'optimal' ? 'text-emerald-600' :
+                      smsAnalysis.status === 'caution' ? 'text-amber-600' :
+                      smsAnalysis.status === 'warning' ? 'text-rose-600' :
+                      'text-[#5C9BA4]'
+                    }`}>
+                      {smsAnalysis.charCount}/160
+                    </span>
+                    <span className="text-[10px] sm:text-xs text-neutral-500">{smsAnalysis.message}</span>
+                  </div>
+                  {smsAnalysis.status === 'warning' && (
+                    <button
+                      onClick={() => handleAIAssist('make-shorter')}
+                      disabled={isAIProcessing}
+                      className="flex items-center gap-1 text-[10px] sm:text-xs text-[#5C9BA4] hover:text-[#5C9BA4]/80"
+                    >
+                      <Wand2 className="w-3 h-3" />
+                      <span className="hidden sm:inline">Shorten with AI</span>
+                      <span className="sm:hidden">Shorten</span>
+                    </button>
+                  )}
+                </div>
+                {smsAnalysis.segments > 1 && (
+                  <div className="mt-2 pt-2 border-t border-neutral-200">
+                    <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-amber-600">
+                      <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
+                      <span>This message will be sent as {smsAnalysis.segments} SMS segments, which may increase costs.</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex-shrink-0 border-t border-neutral-100 px-4 sm:px-6 py-4 sm:py-5 bg-neutral-50/50">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 border border-neutral-200 text-neutral-700 rounded-xl text-xs sm:text-sm font-medium hover:bg-neutral-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!isValid}
+              className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
+                isValid
+                  ? 'bg-[#4E5840] text-white hover:bg-[#3d4632]'
+                  : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
+              }`}
+            >
+              {mode === 'create' ? 'Create Template' : 'Save Changes'}
+            </button>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 
   return createPortal(modalContent, document.body);
@@ -1207,18 +1204,18 @@ export default function TemplateCenter({ templates, onSave, onDelete }) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[#5C9BA4]/10 flex items-center justify-center">
-            <FileText className="w-5 h-5 text-[#5C9BA4]" />
+    <div className="bg-white rounded-xl border border-neutral-200 p-3 sm:p-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-[#5C9BA4]/10 flex items-center justify-center flex-shrink-0">
+            <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-[#5C9BA4]" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-neutral-900">Template Center</h3>
-            <p className="text-sm text-neutral-500">{templates.length} templates</p>
+            <h3 className="text-base sm:text-lg font-bold text-neutral-900">Template Center</h3>
+            <p className="text-xs sm:text-sm text-neutral-500">{templates.length} templates</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <CustomDropdown
             options={[
               { value: 'all', label: 'All Types' },
@@ -1227,14 +1224,15 @@ export default function TemplateCenter({ templates, onSave, onDelete }) {
             ]}
             value={filter}
             onChange={setFilter}
-            className="[&_button]:min-w-[110px]"
+            className="[&_button]:min-w-[90px] sm:[&_button]:min-w-[110px]"
           />
           <button
             onClick={handleCreateTemplate}
-            className="flex items-center gap-2 px-4 py-2 bg-[#A57865] text-white rounded-lg text-sm font-medium hover:bg-[#A57865]/90 transition-colors"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-[#A57865] text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-[#A57865]/90 transition-colors whitespace-nowrap"
           >
-            <Plus className="w-4 h-4" />
-            Add Template
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Add Template</span>
+            <span className="sm:hidden">Add</span>
           </button>
         </div>
       </div>

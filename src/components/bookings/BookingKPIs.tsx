@@ -1,25 +1,28 @@
 import { useMemo } from 'react';
 import {
-  CalendarCheck, Clock, XCircle, DollarSign,
+  CalendarCheck, Clock, XCircle,
   TrendingUp, Users, ArrowUpRight, ArrowDownRight,
   Sparkles
 } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 
 /**
  * Premium Booking KPI Dashboard
  * Elegant stat cards with key booking metrics
  */
 export default function BookingKPIs({ bookings = [] }) {
+  const { formatCurrency, symbol } = useCurrency();
   const stats = useMemo(() => {
     const total = bookings.length;
-    const confirmed = bookings.filter(b => b.status === 'CONFIRMED').length;
-    const pending = bookings.filter(b => b.status === 'PENDING').length;
-    const checkedIn = bookings.filter(b => b.status === 'CHECKED-IN').length;
-    const cancelled = bookings.filter(b => b.status === 'CANCELLED').length;
+    // Use case-insensitive comparison (API returns lowercase, e.g. 'confirmed', 'checked-in')
+    const confirmed = bookings.filter(b => b.status?.toLowerCase() === 'confirmed').length;
+    const pending = bookings.filter(b => b.status?.toLowerCase() === 'pending').length;
+    const checkedIn = bookings.filter(b => b.status?.toLowerCase() === 'checked-in').length;
+    const cancelled = bookings.filter(b => b.status?.toLowerCase() === 'cancelled').length;
     const totalRevenue = bookings.reduce((sum, b) => sum + (b.amount || 0), 0);
     const avgADR = total > 0 ? Math.round(totalRevenue / bookings.reduce((sum, b) => sum + (b.nights || 1), 0)) : 0;
     const vipCount = bookings.filter(b => b.vip).length;
-    const occupiedRooms = bookings.filter(b => ['CHECKED-IN', 'CONFIRMED'].includes(b.status)).length;
+    const occupiedRooms = bookings.filter(b => ['checked-in', 'confirmed'].includes(b.status?.toLowerCase())).length;
 
     return {
       total,
@@ -78,8 +81,8 @@ export default function BookingKPIs({ bookings = [] }) {
     {
       id: 'revenue',
       label: 'Revenue',
-      value: `$${stats.totalRevenue.toLocaleString()}`,
-      icon: DollarSign,
+      value: formatCurrency(stats.totalRevenue),
+      icon: () => <span className="text-lg font-bold">{symbol}</span>,
       trend: '+24%',
       trendUp: true,
       color: 'sage',
@@ -88,7 +91,7 @@ export default function BookingKPIs({ bookings = [] }) {
     {
       id: 'adr',
       label: 'Avg. ADR',
-      value: `$${stats.avgADR}`,
+      value: formatCurrency(stats.avgADR),
       icon: TrendingUp,
       trend: '+5%',
       trendUp: true,

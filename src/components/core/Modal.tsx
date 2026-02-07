@@ -69,6 +69,8 @@ const Modal = forwardRef(({
         className={`
           relative w-full bg-white rounded-xl
           animate-scaleIn
+          flex flex-col
+          max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-4rem)]
           ${sizes[size]}
           ${className}
         `}
@@ -76,7 +78,7 @@ const Modal = forwardRef(({
       >
         {/* Header */}
         {(title || showClose) && (
-          <div className="flex items-start justify-between px-6 py-5 border-b border-neutral-100">
+          <div className="flex items-start justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-neutral-100 flex-shrink-0">
             <div>
               {title && (
                 <h2 className="text-[16px] font-semibold text-neutral-900">
@@ -114,7 +116,7 @@ Modal.displayName = 'Modal';
 const ModalBody = forwardRef(({ children, className = '', ...props }, ref) => (
   <div
     ref={ref}
-    className={`px-6 py-5 max-h-[60vh] overflow-y-auto ${className}`}
+    className={`px-4 sm:px-6 py-4 sm:py-5 flex-1 overflow-y-auto ${className}`}
     {...props}
   >
     {children}
@@ -127,7 +129,7 @@ ModalBody.displayName = 'ModalBody';
 const ModalFooter = forwardRef(({ children, className = '', ...props }, ref) => (
   <div
     ref={ref}
-    className={`flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-100 ${className}`}
+    className={`flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 flex-shrink-0 ${className}`}
     {...props}
   >
     {children}

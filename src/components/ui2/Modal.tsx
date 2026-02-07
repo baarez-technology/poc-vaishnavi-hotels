@@ -6,8 +6,8 @@ import { X } from 'lucide-react';
 import { Button, IconButton } from './Button';
 
 /**
- * Glimmora Design System v4.0 - Modal
- * Overlay dialogs with animations
+ * Glimmora Design System v5.0 - Modal
+ * Overlay dialogs with animations and dynamic branding
  */
 
 // Modal Backdrop
@@ -95,9 +95,13 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         className={cn(
-          'relative z-[51] bg-white rounded-[10px] w-full overflow-hidden',
+          'relative z-[51] bg-white rounded-2xl w-full overflow-hidden',
           'animate-scaleIn',
-          'border border-neutral-200 shadow-xl shadow-neutral-900/10',
+          'border border-neutral-200',
+          // Flex layout for proper footer positioning
+          'flex flex-col',
+          // Max height to ensure footer is always visible
+          'max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-4rem)]',
           // Modal minimum width requirement (responsive-safe)
           'min-[740px]:min-w-[700px]',
           sizes[size],
@@ -135,14 +139,15 @@ export function ModalHeader({
   return (
     <div
       className={cn(
-        'flex items-start gap-4 px-6 pt-6 pb-5',
+        'flex items-start gap-4 px-4 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-5',
+        'flex-shrink-0',
         className
       )}
       {...props}
     >
       {Icon && (
-        <div className="w-12 h-12 rounded-xl bg-terra-100 border border-terra-200/60 flex items-center justify-center flex-shrink-0 shadow-sm">
-          <Icon className="w-6 h-6 text-terra-600" />
+        <div className="w-12 h-12 rounded-[var(--brand-radius-card)] bg-[var(--brand-primary-50)] border border-[var(--brand-primary-light)]/60 flex items-center justify-center flex-shrink-0 shadow-sm">
+          <Icon className="w-6 h-6 text-[var(--brand-primary)]" />
         </div>
       )}
       <div className="flex-1 min-w-0 pr-8">
@@ -173,7 +178,7 @@ export function ModalDescription({ children, className }: { children: ReactNode;
 // Modal Content/Body
 export function ModalContent({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('px-6 py-5', className)}>
+    <div className={cn('px-6 py-5 flex-1 overflow-y-auto', className)}>
       {children}
     </div>
   );
@@ -184,8 +189,9 @@ export function ModalFooter({ children, className }: { children: ReactNode; clas
   return (
     <div
       className={cn(
-        'flex items-center justify-end gap-3 px-6 py-5',
+        'flex items-center justify-end gap-3 px-4 sm:px-6 py-4 sm:py-5',
         'border-t border-neutral-200/40 bg-white',
+        'flex-shrink-0',
         className
       )}
     >
@@ -194,7 +200,7 @@ export function ModalFooter({ children, className }: { children: ReactNode; clas
   );
 }
 
-type ConfirmVariant = 'danger' | 'warning' | 'primary';
+type ConfirmVariant = 'danger' | 'warning' | 'primary' | 'secondary';
 
 // Confirmation Modal - Pre-built confirmation dialog
 export function ConfirmModal({
@@ -205,7 +211,7 @@ export function ConfirmModal({
   description,
   confirmText = 'Confirm',
   cancelText = 'Cancel',
-  variant = 'danger', // danger, warning, primary
+  variant = 'danger', // danger, warning, primary, secondary
   loading = false,
   icon: Icon,
 }: {
@@ -230,8 +236,12 @@ export function ConfirmModal({
       iconColor: 'text-gold-600',
     },
     primary: {
-      iconBg: 'bg-terra-50',
-      iconColor: 'text-terra-600',
+      iconBg: 'bg-[var(--brand-primary-50)]',
+      iconColor: 'text-[var(--brand-primary)]',
+    },
+    secondary: {
+      iconBg: 'bg-[var(--brand-accent-50)]',
+      iconColor: 'text-[var(--brand-accent)]',
     },
   };
 
@@ -242,7 +252,7 @@ export function ConfirmModal({
       <div className="p-6">
         {/* Icon */}
         {Icon && (
-          <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center mb-4', config.iconBg)}>
+          <div className={cn('w-10 h-10 rounded-[var(--brand-radius-md)] flex items-center justify-center mb-4', config.iconBg)}>
             <Icon className={cn('w-5 h-5', config.iconColor)} />
           </div>
         )}
@@ -362,10 +372,10 @@ export function Drawer({
   if (!open) return null;
 
   const sizes: Record<DrawerSize, string> = {
-    sm: 'w-80',
-    md: 'w-96',
-    lg: 'w-[480px]',
-    xl: 'w-[600px]',
+    sm: 'w-full sm:w-80',
+    md: 'w-full sm:w-96',
+    lg: 'w-full sm:w-[480px]',
+    xl: 'w-full sm:w-[600px]',
   };
 
   const positions: Record<DrawerSide, string> = {

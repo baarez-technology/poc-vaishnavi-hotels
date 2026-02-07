@@ -4,12 +4,199 @@
  * Side Drawer pattern using ui2/Drawer
  */
 
-import { useState, useEffect } from 'react';
-import { Bed, UsersRound, DollarSign } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { Bed, UsersRound, DollarSign, ChevronDown, Check, Search } from 'lucide-react';
 import { Drawer } from '../../ui2/Drawer';
 import { Button } from '../../ui2/Button';
 import { guestsService } from '../../../api/services/guests.service';
 import { useToast } from '../../../contexts/ToastContext';
+
+// Custom Select Dropdown Component with React Portal and Search
+function GuestSelectDropdown({ value, onChange, options, placeholder, isLoading }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [position, setPosition] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
+  const searchInputRef = useRef(null);
+
+  const selectedOption = options.find(opt => String(opt.value) === String(value));
+  const displayLabel = selectedOption?.label || placeholder;
+
+  // Filter options based on search query
+  const filteredOptions = options.filter(opt =>
+    opt.label.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Estimate dropdown height
+  const estimatedDropdownHeight = Math.min(filteredOptions.length * 44 + 56, 320);
+
+  const calculatePosition = () => {
+    if (!triggerRef.current) return null;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    const openAbove = spaceBelow < estimatedDropdownHeight && spaceAbove > spaceBelow;
+
+    return {
+      top: openAbove ? rect.top - estimatedDropdownHeight - 4 : rect.bottom + 4,
+      left: rect.left,
+      width: rect.width,
+      openAbove
+    };
+  };
+
+  const handleToggle = () => {
+    if (isLoading) return;
+    if (isOpen) {
+      setIsOpen(false);
+      setPosition(null);
+      setSearchQuery('');
+    } else {
+      setPosition(calculatePosition());
+      setIsOpen(true);
+      // Focus search input after opening
+      setTimeout(() => searchInputRef.current?.focus(), 10);
+    }
+  };
+
+  const handleSelect = (optionValue) => {
+    onChange(optionValue);
+    setIsOpen(false);
+    setPosition(null);
+    setSearchQuery('');
+  };
+
+  // Close on click outside
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (e) => {
+      if (!triggerRef.current?.contains(e.target) && !menuRef.current?.contains(e.target)) {
+        setIsOpen(false);
+        setPosition(null);
+        setSearchQuery('');
+      }
+    };
+
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        setPosition(null);
+        setSearchQuery('');
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [isOpen]);
+
+  // Update position on scroll/resize
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const updatePosition = () => {
+      setPosition(calculatePosition());
+    };
+
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [isOpen]);
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={handleToggle}
+        disabled={isLoading}
+        className={`w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border transition-all flex items-center justify-between focus:outline-none ${
+          isLoading
+            ? 'border-neutral-200 bg-neutral-50 cursor-not-allowed'
+            : isOpen
+            ? 'border-terra-400 ring-2 ring-terra-500/10'
+            : 'border-neutral-200 hover:border-neutral-300'
+        }`}
+      >
+        <span className={`truncate ${value ? 'text-neutral-900' : 'text-neutral-400'}`}>
+          {isLoading ? 'Loading guests...' : displayLabel}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform flex-shrink-0 ml-2 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && position && createPortal(
+        <div
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: `${position.top}px`,
+            left: `${position.left}px`,
+            width: `${position.width}px`,
+            maxHeight: `${estimatedDropdownHeight}px`,
+            zIndex: 99999
+          }}
+          className={`bg-white rounded-lg border border-neutral-200 shadow-lg shadow-neutral-900/10 overflow-hidden animate-in fade-in-0 duration-100 ${
+            position.openAbove ? 'origin-bottom' : 'origin-top'
+          }`}
+        >
+          {/* Search Input */}
+          <div className="p-2 border-b border-neutral-100">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search guests..."
+                className="w-full h-8 pl-9 pr-3 rounded-md text-[13px] bg-neutral-50 border border-neutral-200 text-neutral-900 placeholder:text-neutral-400 focus:border-terra-400 focus:ring-1 focus:ring-terra-500/10 focus:outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Options List */}
+          <div className="py-1 max-h-52 overflow-y-auto">
+            {filteredOptions.length === 0 ? (
+              <div className="px-3.5 py-3 text-[13px] text-neutral-400 text-center">
+                No guests found
+              </div>
+            ) : (
+              filteredOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleSelect(option.value)}
+                  className={`w-full px-3.5 py-2.5 text-[13px] text-left hover:bg-neutral-50 transition-colors flex items-center justify-between ${
+                    String(value) === String(option.value) ? 'bg-terra-50 text-terra-700 font-medium' : 'text-neutral-700'
+                  }`}
+                >
+                  <div className="flex flex-col min-w-0">
+                    <span className="truncate">{option.label}</span>
+                    {option.email && (
+                      <span className="text-[11px] text-neutral-400 truncate">{option.email}</span>
+                    )}
+                  </div>
+                  {String(value) === String(option.value) && <Check className="w-4 h-4 text-terra-500 flex-shrink-0 ml-2" />}
+                </button>
+              ))
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
 
 export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
   const [selectedGuest, setSelectedGuest] = useState('');
@@ -60,8 +247,6 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
     }
   };
 
-  const inputStyles = "w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all";
-
   const renderFooter = () => (
     <div className="flex items-center justify-end gap-3">
       <Button type="button" variant="ghost" onClick={onClose} className="px-5 py-2 text-[13px] font-semibold">
@@ -92,20 +277,17 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
             <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
               Select Guest
             </label>
-            <select
+            <GuestSelectDropdown
               value={selectedGuest}
-              onChange={(e) => setSelectedGuest(e.target.value)}
-              className={inputStyles}
-              required
-              disabled={isLoading}
-            >
-              <option value="">{isLoading ? 'Loading guests...' : 'Select a guest'}</option>
-              {availableGuests.map((guest) => (
-                <option key={guest.id} value={guest.id}>
-                  {guest.first_name} {guest.last_name} {guest.email ? `(${guest.email})` : ''}
-                </option>
-              ))}
-            </select>
+              onChange={setSelectedGuest}
+              options={availableGuests.map((guest) => ({
+                value: guest.id,
+                label: `${guest.first_name} ${guest.last_name}`,
+                email: guest.email
+              }))}
+              placeholder="Select a guest"
+              isLoading={isLoading}
+            />
           </div>
         </div>
 
@@ -114,22 +296,22 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
             Room Details
           </h4>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100">
+          <div className="grid grid-cols-1 xs:grid-cols-3 gap-3">
+            <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100">
               <div className="flex items-center gap-2 mb-2">
                 <Bed className="w-4 h-4 text-neutral-400" />
                 <span className="text-[11px] font-medium text-neutral-500">Bed Type</span>
               </div>
               <p className="text-[13px] font-semibold text-neutral-900">{room.bedType}</p>
             </div>
-            <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100">
+            <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100">
               <div className="flex items-center gap-2 mb-2">
                 <UsersRound className="w-4 h-4 text-neutral-400" />
                 <span className="text-[11px] font-medium text-neutral-500">Capacity</span>
               </div>
               <p className="text-[13px] font-semibold text-neutral-900">{room.capacity} guests</p>
             </div>
-            <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-100">
+            <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100">
               <div className="flex items-center gap-2 mb-2">
                 <DollarSign className="w-4 h-4 text-neutral-400" />
                 <span className="text-[11px] font-medium text-neutral-500">Price</span>

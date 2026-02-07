@@ -3,7 +3,7 @@
  * Handles all availability, room blocking, and restriction management
  */
 
-import { apiClient } from '../client';
+import { apiClient, clearApiCache } from '../client';
 
 // ============================================
 // TYPES
@@ -85,6 +85,12 @@ export interface BulkAvailabilityUpdate {
   max_stay?: number;
   closed_to_arrival?: boolean;
   closed_to_departure?: boolean;
+  base_rate?: number;  // Daily rate override
+}
+
+export interface RoomTypePriceUpdate {
+  room_type_id: number;
+  base_price: number;
 }
 
 export interface AIInsightsResponse {
@@ -241,6 +247,33 @@ export const updateSingleDayAvailability = async (
   ]);
 };
 
+/**
+ * Update a single room type's base price
+ */
+export const updateRoomTypePrice = async (
+  roomTypeId: number,
+  basePrice: number
+): Promise<{ success: boolean; message: string }> => {
+  const response = await apiClient.put(`/api/v1/availability/room-types/${roomTypeId}/price`, {
+    base_price: basePrice
+  });
+  // Clear room-types cache so RoomsPage shows updated prices
+  clearApiCache('room-types');
+  return response.data;
+};
+
+/**
+ * Bulk update room type prices
+ */
+export const bulkUpdateRoomTypePrices = async (
+  updates: RoomTypePriceUpdate[]
+): Promise<{ success: boolean; updated_count: number; message: string }> => {
+  const response = await apiClient.put('/api/v1/availability/room-types/bulk-price', updates);
+  // Clear room-types cache so RoomsPage shows updated prices
+  clearApiCache('room-types');
+  return response.data;
+};
+
 export default {
   getAvailabilityGrid,
   bulkUpdateAvailability,
@@ -250,5 +283,7 @@ export default {
   deleteRoomBlock,
   getTodayStats,
   getAIInsights,
-  updateSingleDayAvailability
+  updateSingleDayAvailability,
+  updateRoomTypePrice,
+  bulkUpdateRoomTypePrices
 };

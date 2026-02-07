@@ -10,6 +10,7 @@ import Pagination from '../../components/bookings/Pagination';
 import EditBookingModal from '../../components/bookings/EditBookingModal';
 import AssignRoomModal from '../../components/modals/AssignRoomModal';
 import CancelBookingModal from '../../components/bookings/CancelBookingModal';
+import PaymentManagementModal from '../../components/bookings/PaymentManagementModal';
 import { useBookings } from '../../hooks/admin/useBookings';
 import { useSort } from '../../hooks/useSort';
 import { usePagination } from '../../hooks/usePagination';
@@ -97,13 +98,15 @@ export default function Bookings() {
   const [isEditBookingModalOpen, setIsEditBookingModalOpen] = useState(false);
   const [isAssignRoomModalOpen, setIsAssignRoomModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isSavingPayment, setIsSavingPayment] = useState(false);
 
   // Toast state
-  const [toast, setToast] = useState(null);
+  const [toast, setToast] = useState<{ message: string } | null>(null);
 
   // Handle filter changes
   const handleFilterChange = (key, value) => {
@@ -148,6 +151,12 @@ export default function Bookings() {
   const handleCancelFromAction = (booking) => {
     setSelectedBooking(booking);
     setIsCancelModalOpen(true);
+  };
+
+  // Handle manage payment from action button
+  const handleManagePaymentFromAction = (booking) => {
+    setSelectedBooking(booking);
+    setIsPaymentModalOpen(true);
   };
 
   // Handle drawer close
@@ -232,6 +241,37 @@ export default function Bookings() {
     setIsCancelModalOpen(false);
   };
 
+  // Close payment modal
+  const closePaymentModal = () => {
+    setIsPaymentModalOpen(false);
+  };
+
+  // Handle payment save
+  const handlePaymentSave = async (paymentData) => {
+    if (!selectedBooking) return;
+    setIsSavingPayment(true);
+
+    // Update booking with payment data - uses optimistic updates
+    const result = await updateBooking(selectedBooking.id, {
+      paymentStatus: paymentData.paymentStatus,
+      paymentMethod: paymentData.paymentMethod,
+      amountPaid: paymentData.amountPaid,
+      paymentNotes: paymentData.paymentNotes,
+    });
+
+    // Always update selectedBooking with the payment data (optimistic update)
+    setSelectedBooking({
+      ...selectedBooking,
+      paymentStatus: paymentData.paymentStatus,
+      paymentMethod: paymentData.paymentMethod,
+      amountPaid: paymentData.amountPaid,
+      paymentNotes: paymentData.paymentNotes,
+    });
+
+    setIsSavingPayment(false);
+    closePaymentModal();
+  };
+
   // Handle booking edit save
   const handleBookingEditSave = async (updatedFields) => {
     if (!selectedBooking) return;
@@ -312,6 +352,13 @@ export default function Bookings() {
       return getArrivalsToday();
     } else if (activeTab === 'departures') {
       return getDeparturesToday();
+    } else if (activeTab === 'inhouse') {
+      // Filter for guests currently checked in (in-house)
+      // API returns lowercase with hyphen: "checked-in"
+      return bookingsData.filter(booking => {
+        const status = booking.status?.toLowerCase();
+        return status === 'checked-in' || status === 'in-house' || status === 'in_house';
+      });
     }
     return [...bookingsData];
   }, [activeTab, bookingsData, getArrivalsToday, getDeparturesToday]);
@@ -382,12 +429,12 @@ export default function Bookings() {
       "min-h-screen transition-colors",
       isDark ? "bg-neutral-900" : "bg-[#F9F7F7]"
     )}>
-      <div className="px-10 py-6 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
       {/* Page Header */}
-      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">Bookings</h1>
-          <p className="text-[11px] text-neutral-400 font-medium mt-0.5">
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">Bookings</h1>
+          <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">
             Manage reservations, availability, and guest information.
           </p>
         </div>
@@ -398,18 +445,18 @@ export default function Bookings() {
       <div className="bg-white rounded-[10px] overflow-hidden">
         {/* Tabs + Actions */}
         <div className="border-b border-neutral-100">
-          <div className="px-6 pt-4 flex items-center justify-between">
+          <div className="px-3 sm:px-6 pt-3 sm:pt-4 flex items-center justify-between overflow-x-auto">
             <Tabs activeTab={activeTab} onTabChange={setActiveTab} />
           </div>
         </div>
 
         {/* Search & Filters Row */}
-        <div className="px-6 py-4 bg-neutral-50/30 border-b border-neutral-100">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 max-w-md">
+        <div className="px-3 sm:px-6 py-3 sm:py-4 bg-neutral-50/30 border-b border-neutral-100">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="w-full sm:flex-1 sm:max-w-md">
               <SearchBar value={searchQuery} onChange={setSearchQuery} onClear={() => setSearchQuery('')} />
             </div>
-            <div className="flex-1" />
+            <div className="hidden sm:block sm:flex-1" />
             <FiltersBar
               filters={filters}
               onFilterChange={handleFilterChange}
@@ -427,10 +474,11 @@ export default function Bookings() {
           onEditBooking={handleEditFromAction}
           onAssignRoom={handleAssignRoomFromAction}
           onCancelBooking={handleCancelFromAction}
+          onManagePayment={handleManagePaymentFromAction}
         />
 
         {/* Pagination */}
-        <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50/30">
+        <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 bg-neutral-50/30">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -493,11 +541,20 @@ export default function Bookings() {
         isCancelling={isCancelling}
       />
 
+      {/* Payment Management Modal */}
+      <PaymentManagementModal
+        booking={selectedBooking}
+        isOpen={isPaymentModalOpen}
+        onClose={closePaymentModal}
+        onSave={handlePaymentSave}
+        isSaving={isSavingPayment}
+      />
+
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-[80]">
+        <div className="fixed bottom-4 sm:bottom-6 left-4 right-4 sm:left-auto sm:right-6 z-[80]">
           <div className="px-4 py-3 rounded-[10px] bg-neutral-900 text-white shadow-xl flex items-center gap-2">
-            <span className="text-[13px] font-medium">{toast.message}</span>
+            <span className="text-xs sm:text-[13px] font-medium">{toast.message}</span>
           </div>
         </div>
       )}

@@ -5,7 +5,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import { CheckCircle, AlertCircle, Eye, EyeOff, Search, Plus, Mail } from 'lucide-react';
+import { CheckCircle, AlertCircle, Eye, EyeOff, Search, Plus, ExternalLink } from 'lucide-react';
 import { availableOTAs } from '../../data/channel-manager/sampleOTAs';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
@@ -26,8 +26,6 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
   const [testResult, setTestResult] = useState(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showRequestForm, setShowRequestForm] = useState(false);
-  const [requestedOTA, setRequestedOTA] = useState('');
 
   // Filter out already connected OTAs and apply search
   const availableToConnect = useMemo(() => {
@@ -44,6 +42,15 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
       (ota.description && ota.description.toLowerCase().includes(query))
     );
   }, [existingConnections, searchQuery]);
+
+  // Filter OTAs based on search query
+  const filteredOTAs = useMemo(() => {
+    if (!searchQuery.trim()) return availableToConnect;
+    const query = searchQuery.toLowerCase();
+    return availableToConnect.filter(
+      ota => ota.name.toLowerCase().includes(query) || ota.code.toLowerCase().includes(query)
+    );
+  }, [availableToConnect, searchQuery]);
 
   const handleSelectOTA = (ota) => {
     setSelectedOTA(ota);
@@ -97,12 +104,17 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
     setCredentials({ username: '', apiKey: '', hotelId: '' });
     setTestResult(null);
     setShowApiKey(false);
+    setSearchQuery('');
     onClose();
   };
 
-  // Form validation - Hotel ID is required, username and API key are optional for some OTAs
-  const isFormValid = credentials.hotelId && credentials.hotelId.trim().length > 0;
-  const hasAllCredentials = credentials.username && credentials.apiKey && credentials.hotelId;
+  const handleRequestIntegration = () => {
+    // Open email or contact form for requesting new integration
+    window.open('mailto:integrations@glimmora.com?subject=New OTA Integration Request&body=Please describe the OTA platform you would like to integrate with:', '_blank');
+    toast.info('Opening email client to submit integration request...');
+  };
+
+  const isFormValid = credentials.username && credentials.apiKey && credentials.hotelId;
 
   const getTitle = () => {
     if (step === 1) return 'Add OTA Connection';
@@ -127,7 +139,7 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
 
     return (
       <div className="flex items-center justify-end gap-3 w-full">
-        <Button variant="ghost" onClick={() => setStep(1)} className="px-5 py-2 text-[13px] font-semibold">
+        <Button variant="ghost" onClick={() => { setStep(1); setSearchQuery(''); }} className="px-5 py-2 text-[13px] font-semibold">
           Back
         </Button>
         <Button
@@ -211,96 +223,41 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
             /* OTA Selection Grid */
             <>
               {/* Search Bar */}
-              <div className="space-y-3">
-                <SearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  onClear={() => setSearchQuery('')}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <input
+                  type="text"
                   placeholder="Search OTA platforms..."
-                  size="md"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full h-10 pl-10 pr-4 rounded-lg text-sm bg-neutral-50 border border-neutral-200 text-neutral-700 placeholder:text-neutral-400 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 focus:bg-white transition-all"
                 />
-                
-                {/* Request New OTA Button */}
-                {!showRequestForm && (
-                  <button
-                    onClick={() => setShowRequestForm(true)}
-                    className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-neutral-300 rounded-lg text-[13px] font-medium text-neutral-600 hover:border-terra-400 hover:text-terra-600 hover:bg-terra-50/50 transition-all duration-200"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Request New OTA Integration
-                  </button>
-                )}
-
-                {/* Request Form */}
-                {showRequestForm && (
-                  <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-200 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h5 className="text-[13px] font-semibold text-neutral-900">Request New OTA</h5>
-                      <button
-                        onClick={() => {
-                          setShowRequestForm(false);
-                          setRequestedOTA('');
-                        }}
-                        className="text-neutral-400 hover:text-neutral-600"
-                      >
-                        <AlertCircle className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      value={requestedOTA}
-                      onChange={(e) => setRequestedOTA(e.target.value)}
-                      placeholder="Enter OTA platform name (e.g., Agoda, Hotels.com)"
-                      className="w-full h-9 px-3 rounded-lg text-sm bg-white border border-neutral-200 text-neutral-900 placeholder:text-neutral-400 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none"
-                    />
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => {
-                          toast.success(`Request submitted for ${requestedOTA || 'new OTA'}. We'll contact you soon!`);
-                          setShowRequestForm(false);
-                          setRequestedOTA('');
-                        }}
-                        disabled={!requestedOTA.trim()}
-                      >
-                        <Mail className="w-4 h-4 mr-1" />
-                        Submit Request
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setShowRequestForm(false);
-                          setRequestedOTA('');
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
               </div>
 
               <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900">
-                Available Platforms ({availableToConnect.length})
+                Available Platforms ({filteredOTAs.length})
               </h4>
-              
-              {availableToConnect.length === 0 ? (
+
+              {filteredOTAs.length === 0 ? (
+                /* No Results State */
                 <div className="text-center py-8">
                   <div className="w-12 h-12 rounded-lg bg-neutral-100 flex items-center justify-center mx-auto mb-3">
-                    <Search className="w-6 h-6 text-neutral-400" />
+                    <Search className="w-5 h-5 text-neutral-400" />
                   </div>
-                  <p className="text-[13px] font-medium text-neutral-600 mb-1">No platforms found</p>
-                  <p className="text-[11px] text-neutral-400">Try a different search term or request a new OTA integration</p>
+                  <h3 className="text-sm font-semibold text-neutral-900 mb-1">
+                    No platforms found
+                  </h3>
+                  <p className="text-[12px] text-neutral-500 mb-4">
+                    Can't find "{searchQuery}"? Request a new integration below.
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
-                  {availableToConnect.map(ota => (
+                  {filteredOTAs.map(ota => (
                     <button
                       key={ota.code}
                       onClick={() => handleSelectOTA(ota)}
-                      className="flex flex-col items-center gap-3 p-4 border border-neutral-200 rounded-lg transition-all duration-200 group hover:border-terra-400 hover:bg-terra-50/30"
+                      className="flex flex-col items-center gap-3 p-4 border border-neutral-200 rounded-lg transition-all duration-200 group hover:border-terra-300 hover:bg-terra-50/30"
                     >
                       <div
                         className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-sm"
@@ -320,6 +277,21 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
                   ))}
                 </div>
               )}
+
+              {/* Request New Integration */}
+              <div className="pt-4 border-t border-neutral-100">
+                <button
+                  onClick={handleRequestIntegration}
+                  className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-neutral-200 rounded-lg text-neutral-600 hover:border-terra-300 hover:text-terra-600 hover:bg-terra-50/30 transition-all duration-200"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="text-sm font-medium">Request New OTA Integration</span>
+                  <ExternalLink className="w-3.5 h-3.5 ml-1" />
+                </button>
+                <p className="text-[11px] text-neutral-400 text-center mt-2">
+                  Don't see your preferred OTA? Submit a request and we'll work on adding it.
+                </p>
+              </div>
             </>
           )}
         </div>

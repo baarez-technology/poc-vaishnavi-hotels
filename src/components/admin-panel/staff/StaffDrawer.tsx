@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { X, Phone, Mail, Calendar, TrendingUp, Star, Sparkles, Clock, MessageSquare, Edit2, Save, Coffee, Briefcase, CheckCircle, User, UserX } from 'lucide-react';
+import { Button } from '../../ui2/Button';
 
 export default function StaffDrawer({ staff, isOpen, onClose, onAssignShift, onMessage, onUpdateStatus, onMarkLeave, onEdit, onDisable, onViewProfile }) {
   const navigate = useNavigate();
@@ -96,11 +97,11 @@ export default function StaffDrawer({ staff, isOpen, onClose, onAssignShift, onM
       >
         {/* Modal */}
         <div
-          className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-scaleIn"
+          className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden animate-scaleIn flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="border-b border-neutral-200">
+          <div className="border-b border-neutral-200 flex-shrink-0">
             <div className="p-6 pb-4">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-4">
@@ -132,7 +133,7 @@ export default function StaffDrawer({ staff, isOpen, onClose, onAssignShift, onM
           </div>
 
           {/* Content */}
-          <div className="overflow-y-auto max-h-[calc(90vh-240px)] custom-scrollbar p-6 space-y-6">
+          <div className="overflow-y-auto flex-1 custom-scrollbar p-4 sm:p-6 space-y-6">
           {/* Contact Info */}
           <div>
             <div className="flex items-center gap-2 mb-3">
@@ -223,23 +224,38 @@ export default function StaffDrawer({ staff, isOpen, onClose, onAssignShift, onM
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-1 h-4 bg-[#CDB261] rounded-full"></div>
-                <h3 className="text-sm font-semibold text-neutral-700">Schedule</h3>
+                <h3 className="text-sm font-semibold text-neutral-700">Assigned Shifts</h3>
               </div>
               <div className="bg-[#FAF8F6] rounded-xl p-4 border border-neutral-100 space-y-2">
-                {staff.schedule.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between py-2 border-b border-neutral-200 last:border-0">
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-lg bg-white border border-neutral-200 flex items-center justify-center flex-shrink-0">
-                        <Clock className="w-3.5 h-3.5 text-[#A57865]" />
+                {staff.schedule.map((item, index) => {
+                  // Support both old format (day/hours) and new format (date/shift)
+                  const displayDate = item.date
+                    ? new Date(item.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                    : item.day;
+
+                  // Derive hours from shift type if not provided
+                  const shiftHours = {
+                    morning: '08:00 - 16:00',
+                    evening: '16:00 - 00:00',
+                    night: '00:00 - 08:00'
+                  };
+                  const displayHours = item.hours || shiftHours[item.shift] || '';
+
+                  return (
+                    <div key={index} className="flex items-center justify-between py-2 border-b border-neutral-200 last:border-0">
+                      <div className="flex items-center gap-3">
+                        <div className="w-7 h-7 rounded-lg bg-white border border-neutral-200 flex items-center justify-center flex-shrink-0">
+                          <Clock className="w-3.5 h-3.5 text-[#A57865]" />
+                        </div>
+                        <span className="text-sm font-semibold text-neutral-900">{displayDate}</span>
                       </div>
-                      <span className="text-sm font-semibold text-neutral-900">{item.day}</span>
+                      <div className="text-right">
+                        <p className="text-xs font-medium text-neutral-700 capitalize">{item.shift}</p>
+                        {displayHours && <p className="text-xs text-neutral-500">{displayHours}</p>}
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs font-medium text-neutral-700 capitalize">{item.shift}</p>
-                      <p className="text-xs text-neutral-500">{item.hours}</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -311,84 +327,87 @@ export default function StaffDrawer({ staff, isOpen, onClose, onAssignShift, onM
                     <option value="sick">Sick</option>
                     <option value="leave">On Leave</option>
                   </select>
-                  <button
+                  <Button
+                    variant="primary"
                     onClick={handleSaveStatus}
                     disabled={!isStatusEditing || selectedStatus === staff.status}
-                    className={`px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 active:scale-95 ${
-                      isStatusEditing && selectedStatus !== staff.status
-                        ? 'bg-[#A57865] text-white hover:bg-[#8E6554] hover:shadow-md'
-                        : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
-                    }`}
+                    icon={Save}
                   >
-                    <Save className="w-4 h-4" />
                     Save
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <button
+              <Button
+                variant="primary"
                 onClick={() => onAssignShift(staff)}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-[#A57865] hover:bg-[#8E6554] text-white rounded-xl border border-transparent transition-all duration-200 font-semibold text-sm shadow-sm hover:shadow-md active:scale-95"
+                icon={Calendar}
+                className="w-full justify-start"
               >
-                <Calendar className="w-4 h-4" />
                 Assign Shift
-              </button>
+              </Button>
 
-              <button
+              <Button
+                variant="outline-neutral"
                 onClick={() => onMarkLeave && onMarkLeave(staff)}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-neutral-50 text-neutral-700 rounded-xl border-2 border-neutral-200 hover:border-[#A57865]/30 transition-all duration-200 font-semibold text-sm active:scale-95"
+                icon={Coffee}
+                className="w-full justify-start"
               >
-                <Coffee className="w-4 h-4" />
                 Mark Leave
-              </button>
+              </Button>
 
-              <button
+              <Button
+                variant="outline-neutral"
                 onClick={() => onMessage(staff)}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-neutral-50 text-neutral-700 rounded-xl border-2 border-neutral-200 hover:border-[#A57865]/30 transition-all duration-200 font-semibold text-sm active:scale-95"
+                icon={MessageSquare}
+                className="w-full justify-start"
               >
-                <MessageSquare className="w-4 h-4" />
                 Send Message
-              </button>
+              </Button>
 
-              <button
+              <Button
+                variant="outline-neutral"
                 onClick={() => onEdit && onEdit(staff)}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-neutral-50 text-neutral-700 rounded-xl border-2 border-neutral-200 hover:border-[#A57865]/30 transition-all duration-200 font-semibold text-sm active:scale-95"
+                icon={Edit2}
+                className="w-full justify-start"
               >
-                <Edit2 className="w-4 h-4" />
                 Edit Details
-              </button>
+              </Button>
 
-              <button
+              <Button
+                variant="secondary"
                 onClick={() => {
                   onClose();
                   navigate(`/admin/staff/${staff.id}`);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-[#4E5840] hover:bg-[#3d4633] text-white rounded-xl border border-transparent transition-all duration-200 font-semibold text-sm shadow-sm hover:shadow-md active:scale-95"
+                icon={User}
+                className="w-full justify-start"
               >
-                <User className="w-4 h-4" />
                 View Full Profile
-              </button>
+              </Button>
 
               {staff.status !== 'disabled' && (
-                <button
+                <Button
+                  variant="danger"
                   onClick={() => onDisable && onDisable(staff)}
-                  className="w-full flex items-center gap-3 px-4 py-3 bg-white hover:bg-red-50 text-red-600 rounded-xl border-2 border-red-200 hover:border-red-300 transition-all duration-200 font-semibold text-sm active:scale-95"
+                  icon={UserX}
+                  className="w-full justify-start"
                 >
-                  <UserX className="w-4 h-4" />
                   Disable Staff
-                </button>
+                </Button>
               )}
             </div>
           </div>
 
             {/* Close Button */}
-            <button
+            <Button
+              variant="ghost"
               onClick={onClose}
-              className="w-full px-4 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl font-semibold text-sm transition-all duration-200 active:scale-95"
+              className="w-full"
             >
               Close
-            </button>
+            </Button>
           </div>
         </div>
       </div>

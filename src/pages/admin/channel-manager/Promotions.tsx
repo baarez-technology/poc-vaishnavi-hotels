@@ -221,41 +221,43 @@ export default function Promotions() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <div className="px-10 py-6 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
         {/* Page Header */}
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
               Channel Promotions
             </h1>
-            <p className="text-[13px] text-neutral-500 mt-1">
-              Manage OTA-specific promotions and deals
+            <p className="text-xs sm:text-[13px] text-neutral-500 mt-0.5 sm:mt-1">
+              <span className="hidden sm:inline">Manage OTA-specific promotions and deals</span>
+              <span className="sm:hidden">Manage OTA promotions</span>
             </p>
           </div>
-          <Button variant="primary" icon={Plus} onClick={handleCreate}>
-            Create Promotion
+          <Button variant="primary" icon={Plus} onClick={handleCreate} className="text-xs sm:text-sm">
+            <span className="hidden sm:inline">Create Promotion</span>
+            <span className="sm:hidden">Create</span>
           </Button>
         </header>
 
         {/* KPI Cards */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
           {kpiCards.map((kpi, index) => {
             const colors = accentColors[kpi.accent];
             return (
-              <div key={index} className="rounded-[10px] bg-white p-6">
+              <div key={index} className="rounded-[10px] bg-white p-4 sm:p-6">
                 {/* Header with Icon */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colors.icon}`}>
-                    <kpi.icon className="w-4 h-4" />
+                <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                  <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center ${colors.icon}`}>
+                    <kpi.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+                  <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 truncate">
                     {kpi.title}
                   </p>
                 </div>
 
                 {/* Value */}
-                <p className="text-[28px] font-semibold tracking-tight text-neutral-900">
+                <p className="text-xl sm:text-[28px] font-semibold tracking-tight text-neutral-900">
                   {kpi.value}
                 </p>
               </div>
@@ -264,12 +266,12 @@ export default function Promotions() {
         </section>
 
         {/* Filter Tabs */}
-        <section className="flex items-center gap-1 p-1.5 bg-white rounded-lg w-fit">
+        <section className="flex items-center gap-1 p-1 sm:p-1.5 bg-white rounded-lg w-full sm:w-fit overflow-x-auto">
           {filterTabs.map(tab => (
             <button
               key={tab.key}
               onClick={() => setFilterStatus(tab.key)}
-              className={`px-4 py-2 text-[11px] font-semibold rounded-md transition-all ${
+              className={`px-2.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-[11px] font-semibold rounded-md transition-all whitespace-nowrap flex-shrink-0 ${
                 filterStatus === tab.key
                   ? 'bg-neutral-100 text-neutral-900'
                   : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50'
@@ -281,28 +283,29 @@ export default function Promotions() {
         </section>
 
         {/* Promotion Cards */}
-        <section className="space-y-4">
+        <section className="space-y-3 sm:space-y-4">
           {filteredPromotions.length === 0 ? (
-            <div className="rounded-[10px] bg-white px-6 py-16 text-center">
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-16 h-16 rounded-lg bg-neutral-50 flex items-center justify-center">
-                  <Gift className="w-8 h-8 text-neutral-300" />
+            <div className="rounded-[10px] bg-white px-4 sm:px-6 py-8 sm:py-16 text-center">
+              <div className="flex flex-col items-center gap-3 sm:gap-4">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-neutral-50 flex items-center justify-center">
+                  <Gift className="w-6 h-6 sm:w-8 sm:h-8 text-neutral-300" />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[13px] font-medium text-neutral-600">
+                  <p className="text-xs sm:text-[13px] font-medium text-neutral-600">
                     {searchQuery || filterStatus !== 'all'
                       ? 'No promotions match your criteria'
                       : 'No promotions configured'}
                   </p>
-                  <p className="text-[11px] text-neutral-400">
+                  <p className="text-[10px] sm:text-[11px] text-neutral-400">
                     {searchQuery || filterStatus !== 'all'
                       ? 'Try adjusting your search or filter'
-                      : 'Create your first channel promotion to boost bookings'}
+                      : 'Create your first channel promotion'}
                   </p>
                 </div>
                 {!searchQuery && filterStatus === 'all' && (
-                  <Button variant="primary" icon={Plus} onClick={handleCreate} className="mt-2">
-                    Create Promotion
+                  <Button variant="primary" icon={Plus} onClick={handleCreate} className="mt-2 text-xs sm:text-sm">
+                    <span className="hidden sm:inline">Create Promotion</span>
+                    <span className="sm:hidden">Create</span>
                   </Button>
                 )}
               </div>
@@ -342,36 +345,36 @@ export default function Promotions() {
         size="sm"
         showClose={false}
       >
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {/* Warning Icon */}
-          <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center mb-4">
-            <AlertTriangle className="w-6 h-6 text-rose-600" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-rose-50 flex items-center justify-center mb-3 sm:mb-4">
+            <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600" />
           </div>
 
           {/* Title */}
-          <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+          <h3 className="text-base sm:text-lg font-semibold text-neutral-900 mb-2">
             Delete Promotion
           </h3>
 
           {/* Description */}
-          <p className="text-[13px] text-neutral-500 leading-relaxed">
+          <p className="text-xs sm:text-[13px] text-neutral-500 leading-relaxed">
             Are you sure you want to delete "{deleteConfirm.promotion?.name}"? This action cannot be undone.
           </p>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-100 bg-neutral-50/50">
+        <div className="flex items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 bg-neutral-50/50">
           <Button
             variant="ghost"
             onClick={() => setDeleteConfirm({ isOpen: false, promotion: null })}
-            className="px-5 py-2 text-[13px] font-semibold"
+            className="px-4 sm:px-5 py-2 text-xs sm:text-[13px] font-semibold"
           >
             Cancel
           </Button>
           <Button
             variant="danger"
             onClick={confirmDelete}
-            className="px-5 py-2 text-[13px] font-semibold"
+            className="px-4 sm:px-5 py-2 text-xs sm:text-[13px] font-semibold"
           >
             Delete
           </Button>

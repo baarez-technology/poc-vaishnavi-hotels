@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { otaStatusConfig } from '../../data/channel-manager/sampleOTAs';
 import { Button, IconButton } from '../ui2/Button';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function OTAConnectionCard({
   ota,
@@ -23,6 +24,7 @@ export default function OTAConnectionCard({
   isSyncing
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { formatCurrency } = useCurrency();
 
   const status = otaStatusConfig[ota.status] || otaStatusConfig.disconnected;
 
@@ -39,8 +41,6 @@ export default function OTAConnectionCard({
     if (diffHours < 24) return `${diffHours}h ago`;
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
-
-  const formatCurrency = (amount) => `$${amount.toLocaleString()}`;
 
   return (
     <div className={`rounded-[10px] bg-white overflow-hidden ${

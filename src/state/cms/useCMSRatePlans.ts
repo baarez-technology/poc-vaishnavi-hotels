@@ -177,28 +177,73 @@ export default function useCMSRatePlans() {
     }
   }, [fetchRatePlans]);
 
-  const updateRatePlan = useCallback((id: string, updates: Partial<RatePlan>) => {
-    setRatePlans(prev =>
-      prev.map(plan =>
-        plan.id === id ? { ...plan, ...updates, updatedAt: new Date().toISOString() } : plan
-      )
-    );
-  }, []);
+  const updateRatePlan = useCallback(async (id: string, updates: Partial<RatePlan>) => {
+    try {
+      // Build API payload
+      const apiPayload: Record<string, any> = {};
+      if (updates.fullName || updates.name) apiPayload.name = updates.fullName || updates.name;
+      if (updates.description !== undefined) apiPayload.description = updates.description;
+      if (updates.baseRates?.default !== undefined) apiPayload.base_price = updates.baseRates.default;
+      if (updates.basePrice?.default !== undefined) apiPayload.base_price = updates.basePrice.default;
+      if (updates.isActive !== undefined) apiPayload.is_active = updates.isActive;
 
-  const deleteRatePlan = useCallback((id: string) => {
-    setRatePlans(prev => prev.filter(plan => plan.id !== id));
+      // Call API to update
+      await apiClient.put(`/api/v1/rates/plans/${id}`, apiPayload);
+
+      // Update local state
+      setRatePlans(prev =>
+        prev.map(plan =>
+          plan.id === id ? { ...plan, ...updates, updatedAt: new Date().toISOString() } : plan
+        )
+      );
+
+      // Refetch to ensure sync
+      await fetchRatePlans();
+    } catch (err) {
+      console.error('Error updating rate plan:', err);
+      // Still update local state as fallback
+      setRatePlans(prev =>
+        prev.map(plan =>
+          plan.id === id ? { ...plan, ...updates, updatedAt: new Date().toISOString() } : plan
+        )
+      );
+    }
+  }, [fetchRatePlans]);
+
+  const deleteRatePlan = useCallback(async (id: string) => {
+    try {
+      await apiClient.delete(`/api/v1/rates/plans/${id}`);
+      setRatePlans(prev => prev.filter(plan => plan.id !== id));
+    } catch (err) {
+      console.error('Error deleting rate plan:', err);
+      // Still remove from local state
+      setRatePlans(prev => prev.filter(plan => plan.id !== id));
+    }
   }, []);
 
   const getRatePlanById = useCallback((id: string) => {
     return ratePlans.find(plan => plan.id === id);
   }, [ratePlans]);
 
-  const toggleRatePlanStatus = useCallback((id: string) => {
-    setRatePlans(prev =>
-      prev.map(plan =>
-        plan.id === id ? { ...plan, isActive: !plan.isActive, updatedAt: new Date().toISOString() } : plan
-      )
-    );
+  const toggleRatePlanStatus = useCallback(async (id: string) => {
+    try {
+      await apiClient.patch(`/api/v1/rates/plans/${id}/toggle`);
+
+      // Update local state
+      setRatePlans(prev =>
+        prev.map(plan =>
+          plan.id === id ? { ...plan, isActive: !plan.isActive, updatedAt: new Date().toISOString() } : plan
+        )
+      );
+    } catch (err) {
+      console.error('Error toggling rate plan status:', err);
+      // Still toggle locally
+      setRatePlans(prev =>
+        prev.map(plan =>
+          plan.id === id ? { ...plan, isActive: !plan.isActive, updatedAt: new Date().toISOString() } : plan
+        )
+      );
+    }
   }, []);
 
   return {

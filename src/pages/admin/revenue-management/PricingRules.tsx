@@ -79,18 +79,24 @@ const PricingRules = () => {
   const confirmDelete = async () => {
     if (!deleteConfirm.rule) return;
 
+    const ruleId = Number(deleteConfirm.rule.id);
+    if (Number.isNaN(ruleId)) {
+      showToast('Invalid rule. Please refresh and try again.', 'error');
+      setDeleteConfirm({ isOpen: false, rule: null });
+      return;
+    }
+
     setIsDeleting(true);
     try {
-      await revenueIntelligenceService.deletePricingRule(deleteConfirm.rule.id);
+      await revenueIntelligenceService.deletePricingRule(ruleId);
       showToast('Rule deleted successfully', 'success');
-      // Refresh rules
+      setDeleteConfirm({ isOpen: false, rule: null });
       await fetchRules();
     } catch (err) {
       console.error('Failed to delete rule:', err);
       showToast('Failed to delete rule', 'error');
     } finally {
       setIsDeleting(false);
-      setDeleteConfirm({ isOpen: false, rule: null });
     }
   };
 
@@ -363,13 +369,14 @@ const PricingRules = () => {
         {/* Delete Confirmation Modal */}
         <ConfirmModal
           open={deleteConfirm.isOpen}
-          onClose={() => setDeleteConfirm({ isOpen: false, rule: null })}
+          onClose={() => !isDeleting && setDeleteConfirm({ isOpen: false, rule: null })}
           onConfirm={confirmDelete}
           title="Delete Rule"
           description={`Are you sure you want to delete "${deleteConfirm.rule?.name}"? This action cannot be undone.`}
           variant="danger"
           confirmText={isDeleting ? 'Deleting...' : 'Delete'}
           cancelText="Cancel"
+          loading={isDeleting}
         />
       </main>
     </div>

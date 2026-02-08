@@ -233,6 +233,11 @@ const RuleCard = ({
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // When parent provides onDelete, let parent handle confirm modal and API (single flow, no double modal)
+    if (onDelete) {
+      onDelete(rule);
+      return;
+    }
     setShowDeleteConfirm(true);
   };
 
@@ -240,7 +245,7 @@ const RuleCard = ({
     setIsDeleting(true);
 
     try {
-      await revenueIntelligenceService.deletePricingRule(rule.id);
+      await revenueIntelligenceService.deletePricingRule(Number(rule.id));
 
       success(`Rule "${rule.name}" has been deleted`, { duration: 3000 });
 

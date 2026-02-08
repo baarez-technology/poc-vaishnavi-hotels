@@ -46,7 +46,7 @@ import {
   sourceConfig
 } from '../../../data/bookingsData';
 import NewBookingDrawer from '../../../components/cbs/NewBookingDrawer';
-import { apiClient } from '../../../api/client';
+import { apiClient, clearApiCache } from '../../../api/client';
 import { useBookingsSSE } from '../../../hooks/useBookingsSSE';
 
 // ============================================
@@ -1040,9 +1040,12 @@ export default function CMSBookings() {
     setIsLoading(true);
     setApiError(null);
     try {
+      // Clear cache when refetching (SSE booking.created/modified/cancelled) so we get fresh data
+      clearApiCache('/api/v1/bookings');
       console.log('[CMS Bookings] 📡 Fetching bookings from API...');
       const response = await apiClient.get('/api/v1/bookings', {
-        params: { pageSize: 1000 }
+        params: { pageSize: 1000 },
+        noCache: true,
       });
 
       const apiBookings = response.data?.items || response.data?.data?.items || [];

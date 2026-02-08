@@ -43,11 +43,11 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
       const idStr = room.id?.toString();
       const typeIdStr = room.roomTypeId != null ? String(room.roomTypeId) : null;
       return (
+        (room.roomTypeId != null && (m.pmsRoomTypeId === room.roomTypeId || m.pmsRoomTypeId?.toString() === typeIdStr)) ||
         m.pmsRoomType === room.name ||
         m.pmsRoomType === idStr ||
         m.pmsRoomTypeId === room.id ||
-        m.pmsRoomTypeId?.toString() === idStr ||
-        (typeIdStr != null && (m.pmsRoomTypeId === room.roomTypeId || m.pmsRoomTypeId?.toString() === typeIdStr))
+        m.pmsRoomTypeId?.toString() === idStr
       );
     });
     if (!roomMapping) return null;
@@ -55,8 +55,9 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
     const otaMapping = roomMapping.otaMappings?.find(om => om.otaCode === otaCode);
     if (!otaMapping) return null;
 
+    const mappingId = otaMapping.id != null ? String(otaMapping.id) : `${roomMapping.id}-${otaCode}`;
     return {
-      id: `${roomMapping.id}-${otaCode}`,
+      id: mappingId,
       pmsRoomType: room.id,
       otaCode: otaCode,
       otaRoomType: otaMapping.otaRoomType,
@@ -88,15 +89,18 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
     }
     
     try {
-      // Backend accepts numeric id or slug; prefer numeric when available
+      // Backend accepts numeric pmsRoomTypeId (room_types.id) or slug (string); it resolves slug to id.
       const rawId = mappingData.pmsRoomTypeId ?? mappingData.pmsRoomType;
       const isNumeric = typeof rawId === 'number' && !Number.isNaN(rawId) ||
-        (typeof rawId === 'string' && /^\d+$/.test(rawId));
+        (typeof rawId === 'string' && /^\d+$/.test(String(rawId).trim()));
       const pmsRoomTypeId = isNumeric
         ? (typeof rawId === 'number' ? rawId : parseInt(String(rawId), 10))
-        : String(rawId ?? '');
-      if (pmsRoomTypeId === '' || (typeof pmsRoomTypeId === 'number' && Number.isNaN(pmsRoomTypeId))) {
-        throw new Error('Room type is missing. Please refresh the page and try again.');
+        : (typeof rawId === 'string' && rawId.trim() ? rawId.trim() : null);
+      if (pmsRoomTypeId == null || (typeof pmsRoomTypeId === 'number' && Number.isNaN(pmsRoomTypeId))) {
+        throw new Error(
+          'Room type is missing. Please refresh the page and try again. ' +
+          'If the problem persists, ensure room types are loaded.'
+        );
       }
       const pmsRoomTypeName = mappingData.pmsRoomName ?? mappingData.pmsRoomType ?? '';
       if (!pmsRoomTypeName) {

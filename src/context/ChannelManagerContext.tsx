@@ -4,7 +4,7 @@
  * Now fully integrated with backend API
  */
 
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { channelManagerService } from '../api/services/channel-manager.service';
 import { roomTypesService } from '../api/services/roomTypes.service';
 import type {
@@ -23,6 +23,26 @@ const ChannelManagerContext = createContext<any>(null);
 
 const STORAGE_KEY = 'channel_manager_data';
 const SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+/** Dummy Channel Manager - always shown in OTA section regardless of backend */
+const DUMMY_OTA: OTAConnection = {
+  id: 'ota-dummy',
+  name: 'Dummy Channel Manager',
+  code: 'DUMMY',
+  status: 'connected',
+  lastSync: new Date().toISOString(),
+  nextSync: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+  credentials: { username: '', apiKey: '', hotelId: '' },
+  syncSettings: {
+    autoSync: true,
+    syncInterval: 5,
+    syncRates: true,
+    syncAvailability: true,
+    syncRestrictions: true,
+  },
+  stats: { totalBookings: 0, revenue: 0, avgRating: 0, commission: 0 },
+  color: '#7B68EE',
+};
 
 function loadFromStorage() {
   try {
@@ -45,11 +65,16 @@ function saveToStorage(data) {
 }
 
 export function ChannelManagerProvider({ children }) {
-  const { success, error: showError, info } = useToast();
+  const toast = useToast() as { success: (msg: string, opts?: object) => void; error: (msg: string, opts?: object) => void };
+  const { success, error: showError } = toast;
   const stored = loadFromStorage();
 
-  // State
-  const [otas, setOTAs] = useState<OTAConnection[]>(stored?.otas || []);
+  // State - ensure Dummy Channel Manager is in list when restoring from storage
+  const [otas, setOTAs] = useState<OTAConnection[]>(() => {
+    const list = stored?.otas || [];
+    const hasDummy = list.some((o: OTAConnection) => o.code === 'DUMMY' || o.name === 'Dummy Channel Manager');
+    return hasDummy ? list : [DUMMY_OTA, ...list];
+  });
   const [roomMappings, setRoomMappings] = useState<RoomMapping[]>(stored?.roomMappings || []);
   const [restrictions, setRestrictions] = useState<Restriction[]>(stored?.restrictions || []);
   const [promotions, setPromotions] = useState<ChannelPromotion[]>(stored?.promotions || []);
@@ -65,16 +90,18 @@ export function ChannelManagerProvider({ children }) {
   const [syncingOTAs, setSyncingOTAs] = useState<string[]>([]);
   const [lastGlobalSync, setLastGlobalSync] = useState<string>(new Date().toISOString());
 
-  const syncIntervalRef = useRef(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ============ DATA FETCHING ============
 
   const fetchOTAs = useCallback(async () => {
     try {
       const response = await channelManagerService.getOTAs();
-      setOTAs(response.items || []);
-      return response.items || [];
+      const items = response.items || [];
+      const hasDummy = items.some((o: OTAConnection) => o.code === 'DUMMY' || o.name === 'Dummy Channel Manager');
+      const list = hasDummy ? items : [DUMMY_OTA, ...items];
+      setOTAs(list);
+      return list;
     } catch (err: any) {
       console.error('Error fetching OTAs:', err);
       showError(err.response?.data?.error || 'Failed to fetch OTA connections');
@@ -186,6 +213,7 @@ export function ChannelManagerProvider({ children }) {
       // Transform API data to match expected format
       const transformed = data.map((rt: any) => ({
         id: rt.id || rt.slug,
+        roomTypeId: rt.roomTypeId ?? rt.room_type_id ?? (typeof rt.id === 'number' ? rt.id : undefined),
         slug: rt.slug,
         name: rt.name,
         baseOccupancy: rt.maxGuests || 2,
@@ -419,7 +447,7 @@ export function ChannelManagerProvider({ children }) {
     }
   }, [fetchRoomMappings, success, showError]);
 
-  const autoSuggestMapping = useCallback((pmsRoomType: string, otaCode: string) => {
+  const autoSuggestMapping = useCallback((pmsRoomType: string, _otaCode: string) => {
     // Simple suggestion logic - can be enhanced with AI
     return `${pmsRoomType} Room`;
   }, []);
@@ -458,7 +486,6 @@ export function ChannelManagerProvider({ children }) {
 
   const updateAvailabilityForOTA = useCallback(async (date: string, roomType: string, availability: number) => {
     try {
-      const currentEntry = rateCalendar[date]?.[roomType];
       const updated = await channelManagerService.updateRate(date, roomType, {
         availability,
       });

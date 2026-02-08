@@ -1100,11 +1100,13 @@ export const revenueIntelligenceService = {
   // ==================== PRICING RULES ====================
 
   /**
-   * Get all pricing rules
+   * Get all pricing rules. Normalizes backend shape (is_active, rule_name) to frontend shape (isActive, name).
    */
   async getPricingRules(): Promise<PricingRule[]> {
-    const response = await apiClient.get<{ rules: PricingRule[]; total: number; activeCount: number }>(`${BASE_URL}/pricing-rules`);
-    return response.data.rules || [];
+    const response = await apiClient.get<{ rules: Record<string, unknown>[]; total?: number; active_count?: number; activeCount?: number }>(`${BASE_URL}/pricing-rules`);
+    const raw = response.data?.rules ?? response.data?.data?.rules ?? [];
+    const list = Array.isArray(raw) ? raw : [];
+    return list.map((r: Record<string, unknown>) => fromBackendRule(r));
   },
 
   /**
@@ -1131,18 +1133,23 @@ export const revenueIntelligenceService = {
   /**
    * Delete a pricing rule
    */
-  async deletePricingRule(id: number): Promise<void> {
-    await apiClient.delete(`${BASE_URL}/pricing-rules/${id}`);
+  async deletePricingRule(id: number | string): Promise<void> {
+    const ruleId = typeof id === 'number' ? id : parseInt(String(id), 10);
+    if (Number.isNaN(ruleId)) throw new Error('Invalid rule id');
+    await apiClient.delete(`${BASE_URL}/pricing-rules/${ruleId}`);
   },
 
   /**
    * Toggle a pricing rule active/inactive. Returns the new state so UI can update immediately.
    */
   async togglePricingRule(id: number): Promise<{ is_active: boolean }> {
-    const response = await apiClient.patch<{ is_active: boolean }>(
+    const response = await apiClient.patch<{ is_active?: boolean; isActive?: boolean; data?: { is_active?: boolean } }>(
       `${BASE_URL}/pricing-rules/${id}/toggle`
     );
-    return response.data ?? { is_active: false };
+    const body = response.data ?? {};
+    const data = (body as any).data ?? body;
+    const is_active = data.is_active ?? data.isActive ?? (body as any).is_active ?? (body as any).isActive ?? false;
+    return { is_active: Boolean(is_active) };
   },
 
   /**

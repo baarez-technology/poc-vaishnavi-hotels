@@ -234,9 +234,9 @@ const RuleEditorDrawer = ({ isOpen, onClose, rule, onSave }: RuleEditorDrawerPro
         description: rule.description || '',
         priority: rule.priority,
         isActive: rule.isActive,
-        roomTypes: rule.roomTypes,
-        conditions: rule.conditions.map(c => ({ type: c.type, value: c.value })),
-        actions: rule.actions.map(a => ({ type: a.type, value: a.value })),
+        roomTypes: Array.isArray(rule.roomTypes) ? rule.roomTypes : ['ALL'],
+        conditions: (rule.conditions || []).map(c => ({ type: c.type, value: c.value })),
+        actions: (rule.actions || []).map(a => ({ type: a.type, value: a.value })),
       });
     } else {
       setFormData({
@@ -305,7 +305,8 @@ const RuleEditorDrawer = ({ isOpen, onClose, rule, onSave }: RuleEditorDrawerPro
         return { ...prev, roomTypes: ['ALL'] };
       }
 
-      let newRoomTypes = prev.roomTypes.filter(rt => rt !== 'ALL');
+      const current = prev.roomTypes ?? [];
+      let newRoomTypes = current.filter(rt => rt !== 'ALL');
 
       if (newRoomTypes.includes(roomTypeId)) {
         newRoomTypes = newRoomTypes.filter(rt => rt !== roomTypeId);
@@ -343,7 +344,7 @@ const RuleEditorDrawer = ({ isOpen, onClose, rule, onSave }: RuleEditorDrawerPro
           description: formData.description,
           priority: formData.priority,
           isActive: formData.isActive,
-          roomTypes: formData.roomTypes,
+          roomTypes: formData.roomTypes ?? ['ALL'],
           conditions: formData.conditions,
           actions: formData.actions,
         };
@@ -355,7 +356,7 @@ const RuleEditorDrawer = ({ isOpen, onClose, rule, onSave }: RuleEditorDrawerPro
           description: formData.description,
           priority: formData.priority,
           isActive: formData.isActive,
-          roomTypes: formData.roomTypes,
+          roomTypes: formData.roomTypes ?? ['ALL'],
           conditions: formData.conditions,
           actions: formData.actions,
         };
@@ -694,7 +695,7 @@ const RuleEditorDrawer = ({ isOpen, onClose, rule, onSave }: RuleEditorDrawerPro
                 type="button"
                 onClick={() => handleRoomTypeToggle(rt.id)}
                 className={`px-3 py-2 text-[12px] font-medium rounded-lg transition-all ${
-                  formData.roomTypes.includes(rt.id)
+                  (formData.roomTypes ?? []).includes(rt.id)
                     ? 'bg-terra-500 text-white'
                     : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
                 }`}

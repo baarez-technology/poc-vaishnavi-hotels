@@ -7,6 +7,7 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useCBS } from '../../../context/CBSContext';
+import { useBookingsSSE } from '../../../hooks/useBookingsSSE';
 import { useToast } from '../../../contexts/ToastContext';
 import { useTheme } from '../../../contexts/ThemeContext';
 import BookingList from '../../../components/cbs/BookingList';
@@ -34,6 +35,7 @@ export default function CBSBookings() {
   const { isDark } = useTheme();
   const {
     bookings,
+    refreshBookings,
     createBooking,
     updateBooking,
     cancelBooking,
@@ -64,6 +66,9 @@ export default function CBSBookings() {
 
   const [loadingStates, setLoadingStates] = useState({});
   const lastActionRef = useRef(null);
+
+  // SSE Integration - refresh bookings when real-time events arrive
+  useBookingsSSE({ refetchBookings: refreshBookings });
 
   const today = new Date().toISOString().split('T')[0];
 

@@ -184,10 +184,15 @@ export const channelManagerService = {
 
   /**
    * Get all OTA connections
+   * Normalizes response shape: backend may return { items, total }, { data: [...] }, or array
    */
   async getOTAs(): Promise<{ items: OTAConnection[]; total: number }> {
     const response = await apiClient.get(`${BASE_URL}/otas`);
-    return response.data?.data || response.data || { items: [], total: 0 };
+    const raw = response.data?.data ?? response.data;
+    if (!raw) return { items: [], total: 0 };
+    const items = Array.isArray(raw) ? raw : (raw.items ?? []);
+    const total = typeof raw.total === 'number' ? raw.total : items.length;
+    return { items: Array.isArray(items) ? items : [], total };
   },
 
   /**
@@ -304,11 +309,11 @@ export const channelManagerService = {
    * Create new room mapping
    */
   async createRoomMapping(data: {
-    pmsRoomTypeId: string;
+    pmsRoomTypeId: number | string;
     pmsRoomType: string;
     otaCode: string;
     otaRoomType: string;
-    otaRoomId: string;
+    otaRoomId?: string;
     maxGuests?: number;
     defaultRatePlan?: string;
   }): Promise<RoomMapping> {

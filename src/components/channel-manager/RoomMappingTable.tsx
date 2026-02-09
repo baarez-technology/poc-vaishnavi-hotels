@@ -132,7 +132,7 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
     }
     
     try {
-      // Backend accepts only numeric pmsRoomTypeId (integer). Use the resolved numericId from above.
+      // Backend accepts only numeric pmsRoomTypeId; use the validated numericId from above.
       const pmsRoomTypeName = mappingData.pmsRoomName ?? mappingData.pmsRoomType ?? '';
       if (!pmsRoomTypeName) {
         throw new Error('Room type name is missing. Please refresh the page and try again.');

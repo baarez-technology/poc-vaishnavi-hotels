@@ -250,6 +250,38 @@ export interface UpdatePricingRuleRequest {
   actions?: PricingRuleAction[];
 }
 
+/** Backend API expects snake_case and specific condition/action schema */
+interface BackendPricingRuleCondition {
+  type: string;
+  operator: string;
+  value: unknown;
+}
+
+interface BackendPricingRuleAction {
+  type: string;
+  value: number;
+}
+
+interface BackendPricingRuleCreate {
+  rule_name: string;
+  description?: string;
+  room_type_id: number | null;
+  priority: number;
+  is_active: boolean;
+  conditions: BackendPricingRuleCondition[];
+  actions: BackendPricingRuleAction[];
+}
+
+interface BackendPricingRuleUpdate {
+  rule_name?: string;
+  description?: string;
+  room_type_id?: number | null;
+  priority?: number;
+  is_active?: boolean;
+  conditions?: BackendPricingRuleCondition[];
+  actions?: BackendPricingRuleAction[];
+}
+
 export interface ExecuteRulesResponse {
   executedAt: string;
   rulesEvaluated: number;
@@ -1062,13 +1094,13 @@ export const revenueIntelligenceService = {
   // ==================== PRICING RULES ====================
 
   /**
-   * Get all pricing rules
+   * Get all pricing rules. Normalizes backend shape (is_active, rule_name) to frontend shape (isActive, name).
    */
   async getPricingRules(): Promise<PricingRule[]> {
-    const response = await apiClient.get<{ rules: any[]; total: number; activeCount: number }>(`${BASE_URL}/pricing-rules`);
-    const rules = response.data.rules || [];
-    // Transform API response: map rule_name to name, and handle other snake_case fields
-    return rules.map((rule: any) => transformRuleResponse(rule));
+    const response = await apiClient.get<{ rules: Record<string, unknown>[]; total?: number; active_count?: number; activeCount?: number }>(`${BASE_URL}/pricing-rules`);
+    const raw = response.data?.rules ?? response.data?.data?.rules ?? [];
+    const list = Array.isArray(raw) ? raw : [];
+    return list.map((r: Record<string, unknown>) => fromBackendRule(r));
   },
 
   /**
@@ -1076,19 +1108,9 @@ export const revenueIntelligenceService = {
    * Backend expects: rule_name (not name), snake_case fields, and specific condition/action types.
    */
   async createPricingRule(rule: CreatePricingRuleRequest): Promise<PricingRule> {
-    const conditions = rule.conditions.map(transformConditionToBackend);
-    const actions = rule.actions.map(transformActionToBackend).filter((a): a is NonNullable<typeof a> => a != null);
-    const body = {
-      rule_name: rule.name, // Backend expects rule_name, not name
-      ...(rule.description != null && { description: rule.description }),
-      priority: rule.priority,
-      is_active: rule.isActive,
-      room_types: rule.roomTypes,
-      conditions,
-      actions,
-    };
-    const response = await apiClient.post<any>(`${BASE_URL}/pricing-rules`, body);
-    return transformRuleResponse(response.data);
+    const payload = toBackendCreatePayload(rule);
+    const response = await apiClient.post<Record<string, unknown>>(`${BASE_URL}/pricing-rules`, payload);
+    return fromBackendRule(response.data ?? {});
   },
 
   /**
@@ -1096,35 +1118,34 @@ export const revenueIntelligenceService = {
    * Backend expects: rule_name (not name), snake_case fields, and specific condition/action types.
    */
   async updatePricingRule(id: number, rule: UpdatePricingRuleRequest): Promise<PricingRule> {
-    const body: any = {};
-    if (rule.name != null) body.rule_name = rule.name; // Backend expects rule_name, not name
-    if (rule.description != null) body.description = rule.description;
-    if (rule.priority != null) body.priority = rule.priority;
-    if (rule.isActive != null) body.is_active = rule.isActive;
-    if (rule.roomTypes != null) body.room_types = rule.roomTypes;
-    if (rule.conditions != null) body.conditions = rule.conditions.map(transformConditionToBackend);
-    if (rule.actions != null) {
-      body.actions = rule.actions
-        .map(transformActionToBackend)
-        .filter((a): a is NonNullable<typeof a> => a != null);
-    }
-    const response = await apiClient.put<any>(`${BASE_URL}/pricing-rules/${id}`, body);
-    return transformRuleResponse(response.data);
+    const payload = toBackendUpdatePayload(rule);
+    const response = await apiClient.put<Record<string, unknown>>(
+      `${BASE_URL}/pricing-rules/${id}`,
+      payload
+    );
+    return fromBackendRule(response.data ?? {});
   },
 
   /**
    * Delete a pricing rule
    */
-  async deletePricingRule(id: number): Promise<{ rule_name?: string; name?: string }> {
-    const response = await apiClient.delete<{ rule_name?: string; name?: string }>(`${BASE_URL}/pricing-rules/${id}`);
-    return response.data || {};
+  async deletePricingRule(id: number | string): Promise<void> {
+    const ruleId = typeof id === 'number' ? id : parseInt(String(id), 10);
+    if (Number.isNaN(ruleId)) throw new Error('Invalid rule id');
+    await apiClient.delete(`${BASE_URL}/pricing-rules/${ruleId}`);
   },
 
   /**
-   * Toggle a pricing rule active/inactive
+   * Toggle a pricing rule active/inactive. Returns the new state so UI can update immediately.
    */
-  async togglePricingRule(id: number): Promise<void> {
-    await apiClient.post(`${BASE_URL}/pricing-rules/${id}/toggle`);
+  async togglePricingRule(id: number): Promise<{ is_active: boolean }> {
+    const response = await apiClient.patch<{ is_active?: boolean; isActive?: boolean; data?: { is_active?: boolean } }>(
+      `${BASE_URL}/pricing-rules/${id}/toggle`
+    );
+    const body = response.data ?? {};
+    const data = (body as any).data ?? body;
+    const is_active = data.is_active ?? data.isActive ?? (body as any).is_active ?? (body as any).isActive ?? false;
+    return { is_active: Boolean(is_active) };
   },
 
   /**

@@ -48,6 +48,7 @@ export interface PreCheckInData {
   phone: string;
   address?: string;
   city?: string;
+  state?: string;
   zip_code?: string;
   country?: string;
   floor_preference?: string;
@@ -75,6 +76,7 @@ export interface PreCheckInResponse {
   phone: string;
   address?: string;
   city?: string;
+  state?: string;
   zip_code?: string;
   country?: string;
   floor_preference?: string;

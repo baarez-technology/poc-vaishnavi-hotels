@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Save, Tag, Plus } from 'lucide-react';
+import { X, Save, Tag, Plus, Globe } from 'lucide-react';
 import {
-  COUNTRIES,
   GUEST_TAGS,
   GUEST_STATUS_CONFIG,
   EMOTION_CONFIG,
@@ -10,6 +9,8 @@ import {
   LOYALTY_TIERS,
 } from '@/utils/admin/guests';
 import { Button } from '../../ui2/Button';
+import { SearchableSelect } from '../../ui2/SearchableSelect';
+import { Country } from 'country-state-city';
 
 export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSaving }) {
   const [formData, setFormData] = useState({
@@ -139,6 +140,15 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
     });
   };
 
+  const countryOptions = useMemo(
+    () =>
+      Country.getAllCountries().map((c) => ({
+        label: c.name,
+        value: c.name,
+      })),
+    []
+  );
+
   const filteredTags = GUEST_TAGS.filter(
     (tag) =>
       !formData.tags.includes(tag) &&
@@ -257,18 +267,15 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Country
                   </label>
-                  <select
-                    name="country"
+                  <SearchableSelect
+                    options={countryOptions}
                     value={formData.country}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl hover:border-neutral-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:ring-offset-2 focus:bg-white transition-all duration-200 cursor-pointer"
-                  >
-                    {COUNTRIES.map((country) => (
-                      <option key={country} value={country}>
-                        {country}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) =>
+                      setFormData((prev) => ({ ...prev, country: val }))
+                    }
+                    placeholder="Select country"
+                    icon={Globe}
+                  />
                 </div>
 
                 <div>

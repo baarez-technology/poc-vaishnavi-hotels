@@ -211,6 +211,7 @@ export const otaStatusConfig = {
 };
 
 export const availableOTAs = [
+  { name: 'Dummy Channel Manager', code: 'DUMMY', color: '#7B68EE' },
   { name: 'Booking.com', code: 'BOOKING', color: '#003580' },
   { name: 'Expedia', code: 'EXPEDIA', color: '#FFD700' },
   { name: 'Agoda', code: 'AGODA', color: '#E51937' },

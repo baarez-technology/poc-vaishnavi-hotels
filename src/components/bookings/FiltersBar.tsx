@@ -19,13 +19,12 @@ function FilterSelect({ value, onChange, options, placeholder }) {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`h-9 px-2.5 sm:px-3.5 rounded-lg text-xs sm:text-[13px] bg-white border transition-all duration-150 flex items-center gap-1.5 sm:gap-2 focus:outline-none w-full sm:min-w-[140px] ${
-          isOpen
+        className={`h-9 px-2.5 sm:px-3.5 rounded-lg text-xs sm:text-[13px] bg-white border transition-all duration-150 flex items-center gap-1.5 sm:gap-2 focus:outline-none w-full sm:min-w-[140px] ${isOpen
             ? 'border-terra-400 ring-2 ring-terra-500/10'
             : value !== 'all'
-            ? 'border-terra-300 bg-terra-50'
-            : 'border-neutral-200 hover:border-neutral-300'
-        }`}
+              ? 'border-terra-300 bg-terra-50'
+              : 'border-neutral-200 hover:border-neutral-300'
+          }`}
       >
         <span className={value !== 'all' ? 'text-terra-700 font-medium' : 'text-neutral-500'}>
           {displayLabel}
@@ -47,9 +46,8 @@ function FilterSelect({ value, onChange, options, placeholder }) {
                   onChange(option.value);
                   setIsOpen(false);
                 }}
-                className={`w-full px-3.5 py-2.5 text-[13px] text-left hover:bg-neutral-50 transition-colors flex items-center justify-between ${
-                  value === option.value ? 'bg-terra-50 text-terra-700' : 'text-neutral-700'
-                }`}
+                className={`w-full px-3.5 py-2.5 text-[13px] text-left hover:bg-neutral-50 transition-colors flex items-center justify-between ${value === option.value ? 'bg-terra-50 text-terra-700' : 'text-neutral-700'
+                  }`}
               >
                 {option.label}
                 {value === option.value && (
@@ -116,13 +114,12 @@ function DateRangeFilter({ dateFrom, dateTo, onDateFromChange, onDateToChange })
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`h-9 px-2.5 sm:px-3.5 rounded-lg text-xs sm:text-[13px] bg-white border transition-all duration-150 flex items-center gap-1.5 sm:gap-2 focus:outline-none w-full sm:w-auto ${
-          isOpen
+        className={`h-9 px-2.5 sm:px-3.5 rounded-lg text-xs sm:text-[13px] bg-white border transition-all duration-150 flex items-center gap-1.5 sm:gap-2 focus:outline-none w-full sm:w-auto ${isOpen
             ? 'border-terra-400 ring-2 ring-terra-500/10'
             : hasValue
-            ? 'border-terra-300 bg-terra-50'
-            : 'border-neutral-200 hover:border-neutral-300'
-        }`}
+              ? 'border-terra-300 bg-terra-50'
+              : 'border-neutral-200 hover:border-neutral-300'
+          }`}
       >
         <Calendar className={`w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 ${hasValue ? 'text-terra-500' : 'text-neutral-400'}`} />
         <span className={`truncate ${hasValue ? 'text-terra-700 font-medium' : 'text-neutral-500'}`}>
@@ -148,83 +145,83 @@ function DateRangeFilter({ dateFrom, dateTo, onDateFromChange, onDateToChange })
         <div
           className="absolute right-0 z-50 mt-1 bg-white rounded-xl border border-neutral-200 shadow-lg overflow-hidden w-[320px]"
         >
-            <div className="p-4 space-y-4">
-              <div className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
-                Check-in Date Range
+          <div className="p-4 space-y-4">
+            <div className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+              Check-in Date Range
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="block text-[12px] font-medium text-neutral-600">From</label>
+                <DatePicker
+                  value={dateFrom || ''}
+                  onChange={onDateFromChange}
+                  placeholder="Select start date"
+                  className="w-full"
+                />
               </div>
 
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <label className="block text-[12px] font-medium text-neutral-600">From</label>
-                  <DatePicker
-                    value={dateFrom || ''}
-                    onChange={onDateFromChange}
-                    placeholder="Select start date"
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-[12px] font-medium text-neutral-600">To</label>
-                  <DatePicker
-                    value={dateTo || ''}
-                    onChange={onDateToChange}
-                    placeholder="Select end date"
-                    minDate={dateFrom || undefined}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-
-              {/* Quick presets */}
-              <div className="pt-3 border-t border-neutral-100">
-                <div className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
-                  Quick Select
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { label: 'Today', days: 0 },
-                    { label: 'This Week', days: 7 },
-                    { label: 'This Month', days: 30 },
-                  ].map((preset) => (
-                    <button
-                      key={preset.label}
-                      type="button"
-                      onClick={() => {
-                        const today = new Date();
-                        const from = today.toISOString().split('T')[0];
-                        const to = new Date(today.getTime() + preset.days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                        onDateFromChange(from);
-                        onDateToChange(to);
-                      }}
-                      className="px-2.5 py-1 text-[11px] font-medium text-neutral-600 bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors"
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
+              <div className="space-y-1.5">
+                <label className="block text-[12px] font-medium text-neutral-600">To</label>
+                <DatePicker
+                  value={dateTo || ''}
+                  onChange={onDateToChange}
+                  placeholder="Select end date"
+                  minDate={dateFrom || undefined}
+                  className="w-full"
+                />
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-neutral-100 bg-neutral-50/50">
-              <button
-                type="button"
-                onClick={() => {
-                  onDateFromChange('');
-                  onDateToChange('');
-                }}
-                className="px-3 py-1.5 text-[12px] font-medium text-neutral-600 hover:text-neutral-800 transition-colors"
-              >
-                Clear
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="px-3 py-1.5 text-[12px] font-medium text-white bg-terra-500 hover:bg-terra-600 rounded-lg transition-colors"
-              >
-                Done
-              </button>
+            {/* Quick presets */}
+            <div className="pt-3 border-t border-neutral-100">
+              <div className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                Quick Select
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: 'Today', days: 0 },
+                  { label: 'This Week', days: 7 },
+                  { label: 'This Month', days: 30 },
+                ].map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => {
+                      const today = new Date();
+                      const from = today.toISOString().split('T')[0];
+                      const to = new Date(today.getTime() + preset.days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                      onDateFromChange(from);
+                      onDateToChange(to);
+                    }}
+                    className="px-2.5 py-1 text-[11px] font-medium text-neutral-600 bg-neutral-100 hover:bg-neutral-200 rounded-md transition-colors"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
             </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-neutral-100 bg-neutral-50/50">
+            <button
+              type="button"
+              onClick={() => {
+                onDateFromChange('');
+                onDateToChange('');
+              }}
+              className="px-3 py-1.5 text-[12px] font-medium text-neutral-600 hover:text-neutral-800 transition-colors"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="px-3 py-1.5 text-[12px] font-medium text-white bg-terra-500 hover:bg-terra-600 rounded-lg transition-colors"
+            >
+              Done
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -245,7 +242,6 @@ export default function FiltersBar({ filters, onFilterChange, onClearFilters }) 
     { value: 'all', label: 'All Sources' },
     { value: 'Website', label: 'Website' },
     { value: 'Dummy Channel Manager', label: 'Dummy Channel Manager' },
-    { value: 'CRS', label: 'CRS' },
     { value: 'Booking.com', label: 'Booking.com' },
     { value: 'Expedia', label: 'Expedia' },
     { value: 'Walk-in', label: 'Walk-in' },

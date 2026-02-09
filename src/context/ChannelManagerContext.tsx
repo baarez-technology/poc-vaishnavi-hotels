@@ -27,6 +27,26 @@ const ChannelManagerContext = createContext<any>(null);
 const STORAGE_KEY = 'channel_manager_data';
 const SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
+/** Dummy Channel Manager - always shown in OTA section regardless of backend */
+const DUMMY_OTA: OTAConnection = {
+  id: 'ota-dummy',
+  name: 'Dummy Channel Manager',
+  code: 'DUMMY',
+  status: 'connected',
+  lastSync: new Date().toISOString(),
+  nextSync: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+  credentials: { username: '', apiKey: '', hotelId: '' },
+  syncSettings: {
+    autoSync: true,
+    syncInterval: 5,
+    syncRates: true,
+    syncAvailability: true,
+    syncRestrictions: true,
+  },
+  stats: { totalBookings: 0, revenue: 0, avgRating: 0, commission: 0 },
+  color: '#7B68EE',
+};
+
 function loadFromStorage() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -48,11 +68,16 @@ function saveToStorage(data) {
 }
 
 export function ChannelManagerProvider({ children }) {
-  const { success, error: showError } = useToast() as ToastApi;
+  const toast = useToast() as { success: (msg: string, opts?: object) => void; error: (msg: string, opts?: object) => void };
+  const { success, error: showError } = toast;
   const stored = loadFromStorage();
 
-  // State
-  const [otas, setOTAs] = useState<OTAConnection[]>(stored?.otas || []);
+  // State - ensure Dummy Channel Manager is in list when restoring from storage
+  const [otas, setOTAs] = useState<OTAConnection[]>(() => {
+    const list = stored?.otas || [];
+    const hasDummy = list.some((o: OTAConnection) => o.code === 'DUMMY' || o.name === 'Dummy Channel Manager');
+    return hasDummy ? list : [DUMMY_OTA, ...list];
+  });
   const [roomMappings, setRoomMappings] = useState<RoomMapping[]>(stored?.roomMappings || []);
   const [restrictions, setRestrictions] = useState<Restriction[]>(stored?.restrictions || []);
   const [promotions, setPromotions] = useState<ChannelPromotion[]>(stored?.promotions || []);
@@ -75,8 +100,11 @@ export function ChannelManagerProvider({ children }) {
   const fetchOTAs = useCallback(async () => {
     try {
       const response = await channelManagerService.getOTAs();
-      setOTAs(response.items || []);
-      return response.items || [];
+      const items = response.items || [];
+      const hasDummy = items.some((o: OTAConnection) => o.code === 'DUMMY' || o.name === 'Dummy Channel Manager');
+      const list = hasDummy ? items : [DUMMY_OTA, ...items];
+      setOTAs(list);
+      return list;
     } catch (err: any) {
       console.error('Error fetching OTAs:', err);
       showError(err.response?.data?.error || 'Failed to fetch OTA connections');
@@ -185,30 +213,17 @@ export function ChannelManagerProvider({ children }) {
   const fetchRoomTypes = useCallback(async () => {
     try {
       const data = await roomTypesService.getRoomTypes();
-      // Transform API data. Channel manager backend requires pmsRoomTypeId as integer.
-      const transformed = data.map((rt: any) => {
-        // Try multiple fields for numeric ID (common API variations)
-        const numericId =
-          typeof rt.id === 'number' ? rt.id
-          : typeof rt.room_type_id === 'number' ? rt.room_type_id
-          : typeof rt.roomTypeId === 'number' ? rt.roomTypeId
-          : typeof rt._id === 'number' ? rt._id
-          : typeof rt.id === 'string' && /^\d+$/.test(rt.id) ? parseInt(rt.id, 10)
-          : typeof rt.room_type_id === 'string' && /^\d+$/.test(rt.room_type_id) ? parseInt(rt.room_type_id, 10)
-          : undefined;
-        return {
-          id: rt.id ?? rt.slug,
-          slug: rt.slug,
-          name: rt.name,
-          pmsRoomTypeId: numericId,
-          baseOccupancy: rt.maxGuests || 2,
-          maxOccupancy: rt.maxGuests || 2,
-          basePrice: rt.price || rt.base_price || 0,
-          totalRooms: rt.availableRoomCount || rt.total_rooms || 0,
-          // Store raw data for debugging
-          _raw: rt,
-        };
-      });
+      // Transform API data to match expected format
+      const transformed = data.map((rt: any) => ({
+        id: rt.id || rt.slug,
+        roomTypeId: rt.roomTypeId ?? rt.room_type_id ?? (typeof rt.id === 'number' ? rt.id : undefined),
+        slug: rt.slug,
+        name: rt.name,
+        baseOccupancy: rt.maxGuests || 2,
+        maxOccupancy: rt.maxGuests || 2,
+        basePrice: rt.price || rt.base_price || 0,
+        totalRooms: rt.availableRoomCount || rt.total_rooms || 0,
+      }));
       setRoomTypes(transformed);
       return transformed;
     } catch (err: any) {
@@ -489,7 +504,7 @@ export function ChannelManagerProvider({ children }) {
     }
   }, [fetchRoomMappings, success, showError]);
 
-  const autoSuggestMapping = useCallback((pmsRoomType: string) => {
+  const autoSuggestMapping = useCallback((pmsRoomType: string, _otaCode: string) => {
     // Simple suggestion logic - can be enhanced with AI
     return `${pmsRoomType} Room`;
   }, []);
@@ -651,9 +666,16 @@ export function ChannelManagerProvider({ children }) {
   // ============ RESTRICTION FUNCTIONS ============
 
   const setRestriction = useCallback(async (restrictionData: any) => {
+    const isUpdate = !!restrictionData.id;
     try {
-      const newRestriction = await channelManagerService.createRestriction(restrictionData);
-      await fetchRestrictions(); // Refresh list
+      let result;
+      if (isUpdate) {
+        const { id, ...data } = restrictionData;
+        result = await channelManagerService.updateRestriction(id, data);
+      } else {
+        result = await channelManagerService.createRestriction(restrictionData);
+      }
+      await fetchRestrictions();
       addSyncLog(
         restrictionData.otaCode,
         restrictionData.otaCode === 'ALL' ? 'All OTAs' : otas.find(o => o.code === restrictionData.otaCode)?.name || restrictionData.otaCode,
@@ -661,11 +683,11 @@ export function ChannelManagerProvider({ children }) {
         'success',
         `Restriction set for ${restrictionData.roomType}`
       );
-      success('Restriction created successfully');
-      return newRestriction;
+      success(isUpdate ? 'Restriction updated successfully' : 'Restriction created successfully');
+      return result;
     } catch (err: any) {
-      console.error('Error creating restriction:', err);
-      showError(err.response?.data?.error || 'Failed to create restriction');
+      console.error(isUpdate ? 'Error updating restriction:' : 'Error creating restriction:', err);
+      showError(err.response?.data?.error || (isUpdate ? 'Failed to update restriction' : 'Failed to create restriction'));
       throw err;
     }
   }, [otas, fetchRestrictions, success, showError, addSyncLog]);

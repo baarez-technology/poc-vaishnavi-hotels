@@ -1,9 +1,13 @@
 /**
  * Hook for integrating SSE with Channel Manager components
  * Handles availability, rates, and restrictions SSE events
+ *
+ * Uses refs for callbacks to ensure handlers are stable (registered once) and
+ * always invoke the latest refetchData/callbacks - prevents handler churn
+ * that could cause events to be missed during unregister/re-register cycles.
  */
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSSE } from '../contexts/SSEContext';
 import { SSEEvent, SSE_EVENT_TYPES } from '../api/services/sse.service';
 
@@ -28,92 +32,89 @@ export function useChannelManagerSSEEvents(options: UseChannelManagerSSEEventsOp
     refetchData,
   } = options;
 
-  // Handle availability.updated event
+  // Refs ensure handlers stay stable (no re-register when callbacks change)
+  const refs = useRef({
+    onAvailabilityUpdated,
+    onRatesUpdated,
+    onRestrictionsUpdated,
+    onSyncStatus,
+    refetchData,
+  });
+  refs.current = {
+    onAvailabilityUpdated,
+    onRatesUpdated,
+    onRestrictionsUpdated,
+    onSyncStatus,
+    refetchData,
+  };
+
+  // Register handlers once - they read latest callbacks via refs
   useEffect(() => {
-    console.log('[useChannelManagerSSEEvents] 📝 Registering handler for availability.updated');
-    return registerEventHandler(SSE_EVENT_TYPES.AVAILABILITY_UPDATED, (event: SSEEvent) => {
-      console.log('[useChannelManagerSSEEvents] 🏠 AVAILABILITY.UPDATED EVENT RECEIVED');
-      console.log('[useChannelManagerSSEEvents]   Full event:', JSON.stringify(event, null, 2));
-      
-      if (onAvailabilityUpdated) {
-        console.log('[useChannelManagerSSEEvents]   Calling onAvailabilityUpdated callback');
-        onAvailabilityUpdated();
-      } else if (refetchData) {
-        console.log('[useChannelManagerSSEEvents]   ⚡ Triggering refetchData...');
-        try {
-          const result = refetchData();
-          if (result instanceof Promise) {
-            result.then(() => console.log('[useChannelManagerSSEEvents]   ✅ Refetch completed'));
-          }
-        } catch (error) {
-          console.error('[useChannelManagerSSEEvents]   ❌ Error calling refetchData:', error);
+    const handleAvailabilityUpdated = () => {
+      const { onAvailabilityUpdated: cb, refetchData: refetch } = refs.current;
+      if (cb) {
+        cb();
+      } else if (refetch) {
+        const result = refetch();
+        if (result instanceof Promise) {
+          result.catch((err) => console.error('[useChannelManagerSSEEvents] Refetch failed:', err));
         }
       }
-    });
-  }, [registerEventHandler, onAvailabilityUpdated, refetchData]);
+    };
 
-  // Handle rates.updated event
-  useEffect(() => {
-    console.log('[useChannelManagerSSEEvents] 📝 Registering handler for rates.updated');
-    return registerEventHandler(SSE_EVENT_TYPES.RATES_UPDATED, (event: SSEEvent) => {
-      console.log('[useChannelManagerSSEEvents] 💰 RATES.UPDATED EVENT RECEIVED');
-      console.log('[useChannelManagerSSEEvents]   Full event:', JSON.stringify(event, null, 2));
-      
-      if (onRatesUpdated) {
-        console.log('[useChannelManagerSSEEvents]   Calling onRatesUpdated callback');
-        onRatesUpdated();
-      } else if (refetchData) {
-        console.log('[useChannelManagerSSEEvents]   ⚡ Triggering refetchData...');
-        try {
-          const result = refetchData();
-          if (result instanceof Promise) {
-            result.then(() => console.log('[useChannelManagerSSEEvents]   ✅ Refetch completed'));
-          }
-        } catch (error) {
-          console.error('[useChannelManagerSSEEvents]   ❌ Error calling refetchData:', error);
+    const handleRatesUpdated = () => {
+      const { onRatesUpdated: cb, refetchData: refetch } = refs.current;
+      if (cb) {
+        cb();
+      } else if (refetch) {
+        const result = refetch();
+        if (result instanceof Promise) {
+          result.catch((err) => console.error('[useChannelManagerSSEEvents] Refetch failed:', err));
         }
       }
-    });
-  }, [registerEventHandler, onRatesUpdated, refetchData]);
+    };
 
-  // Handle restrictions.updated event
-  useEffect(() => {
-    console.log('[useChannelManagerSSEEvents] 📝 Registering handler for restrictions.updated');
-    return registerEventHandler(SSE_EVENT_TYPES.RESTRICTIONS_UPDATED, (event: SSEEvent) => {
-      console.log('[useChannelManagerSSEEvents] 🔒 RESTRICTIONS.UPDATED EVENT RECEIVED');
-      console.log('[useChannelManagerSSEEvents]   Full event:', JSON.stringify(event, null, 2));
-      
-      if (onRestrictionsUpdated) {
-        console.log('[useChannelManagerSSEEvents]   Calling onRestrictionsUpdated callback');
-        onRestrictionsUpdated();
-      } else if (refetchData) {
-        console.log('[useChannelManagerSSEEvents]   ⚡ Triggering refetchData...');
-        try {
-          const result = refetchData();
-          if (result instanceof Promise) {
-            result.then(() => console.log('[useChannelManagerSSEEvents]   ✅ Refetch completed'));
-          }
-        } catch (error) {
-          console.error('[useChannelManagerSSEEvents]   ❌ Error calling refetchData:', error);
+    const handleRestrictionsUpdated = () => {
+      const { onRestrictionsUpdated: cb, refetchData: refetch } = refs.current;
+      if (cb) {
+        cb();
+      } else if (refetch) {
+        const result = refetch();
+        if (result instanceof Promise) {
+          result.catch((err) => console.error('[useChannelManagerSSEEvents] Refetch failed:', err));
         }
       }
-    });
-  }, [registerEventHandler, onRestrictionsUpdated, refetchData]);
+    };
 
-  // Handle sync.status event
-  useEffect(() => {
-    console.log('[useChannelManagerSSEEvents] 📝 Registering handler for sync.status');
-    return registerEventHandler(SSE_EVENT_TYPES.SYNC_STATUS, (event: SSEEvent) => {
-      console.log('[useChannelManagerSSEEvents] 🔄 SYNC.STATUS EVENT RECEIVED');
-      console.log('[useChannelManagerSSEEvents]   Full event:', JSON.stringify(event, null, 2));
-      console.log('[useChannelManagerSSEEvents]   Status:', event.data?.status);
-      
-      if (onSyncStatus) {
-        console.log('[useChannelManagerSSEEvents]   Calling onSyncStatus callback');
-        onSyncStatus(event.data?.status);
-      } else {
-        console.warn('[useChannelManagerSSEEvents]   ⚠️ No onSyncStatus handler provided');
+    const handleSyncStatus = (event: SSEEvent) => {
+      const { onSyncStatus: cb } = refs.current;
+      if (cb) {
+        cb(event.data?.status);
       }
-    });
-  }, [registerEventHandler, onSyncStatus]);
+    };
+
+    const unregisterAvailability = registerEventHandler(
+      SSE_EVENT_TYPES.AVAILABILITY_UPDATED,
+      handleAvailabilityUpdated
+    );
+    const unregisterRates = registerEventHandler(
+      SSE_EVENT_TYPES.RATES_UPDATED,
+      handleRatesUpdated
+    );
+    const unregisterRestrictions = registerEventHandler(
+      SSE_EVENT_TYPES.RESTRICTIONS_UPDATED,
+      handleRestrictionsUpdated
+    );
+    const unregisterSync = registerEventHandler(
+      SSE_EVENT_TYPES.SYNC_STATUS,
+      handleSyncStatus
+    );
+
+    return () => {
+      unregisterAvailability();
+      unregisterRates();
+      unregisterRestrictions();
+      unregisterSync();
+    };
+  }, [registerEventHandler]);
 }

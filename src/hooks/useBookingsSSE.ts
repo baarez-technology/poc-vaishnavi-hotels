@@ -1,9 +1,13 @@
 /**
  * Hook for integrating SSE with Bookings components
  * Handles booking-related SSE events and updates the UI accordingly
+ *
+ * Uses refs for callbacks to ensure handlers are stable (registered once) and
+ * always invoke the latest refetchBookings/callbacks - prevents handler churn
+ * that could cause events to be missed during unregister/re-register cycles.
  */
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSSE } from '../contexts/SSEContext';
 import { SSEEvent, SSE_EVENT_TYPES } from '../api/services/sse.service';
 
@@ -21,96 +25,66 @@ export function useBookingsSSE(options: UseBookingsSSEOptions = {}) {
   const { registerEventHandler } = useSSE();
   const { onBookingCreated, onBookingModified, onBookingCancelled, refetchBookings } = options;
 
-  console.log('[useBookingsSSE] 🎣 Hook initialized with options:', {
-    hasOnBookingCreated: !!onBookingCreated,
-    hasOnBookingModified: !!onBookingModified,
-    hasOnBookingCancelled: !!onBookingCancelled,
-    hasRefetchBookings: !!refetchBookings,
+  // Refs ensure handlers stay stable (no re-register when callbacks change)
+  const refs = useRef({
+    onBookingCreated,
+    onBookingModified,
+    onBookingCancelled,
+    refetchBookings,
   });
+  refs.current = {
+    onBookingCreated,
+    onBookingModified,
+    onBookingCancelled,
+    refetchBookings,
+  };
 
-  // Handle booking.created event
+  // Register handlers once - they read latest callbacks via refs
   useEffect(() => {
-    console.log('[useBookingsSSE] 📝 Registering handler for booking.created');
-    const cleanup = registerEventHandler(SSE_EVENT_TYPES.BOOKING_CREATED, (event: SSEEvent) => {
-      console.log('[useBookingsSSE] 🎉🎉🎉 BOOKING.CREATED EVENT RECEIVED 🎉🎉🎉');
-      console.log('[useBookingsSSE]   Full event:', JSON.stringify(event, null, 2));
-      console.log('[useBookingsSSE]   Booking data:', event.data);
-      
-      if (onBookingCreated) {
-        console.log('[useBookingsSSE]   Calling onBookingCreated callback');
-        onBookingCreated(event.data);
-      } else if (refetchBookings) {
-        console.log('[useBookingsSSE]   ⚡ Triggering refetchBookings...');
-        try {
-          const result = refetchBookings();
-          if (result instanceof Promise) {
-            result.then(() => {
-              console.log('[useBookingsSSE]   ✅ Refetch completed successfully');
-            }).catch((err) => {
-              console.error('[useBookingsSSE]   ❌ Refetch failed:', err);
-            });
-          } else {
-            console.log('[useBookingsSSE]   ✅ Refetch function called (synchronous)');
-          }
-        } catch (error) {
-          console.error('[useBookingsSSE]   ❌ Error calling refetchBookings:', error);
-        }
-      } else {
-        console.warn('[useBookingsSSE]   ⚠️ No handler or refetch function provided!');
-      }
-    });
-    console.log('[useBookingsSSE]   ✅ Handler registered successfully');
-    return cleanup;
-  }, [registerEventHandler, onBookingCreated, refetchBookings]);
-
-  // Handle booking.modified event
-  useEffect(() => {
-    console.log('[useBookingsSSE] 📝 Registering handler for booking.modified');
-    return registerEventHandler(SSE_EVENT_TYPES.BOOKING_MODIFIED, (event: SSEEvent) => {
-      console.log('[useBookingsSSE] 🔄 BOOKING.MODIFIED EVENT RECEIVED');
-      console.log('[useBookingsSSE]   Full event:', JSON.stringify(event, null, 2));
-      console.log('[useBookingsSSE]   Booking ID:', event.data?.booking_id);
-      console.log('[useBookingsSSE]   Changes:', event.data?.changes);
-      
-      if (onBookingModified) {
-        console.log('[useBookingsSSE]   Calling onBookingModified callback');
-        onBookingModified(event.data.booking_id, event.data.changes);
-      } else if (refetchBookings) {
-        console.log('[useBookingsSSE]   ⚡ Triggering refetchBookings...');
-        try {
-          const result = refetchBookings();
-          if (result instanceof Promise) {
-            result.then(() => console.log('[useBookingsSSE]   ✅ Refetch completed'));
-          }
-        } catch (error) {
-          console.error('[useBookingsSSE]   ❌ Error calling refetchBookings:', error);
+    const handleCreated = (event: SSEEvent) => {
+      const { onBookingCreated: cb, refetchBookings: refetch } = refs.current;
+      if (cb) {
+        cb(event.data);
+      } else if (refetch) {
+        const result = refetch();
+        if (result instanceof Promise) {
+          result.catch((err) => console.error('[useBookingsSSE] Refetch failed:', err));
         }
       }
-    });
-  }, [registerEventHandler, onBookingModified, refetchBookings]);
+    };
 
-  // Handle booking.cancelled event
-  useEffect(() => {
-    console.log('[useBookingsSSE] 📝 Registering handler for booking.cancelled');
-    return registerEventHandler(SSE_EVENT_TYPES.BOOKING_CANCELLED, (event: SSEEvent) => {
-      console.log('[useBookingsSSE] 🚫 BOOKING.CANCELLED EVENT RECEIVED');
-      console.log('[useBookingsSSE]   Full event:', JSON.stringify(event, null, 2));
-      console.log('[useBookingsSSE]   Booking ID:', event.data?.booking_id);
-      
-      if (onBookingCancelled) {
-        console.log('[useBookingsSSE]   Calling onBookingCancelled callback');
-        onBookingCancelled(event.data.booking_id);
-      } else if (refetchBookings) {
-        console.log('[useBookingsSSE]   ⚡ Triggering refetchBookings...');
-        try {
-          const result = refetchBookings();
-          if (result instanceof Promise) {
-            result.then(() => console.log('[useBookingsSSE]   ✅ Refetch completed'));
-          }
-        } catch (error) {
-          console.error('[useBookingsSSE]   ❌ Error calling refetchBookings:', error);
+    const handleModified = (event: SSEEvent) => {
+      const { onBookingModified: cb, refetchBookings: refetch } = refs.current;
+      if (cb) {
+        cb(event.data?.booking_id, event.data?.changes);
+      } else if (refetch) {
+        const result = refetch();
+        if (result instanceof Promise) {
+          result.catch((err) => console.error('[useBookingsSSE] Refetch failed:', err));
         }
       }
-    });
-  }, [registerEventHandler, onBookingCancelled, refetchBookings]);
+    };
+
+    const handleCancelled = (event: SSEEvent) => {
+      const { onBookingCancelled: cb, refetchBookings: refetch } = refs.current;
+      if (cb) {
+        cb(event.data?.booking_id);
+      } else if (refetch) {
+        const result = refetch();
+        if (result instanceof Promise) {
+          result.catch((err) => console.error('[useBookingsSSE] Refetch failed:', err));
+        }
+      }
+    };
+
+    const unregisterCreated = registerEventHandler(SSE_EVENT_TYPES.BOOKING_CREATED, handleCreated);
+    const unregisterModified = registerEventHandler(SSE_EVENT_TYPES.BOOKING_MODIFIED, handleModified);
+    const unregisterCancelled = registerEventHandler(SSE_EVENT_TYPES.BOOKING_CANCELLED, handleCancelled);
+
+    return () => {
+      unregisterCreated();
+      unregisterModified();
+      unregisterCancelled();
+    };
+  }, [registerEventHandler]);
 }

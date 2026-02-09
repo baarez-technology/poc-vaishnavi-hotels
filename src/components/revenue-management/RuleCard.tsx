@@ -213,13 +213,21 @@ const RuleCard = ({
     setIsToggling(true);
 
     try {
-      await revenueIntelligenceService.togglePricingRule(rule.id);
+      if (onToggle) {
+        const maybePromise = onToggle(rule);
+        if (maybePromise && typeof (maybePromise as Promise<unknown>)?.then === 'function') {
+          await maybePromise;
+        }
+        return;
+      }
 
-      const ruleName = rule.name || rule.rule_name || 'the rule';
+      const result = await revenueIntelligenceService.togglePricingRule(rule.id);
+      const newActive = result?.is_active ?? !rule.isActive;
+
       success(
-        rule.isActive
-          ? `Rule "${ruleName}" has been disabled`
-          : `Rule "${ruleName}" has been enabled`,
+        newActive
+          ? `Rule "${rule.name}" has been enabled`
+          : `Rule "${rule.name}" has been disabled`,
         { duration: 3000 }
       );
 
@@ -237,6 +245,11 @@ const RuleCard = ({
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // When parent provides onDelete, let parent handle confirm modal and API (single flow, no double modal)
+    if (onDelete) {
+      onDelete(rule);
+      return;
+    }
     setShowDeleteConfirm(true);
   };
 
@@ -244,10 +257,7 @@ const RuleCard = ({
     setIsDeleting(true);
 
     try {
-      const response = await revenueIntelligenceService.deletePricingRule(rule.id);
-
-      // Get rule name from rule object, response, or fallback
-      const ruleName = rule.name || rule.rule_name || response.rule_name || response.name || 'the rule';
+      await revenueIntelligenceService.deletePricingRule(Number(rule.id));
 
       success(`Rule "${ruleName}" has been deleted`, { duration: 3000 });
 

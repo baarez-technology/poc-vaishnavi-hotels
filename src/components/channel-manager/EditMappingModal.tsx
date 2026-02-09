@@ -52,6 +52,7 @@ export default function EditMappingModal({
     setIsLoading(true);
     try {
       await onSave({
+        pmsRoomTypeId: room.roomTypeId ?? (typeof room.id === 'number' ? room.id : undefined),
         pmsRoomType: room.id,
         pmsRoomName: room.name,
         pmsRoomTypeId: room.pmsRoomTypeId,

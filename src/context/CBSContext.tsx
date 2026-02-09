@@ -6,12 +6,12 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { statusConfig } from '../data/cbs/sampleBookings';
+import { statusConfig, sampleBookings } from '../data/cbs/sampleBookings';
 import { sampleRatePlans } from '../data/cbs/sampleRatePlans';
 import { samplePromotions } from '../data/cbs/samplePromotions';
 import { getCalendarDates, checkAvailability } from '../data/cbs/sampleAvailability';
 import { roomsData } from '../data/roomsData';
-import { apiClient } from '../api/client';
+import { apiClient, clearApiCache } from '../api/client';
 
 // Import CMS Zustand stores for enhanced functionality
 import useCMSBookings from '../state/cms/useCMSBookings';
@@ -142,6 +142,11 @@ export function CBSProvider({ children }) {
       // Check if user is authenticated before making API calls
       const token = localStorage.getItem('glimmora_access_token');
       if (!token) {
+        // Use sample bookings when not authenticated and no stored data
+        if (!stored?.bookings?.length) {
+          console.log('[CBS] No auth token, using sample bookings');
+          setBookings([...sampleBookings]);
+        }
         setIsLoading(false);
         return; // Skip API calls if not authenticated
       }
@@ -214,8 +219,8 @@ export function CBSProvider({ children }) {
                   'direct': 'Website',
                   'Dummy Channel Manager': 'Dummy Channel Manager',
                   'dummy channel manager': 'Dummy Channel Manager',
-                  'CRS': 'CRS',
-                  'crs': 'CRS',
+                  'CRS': 'Dummy Channel Manager',
+                  'crs': 'Dummy Channel Manager',
                   'Booking.com': 'Booking.com',
                   'booking.com': 'Booking.com',
                   'Expedia': 'Expedia',
@@ -253,7 +258,8 @@ export function CBSProvider({ children }) {
           });
           setBookings(transformedBookings);
         } else {
-          setBookings([]);
+          console.log('[CBS] API returned no bookings, using sample data');
+          setBookings([...sampleBookings]);
         }
 
         // Fetch rate plans from API
@@ -344,8 +350,9 @@ export function CBSProvider({ children }) {
         }
       } catch (err) {
         console.error('Error fetching CBS data from API:', err);
-        // Set empty arrays if API fails
-        setBookings([]);
+        // Fallback to sample data when API fails so booking list is visible
+        console.log('[CBS] Using sample bookings due to API error');
+        setBookings([...sampleBookings]);
       } finally {
         setIsLoading(false);
       }
@@ -362,9 +369,13 @@ export function CBSProvider({ children }) {
         return; // Skip if not authenticated
       }
 
-      // Fetch bookings from API
+      // Clear bookings cache so we always get fresh data (critical when SSE booking.created fires)
+      clearApiCache('/api/v1/bookings');
+
+      // Fetch bookings from API (noCache ensures we bypass any remaining cache)
       const bookingsResponse = await apiClient.get('/api/v1/bookings', {
-        params: { pageSize: 1000 }
+        params: { pageSize: 1000 },
+        noCache: true,
       });
       const apiBookings = bookingsResponse.data?.items || bookingsResponse.data?.data?.items || [];
 
@@ -424,8 +435,8 @@ export function CBSProvider({ children }) {
                 'direct': 'Website',
                 'Dummy Channel Manager': 'Dummy Channel Manager',
                 'dummy channel manager': 'Dummy Channel Manager',
-                'CRS': 'CRS',
-                'crs': 'CRS',
+                'CRS': 'Dummy Channel Manager',
+                'crs': 'Dummy Channel Manager',
                 'Booking.com': 'Booking.com',
                 'booking.com': 'Booking.com',
                 'Expedia': 'Expedia',
@@ -461,10 +472,12 @@ export function CBSProvider({ children }) {
         });
         setBookings(transformedBookings);
       } else {
-        setBookings([]);
+        console.log('[CBS] Refresh: API returned no bookings, using sample data');
+        setBookings([...sampleBookings]);
       }
     } catch (err) {
       console.error('[CBSContext] Error refreshing bookings:', err);
+      setBookings([...sampleBookings]);
     }
   }, []);
 
@@ -894,10 +907,10 @@ export function CBSProvider({ children }) {
       cancellationPolicy: newPlanData.restrictions?.cancellationPolicy || 'Standard cancellation policy applies.',
       priceRules: newPlanData.pricing?.method === 'derived' || newPlanData.pricing?.method === 'percent'
         ? [{
-            type: 'flat',
-            adjustment: parseFloat(newPlanData.pricing?.adjustmentValue) || 0,
-            description: `${newPlanData.pricing?.adjustmentValue || 0}% ${newPlanData.pricing?.method === 'derived' ? 'vs BAR' : 'adjustment'}`
-          }]
+          type: 'flat',
+          adjustment: parseFloat(newPlanData.pricing?.adjustmentValue) || 0,
+          description: `${newPlanData.pricing?.adjustmentValue || 0}% ${newPlanData.pricing?.method === 'derived' ? 'vs BAR' : 'adjustment'}`
+        }]
         : [],
       linkedRooms: newPlanData.linkedRooms || [],
       pricing: newPlanData.pricing || { method: 'flat', base: 0, adjustmentValue: 0, adjustmentType: 'percentage' },

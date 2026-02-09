@@ -16,7 +16,7 @@ export function Navigation() {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const { openAI } = useGuestAI();
-  
+
   // Show AI button only on dashboard pages when authenticated
   const showAIAssistant = isAuthenticated && (location.pathname === '/dashboard' || location.pathname.startsWith('/dashboard'));
 

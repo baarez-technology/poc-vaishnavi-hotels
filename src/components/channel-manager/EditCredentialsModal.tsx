@@ -59,15 +59,23 @@ export default function EditCredentialsModal({
   };
 
   const handleSave = async () => {
+    if (!isFormValid) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
     setIsSaving(true);
 
-    // Simulate save process
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    onSave(ota.id, credentials);
-    setIsSaving(false);
-    toast.success(`Credentials updated for ${ota?.name}`);
-    onClose();
+    try {
+      await onSave(ota.id, credentials);
+      toast.success(`Credentials updated for ${ota?.name}`);
+      onClose();
+    } catch (err) {
+      console.error('Error saving credentials:', err);
+      toast.error(err?.message || 'Failed to update credentials. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleClose = () => {

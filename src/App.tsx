@@ -7,6 +7,7 @@ import { BookingProvider } from './contexts/BookingContext';
 import { PreCheckInProvider } from './contexts/PreCheckInContext';
 import { GuestAIProvider } from './contexts/GuestAIContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { WishlistProvider } from './contexts/WishlistContext';
 import { SSEProvider } from './contexts/SSEContext';
 import { AGIChatWidget } from './components/chatbot/AGIChatWidget';
 
@@ -31,6 +32,7 @@ import { ResetPassword } from './pages/Auth/ResetPassword';
 import { RoomsPage } from './pages/Rooms/RoomsPage';
 import { RoomDetailPage } from './pages/Rooms/RoomDetailPage';
 import { ContactPage } from './pages/Contact/ContactPage';
+import { WishlistPage } from './pages/Wishlist/WishlistPage';
 import { BookingPage } from './pages/Booking/BookingPage';
 import { BookingReview } from './pages/Booking/BookingReview';
 // Lazy load components to avoid blocking initial load
@@ -145,7 +147,8 @@ const StaffTaskAcceptance = lazy(() => import('./pages/staff/TaskAcceptance'));
 function App() {
   return (
     <ThemeProvider>
-      <Router>
+      <WishlistProvider>
+        <Router>
           <AuthProvider>
             <ChatProvider>
               <AGIChatProvider>
@@ -166,6 +169,9 @@ function App() {
 
                             {/* Contact route */}
                             <Route path="/contact" element={<ContactPage />} />
+
+                            {/* Wishlist route */}
+                            <Route path="/wishlist" element={<WishlistPage />} />
 
                             {/* Booking flow routes */}
                             <Route path="/booking" element={<BookingPage />} />
@@ -206,7 +212,11 @@ function App() {
                               path="/dashboard"
                               element={
                                 <ProtectedRoute>
-                                  <DashboardPage />
+                                  <ToastProvider>
+                                    <SSEProvider>
+                                      <DashboardPage />
+                                    </SSEProvider>
+                                  </ToastProvider>
                                 </ProtectedRoute>
                               }
                             />
@@ -214,7 +224,11 @@ function App() {
                               path="/dashboard/frontdesk"
                               element={
                                 <ProtectedRoute>
-                                  <FrontDeskDashboard />
+                                  <ToastProvider>
+                                    <SSEProvider>
+                                      <FrontDeskDashboard />
+                                    </SSEProvider>
+                                  </ToastProvider>
                                 </ProtectedRoute>
                               }
                             />
@@ -222,7 +236,11 @@ function App() {
                               path="/dashboard/housekeeping"
                               element={
                                 <ProtectedRoute>
-                                  <HousekeepingDashboard />
+                                  <ToastProvider>
+                                    <SSEProvider>
+                                      <HousekeepingDashboard />
+                                    </SSEProvider>
+                                  </ToastProvider>
                                 </ProtectedRoute>
                               }
                             />
@@ -230,7 +248,11 @@ function App() {
                               path="/dashboard/finance"
                               element={
                                 <ProtectedRoute>
-                                  <FinanceDashboard />
+                                  <ToastProvider>
+                                    <SSEProvider>
+                                      <FinanceDashboard />
+                                    </SSEProvider>
+                                  </ToastProvider>
                                 </ProtectedRoute>
                               }
                             />
@@ -416,6 +438,7 @@ function App() {
             </ChatProvider>
           </AuthProvider>
         </Router>
+      </WishlistProvider>
     </ThemeProvider>
   );
 }

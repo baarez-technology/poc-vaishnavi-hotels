@@ -33,6 +33,7 @@ import { roomTypesService } from '@/api/services/roomTypes.service';
 import { Button, Card } from '@/components/ui';
 import { formatCurrency } from '@/utils/helpers/format';
 import type { Room } from '@/api/types/booking.types';
+import { useWishlist } from '@/contexts/WishlistContext';
 
 export const RoomDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -40,10 +41,13 @@ export const RoomDetailPage = () => {
   const [searchParams] = useSearchParams();
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(0);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { toggleWishlist, isInWishlist } = useWishlist();
   const [room, setRoom] = useState<Room | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Derive isFavorite from wishlist state
+  const isFavorite = room ? isInWishlist(room.id) : false;
 
   // Fetch room from API
   useEffect(() => {
@@ -321,7 +325,7 @@ export const RoomDetailPage = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setIsFavorite(!isFavorite)}
+                onClick={() => room && toggleWishlist(room.id)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all border-2 ${
                   isFavorite
                     ? 'bg-red-500 hover:bg-red-600 text-white border-red-400'
@@ -408,7 +412,7 @@ export const RoomDetailPage = () => {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => setIsFavorite(!isFavorite)}
+                    onClick={() => room && toggleWishlist(room.id)}
                     className="w-11 h-11 rounded-full bg-white border border-neutral-200 hover:border-neutral-300 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
                   >
                     <Heart

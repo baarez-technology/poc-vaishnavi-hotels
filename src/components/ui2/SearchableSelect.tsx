@@ -11,7 +11,7 @@ interface SearchableSelectProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  icon?: React.ReactNode;
+  icon?: React.ComponentType<any>;
   error?: boolean;
   disabled?: boolean;
   searchable?: boolean;
@@ -41,7 +41,7 @@ export function SearchableSelect({
   const filtered = useMemo(() => {
     if (!search) return options;
     const q = search.toLowerCase();
-    return options.filter((o) => o.label.toLowerCase().includes(q));
+    return options.filter((o) => o.label?.toLowerCase().includes(q));
   }, [options, search]);
 
   // Close on outside click
@@ -75,6 +75,8 @@ export function SearchableSelect({
     setSearch('');
   };
 
+  const Icon = icon;
+
   return (
     <div ref={containerRef} className="relative">
       {/* Trigger */}
@@ -83,7 +85,7 @@ export function SearchableSelect({
         disabled={disabled}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         className={`w-full flex items-center gap-2 py-3 border rounded-[10px] transition-all text-[13px] bg-white text-left ${
-          icon ? 'pl-10 pr-3' : 'pl-4 pr-3'
+          Icon ? 'pl-10 pr-3' : 'pl-4 pr-3'
         } ${
           error
             ? 'border-rose-500 focus:ring-2 focus:ring-rose-500/20'
@@ -93,9 +95,9 @@ export function SearchableSelect({
         } ${disabled ? 'opacity-50 cursor-not-allowed bg-neutral-50' : 'cursor-pointer'}`}
       >
         {/* Left icon */}
-        {icon && (
+        {Icon && (
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
-            {icon}
+            <Icon className="w-4 h-4" />
           </span>
         )}
 

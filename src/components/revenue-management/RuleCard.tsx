@@ -203,16 +203,21 @@ const RuleCard = ({
     setIsToggling(true);
 
     try {
-      await revenueIntelligenceService.togglePricingRule(rule.id);
-
       if (onToggle) {
-        onToggle(rule);
+        const maybePromise = onToggle(rule);
+        if (maybePromise && typeof (maybePromise as Promise<unknown>)?.then === 'function') {
+          await maybePromise;
+        }
+        return;
       }
 
+      const result = await revenueIntelligenceService.togglePricingRule(rule.id);
+      const newActive = result?.is_active ?? !rule.isActive;
+
       success(
-        rule.isActive
-          ? `Rule "${rule.name}" has been disabled`
-          : `Rule "${rule.name}" has been enabled`,
+        newActive
+          ? `Rule "${rule.name}" has been enabled`
+          : `Rule "${rule.name}" has been disabled`,
         { duration: 3000 }
       );
 

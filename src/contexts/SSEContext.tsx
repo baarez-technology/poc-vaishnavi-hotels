@@ -74,9 +74,8 @@ export function SSEProvider({ children }: { children: React.ReactNode }) {
         break;
 
       case SSE_EVENT_TYPES.RESTRICTIONS_UPDATED:
-        info('Restrictions have been updated from channel manager', {
-          duration: 3000
-        });
+        // Don't show global toast - Restrictions page and context already show feedback on user actions.
+        // Registered handlers (e.g. refetchData) still run to refresh data.
         break;
 
       case SSE_EVENT_TYPES.SYNC_STATUS:

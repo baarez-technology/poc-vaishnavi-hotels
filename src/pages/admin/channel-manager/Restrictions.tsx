@@ -12,7 +12,6 @@ import {
 import { createPortal } from 'react-dom';
 import { useChannelManager } from '../../../context/ChannelManagerContext';
 import { useChannelManagerSSEEvents } from '../../../hooks/useChannelManagerSSEEvents';
-import { useToast } from '../../../contexts/ToastContext';
 import RestrictionDrawer from '../../../components/channel-manager/RestrictionDrawer';
 import { Button, IconButton } from '../../../components/ui2/Button';
 import { Modal } from '../../../components/ui2/Modal';
@@ -158,7 +157,6 @@ export default function Restrictions() {
     toggleRestrictionStatus,
     fetchRestrictions,
   } = useChannelManager();
-  const toast = useToast();
   const [showDrawer, setShowDrawer] = useState(false);
   const [editingRestriction, setEditingRestriction] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, restriction: null });
@@ -357,11 +355,9 @@ export default function Restrictions() {
       if (isEditing && editingRestriction) {
         // Update existing restriction
         await setRestriction({ ...data, id: editingRestriction.id });
-        toast.success('Restriction updated successfully');
       } else {
         // Create new restriction
         await setRestriction(data);
-        toast.success('Restriction created successfully');
       }
       setShowDrawer(false);
       setEditingRestriction(null);
@@ -379,7 +375,6 @@ export default function Restrictions() {
     if (deleteConfirm.restriction) {
       try {
         await removeRestriction(deleteConfirm.restriction.id);
-        toast.success('Restriction deleted successfully');
         await refetchData();
       } catch (err) {
         // Error already handled in context
@@ -391,8 +386,6 @@ export default function Restrictions() {
   const handleToggleActive = async (restriction) => {
     try {
       await toggleRestrictionStatus(restriction.id);
-      const newStatus = !restriction.isActive;
-      toast.success(`Restriction ${newStatus ? 'activated' : 'deactivated'} successfully`);
       await refetchData();
     } catch (err) {
       // Error already handled in context
@@ -744,7 +737,6 @@ export default function Restrictions() {
           removeRestriction(id);
           setShowDrawer(false);
           setEditingRestriction(null);
-          toast.success('Restriction deleted successfully');
         }}
       />
 

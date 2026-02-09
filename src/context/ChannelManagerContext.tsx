@@ -609,9 +609,16 @@ export function ChannelManagerProvider({ children }) {
   // ============ RESTRICTION FUNCTIONS ============
 
   const setRestriction = useCallback(async (restrictionData: any) => {
+    const isUpdate = !!restrictionData.id;
     try {
-      const newRestriction = await channelManagerService.createRestriction(restrictionData);
-      await fetchRestrictions(); // Refresh list
+      let result;
+      if (isUpdate) {
+        const { id, ...data } = restrictionData;
+        result = await channelManagerService.updateRestriction(id, data);
+      } else {
+        result = await channelManagerService.createRestriction(restrictionData);
+      }
+      await fetchRestrictions();
       addSyncLog(
         restrictionData.otaCode,
         restrictionData.otaCode === 'ALL' ? 'All OTAs' : otas.find(o => o.code === restrictionData.otaCode)?.name || restrictionData.otaCode,
@@ -619,11 +626,11 @@ export function ChannelManagerProvider({ children }) {
         'success',
         `Restriction set for ${restrictionData.roomType}`
       );
-      success('Restriction created successfully');
-      return newRestriction;
+      success(isUpdate ? 'Restriction updated successfully' : 'Restriction created successfully');
+      return result;
     } catch (err: any) {
-      console.error('Error creating restriction:', err);
-      showError(err.response?.data?.error || 'Failed to create restriction');
+      console.error(isUpdate ? 'Error updating restriction:' : 'Error creating restriction:', err);
+      showError(err.response?.data?.error || (isUpdate ? 'Failed to update restriction' : 'Failed to create restriction'));
       throw err;
     }
   }, [otas, fetchRestrictions, success, showError]);

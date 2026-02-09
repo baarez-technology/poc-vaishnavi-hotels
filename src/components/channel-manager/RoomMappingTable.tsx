@@ -132,25 +132,13 @@ export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' 
     }
     
     try {
-      // Backend accepts numeric pmsRoomTypeId (room_types.id) or slug (string); it resolves slug to id.
-      const rawId = mappingData.pmsRoomTypeId ?? mappingData.pmsRoomType;
-      const isNumeric = typeof rawId === 'number' && !Number.isNaN(rawId) ||
-        (typeof rawId === 'string' && /^\d+$/.test(String(rawId).trim()));
-      const pmsRoomTypeId = isNumeric
-        ? (typeof rawId === 'number' ? rawId : parseInt(String(rawId), 10))
-        : (typeof rawId === 'string' && rawId.trim() ? rawId.trim() : null);
-      if (pmsRoomTypeId == null || (typeof pmsRoomTypeId === 'number' && Number.isNaN(pmsRoomTypeId))) {
-        throw new Error(
-          'Room type is missing. Please refresh the page and try again. ' +
-          'If the problem persists, ensure room types are loaded.'
-        );
-      }
+      // Backend accepts only numeric pmsRoomTypeId (integer). Use the resolved numericId from above.
       const pmsRoomTypeName = mappingData.pmsRoomName ?? mappingData.pmsRoomType ?? '';
       if (!pmsRoomTypeName) {
         throw new Error('Room type name is missing. Please refresh the page and try again.');
       }
       const result = await mapRoom({
-        pmsRoomTypeId,
+        pmsRoomTypeId: numericId,
         pmsRoomType: pmsRoomTypeName,
         otaCode: otaCode,
         otaRoomType: mappingData.otaRoomType.trim(),

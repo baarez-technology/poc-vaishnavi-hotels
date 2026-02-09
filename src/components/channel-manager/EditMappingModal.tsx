@@ -51,11 +51,19 @@ export default function EditMappingModal({
     
     setIsLoading(true);
     try {
+      // Backend requires numeric pmsRoomTypeId only (no slug). Prefer roomTypeId, then numeric id.
+      const numericId =
+        (typeof room.roomTypeId === 'number' && Number.isInteger(room.roomTypeId))
+          ? room.roomTypeId
+          : (typeof room.id === 'number' && Number.isInteger(room.id))
+            ? room.id
+            : (/^\d+$/.test(String(room.roomTypeId ?? room.id ?? '')))
+              ? parseInt(String(room.roomTypeId ?? room.id), 10)
+              : undefined;
       await onSave({
-        pmsRoomTypeId: room.roomTypeId ?? (typeof room.id === 'number' ? room.id : undefined),
+        pmsRoomTypeId: numericId,
         pmsRoomType: room.id,
         pmsRoomName: room.name,
-        pmsRoomTypeId: room.pmsRoomTypeId,
         otaRoomType: otaRoomType.trim(),
         syncRates,
         syncAvailability

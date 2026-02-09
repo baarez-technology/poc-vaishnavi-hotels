@@ -366,9 +366,31 @@ const RuleEditorDrawer = ({ isOpen, onClose, rule, onSave }: RuleEditorDrawerPro
 
       onSave?.();
       onClose();
-    } catch (err) {
-      showError(isEditing ? 'Failed to update pricing rule' : 'Failed to create pricing rule');
-      console.error('Error saving rule:', err);
+    } catch (err: any) {
+      const status = err.response?.status;
+      const data = err.response?.data;
+      if (status === 422 && data) {
+        console.error('Pricing rule 422 response:', JSON.stringify(data, null, 2));
+      } else {
+        console.error('Error saving rule:', err);
+      }
+      let message: string | undefined;
+      if (data?.message) message = data.message;
+      else if (data?.error) message = data.error;
+      else if (Array.isArray(data?.errors)) {
+        const first = data.errors[0];
+        message = typeof first === 'string' ? first : first?.message ?? first?.msg;
+      } else if (data?.errors && typeof data.errors === 'object') {
+        const firstKey = Object.keys(data.errors)[0];
+        const firstVal = firstKey ? (data.errors as Record<string, unknown>)[firstKey] : undefined;
+        const arr = Array.isArray(firstVal) ? firstVal : [firstVal];
+        message = arr.length ? String(arr[0]) : undefined;
+      }
+      showError(
+        message && typeof message === 'string'
+          ? message
+          : isEditing ? 'Failed to update pricing rule' : 'Failed to create pricing rule'
+      );
     } finally {
       setIsSaving(false);
     }

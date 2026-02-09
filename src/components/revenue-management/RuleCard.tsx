@@ -47,6 +47,16 @@ interface PricingRule {
   timesTriggered?: number;
   executionStatus?: 'success' | 'error' | 'pending' | 'running';
   lastExecutionMessage?: string;
+  // Support for API snake_case fields
+  rule_name?: string;
+  room_types?: string[];
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  last_triggered?: string;
+  times_triggered?: number;
+  execution_status?: 'success' | 'error' | 'pending' | 'running';
+  last_execution_message?: string;
 }
 
 interface RuleCardProps {
@@ -221,8 +231,10 @@ const RuleCard = ({
         { duration: 3000 }
       );
 
+      // Refresh rules list so the button reflects the new active state.
+      // Do not call onToggle(rule) here — the parent's handler also calls the API, which would toggle again and undo the change.
       if (onRuleUpdated) {
-        onRuleUpdated();
+        await onRuleUpdated();
       }
     } catch (err) {
       showError('Failed to toggle rule. Please try again.');
@@ -247,16 +259,22 @@ const RuleCard = ({
     try {
       await revenueIntelligenceService.deletePricingRule(Number(rule.id));
 
-      success(`Rule "${rule.name}" has been deleted`, { duration: 3000 });
+      success(`Rule "${ruleName}" has been deleted`, { duration: 3000 });
 
+      // Close the modal after successful deletion
       setShowDeleteConfirm(false);
-      onDelete(rule);
 
+      // Refresh the rules list if callback is provided
       if (onRuleUpdated) {
-        onRuleUpdated();
+        await onRuleUpdated();
+      } else {
+        // Fallback: call onDelete to let parent handle refresh
+        onDelete(rule);
       }
     } catch (err) {
+      console.error('Failed to delete rule:', err);
       showError('Failed to delete rule. Please try again.');
+      // Modal stays open on error so user can retry or cancel
     } finally {
       setIsDeleting(false);
     }
@@ -322,7 +340,7 @@ const RuleCard = ({
           <div className="flex-1 min-w-0" onClick={onClick}>
             <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
               <h3 className="text-[13px] sm:text-[14px] font-semibold text-neutral-800 truncate">
-                {rule.name}
+                {rule.name || rule.rule_name || 'Unnamed Rule'}
               </h3>
               <span
                 className={`px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold rounded ${priorityColor.bg} ${priorityColor.text}`}
@@ -362,7 +380,7 @@ const RuleCard = ({
                 Conditions
               </p>
               <p className="text-[13px] sm:text-[14px] font-semibold text-neutral-700">
-                {rule.conditions.length}
+                {(rule.conditions || []).length}
               </p>
             </div>
             <div className="text-center">
@@ -370,7 +388,7 @@ const RuleCard = ({
                 Actions
               </p>
               <p className="text-[13px] sm:text-[14px] font-semibold text-neutral-700">
-                {rule.actions.length}
+                {(rule.actions || []).length}
               </p>
             </div>
           </div>
@@ -448,7 +466,7 @@ const RuleCard = ({
                   IF Conditions
                 </p>
                 <div className="flex flex-wrap gap-1 sm:gap-1.5">
-                  {rule.conditions.map((condition, index) => (
+                  {(rule.conditions || []).map((condition, index) => (
                     <span
                       key={index}
                       className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-medium bg-ocean-50 text-ocean-700 rounded"
@@ -456,6 +474,9 @@ const RuleCard = ({
                       {formatCondition(condition)}
                     </span>
                   ))}
+                  {(!rule.conditions || rule.conditions.length === 0) && (
+                    <span className="text-[10px] sm:text-[11px] text-neutral-400 italic">No conditions</span>
+                  )}
                 </div>
               </div>
 
@@ -465,7 +486,7 @@ const RuleCard = ({
                   THEN Actions
                 </p>
                 <div className="flex flex-wrap gap-1 sm:gap-1.5">
-                  {rule.actions.map((action, index) => (
+                  {(rule.actions || []).map((action, index) => (
                     <span
                       key={index}
                       className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-medium bg-sage-50 text-sage-700 rounded"
@@ -474,6 +495,9 @@ const RuleCard = ({
                       {formatAction(action)}
                     </span>
                   ))}
+                  {(!rule.actions || rule.actions.length === 0) && (
+                    <span className="text-[10px] sm:text-[11px] text-neutral-400 italic">No actions</span>
+                  )}
                 </div>
               </div>
 
@@ -483,7 +507,7 @@ const RuleCard = ({
                   Applies to
                 </p>
                 <div className="flex flex-wrap gap-1 sm:gap-1.5">
-                  {rule.roomTypes.map((roomType) => (
+                  {(rule.roomTypes || []).map((roomType) => (
                     <span
                       key={roomType}
                       className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-medium bg-neutral-100 text-neutral-600 rounded"
@@ -491,6 +515,9 @@ const RuleCard = ({
                       {roomType === 'ALL' ? 'All Rooms' : roomType}
                     </span>
                   ))}
+                  {(!rule.roomTypes || rule.roomTypes.length === 0) && (
+                    <span className="text-[10px] sm:text-[11px] text-neutral-400 italic">No room types</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -529,7 +556,7 @@ const RuleCard = ({
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={handleConfirmDelete}
         title="Delete Pricing Rule"
-        description={`Are you sure you want to delete "${rule.name}"? This action cannot be undone.`}
+        description={`Are you sure you want to delete "${rule.name || rule.rule_name || 'this rule'}"? This action cannot be undone.`}
         variant="danger"
         confirmText={isDeleting ? 'Deleting...' : 'Delete Rule'}
         cancelText="Cancel"

@@ -19,6 +19,9 @@ import type {
 } from '../api/services/channel-manager.service';
 import { useToast } from '../contexts/ToastContext';
 
+/** Toast API type so TypeScript knows success/error are callable (context is createContext(null) otherwise inferred as never) */
+type ToastApi = { success: (message: string, options?: object) => void; error: (message: string, options?: object) => void };
+
 const ChannelManagerContext = createContext<any>(null);
 
 const STORAGE_KEY = 'channel_manager_data';
@@ -272,6 +275,42 @@ export function ChannelManagerProvider({ children }) {
 
   // ============ OTA FUNCTIONS ============
 
+  // Define addSyncLog first so it can be used in other callbacks
+  const addSyncLog = useCallback((otaCode: string, otaName: string, action: string, status: string, message: string, details: any = {}) => {
+    const now = Date.now();
+    const dedupeWindow = 5000; // 5 seconds deduplication window
+
+    setSyncLogs(prev => {
+      // Check for duplicate within the deduplication window
+      const isDuplicate = prev.some(log => {
+        const logTime = new Date(log.timestamp).getTime();
+        return (
+          log.otaCode === otaCode &&
+          log.action === action &&
+          log.message === message &&
+          now - logTime < dedupeWindow
+        );
+      });
+
+      if (isDuplicate) {
+        return prev; // Skip duplicate log
+      }
+
+      const newLog: SyncLog = {
+        id: `log-${now}-${Math.random().toString(36).substr(2, 5)}`,
+        timestamp: new Date(now).toISOString(),
+        otaCode,
+        otaName,
+        action: action as any,
+        status: status as any,
+        message,
+        details,
+      };
+
+      return [newLog, ...prev].slice(0, 100); // Keep last 100 logs
+    });
+  }, []);
+
   const connectOTA = useCallback(async (otaData: any) => {
     try {
       const newOTA = await channelManagerService.createOTA(otaData);
@@ -284,7 +323,7 @@ export function ChannelManagerProvider({ children }) {
       showError(err.response?.data?.error || 'Failed to connect OTA');
       throw err;
     }
-  }, [success, showError]);
+  }, [success, showError, addSyncLog]);
 
   const disconnectOTA = useCallback(async (otaId: string) => {
     try {
@@ -300,7 +339,7 @@ export function ChannelManagerProvider({ children }) {
       showError(err.response?.data?.error || 'Failed to disconnect OTA');
       throw err;
     }
-  }, [otas, success, showError]);
+  }, [otas, success, showError, addSyncLog]);
 
   const reconnectOTA = useCallback(async (otaId: string) => {
     try {
@@ -319,7 +358,7 @@ export function ChannelManagerProvider({ children }) {
       showError(err.response?.data?.error || 'Failed to reconnect OTA');
       throw err;
     }
-  }, [otas, success, showError]);
+  }, [otas, success, showError, addSyncLog]);
 
   const updateOTACredentials = useCallback(async (otaId: string, credentials: any) => {
     try {
@@ -336,7 +375,7 @@ export function ChannelManagerProvider({ children }) {
       showError(err.response?.data?.error || 'Failed to update OTA credentials');
       throw err;
     }
-  }, [otas, success, showError]);
+  }, [otas, success, showError, addSyncLog]);
 
   const updateOTASyncSettings = useCallback(async (otaId: string, settings: any) => {
     try {
@@ -353,7 +392,7 @@ export function ChannelManagerProvider({ children }) {
       showError(err.response?.data?.error || 'Failed to update sync settings');
       throw err;
     }
-  }, [otas, success, showError]);
+  }, [otas, success, showError, addSyncLog]);
 
   const testOTAConnection = useCallback(async (otaId: string) => {
     try {
@@ -388,8 +427,26 @@ export function ChannelManagerProvider({ children }) {
       success('Room mapping created successfully');
       return newMapping;
     } catch (err: any) {
-      console.error('Error creating room mapping:', err);
-      showError(err.response?.data?.error || 'Failed to create room mapping');
+      const status = err.response?.status;
+      const data = err.response?.data;
+      if (status === 422 && data) {
+        console.error('Room mapping 422 response:', JSON.stringify(data, null, 2));
+      } else {
+        console.error('Error creating room mapping:', err);
+      }
+      let message: string | undefined;
+      if (data?.message) message = data.message;
+      else if (data?.error) message = data.error;
+      else if (Array.isArray(data?.errors)) {
+        const first = data.errors[0];
+        message = typeof first === 'string' ? first : first?.message ?? first?.msg;
+      } else if (data?.errors && typeof data.errors === 'object') {
+        const firstKey = Object.keys(data.errors)[0];
+        const firstVal = firstKey ? (data.errors as Record<string, unknown>)[firstKey] : undefined;
+        const arr = Array.isArray(firstVal) ? firstVal : [firstVal];
+        message = arr.length ? String(arr[0]) : undefined;
+      }
+      showError(message && typeof message === 'string' ? message : 'Failed to create room mapping');
       throw err;
     }
   }, [otas, fetchRoomMappings, success, showError]);
@@ -482,7 +539,7 @@ export function ChannelManagerProvider({ children }) {
       showError(err.response?.data?.error || 'Failed to update rate');
       throw err;
     }
-  }, [rateCalendar, otas, success, showError]);
+  }, [rateCalendar, otas, success, showError, addSyncLog]);
 
   const updateAvailabilityForOTA = useCallback(async (date: string, roomType: string, availability: number) => {
     try {
@@ -633,7 +690,7 @@ export function ChannelManagerProvider({ children }) {
       showError(err.response?.data?.error || (isUpdate ? 'Failed to update restriction' : 'Failed to create restriction'));
       throw err;
     }
-  }, [otas, fetchRestrictions, success, showError]);
+  }, [otas, fetchRestrictions, success, showError, addSyncLog]);
 
   const removeRestriction = useCallback(async (restrictionId: string) => {
     try {
@@ -696,7 +753,7 @@ export function ChannelManagerProvider({ children }) {
       showError(err.response?.data?.error || 'Failed to apply promotion');
       throw err;
     }
-  }, [otas, success, showError]);
+  }, [otas, success, showError, addSyncLog]);
 
   const updateChannelPromotion = useCallback(async (promotionId: string, promotionData: any) => {
     try {
@@ -716,7 +773,7 @@ export function ChannelManagerProvider({ children }) {
       showError(err.response?.data?.error || 'Failed to update promotion');
       throw err;
     }
-  }, [otas, fetchPromotions, success, showError]);
+  }, [otas, fetchPromotions, success, showError, addSyncLog]);
 
   const deleteChannelPromotion = useCallback(async (promotionId: string) => {
     try {
@@ -744,41 +801,7 @@ export function ChannelManagerProvider({ children }) {
   }, [fetchPromotions, success, showError]);
 
   // ============ SYNC LOG FUNCTIONS ============
-
-  const addSyncLog = useCallback((otaCode: string, otaName: string, action: string, status: string, message: string, details: any = {}) => {
-    const now = Date.now();
-    const dedupeWindow = 5000; // 5 seconds deduplication window
-
-    setSyncLogs(prev => {
-      // Check for duplicate within the deduplication window
-      const isDuplicate = prev.some(log => {
-        const logTime = new Date(log.timestamp).getTime();
-        return (
-          log.otaCode === otaCode &&
-          log.action === action &&
-          log.message === message &&
-          now - logTime < dedupeWindow
-        );
-      });
-
-      if (isDuplicate) {
-        return prev; // Skip duplicate log
-      }
-
-      const newLog: SyncLog = {
-        id: `log-${now}-${Math.random().toString(36).substr(2, 5)}`,
-        timestamp: new Date(now).toISOString(),
-        otaCode,
-        otaName,
-        action: action as any,
-        status: status as any,
-        message,
-        details,
-      };
-
-      return [newLog, ...prev].slice(0, 100); // Keep last 100 logs
-    });
-  }, []);
+  // addSyncLog is defined above with other callbacks
 
   const filterLogs = useCallback((filters: any) => {
     return syncLogs.filter(log => {
@@ -834,20 +857,22 @@ export function ChannelManagerProvider({ children }) {
     } finally {
       setIsSyncing(false);
     }
-  }, [otas, success, showError]);
+  }, [otas, success, showError, addSyncLog]);
 
   // Auto-sync scheduler (disabled for now - backend handles this)
   useEffect(() => {
     // Backend handles auto-sync, but we can refresh data periodically
-    syncIntervalRef.current = setInterval(() => {
+    const intervalId = setInterval(() => {
       // Refresh stats and insights periodically
       fetchChannelStats();
       fetchAIInsights();
     }, SYNC_INTERVAL);
+    syncIntervalRef.current = intervalId;
 
     return () => {
       if (syncIntervalRef.current) {
         clearInterval(syncIntervalRef.current);
+        syncIntervalRef.current = null;
       }
     };
   }, [fetchChannelStats, fetchAIInsights]);
@@ -930,6 +955,7 @@ export function ChannelManagerProvider({ children }) {
     validateMapping,
     autoMapRoomMappings,
     autoSuggestMapping,
+    showError,
 
     // Rate functions
     updateRateForOTA,

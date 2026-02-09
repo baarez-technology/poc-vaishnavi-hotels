@@ -55,6 +55,7 @@ export default function EditMappingModal({
         pmsRoomTypeId: room.roomTypeId ?? (typeof room.id === 'number' ? room.id : undefined),
         pmsRoomType: room.id,
         pmsRoomName: room.name,
+        pmsRoomTypeId: room.pmsRoomTypeId,
         otaRoomType: otaRoomType.trim(),
         syncRates,
         syncAvailability

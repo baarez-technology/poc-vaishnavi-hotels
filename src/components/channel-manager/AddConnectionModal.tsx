@@ -32,13 +32,13 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
     const filtered = availableOTAs.filter(
       ota => !existingConnections.some(conn => conn.code === ota.code)
     );
-    
+
     if (!searchQuery.trim()) return filtered;
-    
+
     const query = searchQuery.toLowerCase();
     return filtered.filter(ota =>
-      ota.name.toLowerCase().includes(query) ||
-      ota.code.toLowerCase().includes(query) ||
+      (ota.name && ota.name.toLowerCase().includes(query)) ||
+      (ota.code && ota.code.toLowerCase().includes(query)) ||
       (ota.description && ota.description.toLowerCase().includes(query))
     );
   }, [existingConnections, searchQuery]);
@@ -48,7 +48,8 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
     if (!searchQuery.trim()) return availableToConnect;
     const query = searchQuery.toLowerCase();
     return availableToConnect.filter(
-      ota => ota.name.toLowerCase().includes(query) || ota.code.toLowerCase().includes(query)
+      ota => (ota.name && ota.name.toLowerCase().includes(query)) ||
+             (ota.code && ota.code.toLowerCase().includes(query))
     );
   }, [availableToConnect, searchQuery]);
 
@@ -208,10 +209,10 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
                         className="w-6 h-6 rounded-md flex items-center justify-center text-white text-[10px] font-bold"
                         style={{ backgroundColor: conn.color }}
                       >
-                        {conn.name?.substring(0, 2).toUpperCase()}
+                        {conn.name?.substring(0, 2).toUpperCase() || '??'}
                       </div>
                       <span className="text-[13px] font-medium text-neutral-700">
-                        {conn.name}
+                        {conn.name || 'Unknown'}
                       </span>
                       <CheckCircle className="w-3.5 h-3.5 text-sage-500" />
                     </div>
@@ -261,13 +262,13 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
                     >
                       <div
                         className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                        style={{ backgroundColor: ota.color }}
+                        style={{ backgroundColor: ota.color || '#A57865' }}
                       >
-                        {ota.name.substring(0, 2).toUpperCase()}
+                        {ota.name?.substring(0, 2).toUpperCase() || '??'}
                       </div>
                       <div className="text-center">
                         <h3 className="text-sm font-semibold text-neutral-900">
-                          {ota.name}
+                          {ota.name || 'Unknown'}
                         </h3>
                         <p className="text-[10px] text-neutral-400 mt-0.5">
                           Click to connect
@@ -302,16 +303,16 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
           <div className="flex items-center gap-4 p-4 rounded-lg bg-neutral-50">
             <div
               className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-              style={{ backgroundColor: selectedOTA?.color }}
+              style={{ backgroundColor: selectedOTA?.color || '#A57865' }}
             >
-              {selectedOTA?.name.substring(0, 2).toUpperCase()}
+              {selectedOTA?.name?.substring(0, 2).toUpperCase() || '??'}
             </div>
             <div>
               <h3 className="text-sm font-semibold text-neutral-900">
-                {selectedOTA?.name}
+                {selectedOTA?.name || 'Unknown'}
               </h3>
               <p className="text-[11px] text-neutral-500 font-medium">
-                {selectedOTA?.description}
+                {selectedOTA?.description || ''}
               </p>
             </div>
           </div>

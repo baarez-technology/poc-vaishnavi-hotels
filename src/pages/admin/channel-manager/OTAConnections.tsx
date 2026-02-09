@@ -53,7 +53,7 @@ export default function OTAConnections() {
 
   // Filter OTAs
   const filteredOTAs = otas.filter(ota => {
-    const matchesSearch = ota.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = ota.name?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false;
     const matchesStatus = statusFilter === 'all' || ota.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -146,7 +146,7 @@ export default function OTAConnections() {
       icon: WifiOff,
       title: 'Disconnected',
       value: statusCounts.disconnected,
-      accent: 'neutral'
+      accent: 'ocean'
     },
     {
       icon: AlertTriangle,
@@ -156,11 +156,11 @@ export default function OTAConnections() {
     }
   ];
 
-  const accentColors = {
-    terra: { bg: 'bg-terra-50', border: 'border-terra-100', icon: 'bg-terra-100 text-terra-600' },
-    sage: { bg: 'bg-sage-50', border: 'border-sage-100', icon: 'bg-sage-100 text-sage-600' },
-    neutral: { bg: 'bg-neutral-50', border: 'border-neutral-200', icon: 'bg-neutral-100 text-neutral-500' },
-    rose: { bg: 'bg-rose-50', border: 'border-rose-100', icon: 'bg-rose-100 text-rose-600' }
+  const accentStyles = {
+    terra: { bg: 'bg-terra-50', icon: 'text-terra-600' },
+    sage: { bg: 'bg-sage-50', icon: 'text-sage-600' },
+    ocean: { bg: 'bg-ocean-50', icon: 'text-ocean-600' },
+    rose: { bg: 'bg-rose-50', icon: 'text-rose-600' },
   };
 
   const getStatusFilterLabel = () => {
@@ -185,7 +185,7 @@ export default function OTAConnections() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
+      <main className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
         {/* Page Header */}
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
@@ -193,9 +193,8 @@ export default function OTAConnections() {
             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
               OTA Connections
             </h1>
-            <p className="text-xs sm:text-[13px] text-neutral-500 mt-0.5 sm:mt-1">
-              <span className="hidden sm:inline">Manage your channel distribution partners</span>
-              <span className="sm:hidden">Manage distribution partners</span>
+            <p className="text-xs sm:text-[13px] text-neutral-500 mt-1">
+              Manage your channel distribution partners
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
@@ -205,7 +204,6 @@ export default function OTAConnections() {
               onClick={handleSyncAll}
               disabled={syncingOTAs.length > 0}
               loading={syncingOTAs.length > 0}
-              className="text-xs sm:text-sm"
             >
               <span className="hidden sm:inline">Sync All</span>
               <span className="sm:hidden">Sync</span>
@@ -214,7 +212,6 @@ export default function OTAConnections() {
               variant="primary"
               icon={Plus}
               onClick={() => setShowAddModal(true)}
-              className="text-xs sm:text-sm"
             >
               <span className="hidden sm:inline">Add Connection</span>
               <span className="sm:hidden">Add</span>
@@ -223,23 +220,20 @@ export default function OTAConnections() {
         </header>
 
         {/* KPI Cards */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {kpiCards.map((kpi, index) => {
-            const colors = accentColors[kpi.accent];
+            const style = accentStyles[kpi.accent] || accentStyles.terra;
             return (
-              <div key={index} className="rounded-[10px] bg-white p-4 sm:p-6">
-                {/* Header with Icon */}
-                <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                  <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center ${colors.icon}`}>
-                    <kpi.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <div key={index} className="rounded-[10px] bg-white p-3 sm:p-5">
+                <div className="flex items-start justify-between mb-2 sm:mb-3">
+                  <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${style.bg}`}>
+                    <kpi.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${style.icon}`} />
                   </div>
-                  <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400 truncate">
-                    {kpi.title}
-                  </p>
                 </div>
-
-                {/* Value */}
-                <p className="text-xl sm:text-[28px] font-semibold tracking-tight text-neutral-900">
+                <p className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-wider text-neutral-400 mb-1 truncate">
+                  {kpi.title}
+                </p>
+                <p className="text-base sm:text-xl font-semibold tracking-tight text-neutral-900">
                   {contextLoading ? '-' : kpi.value}
                 </p>
               </div>
@@ -290,25 +284,29 @@ export default function OTAConnections() {
         <section className="space-y-3 sm:space-y-4">
           {contextLoading ? (
             <div className="space-y-3 sm:space-y-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="rounded-[10px] bg-white p-4 sm:p-6 animate-pulse">
+              {[0, 1, 2].map(i => (
+                <div
+                  key={i}
+                  className="rounded-[10px] bg-white p-4 sm:p-6 animate-pulse"
+                  style={{ animationDelay: `${i * 100}ms` }}
+                >
                   <div className="flex items-center gap-3 sm:gap-4">
-                    <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-neutral-100" />
+                    <div className="w-12 h-12 rounded-lg bg-neutral-100" />
                     <div className="flex-1">
-                      <div className="h-4 sm:h-5 w-24 sm:w-32 bg-neutral-100 rounded mb-2" />
-                      <div className="h-3 sm:h-4 w-36 sm:w-48 bg-neutral-100 rounded" />
+                      <div className="h-4 w-32 bg-neutral-100 rounded mb-2" />
+                      <div className="h-3 w-48 bg-neutral-100 rounded" />
                     </div>
-                    <div className="h-8 sm:h-10 w-16 sm:w-24 bg-neutral-100 rounded-lg" />
+                    <div className="h-9 w-24 bg-neutral-100 rounded-lg" />
                   </div>
                 </div>
               ))}
             </div>
           ) : filteredOTAs.length === 0 ? (
-            <div className="rounded-[10px] bg-white p-8 sm:p-16 text-center">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg flex items-center justify-center mx-auto mb-4 sm:mb-5 bg-neutral-50">
-                <WifiOff className="w-6 h-6 sm:w-8 sm:h-8 text-neutral-300" />
+            <div className="rounded-[10px] bg-white p-8 sm:p-12 text-center">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg flex items-center justify-center mx-auto mb-3 sm:mb-4 bg-terra-50">
+                <WifiOff className="w-6 h-6 sm:w-8 sm:h-8 text-terra-500" />
               </div>
-              <h3 className="text-base sm:text-lg font-semibold text-neutral-900 mb-2">No OTAs found</h3>
+              <h3 className="text-sm sm:text-[15px] font-semibold text-neutral-900 mb-1">No OTAs found</h3>
               <p className="text-xs sm:text-[13px] text-neutral-500 mb-4 sm:mb-6">
                 {searchQuery || statusFilter !== 'all'
                   ? 'Try adjusting your search or filter'
@@ -319,10 +317,8 @@ export default function OTAConnections() {
                   variant="primary"
                   icon={Plus}
                   onClick={() => setShowAddModal(true)}
-                  className="text-xs sm:text-sm"
                 >
-                  <span className="hidden sm:inline">Add Connection</span>
-                  <span className="sm:hidden">Add</span>
+                  Add Connection
                 </Button>
               )}
             </div>
@@ -341,7 +337,7 @@ export default function OTAConnections() {
             ))
           )}
         </section>
-      </div>
+      </main>
 
       {/* Add Connection Modal */}
       <AddConnectionModal

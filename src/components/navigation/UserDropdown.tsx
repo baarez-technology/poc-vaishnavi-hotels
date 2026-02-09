@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, ClipboardCheck, Settings, LogOut, ChevronDown, LayoutDashboard } from 'lucide-react';
+import { Calendar, ClipboardCheck, Settings, LogOut, ChevronDown, LayoutDashboard, Heart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useWishlist } from '@/contexts/WishlistContext';
 
 export function UserDropdown() {
   const { user, logout } = useAuth();
+  const { wishlistCount } = useWishlist();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -31,6 +33,7 @@ export function UserDropdown() {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'My Dashboard', path: '/dashboard' },
+    { icon: Heart, label: 'My Wishlist', path: '/wishlist', badge: true },
     { icon: Calendar, label: 'My Bookings', path: '/dashboard?tab=bookings' },
     { icon: ClipboardCheck, label: 'Pre-Check-In', path: '/pre-checkin', highlight: true },
     { icon: Settings, label: 'Account Settings', path: '/dashboard?tab=security' },
@@ -113,6 +116,11 @@ export function UserDropdown() {
                     {item.highlight && (
                       <span className="ml-auto px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-bold rounded-full">
                         NEW
+                      </span>
+                    )}
+                    {item.badge && wishlistCount > 0 && (
+                      <span className="ml-auto px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] text-center">
+                        {wishlistCount}
                       </span>
                     )}
                   </button>

@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { X, Home, Bed, Sparkles, ClipboardCheck, Mail, Calendar, Settings, LogOut } from 'lucide-react';
+import { X, Home, Bed, Heart, Sparkles, ClipboardCheck, Mail, Calendar, Settings, LogOut, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useWishlist } from '@/contexts/WishlistContext';
 import logo from '@/assets/logo.png';
 
 interface MobileMenuProps {
@@ -13,6 +14,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
+  const { wishlistCount } = useWishlist();
 
   // Prevent body scroll when menu is open
   useEffect(() => {
@@ -35,6 +37,8 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   ];
 
   const accountLinks = [
+    { name: 'My Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'My Wishlist', path: '/wishlist', icon: Heart, badge: true },
     { name: 'My Bookings', path: '/dashboard?tab=bookings', icon: Calendar },
     { name: 'Pre-Check-In', path: '/pre-checkin', icon: ClipboardCheck },
     { name: 'Account Settings', path: '/dashboard?tab=security', icon: Settings },
@@ -133,6 +137,11 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                         NEW
                       </span>
                     )}
+                    {link.badge && wishlistCount > 0 && (
+                      <span className="absolute top-2 right-2 bg-primary-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                        {wishlistCount}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -152,10 +161,15 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                     <button
                       key={link.path}
                       onClick={() => handleNavigate(link.path)}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-neutral-700 hover:bg-neutral-50 rounded-xl transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-neutral-700 hover:bg-neutral-50 rounded-xl transition-colors relative"
                     >
                       <Icon className="w-5 h-5 text-neutral-500" />
                       <span>{link.name}</span>
+                      {link.badge && wishlistCount > 0 && (
+                        <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                          {wishlistCount}
+                        </span>
+                      )}
                     </button>
                   );
                 })}

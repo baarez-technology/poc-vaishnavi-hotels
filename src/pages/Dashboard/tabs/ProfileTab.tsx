@@ -1,12 +1,14 @@
 import { motion } from 'framer-motion';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useEffect, useState } from 'react';
-import { User, Mail, Phone, MapPin, Camera, Save } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { User, Mail, Phone, MapPin, Camera, Save, Globe, Landmark, Building2, Hash } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { userService } from '@/api/services/user.service';
 import { useAuth } from '@/hooks/useAuth';
+import { useGeoAddress } from '@/hooks/useGeoAddress';
+import { SearchableSelect } from '@/components/ui2/SearchableSelect';
 
 const profileSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
@@ -15,7 +17,8 @@ const profileSchema = z.object({
   phone: z.string().min(10, 'Phone number must be at least 10 digits'),
   address: z.string().min(5, 'Address must be at least 5 characters'),
   city: z.string().min(2, 'City must be at least 2 characters'),
-  zipCode: z.string().min(5, 'ZIP code must be at least 5 characters'),
+  state: z.string().min(1, 'State required'),
+  zipCode: z.string().min(3, 'ZIP code must be at least 3 characters'),
   country: z.string().min(2, 'Country must be at least 2 characters'),
 });
 
@@ -37,6 +40,9 @@ export function ProfileTab() {
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
+    setValue,
+    control,
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -46,10 +52,45 @@ export function ProfileTab() {
       phone: user?.phone || '',
       address: '',
       city: '',
+      state: '',
       zipCode: '',
       country: '',
     },
   });
+
+  const watchedCountry = watch('country');
+  const watchedState = watch('state');
+  const watchedCity = watch('city');
+
+  // Use the reusable geo address hook
+  const { countries, states, cities, hasStates, hasCities } = useGeoAddress({
+    countryCode: watchedCountry,
+    stateCode: watchedState,
+    cityName: watchedCity,
+    onStateReset: () => {
+      setValue('state', '');
+      setValue('city', '');
+    },
+    onCityReset: () => {
+      setValue('city', '');
+    },
+  });
+
+  // Memoize dropdown options
+  const countryOptions = useMemo(
+    () => countries.map((c) => ({ value: c.isoCode, label: c.name })),
+    [countries]
+  );
+
+  const stateOptions = useMemo(
+    () => states.map((s) => ({ value: s.isoCode, label: s.name })),
+    [states]
+  );
+
+  const cityOptions = useMemo(
+    () => cities.map((c) => ({ value: c.name, label: c.name })),
+    [cities]
+  );
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -63,6 +104,7 @@ export function ProfileTab() {
           phone: profile.phone || '',
           address: profile.address || '',
           city: profile.city || '',
+          state: profile.state || '',
           zipCode: profile.zipCode || '',
           country: profile.country || '',
         });
@@ -87,6 +129,7 @@ export function ProfileTab() {
         phone: data.phone,
         address: data.address,
         city: data.city,
+        state: data.state,
         zipCode: data.zipCode,
         country: data.country,
       });
@@ -117,6 +160,7 @@ export function ProfileTab() {
         phone: updatedProfile.phone || '',
         address: updatedProfile.address || '',
         city: updatedProfile.city || '',
+        state: updatedProfile.state || '',
         zipCode: updatedProfile.zipCode || '',
         country: updatedProfile.country || '',
       });
@@ -257,25 +301,112 @@ export function ProfileTab() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Country & State Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Country */}
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
+                Country
+              </label>
+              <Controller
+                name="country"
+                control={control}
+                render={({ field }) => (
+                  <SearchableSelect
+                    options={countryOptions}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select Country"
+                    icon={Globe}
+                    error={!!errors.country}
+                    searchable
+                  />
+                )}
+              />
+              {errors.country && (
+                <p className="mt-1 text-xs text-red-600">{errors.country.message}</p>
+              )}
+            </div>
+
+            {/* State / Province */}
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
+                State / Province
+              </label>
+              {hasStates ? (
+                <Controller
+                  name="state"
+                  control={control}
+                  render={({ field }) => (
+                    <SearchableSelect
+                      options={stateOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select State"
+                      icon={Landmark}
+                      error={!!errors.state}
+                      disabled={!watchedCountry}
+                      searchable
+                    />
+                  )}
+                />
+              ) : (
+                <input
+                  type="text"
+                  placeholder={watchedCountry ? 'Enter state or province' : 'Select country first'}
+                  disabled={!watchedCountry}
+                  {...register('state')}
+                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              )}
+              {errors.state && (
+                <p className="mt-1 text-xs text-red-600">{errors.state.message}</p>
+              )}
+            </div>
+          </div>
+
+          {/* City & ZIP Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* City */}
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-2">
                 City
               </label>
-              <input
-                {...register('city')}
-                type="text"
-                className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-sm"
-                placeholder="Miami Beach"
-              />
+              {hasCities ? (
+                <Controller
+                  name="city"
+                  control={control}
+                  render={({ field }) => (
+                    <SearchableSelect
+                      options={cityOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select City"
+                      icon={Building2}
+                      error={!!errors.city}
+                      disabled={!watchedState}
+                      searchable
+                    />
+                  )}
+                />
+              ) : (
+                <input
+                  type="text"
+                  placeholder={watchedState ? 'Enter city' : 'Select state first'}
+                  disabled={!watchedCountry}
+                  {...register('city')}
+                  className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              )}
               {errors.city && (
                 <p className="mt-1 text-xs text-red-600">{errors.city.message}</p>
               )}
             </div>
 
+            {/* ZIP Code */}
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-2">
-                ZIP Code
+                ZIP / Postal Code
               </label>
               <input
                 {...register('zipCode')}
@@ -285,21 +416,6 @@ export function ProfileTab() {
               />
               {errors.zipCode && (
                 <p className="mt-1 text-xs text-red-600">{errors.zipCode.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                Country
-              </label>
-              <input
-                {...register('country')}
-                type="text"
-                className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-sm"
-                placeholder="United States"
-              />
-              {errors.country && (
-                <p className="mt-1 text-xs text-red-600">{errors.country.message}</p>
               )}
             </div>
           </div>

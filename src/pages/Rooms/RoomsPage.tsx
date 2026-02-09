@@ -14,7 +14,9 @@ import {
   ChevronsRight,
   CheckCircle,
   Home,
-  Loader2
+  Loader2,
+  ArrowUpDown,
+  Heart
 } from 'lucide-react';
 import { rooms as mockRooms } from '@/data/roomsData';
 import { Button, Card } from '@/components/ui';
@@ -22,6 +24,8 @@ import { formatCurrency } from '@/utils/helpers/format';
 import type { Room } from '@/api/types/booking.types';
 import { RoomsSearchWidget, SearchData } from '@/components/rooms/RoomsSearchWidget';
 import { roomTypesService } from '@/api/services/roomTypes.service';
+import { SearchableSelect } from '@/components/ui2/SearchableSelect';
+import { useWishlist } from '@/contexts/WishlistContext';
 
 type ViewMode = 'grid' | 'list';
 type SortOption = 'price-low' | 'price-high' | 'rating' | 'popularity';
@@ -127,6 +131,13 @@ export const RoomsPage = () => {
   }, []);
 
   const categories = ['standard', 'deluxe', 'suite', 'presidential'];
+
+  const sortOptions = useMemo(() => [
+    { label: 'Popular', value: 'popularity' },
+    { label: 'Top Rated', value: 'rating' },
+    { label: 'Price: Low to High', value: 'price-low' },
+    { label: 'Price: High to Low', value: 'price-high' },
+  ], []);
 
   // Calculate nights for availability check
   const nights = useMemo(() => {
@@ -492,23 +503,15 @@ export const RoomsPage = () => {
                 </div>
 
                 <div className="flex items-center gap-2 sm:gap-3">
-                  {/* Sort Dropdown - Custom Styled */}
-                  <div className="relative">
-                    <select
+                  {/* Sort Dropdown - Tailwind Styled */}
+                  <div className="w-48">
+                    <SearchableSelect
+                      options={sortOptions}
                       value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as SortOption)}
-                      className="appearance-none px-4 py-2.5 pr-10 border-2 border-neutral-200 rounded-xl bg-white text-sm font-semibold text-neutral-900 focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all cursor-pointer hover:border-primary-300"
-                    >
-                      <option value="popularity">Popular</option>
-                      <option value="rating">Top Rated</option>
-                      <option value="price-low">Price: Low</option>
-                      <option value="price-high">Price: High</option>
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <svg className="w-4 h-4 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
+                      onChange={(value) => setSortBy(value as SortOption)}
+                      placeholder="Sort by"
+                      icon={ArrowUpDown}
+                    />
                   </div>
 
                   {/* View Mode Toggle */}
@@ -711,6 +714,7 @@ interface RoomCardProps {
 }
 
 const RoomCard = ({ room, viewMode, searchData, nights, navigate, getCategoryBadgeColor }: RoomCardProps) => {
+  const { toggleWishlist, isInWishlist } = useWishlist();
   const totalPrice = nights > 0 ? room.price * nights : room.price;
   const hasSearchDates = searchData.checkIn && searchData.checkOut;
 
@@ -760,6 +764,20 @@ const RoomCard = ({ room, viewMode, searchData, nights, navigate, getCategoryBad
                 <span className="text-xs font-bold">Available</span>
                 </div>
               )}
+
+            {/* Heart Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleWishlist(room.id);
+              }}
+              className="absolute bottom-3 left-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm border-2 border-white hover:scale-110 transition-all shadow-md z-10 flex items-center justify-center"
+            >
+              <Heart
+                size={20}
+                className={isInWishlist(room.id) ? 'fill-red-500 text-red-500' : 'text-neutral-600'}
+              />
+            </button>
             </div>
 
             {/* Content */}
@@ -902,6 +920,20 @@ const RoomCard = ({ room, viewMode, searchData, nights, navigate, getCategoryBad
               <span className="text-xs font-bold">Available</span>
             </div>
           )}
+
+          {/* Heart Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleWishlist(room.id);
+            }}
+            className="absolute bottom-3 left-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm border-2 border-white hover:scale-110 transition-all shadow-md z-10 flex items-center justify-center"
+          >
+            <Heart
+              size={20}
+              className={isInWishlist(room.id) ? 'fill-red-500 text-red-500' : 'text-neutral-600'}
+            />
+          </button>
         </div>
 
         {/* Room Details */}

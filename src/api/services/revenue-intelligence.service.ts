@@ -711,6 +711,48 @@ const transformRuleResponse = (rule: any): PricingRule => {
   };
 };
 
+function toBackendCreatePayload(rule: CreatePricingRuleRequest): BackendPricingRuleCreate {
+  const roomTypeId = rule.roomTypes?.length
+    ? (() => {
+        const n = parseInt(String(rule.roomTypes[0]), 10);
+        return Number.isNaN(n) ? null : n;
+      })()
+    : null;
+  const actions = (rule.actions || [])
+    .map(transformActionToBackend)
+    .filter((a): a is NonNullable<typeof a> => a != null);
+  return {
+    rule_name: rule.name,
+    description: rule.description,
+    room_type_id: roomTypeId,
+    priority: rule.priority,
+    is_active: rule.isActive,
+    conditions: (rule.conditions || []).map(transformConditionToBackend),
+    actions,
+  };
+}
+
+function toBackendUpdatePayload(rule: UpdatePricingRuleRequest): BackendPricingRuleUpdate {
+  const out: BackendPricingRuleUpdate = {};
+  if (rule.name !== undefined) out.rule_name = rule.name;
+  if (rule.description !== undefined) out.description = rule.description;
+  if (rule.roomTypes !== undefined) {
+    out.room_type_id = rule.roomTypes?.length
+      ? (() => {
+          const n = parseInt(String(rule.roomTypes![0]), 10);
+          return Number.isNaN(n) ? null : n;
+        })()
+      : null;
+  }
+  if (rule.priority !== undefined) out.priority = rule.priority;
+  if (rule.isActive !== undefined) out.is_active = rule.isActive;
+  if (rule.conditions !== undefined) out.conditions = rule.conditions.map(transformConditionToBackend);
+  if (rule.actions !== undefined) {
+    out.actions = rule.actions.map(transformActionToBackend).filter((a): a is NonNullable<typeof a> => a != null);
+  }
+  return out;
+}
+
 export const revenueIntelligenceService = {
   /**
    * Get real-time KPIs
@@ -1100,7 +1142,7 @@ export const revenueIntelligenceService = {
     const response = await apiClient.get<{ rules: Record<string, unknown>[]; total?: number; active_count?: number; activeCount?: number }>(`${BASE_URL}/pricing-rules`);
     const raw = response.data?.rules ?? response.data?.data?.rules ?? [];
     const list = Array.isArray(raw) ? raw : [];
-    return list.map((r: Record<string, unknown>) => fromBackendRule(r));
+    return list.map((r: Record<string, unknown>) => transformRuleResponse(r));
   },
 
   /**
@@ -1110,7 +1152,7 @@ export const revenueIntelligenceService = {
   async createPricingRule(rule: CreatePricingRuleRequest): Promise<PricingRule> {
     const payload = toBackendCreatePayload(rule);
     const response = await apiClient.post<Record<string, unknown>>(`${BASE_URL}/pricing-rules`, payload);
-    return fromBackendRule(response.data ?? {});
+    return transformRuleResponse(response.data ?? {});
   },
 
   /**
@@ -1123,7 +1165,7 @@ export const revenueIntelligenceService = {
       `${BASE_URL}/pricing-rules/${id}`,
       payload
     );
-    return fromBackendRule(response.data ?? {});
+    return transformRuleResponse(response.data ?? {});
   },
 
   /**

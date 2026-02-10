@@ -4,7 +4,7 @@
  * Uses GET /room-mappings/bulk-view and POST /room-mappings/bulk.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Loader2, Layers, ArrowRight, Check } from 'lucide-react';
 import { channelManagerService } from '../../api/services/channel-manager.service';
 import { useToast } from '../../contexts/ToastContext';
@@ -23,33 +23,49 @@ export default function BulkMappingDrawer({
   const [saving, setSaving] = useState(false);
   const [data, setData] = useState(null);
   const [localMappings, setLocalMappings] = useState<Record<number, string>>({});
-
-  const fetchBulkView = async () => {
-    if (!otaCode || !isOpen) return;
-    setLoading(true);
-    try {
-      const res = await channelManagerService.getRoomMappingsBulkView(otaCode);
-      setData(res);
-      const init = (res.items || []).reduce(
-        (acc, it) => ({ ...acc, [it.pmsRoomTypeId]: it.otaRoomType ?? '' }),
-        {}
-      );
-      setLocalMappings(init);
-    } catch (err) {
-      console.error('Bulk view fetch error:', err);
-      showError(err?.response?.data?.error || 'Failed to load bulk mapping data');
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchIdRef = useRef(0);
 
   useEffect(() => {
     if (isOpen && otaCode) {
-      fetchBulkView();
+      setData(null);
+      setLocalMappings({});
+      setLoading(true);
+      const currentFetchId = (fetchIdRef.current += 1);
+      const openWhenStarted = isOpen;
+      const otaWhenStarted = otaCode;
+      channelManagerService
+        .getRoomMappingsBulkView(otaCode)
+        .then((res) => {
+          if (currentFetchId !== fetchIdRef.current) return;
+          if (!openWhenStarted || otaCode !== otaWhenStarted) return;
+          setData(res);
+          const init = (res.items || []).reduce(
+            (acc, it) => ({
+              ...acc,
+              [it.pmsRoomTypeId]: it.mappingId != null
+                ? (it.otaRoomType ?? '').trim()
+                : ''
+            }),
+            {}
+          );
+          setLocalMappings(init);
+        })
+        .catch((err) => {
+          if (currentFetchId !== fetchIdRef.current) return;
+          if (!openWhenStarted || otaCode !== otaWhenStarted) return;
+          console.error('Bulk view fetch error:', err);
+          showError(err?.response?.data?.error || 'Failed to load bulk mapping data');
+          setData(null);
+        })
+        .finally(() => {
+          if (currentFetchId === fetchIdRef.current && openWhenStarted && otaCode === otaWhenStarted) {
+            setLoading(false);
+          }
+        });
     } else if (!isOpen) {
       setData(null);
       setLocalMappings({});
+      setLoading(false);
     }
   }, [isOpen, otaCode]);
 

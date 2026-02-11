@@ -67,6 +67,24 @@ function saveToStorage(data) {
   }
 }
 
+/** Extract user-friendly message from API error (422 validation, network, etc.). */
+function getApiErrorMessage(err: any, fallback: string): string {
+  if (!err) return fallback;
+  const data = err.response?.data;
+  if (data) {
+    if (typeof data.error === 'string') return data.error;
+    if (typeof data.message === 'string') return data.message;
+    if (Array.isArray(data.detail)) {
+      const parts = data.detail.map((d: any) => (d.msg ?? d.message ?? JSON.stringify(d)));
+      return parts.length ? parts.join('. ') : fallback;
+    }
+    if (typeof data.detail === 'string') return data.detail;
+  }
+  const msg = err.message;
+  if (typeof msg === 'string' && msg.length > 0) return msg;
+  return fallback;
+}
+
 export function ChannelManagerProvider({ children }) {
   const toast = useToast() as { success: (msg: string, opts?: object) => void; error: (msg: string, opts?: object) => void };
   const { success, error: showError } = toast;
@@ -216,7 +234,7 @@ export function ChannelManagerProvider({ children }) {
       // Transform API data to match expected format
       const transformed = data.map((rt: any) => ({
         id: rt.id || rt.slug,
-        roomTypeId: rt.roomTypeId ?? rt.room_type_id ?? (typeof rt.id === 'number' ? rt.id : undefined),
+        roomTypeId: rt.roomTypeId != null ? rt.roomTypeId : (typeof rt.id === 'number' || (typeof rt.id === 'string' && /^\d+$/.test(rt.id)) ? Number(rt.id) : undefined),
         slug: rt.slug,
         name: rt.name,
         baseOccupancy: rt.maxGuests || 2,
@@ -415,7 +433,42 @@ export function ChannelManagerProvider({ children }) {
   const mapRoom = useCallback(async (mappingData: any) => {
     try {
       const newMapping = await channelManagerService.createRoomMapping(mappingData);
-      await fetchRoomMappings(); // Refresh list
+      // Use request keys so lookup by room.id works (API may return id = mapping UUID)
+      const pmsId = String(mappingData.pmsRoomTypeId ?? newMapping?.pmsRoomTypeId ?? newMapping?.id ?? '');
+      const pmsName = String(mappingData.pmsRoomType ?? newMapping?.pmsRoomType ?? '');
+      const otaEntry = {
+        otaCode: mappingData.otaCode ?? newMapping?.otaCode ?? '',
+        otaRoomType: mappingData.otaRoomType ?? newMapping?.otaRoomType ?? '',
+        otaRoomId: mappingData.otaRoomId ?? newMapping?.otaRoomId ?? '',
+        otaRoomCode: newMapping?.otaRoomCode,
+        maxGuests: newMapping?.maxGuests ?? mappingData?.maxGuests,
+        defaultRatePlan: newMapping?.defaultRatePlan ?? mappingData?.defaultRatePlan,
+        status: 'active' as const,
+        lastSync: new Date().toISOString(),
+      };
+      setRoomMappings(prev => {
+        const byId = new Map(prev.map(m => [String(m.pmsRoomTypeId), { ...m }]));
+        const existing = byId.get(pmsId);
+        if (existing) {
+          const otaMappings = existing.otaMappings ?? [];
+          const hasOta = otaMappings.some((om: any) => om.otaCode === otaEntry.otaCode);
+          if (!hasOta) existing.otaMappings = [...otaMappings, otaEntry];
+          byId.set(pmsId, existing);
+        } else {
+          byId.set(pmsId, {
+            id: newMapping?.id ?? pmsId,
+            pmsRoomTypeId: pmsId,
+            pmsRoomType: pmsName,
+            pmsRoomCode: newMapping?.pmsRoomCode,
+            basePrice: newMapping?.basePrice ?? 0,
+            inventory: newMapping?.inventory ?? 0,
+            otaMappings: [otaEntry],
+          });
+        }
+        return Array.from(byId.values());
+      });
+      // Refresh from server so UI reflects saved mapping (handles any API key shape: id vs roomTypeId)
+      await fetchRoomMappings();
       const ota = otas.find(o => o.code === mappingData.otaCode);
       addSyncLog(
         mappingData.otaCode,
@@ -427,26 +480,9 @@ export function ChannelManagerProvider({ children }) {
       success('Room mapping created successfully');
       return newMapping;
     } catch (err: any) {
-      const status = err.response?.status;
-      const data = err.response?.data;
-      if (status === 422 && data) {
-        console.error('Room mapping 422 response:', JSON.stringify(data, null, 2));
-      } else {
-        console.error('Error creating room mapping:', err);
-      }
-      let message: string | undefined;
-      if (data?.message) message = data.message;
-      else if (data?.error) message = data.error;
-      else if (Array.isArray(data?.errors)) {
-        const first = data.errors[0];
-        message = typeof first === 'string' ? first : first?.message ?? first?.msg;
-      } else if (data?.errors && typeof data.errors === 'object') {
-        const firstKey = Object.keys(data.errors)[0];
-        const firstVal = firstKey ? (data.errors as Record<string, unknown>)[firstKey] : undefined;
-        const arr = Array.isArray(firstVal) ? firstVal : [firstVal];
-        message = arr.length ? String(arr[0]) : undefined;
-      }
-      showError(message && typeof message === 'string' ? message : 'Failed to create room mapping');
+      console.error('Error creating room mapping:', err);
+      const message = getApiErrorMessage(err, 'Failed to create room mapping');
+      showError(message);
       throw err;
     }
   }, [otas, fetchRoomMappings, success, showError]);

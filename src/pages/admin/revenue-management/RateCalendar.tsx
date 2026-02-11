@@ -9,6 +9,7 @@ import { RecommendationsPanel } from '../../../components/revenue-management/Rec
 import { Button } from '../../../components/ui2/Button';
 import { DropdownMenu, DropdownMenuItem } from '../../../components/ui2/DropdownMenu';
 import { useChannelManagerSSEEvents } from '../../../hooks/useChannelManagerSSEEvents';
+import revenueIntelligenceService from '../../../api/services/revenue-intelligence.service';
 
 // KPI Card Component - Consistent with Design System
 function KPICard({ title, value, trendValue, icon: Icon, accentColor = 'terra', subtitle, children }) {
@@ -68,6 +69,7 @@ const RateCalendar = () => {
     recommendations,
     refreshRecommendations,
     refreshAll,
+    bulkUpdateRates,
     isLoading,
     error,
     isSyncing,
@@ -80,6 +82,7 @@ const RateCalendar = () => {
   const [selectedDates, setSelectedDates] = useState([]);
   const [showBulkEditModal, setShowBulkEditModal] = useState(false);
   const [bulkEditData, setBulkEditData] = useState({ rateChange: '', changeType: 'amount' });
+  const [isApplyingBulk, setIsApplyingBulk] = useState(false);
   const [competitorSuggestion, setCompetitorSuggestion] = useState(null);
 
   // Handle navigation from Competitor Rates page
@@ -323,23 +326,82 @@ const RateCalendar = () => {
     setShowBulkEditModal(true);
   };
 
-  const applyBulkChanges = () => {
+  const applyBulkChanges = async () => {
     const { rateChange, changeType } = bulkEditData;
     if (!rateChange || rateChange === '') {
       toast.warning('Please enter a rate change amount');
       return;
     }
 
-    toast.info(`Applying ${changeType === 'amount' ? '$' + rateChange : rateChange + '%'} change to ${selectedDates.length} dates...`);
+    const changeNum = Number(rateChange);
+    if (Number.isNaN(changeNum)) {
+      toast.warning('Please enter a valid number');
+      return;
+    }
 
-    // Simulate API call
-    setTimeout(() => {
-      toast.success(`Successfully updated ${selectedDates.length} dates`);
+    const computeNewRate = (currentRate) => {
+      if (changeType === 'amount') {
+        return Math.max(0, Math.round(currentRate + changeNum));
+      }
+      return Math.max(0, Math.round(currentRate * (1 + changeNum / 100)));
+    };
+
+    // Build updates from context rateCalendar (try both string and number room type keys)
+    let updates = [];
+    const calendar = rateCalendar || {};
+    const selectedSet = new Set(selectedDates);
+    for (const date of selectedDates) {
+      const dayData = calendar[date];
+      if (!dayData?.rooms) continue;
+      for (const roomTypeId of Object.keys(dayData.rooms)) {
+        const room = dayData.rooms[roomTypeId];
+        const currentRate = room?.dynamicRate ?? room?.overrideRate ?? room?.rates?.BAR ?? 0;
+        updates.push({ roomTypeId, date, rate: computeNewRate(currentRate) });
+      }
+    }
+
+    // If context has no data for selected dates, fetch calendar for that range and build updates
+    if (updates.length === 0 && selectedDates.length > 0) {
+      const startDate = selectedDates.reduce((a, b) => (a < b ? a : b));
+      const endDate = selectedDates.reduce((a, b) => (a > b ? a : b));
+      try {
+        const calendarData = await revenueIntelligenceService.getRateCalendar(startDate, endDate);
+        if (calendarData?.days) {
+          for (const day of calendarData.days) {
+            if (!selectedSet.has(day.date)) continue;
+            if (day.rooms && typeof day.rooms === 'object') {
+              for (const [roomTypeId, room] of Object.entries(day.rooms)) {
+                const currentRate = room?.dynamicRate ?? room?.baseRate ?? 0;
+                updates.push({ roomTypeId, date: day.date, rate: computeNewRate(currentRate) });
+              }
+            }
+          }
+        }
+      } catch (fetchErr) {
+        console.error('Failed to fetch calendar for bulk update:', fetchErr);
+      }
+    }
+
+    if (updates.length === 0) {
+      toast.warning('No rates to update for the selected dates. Ensure calendar data is loaded.');
+      return;
+    }
+
+    toast.info(`Applying ${changeType === 'amount' ? '$' + rateChange : rateChange + '%'} change to ${selectedDates.length} dates...`);
+    setIsApplyingBulk(true);
+    try {
+      await bulkUpdateRates(updates);
+      toast.success(`Successfully updated ${selectedDates.length} date${selectedDates.length !== 1 ? 's' : ''}`);
       setShowBulkEditModal(false);
       setBulkEditMode(false);
       setSelectedDates([]);
       setBulkEditData({ rateChange: '', changeType: 'amount' });
-    }, 1000);
+    } catch (err) {
+      console.error('Bulk rate update failed:', err);
+      toast.error('Failed to save rate updates. Please try again.');
+    } finally {
+      setIsApplyingBulk(false);
+    }
   };
 
   const selectDateRange = (startDate, endDate) => {
@@ -926,11 +988,21 @@ const RateCalendar = () => {
                 <Button
                   variant="primary"
                   onClick={applyBulkChanges}
+                  disabled={isApplyingBulk}
                   fullWidth
                   className="text-xs sm:text-sm"
                 >
-                  <span className="hidden sm:inline">Apply to {selectedDates.length} Date{selectedDates.length !== 1 ? 's' : ''}</span>
-                  <span className="sm:hidden">Apply ({selectedDates.length})</span>
+                  {isApplyingBulk ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2 shrink-0" />
+                      <span>Applying...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="hidden sm:inline">Apply to {selectedDates.length} Date{selectedDates.length !== 1 ? 's' : ''}</span>
+                      <span className="sm:hidden">Apply ({selectedDates.length})</span>
+                    </>
+                  )}
                 </Button>
               </div>
             </div>

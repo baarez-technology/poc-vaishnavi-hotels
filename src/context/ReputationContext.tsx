@@ -732,43 +732,28 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
 
   const reviews = useMemo(() => {
     if (!dashboard?.recent_reviews) return [];
-    // Transform reviews to match component expectations
+    // Transform reviews to match component expectations - all data from DB
     return dashboard.recent_reviews.map(r => {
-      // Derive sentiment from rating when sentiment data is missing
-      const ratingBasedSentiment = r.rating != null ? (
-        r.rating >= 4.5 ? 92 :
-          r.rating >= 4 ? 78 :
-            r.rating >= 3 ? 55 :
-              r.rating >= 2 ? 32 : 15
-      ) : 55;
-
-      const ratingBasedLabel = r.rating != null ? (
-        r.rating >= 4 ? 'positive' :
-          r.rating >= 3 ? 'neutral' : 'negative'
-      ) : 'neutral';
-
-      const sentiment = r.sentiment_score ?? (
-        r.sentiment_label === 'positive' ? 85 :
-          r.sentiment_label === 'negative' ? 25 :
-            r.sentiment_label === 'neutral' ? 55 :
-              ratingBasedSentiment
-      );
-
-      const sentimentLabel = r.sentiment_label || (
-        sentiment >= 70 ? 'positive' :
-          sentiment < 40 ? 'negative' : 'neutral'
-      );
+      // Backend returns sentiment as string: 'positive', 'neutral', 'negative'
+      // Convert to numeric score for components that need it
+      const sentimentScore = r.sentiment === 'positive' ? 85 :
+        r.sentiment === 'negative' ? 25 : 55;
 
       return {
         ...r,
-        sentiment,
-        sentimentLabel,
-        // Map field names for backward compatibility
-        guest: r.guest_name || `Guest ${r.id}`,
-        // Backend returns review_date, not created_at
-        date: r.review_date || r.created_at || r.date,
-        review: r.content || r.comment,
-        title: r.title || ''
+        // Numeric sentiment for filtering/sorting
+        sentiment: sentimentScore,
+        // String label from DB
+        sentimentLabel: r.sentiment || 'neutral',
+        // Map field names for component compatibility
+        guest: r.guest_name || `Guest #${r.id}`,
+        date: r.review_date || r.date,
+        review: r.comment || r.content,
+        title: r.title || '',
+        // Backend uses has_response, components use responded
+        responded: r.has_response || false,
+        // Ensure rating is present
+        rating: r.rating || 0
       };
     });
   }, [dashboard]);
@@ -826,24 +811,48 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   }, [analytics, dashboard]);
 
   const sentiment = useMemo(() => {
-    if (!dashboard?.sentiment_trend) return [];
-    return dashboard.sentiment_trend.map(item => ({
-      date: item.date,
-      score: Math.round((item.positive * 100 + item.neutral * 50) / (item.positive + item.neutral + item.negative || 1)),
-      positive: item.positive,
-      neutral: item.neutral,
-      negative: item.negative
-    }));
+    // Backend returns sentiment_trends (plural) with raw counts from DB
+    const trendData = dashboard?.sentiment_trends || dashboard?.sentiment_trend;
+    if (!trendData || trendData.length === 0) return [];
+
+    return trendData.map((item: any) => {
+      // Convert raw counts to percentages for the chart
+      const total = (item.positive || 0) + (item.neutral || 0) + (item.negative || 0);
+      if (total === 0) {
+        return { date: item.date, score: 0, positive: 0, neutral: 0, negative: 0 };
+      }
+      const positivePercent = Math.round((item.positive / total) * 100);
+      const neutralPercent = Math.round((item.neutral / total) * 100);
+      const negativePercent = Math.round((item.negative / total) * 100);
+
+      return {
+        date: item.date,
+        // Score uses backend's score if available, otherwise calculate
+        score: item.score ? Math.round(item.score * 100) : Math.round((positivePercent + neutralPercent * 0.5)),
+        positive: positivePercent,
+        neutral: neutralPercent,
+        negative: negativePercent
+      };
+    });
   }, [dashboard]);
 
   const otaRatings = useMemo(() => {
     if (!dashboard?.source_breakdown) return {};
     const ratings: Record<string, { rating: number; reviews: number; trend: number }> = {};
-    dashboard.source_breakdown.forEach(source => {
-      ratings[source.source.toLowerCase()] = {
-        // Backend returns avg_rating, not average_rating
-        rating: source.avg_rating ?? source.average_rating ?? 0,
-        reviews: source.count,
+
+    // Map backend source names to OTA chart config keys
+    const normalizeSourceKey = (source: string): string => {
+      const s = source.toLowerCase();
+      // booking_com -> booking (to match OTA_CONFIG in chart)
+      if (s === 'booking_com') return 'booking';
+      return s;
+    };
+
+    dashboard.source_breakdown.forEach(src => {
+      const key = normalizeSourceKey(src.source);
+      ratings[key] = {
+        rating: src.avg_rating ?? src.average_rating ?? 0,
+        reviews: src.count || 0,
         trend: 0
       };
     });
@@ -1039,30 +1048,51 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     }
   }, [automationConfig, updateAutomationConfig]);
 
-  // Filtered reviews
+  // Filtered reviews - filters data from DB
   const filteredReviews = useMemo(() => {
+    // Normalize source names for filter matching
+    const normalizeSource = (source: string): string => {
+      const s = (source || '').toLowerCase();
+      if (s === 'booking_com' || s === 'booking') return 'booking.com';
+      return s;
+    };
+
     return reviews.filter(review => {
-      if (filters.source !== 'all' && review.source.toLowerCase() !== filters.source.toLowerCase()) {
-        return false;
+      // Source filter
+      if (filters.source !== 'all') {
+        const reviewSource = normalizeSource(review.source);
+        const filterSource = filters.source.toLowerCase();
+        if (reviewSource !== filterSource) return false;
       }
+
+      // Rating filter
       if (filters.rating !== 'all') {
         const ratingNum = parseFloat(filters.rating);
-        if (review.rating < ratingNum || review.rating >= ratingNum + 1) {
-          return false;
-        }
+        const reviewRating = review.rating || 0;
+        if (reviewRating < ratingNum || reviewRating >= ratingNum + 1) return false;
       }
+
+      // Sentiment filter - uses sentimentLabel from DB (string: 'positive'/'neutral'/'negative')
       if (filters.sentimentRange !== 'all') {
-        if (filters.sentimentRange === 'positive' && review.sentiment_score < 70) return false;
-        if (filters.sentimentRange === 'negative' && review.sentiment_score >= 40) return false;
-        if (filters.sentimentRange === 'neutral' && (review.sentiment_score < 40 || review.sentiment_score >= 70)) return false;
+        const label = review.sentimentLabel;
+        if (filters.sentimentRange !== label) return false;
       }
-      if (filters.keyword && !review.keywords?.some(k =>
-        k.toLowerCase().includes(filters.keyword.toLowerCase())
-      )) {
-        return false;
+
+      // Keyword search
+      if (filters.keyword) {
+        const searchTerm = filters.keyword.toLowerCase();
+        const inTitle = review.title?.toLowerCase().includes(searchTerm);
+        const inComment = review.review?.toLowerCase().includes(searchTerm);
+        const inGuest = review.guest?.toLowerCase().includes(searchTerm);
+        if (!inTitle && !inComment && !inGuest) return false;
       }
+
       return true;
-    }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }).sort((a, b) => {
+      const dateA = new Date(a.date || 0).getTime();
+      const dateB = new Date(b.date || 0).getTime();
+      return dateB - dateA;
+    });
   }, [reviews, filters]);
 
   // Computed metrics

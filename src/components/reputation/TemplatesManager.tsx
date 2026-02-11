@@ -16,6 +16,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useReputation } from '@/context/ReputationContext';
+import { ResponseTemplate } from '@/api/services/reputation.service';
 import { Drawer, ConfirmDrawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 import { Input, Textarea, SelectDropdown } from '../ui2/Input';
@@ -23,21 +24,9 @@ import { Input, Textarea, SelectDropdown } from '../ui2/Input';
 type TemplateTone = 'professional' | 'friendly' | 'empathetic' | 'apologetic';
 type TemplateType = 'positive' | 'neutral' | 'negative' | 'custom';
 
-interface Template {
-  id: number | string;
-  name: string;
-  type: TemplateType;
-  tone: TemplateTone;
-  content: string;
-  template_text?: string; // API uses this field name
-  sentiment_type?: string; // API uses this instead of type
-  is_default: boolean;
-  is_active: boolean;
-  usage_count?: number;
-  language?: string;
-  created_at: string;
-  updated_at?: string;
-}
+// Use ResponseTemplate from service, but locally cast sentiment to TemplateType for UI helpers
+// We don't redefine Template interface locally anymore, except maybe for UI state convenience
+// But better to use the import.
 
 const VARIABLE_BUTTONS = [
   { variable: '{{guest_name}}', label: 'Guest Name', icon: User },
@@ -69,23 +58,23 @@ const TYPE_CONFIG: Record<TemplateType, { color: string; bgColor: string; border
 interface TemplateDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: Partial<Template>) => Promise<void>;
-  template?: Template | null;
+  onSubmit: (data: Partial<ResponseTemplate>) => Promise<void>;
+  template?: ResponseTemplate | null;
   mode: 'create' | 'edit';
 }
 
 function TemplateDrawer({ isOpen, onClose, onSubmit, template, mode }: TemplateDrawerProps) {
   const [name, setName] = useState(template?.name || '');
-  const [type, setType] = useState<TemplateType>(template?.type || 'positive');
-  const [tone, setTone] = useState<TemplateTone>(template?.tone || 'professional');
+  const [type, setType] = useState<TemplateType>((template?.sentiment as TemplateType) || 'positive');
+  const [tone, setTone] = useState<TemplateTone>((template?.tone as TemplateTone) || 'professional');
   const [content, setContent] = useState(template?.content || '');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (template) {
       setName(template.name);
-      setType(template.type);
-      setTone(template.tone);
+      setType((template.sentiment as TemplateType) || 'positive');
+      setTone((template.tone as TemplateTone) || 'professional');
       setContent(template.content);
     } else {
       setName('');
@@ -114,7 +103,12 @@ function TemplateDrawer({ isOpen, onClose, onSubmit, template, mode }: TemplateD
   const handleSubmit = async () => {
     setIsSaving(true);
     try {
-      await onSubmit({ name, type, tone, content });
+      await onSubmit({
+        name,
+        sentiment: type,  // Map UI type back to sentiment field
+        tone,
+        content
+      });
       onClose();
     } catch (error) {
       console.error('Failed to save template:', error);
@@ -218,7 +212,7 @@ function TemplateDrawer({ isOpen, onClose, onSubmit, template, mode }: TemplateD
 interface TestDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  template: Template | null;
+  template: ResponseTemplate | null;
 }
 
 function TestDrawer({ isOpen, onClose, template }: TestDrawerProps) {
@@ -316,59 +310,38 @@ function TestDrawer({ isOpen, onClose, template }: TestDrawerProps) {
 
 export default function TemplatesManager() {
   const {
-    templates: contextTemplates,
     loadTemplates,
     createTemplate,
     updateTemplate,
     deleteTemplate,
+    templates,
     isLoading
   } = useReputation();
-
-  // Map context templates to local Template interface
-  const templates: Template[] = (contextTemplates || []).map(t => ({
-    id: t.id,
-    name: t.name,
-    type: (t.sentiment || 'positive') as TemplateType,
-    tone: (t.tone || 'professional') as TemplateTone,
-    content: t.content,
-    is_default: t.is_default,
-    is_active: t.is_active,
-    language: t.language,
-    created_at: t.created_at,
-    updated_at: t.updated_at
-  }));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [testDrawerOpen, setTestDrawerOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
-  const [testingTemplate, setTestingTemplate] = useState<Template | null>(null);
-  const [deletingTemplate, setDeletingTemplate] = useState<Template | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<ResponseTemplate | null>(null);
+  const [testingTemplate, setTestingTemplate] = useState<ResponseTemplate | null>(null);
+  const [deletingTemplate, setDeletingTemplate] = useState<ResponseTemplate | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    fetchTemplates();
-  }, []);
+    // Initial load
+    loadTemplates().catch(console.error);
+  }, [loadTemplates]);
 
-  // Expand first template when templates load
+  // Handle expanding first template once templates are loaded
   useEffect(() => {
-    if (templates.length > 0 && expandedIds.size === 0) {
+    if (templates && templates.length > 0 && expandedIds.size === 0) {
       setExpandedIds(new Set([String(templates[0].id)]));
     }
   }, [templates]);
 
-  const fetchTemplates = async () => {
-    try {
-      await loadTemplates();
-    } catch (error) {
-      console.error('Failed to load templates:', error);
-    }
-  };
-
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await fetchTemplates();
+      await loadTemplates();
     } finally {
       setIsRefreshing(false);
     }
@@ -391,22 +364,22 @@ export default function TemplatesManager() {
     setDrawerOpen(true);
   };
 
-  const openEditDrawer = (template: Template) => {
+  const openEditDrawer = (template: ResponseTemplate) => {
     setEditingTemplate(template);
     setDrawerOpen(true);
   };
 
-  const openTestDrawer = (template: Template) => {
+  const openTestDrawer = (template: ResponseTemplate) => {
     setTestingTemplate(template);
     setTestDrawerOpen(true);
   };
 
-  const handleSubmit = async (data: Partial<Template>) => {
-    // Map frontend 'type' field to backend 'sentiment' field
+  const handleSubmit = async (data: Partial<ResponseTemplate>) => {
+    // The TemplateDrawer already maps UI 'type' to 'sentiment' field
     const apiData = {
       name: data.name,
       content: data.content,
-      sentiment: data.type || 'positive', // Map type -> sentiment
+      sentiment: data.sentiment || 'positive',
       tone: data.tone || 'professional',
       is_default: data.is_default
     };
@@ -414,7 +387,7 @@ export default function TemplatesManager() {
     if (editingTemplate) {
       await updateTemplate(Number(editingTemplate.id), apiData);
     } else {
-      await createTemplate(apiData as any);
+      await createTemplate(apiData);
     }
   };
 
@@ -433,13 +406,16 @@ export default function TemplatesManager() {
   };
 
   const groupedTemplates = templates.reduce((acc, template) => {
-    const type = template.type || 'custom';
-    if (!acc[type]) {
-      acc[type] = [];
+    const type = (template.sentiment as TemplateType) || 'custom';
+    // Fallback to custom if sentiment does not match standard types
+    const key = ['positive', 'neutral', 'negative'].includes(type) ? type : 'custom';
+
+    if (!acc[key]) {
+      acc[key] = [];
     }
-    acc[type].push(template);
+    acc[key].push(template);
     return acc;
-  }, {} as Record<TemplateType, Template[]>);
+  }, {} as Record<TemplateType, ResponseTemplate[]>);
 
   const typeOrder: TemplateType[] = ['positive', 'neutral', 'negative', 'custom'];
 
@@ -536,11 +512,7 @@ export default function TemplatesManager() {
                                     Default
                                   </span>
                                 )}
-                                {template.usage_count !== undefined && template.usage_count > 0 && (
-                                  <span className="px-1.5 py-0.5 text-[9px] font-semibold bg-ocean-100 text-ocean-600 rounded">
-                                    {template.usage_count} uses
-                                  </span>
-                                )}
+                                {/* Usage count not currently available in API response, can be added later */}
                               </div>
                               <div className="flex items-center gap-2 mt-0.5 text-[11px] text-neutral-500">
                                 <span className="capitalize">{template.tone}</span>

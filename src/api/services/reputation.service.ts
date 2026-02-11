@@ -42,6 +42,10 @@ export interface Review {
   responded: boolean;
   response_text?: string;
   response_date?: string;
+  // Optional/Legacy fields
+  review_date?: string;
+  date?: string;
+  comment?: string;
 }
 
 export interface ResponseTemplate {
@@ -253,6 +257,19 @@ export interface ReputationSettings {
     sync_frequency_hours: number;
     last_sync: string;
   };
+}
+
+export interface ResponseTemplate {
+  id: number;
+  name: string;
+  content: string;
+  sentiment: string;
+  tone: string;
+  language: string;
+  is_default: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
 }
 
 // API Service
@@ -674,6 +691,7 @@ class ReputationService {
     content: string;
     sentiment: string;
     tone?: string;
+    language?: string;
     is_default?: boolean;
   }): Promise<ResponseTemplate> {
     const response = await api.post(`${this.baseUrl}/templates`, data);
@@ -685,6 +703,7 @@ class ReputationService {
     content?: string;
     sentiment?: string;
     tone?: string;
+    language?: string;
     is_active?: boolean;
     is_default?: boolean;
   }): Promise<ResponseTemplate> {

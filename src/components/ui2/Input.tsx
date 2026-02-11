@@ -1,7 +1,7 @@
 import React, { forwardRef, useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../../lib/utils';
-import { Search, Eye, EyeOff, X, ChevronDown, Calendar, Check } from 'lucide-react';
+import { Search, Eye, EyeOff, X, ChevronDown, Check } from 'lucide-react';
 
 /**
  * Glimmora Design System v5.0 - Input Components
@@ -25,7 +25,15 @@ const baseStyles = `
 `;
 
 // Basic Input
-export const Input = forwardRef(function Input({
+export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  error?: string;
+  icon?: any;
+  iconRight?: any;
+  onClear?: () => void;
+}
+
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({
   className,
   size = 'md',
   error,
@@ -72,7 +80,7 @@ export const Input = forwardRef(function Input({
 });
 
 // Password Input with toggle
-export const PasswordInput = forwardRef(function PasswordInput({
+export const PasswordInput = forwardRef<HTMLInputElement, InputProps>(function PasswordInput({
   className,
   size = 'md',
   error,
@@ -107,7 +115,11 @@ export const PasswordInput = forwardRef(function PasswordInput({
 });
 
 // Search Input
-export const SearchInput = forwardRef(function SearchInput({
+export interface SearchInputProps extends Omit<InputProps, 'icon'> {
+  // additional props if needed
+}
+
+export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(function SearchInput({
   className,
   size = 'md',
   onClear,
@@ -144,7 +156,13 @@ export const SearchInput = forwardRef(function SearchInput({
 });
 
 // Select Input
-export const Select = forwardRef(function Select({
+export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'> {
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  error?: string;
+  placeholder?: string;
+}
+
+export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select({
   className,
   size = 'md',
   error,
@@ -179,7 +197,11 @@ export const Select = forwardRef(function Select({
 });
 
 // Textarea
-export const Textarea = forwardRef(function Textarea({
+export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  error?: string;
+}
+
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea({
   className,
   error,
   rows = 4,
@@ -205,7 +227,13 @@ export const Textarea = forwardRef(function Textarea({
 });
 
 // Checkbox
-export const Checkbox = forwardRef(function Checkbox({
+export interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
+  description?: string;
+  error?: boolean;
+}
+
+export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Checkbox({
   className,
   label,
   description,
@@ -243,7 +271,12 @@ export const Checkbox = forwardRef(function Checkbox({
 });
 
 // Radio Button
-export const Radio = forwardRef(function Radio({
+export interface RadioProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
+  description?: string;
+}
+
+export const Radio = forwardRef<HTMLInputElement, RadioProps>(function Radio({
   className,
   label,
   description,
@@ -279,6 +312,15 @@ export const Radio = forwardRef(function Radio({
 });
 
 // Form Field Wrapper with label and error
+interface FormFieldProps {
+  className?: string;
+  label?: string;
+  description?: string;
+  error?: string;
+  required?: boolean;
+  children: React.ReactNode;
+}
+
 export function FormField({
   className,
   label,
@@ -286,7 +328,7 @@ export function FormField({
   error,
   required,
   children,
-}) {
+}: FormFieldProps) {
   return (
     <div className={cn('space-y-2', className)}>
       {label && (
@@ -307,7 +349,12 @@ export function FormField({
 }
 
 // Input Group
-export function InputGroup({ children, className }) {
+interface InputGroupProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function InputGroup({ children, className }: InputGroupProps) {
   return (
     <div
       className={cn(
@@ -325,7 +372,13 @@ export function InputGroup({ children, className }) {
 }
 
 // Input Addon (prefix/suffix for input group)
-export function InputAddon({ children, className, position = 'left' }) {
+interface InputAddonProps {
+  children: React.ReactNode;
+  className?: string;
+  position?: 'left' | 'right';
+}
+
+export function InputAddon({ children, className, position = 'left' }: InputAddonProps) {
   return (
     <div
       className={cn(
@@ -368,13 +421,13 @@ export function SelectDropdown({
   className,
 }: SelectDropdownProps) {
   const [open, setOpen] = useState(false);
-  const [position, setPosition] = useState(null);
-  const triggerRef = useRef(null);
-  const menuRef = useRef(null);
+  const [position, setPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = options.find(opt => opt.value === value);
 
-  const calculatePosition = (triggerRect, menuHeight = 240) => {
+  const calculatePosition = (triggerRect: DOMRect, menuHeight = 240) => {
     const padding = 4;
     const spaceBelow = window.innerHeight - triggerRect.bottom - padding;
     const spaceAbove = triggerRect.top - padding;
@@ -407,7 +460,7 @@ export function SelectDropdown({
     }
   };
 
-  const handleSelect = (optionValue) => {
+  const handleSelect = (optionValue: string) => {
     onChange(optionValue);
     setOpen(false);
     setPosition(null);
@@ -416,17 +469,17 @@ export function SelectDropdown({
   useEffect(() => {
     if (!open) return;
 
-    const handleClickOutside = (e) => {
+    const handleClickOutside = (e: MouseEvent) => {
       if (
-        !triggerRef.current?.contains(e.target) &&
-        !menuRef.current?.contains(e.target)
+        triggerRef.current && !triggerRef.current.contains(e.target as Node) &&
+        menuRef.current && !menuRef.current.contains(e.target as Node)
       ) {
         setOpen(false);
         setPosition(null);
       }
     };
 
-    const handleEsc = (e) => {
+    const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setOpen(false);
         setPosition(null);

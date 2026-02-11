@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Save, Clock, Globe, Edit3, Check, X, Zap } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Clock, Globe, Edit3, Check, Zap, Plus, Trash2, Loader2 } from 'lucide-react';
 import { SelectDropdown, Textarea } from '../ui2/Input';
 import { Button } from '../ui2/Button';
+import { useReputation } from '@/context/ReputationContext';
 
 const DELAY_OPTIONS = [
   { value: '1h', label: '1 Hour' },
@@ -44,16 +45,40 @@ const TEMPLATE_TYPES = [
 ];
 
 export default function AutoReplies({ settings, onSettingsChange }) {
-  const [editingTemplate, setEditingTemplate] = useState(null);
-  const [tempTemplate, setTempTemplate] = useState('');
+  const {
+    templates,
+    createTemplate,
+    updateTemplate,
+    deleteTemplate,
+    isLoading: contextLoading
+  } = useReputation();
+
+  const [editingType, setEditingType] = useState(null);
+  const [tempContent, setTempContent] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  // Map templates to types
+  const templatesByType = useMemo(() => {
+    const map = {};
+    if (templates) {
+      templates.forEach(t => {
+        // Use the first template found for each sentiment type as the "active" one for this view
+        const sentiment = t.sentiment || 'custom';
+        if (!map[sentiment]) {
+          map[sentiment] = t;
+        }
+      });
+    }
+    return map;
+  }, [templates]);
 
   const handleToggleAutoReply = () => {
     onSettingsChange({
       ...settings,
       autoReply: {
         ...settings.autoReply,
-        enabled: !settings.autoReply.enabled
+        enabled: !settings.autoReply?.enabled
       }
     });
   };
@@ -79,29 +104,63 @@ export default function AutoReplies({ settings, onSettingsChange }) {
   };
 
   const handleEditTemplate = (type) => {
-    setEditingTemplate(type);
-    setTempTemplate(settings.autoReply.templates[type]);
+    const existing = templatesByType[type];
+    setEditingType(type);
+    setTempContent(existing ? existing.content : '');
   };
 
-  const handleSaveTemplate = () => {
-    onSettingsChange({
-      ...settings,
-      autoReply: {
-        ...settings.autoReply,
-        templates: {
-          ...settings.autoReply.templates,
-          [editingTemplate]: tempTemplate
-        }
+  const handleSaveTemplate = async () => {
+    if (!tempContent.trim()) return;
+
+    setIsSaving(true);
+    try {
+      const existing = templatesByType[editingType];
+
+      if (existing) {
+        await updateTemplate(existing.id, {
+          content: tempContent,
+          sentiment: editingType,
+          tone: existing.tone || 'professional'
+        });
+      } else {
+        await createTemplate({
+          name: `${editingType.charAt(0).toUpperCase() + editingType.slice(1)} Auto-Reply`,
+          content: tempContent,
+          sentiment: editingType,
+          tone: 'professional',
+          is_default: true
+        });
       }
-    });
-    setEditingTemplate(null);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+
+      setEditingType(null);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (error) {
+      console.error('Failed to save template:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteTemplate = async (type) => {
+    if (!window.confirm('Are you sure you want to delete this template?')) return;
+
+    const existing = templatesByType[type];
+    if (existing) {
+      try {
+        await deleteTemplate(existing.id);
+        if (editingType === type) {
+          setEditingType(null);
+        }
+      } catch (error) {
+        console.error('Failed to delete template:', error);
+      }
+    }
   };
 
   const handleCancelEdit = () => {
-    setEditingTemplate(null);
-    setTempTemplate('');
+    setEditingType(null);
+    setTempContent('');
   };
 
   return (
@@ -121,14 +180,12 @@ export default function AutoReplies({ settings, onSettingsChange }) {
             </span>
             <button
               onClick={handleToggleAutoReply}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                settings.autoReply?.enabled ? 'bg-terra-500' : 'bg-neutral-200'
-              }`}
+              className={`relative w-11 h-6 rounded-full transition-colors ${settings.autoReply?.enabled ? 'bg-terra-500' : 'bg-neutral-200'
+                }`}
             >
               <span
-                className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
-                  settings.autoReply?.enabled ? 'left-6' : 'left-1'
-                }`}
+                className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${settings.autoReply?.enabled ? 'left-6' : 'left-1'
+                  }`}
               />
             </button>
           </label>
@@ -206,60 +263,110 @@ export default function AutoReplies({ settings, onSettingsChange }) {
         <div>
           <h4 className="text-[13px] font-semibold text-neutral-900 mb-3">Response Templates</h4>
           <div className="space-y-3">
-            {TEMPLATE_TYPES.map((type) => (
-              <div
-                key={type.id}
-                className="bg-neutral-50 rounded-[8px] overflow-hidden"
-              >
-                <div className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ backgroundColor: type.color }}
-                    />
-                    <div>
-                      <p className="text-[13px] font-medium text-neutral-900">{type.label}</p>
-                      <p className="text-[11px] text-neutral-500">{type.description}</p>
+            {TEMPLATE_TYPES.map((type) => {
+              const existingTemplate = templatesByType[type.id];
+              const isEditing = editingType === type.id;
+
+              return (
+                <div
+                  key={type.id}
+                  className="bg-neutral-50 rounded-[8px] overflow-hidden"
+                >
+                  <div className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-2.5 h-2.5 rounded-full"
+                        style={{ backgroundColor: type.color }}
+                      />
+                      <div>
+                        <p className="text-[13px] font-medium text-neutral-900">{type.label}</p>
+                        <p className="text-[11px] text-neutral-500">{type.description}</p>
+                      </div>
                     </div>
+                    {isEditing ? null : (
+                      <div className="flex items-center gap-2">
+                        {existingTemplate ? (
+                          <Button
+                            variant="outline-neutral"
+                            size="xs"
+                            icon={Edit3}
+                            onClick={() => handleEditTemplate(type.id)}
+                          >
+                            Edit
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="primary"
+                            size="xs"
+                            icon={Plus}
+                            onClick={() => handleEditTemplate(type.id)}
+                          >
+                            Add
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  {editingTemplate !== type.id && (
-                    <Button
-                      variant="outline-neutral"
-                      size="xs"
-                      icon={Edit3}
-                      onClick={() => handleEditTemplate(type.id)}
-                    >
-                      Edit
-                    </Button>
+
+                  {isEditing ? (
+                    <div className="px-4 pb-4">
+                      <Textarea
+                        value={tempContent}
+                        onChange={(e) => setTempContent(e.target.value)}
+                        rows={3}
+                        placeholder="Enter template text... Use {{guest_name}} for guest name"
+                        className="mb-3"
+                      />
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="primary"
+                            size="xs"
+                            onClick={handleSaveTemplate}
+                            disabled={isSaving || !tempContent.trim()}
+                            icon={isSaving ? Loader2 : Check}
+                            className={isSaving ? '[&>svg]:animate-spin' : ''}
+                          >
+                            {isSaving ? 'Saving...' : 'Save Template'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="xs"
+                            onClick={handleCancelEdit}
+                            disabled={isSaving}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                        {existingTemplate && (
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            icon={Trash2}
+                            onClick={() => handleDeleteTemplate(type.id)}
+                            className="text-neutral-400 hover:text-red-500"
+                          >
+                            Delete
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="px-4 pb-4">
+                      {existingTemplate ? (
+                        <p className="text-[12px] text-neutral-600 line-clamp-2 whitespace-pre-line">
+                          {existingTemplate.content}
+                        </p>
+                      ) : (
+                        <p className="text-[12px] text-neutral-400 italic">
+                          No template set
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
-
-                {editingTemplate === type.id ? (
-                  <div className="px-4 pb-4">
-                    <Textarea
-                      value={tempTemplate}
-                      onChange={(e) => setTempTemplate(e.target.value)}
-                      rows={3}
-                      placeholder="Enter template text... Use {guest} for guest name"
-                    />
-                    <div className="flex items-center gap-2 mt-2">
-                      <Button variant="primary" size="xs" onClick={handleSaveTemplate}>
-                        Save
-                      </Button>
-                      <Button variant="outline" size="xs" onClick={handleCancelEdit}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="px-4 pb-4">
-                    <p className="text-[12px] text-neutral-600 line-clamp-2">
-                      {settings.autoReply?.templates?.[type.id] || 'No template set'}
-                    </p>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

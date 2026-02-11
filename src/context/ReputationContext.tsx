@@ -21,7 +21,9 @@ interface ReputationContextType {
   analytics: ReviewAnalytics | null;
   trends: TrendData | null;
   pendingReviews: Review[];
+  templates: ResponseTemplate[];
   isLoading: boolean;
+
   error: string | null;
   filters: {
     source: string;
@@ -162,6 +164,12 @@ interface ReputationContextType {
   affectDemandWeighting: { modifier: number; reason: string };
   affectRateRecommendations: Array<{ type: string; suggestion: string; reason: string; confidence: string }>;
 
+  // Template Management
+  loadTemplates: () => Promise<ResponseTemplate[]>;
+  createTemplate: (data: Partial<ResponseTemplate>) => Promise<ResponseTemplate>;
+  updateTemplate: (id: number, data: Partial<ResponseTemplate>) => Promise<ResponseTemplate>;
+  deleteTemplate: (id: number) => Promise<void>;
+
   // Legacy compatibility
   addReviewResponse: (reviewId: number, responseText: string) => void;
   settings: {
@@ -192,6 +200,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   const [analytics, setAnalytics] = useState<ReviewAnalytics | null>(null);
   const [trends, setTrends] = useState<TrendData | null>(null);
   const [pendingReviews, setPendingReviews] = useState<Review[]>([]);
+  const [templates, setTemplates] = useState<ResponseTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -294,6 +303,17 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
       setGoals(data || []);
     } catch (err: any) {
       console.error('Error fetching goals:', err);
+    }
+  }, []);
+
+  const loadTemplates = useCallback(async () => {
+    try {
+      const data = await reputationService.getResponseTemplates();
+      setTemplates(data || []);
+      return data;
+    } catch (err: any) {
+      console.error('Error fetching templates:', err);
+      throw err;
     }
   }, []);
 
@@ -707,6 +727,51 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
       throw err;
     }
   }, []);
+
+  // ========================
+  // TEMPLATE MANAGEMENT
+  // ========================
+
+
+
+  const createTemplate = useCallback(async (data: Partial<ResponseTemplate>) => {
+    try {
+      const result = await reputationService.createResponseTemplate({
+        name: data.name || '',
+        content: data.content || '',
+        sentiment: data.sentiment || 'positive',
+        tone: data.tone,
+        language: data.language,
+        is_default: data.is_default
+      });
+      await loadTemplates();
+      return result;
+    } catch (err: any) {
+      console.error('Error creating template:', err);
+      throw err;
+    }
+  }, [loadTemplates]);
+
+  const updateTemplate = useCallback(async (id: number, data: Partial<ResponseTemplate>) => {
+    try {
+      const result = await reputationService.updateResponseTemplate(id, data);
+      await loadTemplates();
+      return result;
+    } catch (err: any) {
+      console.error('Error updating template:', err);
+      throw err;
+    }
+  }, [loadTemplates]);
+
+  const deleteTemplate = useCallback(async (id: number) => {
+    try {
+      await reputationService.deleteResponseTemplate(id);
+      await loadTemplates();
+    } catch (err: any) {
+      console.error('Error deleting template:', err);
+      throw err;
+    }
+  }, [loadTemplates]);
 
   // ========================
   // RESPONSE GENERATION
@@ -1134,8 +1199,10 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     analytics,
     trends,
     pendingReviews,
+    templates,
     isLoading,
     error,
+
     filters,
 
     // New State
@@ -1228,6 +1295,12 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     // Revenue AI Integration
     affectDemandWeighting,
     affectRateRecommendations,
+
+    // Template Management
+    loadTemplates,
+    createTemplate,
+    updateTemplate,
+    deleteTemplate,
 
     // Legacy compatibility
     addReviewResponse,

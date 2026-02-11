@@ -17,7 +17,7 @@ import BulkMappingDrawer from './BulkMappingDrawer';
 import { API_ENDPOINTS } from '@/config/constants';
 
 export default function RoomMappingTable({ otaCode, onAutoMap, searchQuery = '' }) {
-  const { roomMappings, otas, roomTypes, mapRoom, fetchRoomMappings } = useChannelManager();
+  const { roomMappings, otas, roomTypes, mapRoom, fetchRoomMappings, showError } = useChannelManager();
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [isExpanded, setIsExpanded] = useState(true);

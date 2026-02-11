@@ -55,6 +55,7 @@ import {
   FileText,
   MessageSquare,
   Bell,
+  DollarSign,
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { reviewsData, reviewsSummary } from '../../data/reviewsData';

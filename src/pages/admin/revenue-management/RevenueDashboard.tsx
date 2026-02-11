@@ -141,6 +141,11 @@ const RevenueDashboard = () => {
         revenueIntelligenceService.getSegmentPerformance().catch(() => []),
       ]);
 
+      // Extract values, using defaults for failed requests
+      const dashboard = dashboardResult.status === 'fulfilled' ? dashboardResult.value : null;
+      const recs = recsResult.status === 'fulfilled' ? recsResult.value : [];
+      const pricingRules = rulesResult.status === 'fulfilled' ? rulesResult.value : [];
+
       setDashboardData(dashboard);
       setRecommendations(recsResponse?.recommendations || []);
       setRules(Array.isArray(pricingRules) ? pricingRules : []);

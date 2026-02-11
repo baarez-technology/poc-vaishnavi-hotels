@@ -611,7 +611,8 @@ export default function SyncLogs() {
                   >
                     <span className="flex items-center gap-1.5 sm:gap-2">
                       <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      <span>{tab.label}</span>
+                      <span className="hidden sm:inline">{tab.label}</span>
+                      <span className="sm:hidden">{tab.id === 'all' ? 'All' : tab.label.substring(0, 4)}</span>
                       <span className={`px-1 sm:px-1.5 py-0.5 rounded text-[9px] sm:text-[11px] font-semibold tabular-nums ${
                         activeTab === tab.id
                           ? 'bg-terra-500 text-white'
@@ -681,7 +682,7 @@ export default function SyncLogs() {
 
           {/* Table */}
           {filteredLogs.length === 0 ? (
-            <div className="px-4 sm:px-5 py-8 sm:py-16 text-center">
+            <div className="px-4 sm:px-6 py-8 sm:py-16 text-center">
               <div className="flex flex-col items-center">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-terra-50 flex items-center justify-center mb-3 sm:mb-4">
                   <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-terra-500" />
@@ -709,19 +710,19 @@ export default function SyncLogs() {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-neutral-50/30 border-b border-neutral-100">
-                      <th className="text-left px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
+                      <th className="text-left px-3 sm:px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
                         Time
                       </th>
-                      <th className="text-left px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
+                      <th className="text-left px-3 sm:px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
                         Channel
                       </th>
-                      <th className="text-left px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
+                      <th className="text-left px-3 sm:px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
                         Action
                       </th>
-                      <th className="text-left px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                      <th className="text-left px-3 sm:px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
                         Message
                       </th>
-                      <th className="text-left px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
+                      <th className="text-left px-3 sm:px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
                         Status
                       </th>
                       <th className="px-2 py-3 sm:py-4 w-10"></th>
@@ -741,14 +742,14 @@ export default function SyncLogs() {
                           className="bg-white hover:bg-neutral-50/50 transition-colors animate-in fade-in slide-in-from-left-2 border-b border-neutral-100 last:border-b-0"
                         >
                           {/* Time */}
-                          <td className="py-3 sm:py-4 px-4 whitespace-nowrap">
+                          <td className="py-3 sm:py-4 px-3 sm:px-4 whitespace-nowrap">
                             <span className="text-xs sm:text-[13px] text-neutral-600 font-medium">
                               {formatTime(log.timestamp)}
                             </span>
                           </td>
 
                           {/* Channel/OTA */}
-                          <td className="py-3 sm:py-4 px-4 whitespace-nowrap">
+                          <td className="py-3 sm:py-4 px-3 sm:px-4 whitespace-nowrap">
                             <div className="flex items-center gap-2">
                               <div
                                 className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-white text-[9px] sm:text-[10px] font-bold flex-shrink-0"
@@ -768,21 +769,21 @@ export default function SyncLogs() {
                           </td>
 
                           {/* Action */}
-                          <td className="py-3 sm:py-4 px-4 whitespace-nowrap">
+                          <td className="py-3 sm:py-4 px-3 sm:px-4 whitespace-nowrap">
                             <p className="text-xs sm:text-[13px] font-medium text-neutral-800">
                               {actionConfig.label}
                             </p>
                           </td>
 
                           {/* Message */}
-                          <td className="py-3 sm:py-4 px-4">
+                          <td className="py-3 sm:py-4 px-3 sm:px-4">
                             <p className="text-xs sm:text-[13px] text-neutral-500 max-w-xs lg:max-w-md truncate" title={log.message}>
                               {log.message}
                             </p>
                           </td>
 
                           {/* Status */}
-                          <td className="py-3 sm:py-4 px-4 whitespace-nowrap">
+                          <td className="py-3 sm:py-4 px-3 sm:px-4 whitespace-nowrap">
                             <span className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[10px] sm:text-[11px] font-medium ${getStatusBadgeClasses(log.status)}`}>
                               <StatusIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
                               <span>{log.status.charAt(0).toUpperCase() + log.status.slice(1)}</span>
@@ -811,7 +812,7 @@ export default function SyncLogs() {
 
               {/* Pagination - Matching BookingList exactly */}
               {totalPages > 1 && (
-                <div className="px-4 sm:px-5 py-3 sm:py-4 border-t border-neutral-100 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 bg-neutral-50/30">
+                <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 bg-neutral-50/30">
                   <p className="text-[11px] sm:text-[13px] text-neutral-500 order-2 sm:order-1">
                     <span className="hidden sm:inline">Showing </span>
                     <span className="font-semibold text-neutral-700">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span>

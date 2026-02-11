@@ -127,7 +127,7 @@ export default function GuestsTable({ guests, sortField, sortDirection, onSort, 
               <th
                 key={column.key}
                 onClick={() => column.sortable && onSort(column.key)}
-                className={`text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap ${
+                className={`text-left px-4 sm:px-6 py-3 sm:py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap ${
                   column.sortable ? 'cursor-pointer hover:text-neutral-600' : ''
                 }`}
               >

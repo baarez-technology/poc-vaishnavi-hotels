@@ -9,6 +9,7 @@ import { GuestAIProvider } from './contexts/GuestAIContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { WishlistProvider } from './contexts/WishlistContext';
 import { SSEProvider } from './contexts/SSEContext';
+import { BrandingProvider } from '@/contexts/BrandingContext';
 import { AGIChatWidget } from './components/chatbot/AGIChatWidget';
 
 // Wrapper component to conditionally show Aria AI Chat Widget only on guest pages
@@ -148,7 +149,8 @@ function App() {
   return (
     <ThemeProvider>
       <WishlistProvider>
-        <Router>
+        <BrandingProvider>
+          <Router>
           <AuthProvider>
             <ChatProvider>
               <AGIChatProvider>
@@ -426,7 +428,6 @@ function App() {
                           <Route path="/signup" element={<SignupPage />} />
                           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                           <Route path="/reset-password" element={<ResetPassword />} />
-
                           {/* 404 */}
                           <Route path="*" element={<NotFound />} />
                         </Routes>
@@ -437,7 +438,8 @@ function App() {
               </AGIChatProvider>
             </ChatProvider>
           </AuthProvider>
-        </Router>
+          </Router>
+        </BrandingProvider>
       </WishlistProvider>
     </ThemeProvider>
   );

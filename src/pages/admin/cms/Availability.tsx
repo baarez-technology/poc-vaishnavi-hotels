@@ -2565,39 +2565,41 @@ export default function CMSAvailability() {
       {/* Floating Bulk Action Bar */}
       {bulkEditMode && bulkSelections.length > 0 && (
         <div className={cn(
-          'fixed bottom-6 left-1/2 -translate-x-1/2 z-50',
-          'rounded-2xl p-4 flex items-center gap-4 min-w-[500px]',
+          'fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50',
+          'rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4',
+          'w-[calc(100%-2rem)] sm:w-auto sm:min-w-[500px] max-w-[calc(100%-2rem)] sm:max-w-none',
           'animate-in slide-in-from-bottom-4 duration-300',
           isDark
             ? 'bg-neutral-900/95 backdrop-blur-xl border border-neutral-800 shadow-2xl'
             : 'bg-white/95 backdrop-blur-xl border border-neutral-200 shadow-2xl'
         )}>
           <div className="flex-1">
-            <p className={cn('text-sm font-semibold', isDark ? 'text-white' : 'text-neutral-900')}>
-              Bulk Edit Mode Active
+            <p className={cn('text-xs sm:text-sm font-semibold', isDark ? 'text-white' : 'text-neutral-900')}>
+              Bulk Edit Mode
             </p>
-            <p className={cn('text-xs', isDark ? 'text-neutral-500' : 'text-neutral-500')}>
+            <p className={cn('text-[10px] sm:text-xs', isDark ? 'text-neutral-500' : 'text-neutral-500')}>
               {bulkSelections.length} cell{bulkSelections.length !== 1 ? 's' : ''} selected
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleBulkAction('close')}
-              className="flex items-center gap-2 px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-sm font-medium transition-colors"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-colors"
             >
-              <Ban className="w-4 h-4" />
+              <Ban className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Close
             </button>
             <button
               onClick={() => handleBulkAction('open')}
-              className="flex items-center gap-2 px-4 py-2 bg-sage-500 hover:bg-sage-600 text-white rounded-xl text-sm font-medium transition-colors"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-sage-500 hover:bg-sage-600 text-white rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-colors"
             >
-              <Unlock className="w-4 h-4" />
+              <Unlock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Open
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-terra-500 hover:bg-terra-600 text-white rounded-xl text-sm font-medium transition-colors">
-              <Settings className="w-4 h-4" />
-              Edit Rules
+            <button className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-terra-500 hover:bg-terra-600 text-white rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-colors">
+              <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Edit Rules</span>
+              <span className="sm:hidden">Rules</span>
             </button>
           </div>
         </div>

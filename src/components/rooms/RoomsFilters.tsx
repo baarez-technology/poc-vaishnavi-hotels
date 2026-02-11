@@ -182,7 +182,7 @@ export default function RoomsFilters({ filters, onFilterChange, onClearFilters, 
 
   return (
     <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 pb-2 sm:pb-0">
-      <div className="flex items-center gap-2 sm:gap-3 min-w-max">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-max sm:min-w-0 sm:flex-wrap">
         {/* Room Type Filter */}
         <FilterSelect
           value={filters.type}
@@ -226,7 +226,7 @@ export default function RoomsFilters({ filters, onFilterChange, onClearFilters, 
             className="h-9 px-2 sm:px-3 flex items-center gap-1 sm:gap-1.5 text-[12px] sm:text-[13px] font-medium text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-[8px] transition-colors flex-shrink-0"
           >
             <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline">Clear</span>
+            <span className="hidden sm:inline">Clear All</span>
             <span className="sm:hidden">Clear</span>
           </button>
         )}

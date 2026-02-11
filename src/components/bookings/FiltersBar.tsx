@@ -19,7 +19,8 @@ function FilterSelect({ value, onChange, options, placeholder }) {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`h-9 px-2.5 sm:px-3.5 rounded-lg text-xs sm:text-[13px] bg-white border transition-all duration-150 flex items-center gap-1.5 sm:gap-2 focus:outline-none w-full sm:min-w-[140px] ${isOpen
+        className={`h-9 px-2.5 sm:px-3.5 rounded-lg text-xs sm:text-[13px] bg-white border transition-all duration-150 flex items-center gap-1.5 sm:gap-2 focus:outline-none w-full sm:min-w-[140px] ${
+          isOpen
             ? 'border-terra-400 ring-2 ring-terra-500/10'
             : value !== 'all'
               ? 'border-terra-300 bg-terra-50'
@@ -114,7 +115,8 @@ function DateRangeFilter({ dateFrom, dateTo, onDateFromChange, onDateToChange })
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`h-9 px-2.5 sm:px-3.5 rounded-lg text-xs sm:text-[13px] bg-white border transition-all duration-150 flex items-center gap-1.5 sm:gap-2 focus:outline-none w-full sm:w-auto ${isOpen
+        className={`h-9 px-2.5 sm:px-3.5 rounded-lg text-xs sm:text-[13px] bg-white border transition-all duration-150 flex items-center gap-1.5 sm:gap-2 focus:outline-none w-full sm:w-auto ${
+          isOpen
             ? 'border-terra-400 ring-2 ring-terra-500/10'
             : hasValue
               ? 'border-terra-300 bg-terra-50'

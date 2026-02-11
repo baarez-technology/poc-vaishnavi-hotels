@@ -21,7 +21,6 @@ import {
   TrendingDown,
   Users,
   Calendar,
-  DollarSign,
   Home,
   ArrowUpRight,
   ArrowDownRight,
@@ -130,6 +129,7 @@ function LuxuryKPICard({
   delay = 0
 }) {
   const isPositive = changeType === 'positive';
+  const isIconFunction = typeof Icon === 'function' && !Icon.displayName && !Icon.$$typeof;
 
   return (
     <div
@@ -723,6 +723,7 @@ export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const navigate = useNavigate();
   const { isDark } = useTheme();
+  const { symbol, formatCurrency: formatCurrencyDynamic } = useCurrency();
 
   // Live time
   useEffect(() => {
@@ -1007,7 +1008,7 @@ export default function Dashboard() {
             <LuxuryKPICard
               label="ADR"
               value={Math.round(adr)}
-              prefix="$"
+              prefix={symbol}
               change={`${dashboardData?.trends.adr >= 0 ? '+' : ''}${dashboardData?.trends.adr.toFixed(1) || '0.0'}%`}
               changeType={dashboardData?.trends.adr >= 0 ? "positive" : "negative"}
               icon={TrendingUp}
@@ -1021,7 +1022,7 @@ export default function Dashboard() {
             <LuxuryKPICard
               label="RevPAR"
               value={Math.round(revpar)}
-              prefix="$"
+              prefix={symbol}
               change={`${dashboardData?.trends.revpar >= 0 ? '+' : ''}${dashboardData?.trends.revpar.toFixed(1) || '0.0'}%`}
               changeType={dashboardData?.trends.revpar >= 0 ? "positive" : "negative"}
               icon={Target}
@@ -1120,7 +1121,7 @@ export default function Dashboard() {
                                   </span>
                                 </div>
                                 <span className="text-xs font-bold text-neutral-900">
-                                  ${entry.value?.toLocaleString()}
+                                  {symbol}{entry.value?.toLocaleString()}
                                 </span>
                               </div>
                             ))}

@@ -22,13 +22,27 @@ const TIER_ICONS = ['🥉', '🥈', '🥇', '💎', '👑', '⭐', '🏆', '💫
 
 function TierModal({ isOpen, onClose, onSave, tier, mode }) {
   const [formData, setFormData] = useState({
-    name: tier?.name || '',
-    color: tier?.color || TIER_COLORS[0],
-    icon: tier?.icon || TIER_ICONS[0],
-    minNights: tier?.minNights || 0,
-    minRevenue: tier?.minRevenue || 0,
-    benefits: tier?.benefits || ['']
+    name: '',
+    color: TIER_COLORS[0],
+    icon: TIER_ICONS[0],
+    minNights: 0,
+    minRevenue: 0,
+    benefits: ['']
   });
+
+  // When modal opens or a different tier is selected for edit, pre-fill form (fixes edit mode not showing tier name)
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        name: tier?.name ?? '',
+        color: tier?.color ?? TIER_COLORS[0],
+        icon: tier?.icon ?? TIER_ICONS[0],
+        minNights: tier?.minNights ?? 0,
+        minRevenue: tier?.minRevenue ?? 0,
+        benefits: Array.isArray(tier?.benefits) && tier.benefits.length > 0 ? [...tier.benefits] : ['']
+      });
+    }
+  }, [isOpen, tier?.id]);
 
   // ESC key handler and body scroll lock
   useEffect(() => {

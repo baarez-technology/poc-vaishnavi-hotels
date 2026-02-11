@@ -385,7 +385,7 @@ export const channelManagerService = {
     total: number;
   }> {
     const response = await apiClient.get(`${BASE_URL}/room-mappings/bulk-view`, {
-      params: { otaCode },
+      params: { otaCode, _t: Date.now() },
     });
     const data = response.data?.data ?? response.data;
     return {

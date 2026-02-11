@@ -56,6 +56,7 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
   const dropdownPortalRef = useRef<HTMLDivElement>(null);
   const [dropdownBounds, setDropdownBounds] = useState<{ top: number; left: number; width: number } | null>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
+  const scrollToTodayRequestedRef = useRef(false);
 
   // Fetch rate calendar data from API
   const fetchCalendarData = useCallback(async () => {
@@ -191,18 +192,28 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
 
   const handleGoToToday = useCallback(() => {
     const now = new Date();
-    setCurrentMonth(now);
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const startPadding = firstDay.getDay();
-    const todayIndex = startPadding + now.getDate() - 1;
-    setFocusedDateIndex(todayIndex);
-    setTimeout(() => {
-      const cell = calendarRef.current?.querySelector(`[data-calendar-cell]:nth-child(${todayIndex + 1})`);
-      (cell as HTMLElement)?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-    }, 100);
+    setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+    scrollToTodayRequestedRef.current = true;
   }, []);
+
+  // After month changes to current month, scroll to today's cell (runs once DOM has updated)
+  useEffect(() => {
+    if (!scrollToTodayRequestedRef.current || !calendarRef.current) return;
+    const todayIndex = calendarDays.findIndex(({ date }) => date.toISOString().split('T')[0] === today);
+    if (todayIndex === -1) {
+      scrollToTodayRequestedRef.current = false;
+      return;
+    }
+    setFocusedDateIndex(todayIndex);
+    scrollToTodayRequestedRef.current = false;
+    const cells = calendarRef.current.querySelectorAll('[data-calendar-cell]');
+    const cell = cells[todayIndex] as HTMLElement | undefined;
+    if (cell) {
+      requestAnimationFrame(() => {
+        cell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      });
+    }
+  }, [currentMonth, calendarDays, today]);
 
   // Keyboard navigation
   useEffect(() => {

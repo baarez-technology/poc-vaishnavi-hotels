@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   BedDouble,
@@ -17,6 +17,7 @@ import { StatCard } from '../../../components/staff-portal/ui/Card';
 import { StatusBadge, PriorityBadge } from '../../../components/staff-portal/ui/Badge';
 import Button from '../../../components/staff-portal/ui/Button';
 import { useStaffProfile, useHousekeepingRooms, useMyHousekeepingTasks, useNotifications, useHousekeepingActions } from '@/hooks/staff-portal/useStaffApi';
+import { useProfile } from '@/hooks/staff-portal/useStaffPortal';
 import { ScanDigitalKeyModal } from '@/components/housekeeping/modals/ScanDigitalKeyModal';
 
 /**
@@ -77,6 +78,7 @@ const HousekeepingDashboard = () => {
   const navigate = useNavigate();
   const [scanModalOpen, setScanModalOpen] = useState(false);
   const { data: profile } = useStaffProfile();
+  const { profile: contextProfile } = useProfile();
   const { data: dirtyRooms, loading: dirtyLoading, refetch: refetchDirty } = useHousekeepingRooms('dirty');
   const { data: inProgressRooms, loading: inProgressRoomLoading, refetch: refetchInProgressRooms } = useHousekeepingRooms('in_progress');
   const { data: cleanRooms } = useHousekeepingRooms('clean');
@@ -104,20 +106,110 @@ const HousekeepingDashboard = () => {
     urgentRooms: rooms.filter(r => r.priority === 'urgent' && r.status !== 'clean').length
   }), [cleanRooms, rooms, tasks]);
 
+  // Use context clockedIn (updated instantly from sidebar) + API shift times
+  const isClockedIn = contextProfile?.clockedIn || profile?.clocked_in;
+  const shiftStart = profile?.shift_start || contextProfile?.shiftStart;
+  const shiftEnd = profile?.shift_end || contextProfile?.shiftEnd;
+
+  // Tick every 60s so shift hours left & hours worked update while clocked in
+  const [minuteTick, setMinuteTick] = useState(0);
+  useEffect(() => {
+    if (!isClockedIn) return;
+    const id = setInterval(() => setMinuteTick(t => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, [isClockedIn]);
+
   const shiftHoursLeft = useMemo(() => {
-    if (!profile?.shift_end || !profile?.clocked_in) return null;
-    const [endHour, endMin] = profile.shift_end.split(':').map(Number);
-    const now = new Date();
-    const shiftEnd = new Date();
-    shiftEnd.setHours(endHour, endMin, 0);
+    if (!shiftEnd) return null;
 
-    const diffMs = shiftEnd.getTime() - now.getTime();
-    if (diffMs <= 0) return '0h 0m';
+    if (isClockedIn) {
+      // Show remaining hours when clocked in
+      const [endHour, endMin] = shiftEnd.split(':').map(Number);
+      const now = new Date();
+      const shiftEndTime = new Date();
+      shiftEndTime.setHours(endHour, endMin, 0);
 
-    const hours = Math.floor(diffMs / 3600000);
-    const minutes = Math.floor((diffMs % 3600000) / 60000);
-    return `${hours}h ${minutes}m`;
-  }, [profile]);
+      const diffMs = shiftEndTime.getTime() - now.getTime();
+      if (diffMs <= 0) return '0h 0m';
+
+      const hours = Math.floor(diffMs / 3600000);
+      const minutes = Math.floor((diffMs % 3600000) / 60000);
+      return `${hours}h ${minutes}m`;
+    }
+
+    // Show total shift duration when not clocked in
+    if (shiftStart) {
+      const [sh, sm] = shiftStart.split(':').map(Number);
+      const [eh, em] = shiftEnd.split(':').map(Number);
+      let diff = (eh * 60 + em) - (sh * 60 + sm);
+      if (diff < 0) diff += 24 * 60;
+      const hours = Math.floor(diff / 60);
+      const mins = diff % 60;
+      return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    }
+
+    return null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shiftStart, shiftEnd, isClockedIn, minuteTick]);
+
+  // Calculate cumulative hours worked today from clock history
+  const hoursWorkedToday = useMemo(() => {
+    const history = contextProfile?.clockHistory || [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayEntries = history
+      .filter((e: any) => new Date(e.timestamp) >= today)
+      .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    let totalMs = 0;
+    let lastClockIn: Date | null = null;
+
+    for (const entry of todayEntries) {
+      const time = new Date(entry.timestamp);
+      if (entry.action === 'clock_in') {
+        lastClockIn = time;
+      } else if (entry.action === 'clock_out' && lastClockIn) {
+        totalMs += time.getTime() - lastClockIn.getTime();
+        lastClockIn = null;
+      }
+    }
+
+    // If still clocked in, add time from last clock-in to now
+    if (lastClockIn && isClockedIn) {
+      totalMs += Date.now() - lastClockIn.getTime();
+    }
+
+    if (totalMs <= 0) return null;
+    const hours = Math.floor(totalMs / 3600000);
+    const minutes = Math.floor((totalMs % 3600000) / 60000);
+    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contextProfile?.clockHistory, isClockedIn, minuteTick]);
+
+  // Calculate if staff clocked in late (first clock-in today vs scheduled shift start)
+  const lateBy = useMemo(() => {
+    if (!shiftStart || !isClockedIn) return null;
+    const history = contextProfile?.clockHistory || [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayClockIns = history
+      .filter((e: any) => e.action === 'clock_in' && new Date(e.timestamp) >= today)
+      .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    if (todayClockIns.length === 0) return null;
+
+    const firstClockIn = new Date(todayClockIns[0].timestamp);
+    const [sh, sm] = shiftStart.split(':').map(Number);
+    const scheduledStart = new Date();
+    scheduledStart.setHours(sh, sm, 0, 0);
+
+    const diffMs = firstClockIn.getTime() - scheduledStart.getTime();
+    if (diffMs <= 60000) return null; // Grace period: 1 minute
+
+    const mins = Math.floor(diffMs / 60000);
+    return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
+  }, [shiftStart, isClockedIn, contextProfile?.clockHistory]);
 
   const todaysRooms = useMemo(() => {
     return rooms
@@ -201,9 +293,9 @@ const HousekeepingDashboard = () => {
         </div>
         <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
-            title="Shift Hours Left"
+            title={isClockedIn ? 'Shift Hours Left' : 'Shift Duration'}
             value={shiftHoursLeft || '--'}
-            subtitle={profile?.clocked_in ? 'Currently clocked in' : 'Not clocked in'}
+            subtitle={isClockedIn ? (hoursWorkedToday ? `${hoursWorkedToday} worked today${lateBy ? ` · Late ${lateBy}` : ''}` : (lateBy ? `Late by ${lateBy}` : 'Just clocked in')) : 'Not clocked in'}
             icon={Clock}
             color="ocean"
           />

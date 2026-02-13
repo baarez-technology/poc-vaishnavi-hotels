@@ -117,6 +117,42 @@ export default function StaffDrawer({
       maxWidth="max-w-2xl"
     >
       <div className="space-y-6">
+        {/* Attendance Status */}
+        <div>
+          <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
+            Attendance Status
+          </h4>
+          <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className={`relative w-3 h-3 rounded-full ${staff.clockedIn ? 'bg-emerald-500' : 'bg-neutral-300'}`}>
+                  {staff.clockedIn && (
+                    <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-75" />
+                  )}
+                </span>
+                <div>
+                  <p className="text-[13px] font-semibold text-neutral-900">
+                    {staff.clockedIn ? 'Clocked In' : 'Clocked Out'}
+                  </p>
+                  {staff.clockedIn && staff.lastCheckIn && (
+                    <p className="text-[11px] text-neutral-500">
+                      since {new Date(staff.lastCheckIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  )}
+                  {!staff.clockedIn && staff.lastCheckOut && (
+                    <p className="text-[11px] text-neutral-500">
+                      last out {new Date(staff.lastCheckOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <span className={`px-2.5 py-1 rounded-md text-[10px] font-semibold border ${staff.clockedIn ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-neutral-50 text-neutral-500 border-neutral-200'}`}>
+                {staff.shift ? `${staff.shift} shift` : '--'}
+              </span>
+            </div>
+          </div>
+        </div>
+
         {/* Contact Information */}
         <div>
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">

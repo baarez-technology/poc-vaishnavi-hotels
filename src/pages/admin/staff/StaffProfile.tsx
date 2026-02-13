@@ -15,6 +15,7 @@ import { useToast } from '../../../hooks/useToast';
 import EditStaffModal from '../../../components/staff/modals/EditStaffModal';
 import DisableStaffModal from '../../../components/staff/modals/DisableStaffModal';
 import Toast from '../../../components/common/Toast';
+import { Button } from '../../../components/ui2/Button';
 
 // Permission configuration
 const PERMISSIONS = [
@@ -166,7 +167,6 @@ export default function StaffProfile() {
         }
       } catch (err) {
         console.error('Failed to fetch tasks/performance:', err);
-        // Keep empty array if fetch fails
       } finally {
         setIsLoadingTasks(false);
       }
@@ -241,10 +241,10 @@ export default function StaffProfile() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-neutral-50">
+      <div className="flex-1 flex items-center justify-center" style={{ backgroundColor: '#F9F7F7' }}>
         <div className="text-center">
-          <Loader2 className="w-16 h-16 text-[#A57865] mx-auto mb-4 animate-spin" />
-          <p className="text-neutral-600">Loading staff profile...</p>
+          <Loader2 className="w-12 h-12 text-terra-500 mx-auto mb-4 animate-spin" />
+          <p className="text-[13px] text-neutral-500">Loading staff profile...</p>
         </div>
       </div>
     );
@@ -253,17 +253,21 @@ export default function StaffProfile() {
   // Error or not found state
   if (error || !staff) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-neutral-50">
+      <div className="flex-1 flex items-center justify-center" style={{ backgroundColor: '#F9F7F7' }}>
         <div className="text-center">
-          <User className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-neutral-700">Staff Not Found</h2>
-          <p className="text-neutral-500 mt-2">{error || "The staff member you're looking for doesn't exist."}</p>
-          <button
+          <div className="w-16 h-16 rounded-xl bg-neutral-100 flex items-center justify-center mx-auto mb-4">
+            <User className="w-8 h-8 text-neutral-300" />
+          </div>
+          <h2 className="text-lg font-semibold text-neutral-900">Staff Not Found</h2>
+          <p className="text-[13px] text-neutral-500 mt-1.5">{error || "The staff member you're looking for doesn't exist."}</p>
+          <Button
+            variant="primary"
+            icon={ArrowLeft}
             onClick={() => navigate('/admin/staff')}
-            className="mt-4 px-4 py-2 bg-[#A57865] text-white rounded-lg hover:bg-[#8E6554] transition-colors"
+            className="mt-4"
           >
             Back to Staff
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -279,544 +283,579 @@ export default function StaffProfile() {
   // Staff permissions
   const staffPermissions = staff.permissions || ['bookings', 'guests'];
 
-  const getStatusStyle = (status) => {
-    const styles = {
-      active: 'bg-[#5C9BA4]/10 text-[#5C9BA4] border-[#5C9BA4]/30',
-      'off-duty': 'bg-neutral-100 text-neutral-600 border-neutral-200',
-      sick: 'bg-rose-50 text-rose-700 border-rose-200',
-      leave: 'bg-[#CDB261]/10 text-[#9A8545] border-[#CDB261]/30',
-      disabled: 'bg-rose-100 text-rose-700 border-rose-300',
+  const getStatusConfig = (status: string) => {
+    const configs: Record<string, { dot: string; badge: string; label: string }> = {
+      active: { dot: 'bg-sage-500', badge: 'bg-sage-50 text-sage-700 border-sage-200', label: 'Active' },
+      'off-duty': { dot: 'bg-neutral-400', badge: 'bg-neutral-50 text-neutral-600 border-neutral-200', label: 'Off Duty' },
+      sick: { dot: 'bg-rose-500', badge: 'bg-rose-50 text-rose-600 border-rose-200', label: 'Sick' },
+      leave: { dot: 'bg-gold-500', badge: 'bg-gold-50 text-gold-700 border-gold-200', label: 'On Leave' },
+      disabled: { dot: 'bg-rose-500', badge: 'bg-rose-100 text-rose-700 border-rose-300', label: 'Disabled' },
     };
-    const labels = {
-      active: 'Active',
-      'off-duty': 'Off Duty',
-      sick: 'Sick',
-      leave: 'On Leave',
-      disabled: 'Disabled',
-    };
-    return { style: styles[status] || styles.active, label: labels[status] || status };
+    return configs[status] || configs.active;
   };
 
-  const statusInfo = getStatusStyle(staff.status);
+  const statusConfig = getStatusConfig(staff.status);
 
-  const handleEditStaff = (id, updates) => {
+  const handleEditStaff = (id: string, updates: any) => {
     editStaff(id, updates);
     showToast('Staff details updated');
   };
 
-  const handleDisableStaff = (id) => {
+  const handleDisableStaff = (id: string) => {
     disableStaff(id);
     showToast('Staff member disabled');
     navigate('/admin/staff');
   };
 
+  // Tooltip style for charts
+  const chartTooltipStyle = { borderRadius: '10px', border: '1px solid #E5E5E5', fontSize: '12px' };
+
   return (
-    <div className="flex-1 overflow-y-auto bg-neutral-50">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
+    <div className="flex-1 overflow-y-auto" style={{ backgroundColor: '#F9F7F7' }}>
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-5">
         {/* Back Button */}
         <button
           onClick={() => navigate('/admin/staff')}
-          className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
+          className="flex items-center gap-2 text-neutral-500 hover:text-neutral-900 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm font-medium">Back to Staff</span>
+          <span className="text-[13px] font-medium">Back to Staff</span>
         </button>
 
         {/* Profile Header */}
-        <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6">
-            <div className="flex items-center gap-4 sm:gap-6">
-              <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-[#A57865]/15 ring-2 ring-[#A57865]/30 flex items-center justify-center text-[#A57865] font-bold text-xl sm:text-3xl flex-shrink-0">
+        <div className="bg-white rounded-[10px] shadow-sm p-4 sm:p-6">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 sm:gap-6">
+            <div className="flex items-start gap-4">
+              <div className="relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-terra-100 flex items-center justify-center text-terra-600 font-bold text-xl sm:text-2xl">
                 {staff.avatar}
+                <span
+                  className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded-full border-[2.5px] border-white ${staff.clockedIn ? 'bg-emerald-500' : 'bg-neutral-300'}`}
+                  title={staff.clockedIn ? 'Clocked In' : 'Clocked Out'}
+                />
               </div>
               <div className="min-w-0">
-                <h1 className="text-xl sm:text-2xl font-sans font-bold text-neutral-900 truncate">{staff.name}</h1>
-                <div className="flex items-center gap-2 mt-1">
-                  <Briefcase className="w-4 h-4 text-neutral-500" />
-                  <span className="text-neutral-600">{staff.role}</span>
+                <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900 truncate">{staff.name}</h1>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <Briefcase className="w-3.5 h-3.5 text-neutral-400" />
+                  <span className="text-[13px] text-neutral-500">{staff.role}</span>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 sm:mt-3">
-                  <span className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold border ${statusInfo.style}`}>
-                    {statusInfo.label}
+                <div className="flex flex-wrap items-center gap-2 mt-2.5">
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border ${statusConfig.badge}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`} />
+                    {statusConfig.label}
                   </span>
-                  <span className="px-2 sm:px-3 py-1 bg-[#FAF8F6] border border-neutral-200 rounded-full text-[10px] sm:text-xs font-medium text-neutral-700 capitalize">
+                  <span className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-neutral-50 text-neutral-600 border border-neutral-200 capitalize">
                     {staff.department}
                   </span>
-                  <span className="px-2 sm:px-3 py-1 bg-[#5C9BA4]/10 border border-[#5C9BA4]/30 rounded-full text-[10px] sm:text-xs font-medium text-[#5C9BA4] capitalize">
+                  <span className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-terra-50 text-terra-600 border border-terra-200 capitalize">
                     {staff.shift} Shift
                   </span>
                 </div>
               </div>
             </div>
+            <div className="flex gap-2">
+              <Button variant="primary" size="sm" icon={Edit} onClick={() => setIsEditModalOpen(true)}>
+                <span className="hidden sm:inline">Edit</span>
+              </Button>
+              <Button variant="outline-danger" size="sm" icon={UserX} onClick={() => setIsDisableModalOpen(true)}>
+                <span className="hidden sm:inline">Disable</span>
+              </Button>
+            </div>
+          </div>
 
-            {/* Performance Summary */}
-            <div className="flex items-center gap-4 sm:gap-6 overflow-x-auto pb-2 lg:pb-0">
-              <div className="text-center flex-shrink-0">
-                <div className="flex items-center justify-center gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`w-4 h-4 sm:w-5 sm:h-5 ${star <= Math.round(staff.rating || 4.5) ? 'text-amber-400 fill-amber-400' : 'text-neutral-300'}`}
-                    />
-                  ))}
+          {/* Performance Summary Row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-5 border-t border-neutral-100">
+            <div className="p-3 rounded-lg bg-gold-50">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-7 h-7 rounded-lg bg-gold-100 flex items-center justify-center">
+                  <Star className="w-3.5 h-3.5 fill-gold-500 stroke-none" />
                 </div>
-                <p className="text-xs sm:text-sm text-neutral-500 mt-1">{staff.rating || 4.5} Rating</p>
+                <span className="text-[10px] font-medium text-gold-600">Rating</span>
               </div>
-              <div className="h-10 sm:h-12 w-px bg-neutral-200 flex-shrink-0" />
-              <div className="text-center flex-shrink-0">
-                <p className="text-2xl sm:text-3xl font-bold text-[#5C9BA4]">{staff.efficiency || 88}%</p>
-                <p className="text-xs sm:text-sm text-neutral-500">Efficiency</p>
-              </div>
-              <div className="h-10 sm:h-12 w-px bg-neutral-200 flex-shrink-0" />
-              <div className="text-center flex-shrink-0">
-                <p className="text-2xl sm:text-3xl font-bold text-[#A57865]">{staff.performance?.tasksCompleted || 245}</p>
-                <p className="text-xs sm:text-sm text-neutral-500">Tasks Done</p>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    className={`w-3.5 h-3.5 ${star <= Math.round(staff.rating || 4.5) ? 'text-gold-500 fill-gold-500' : 'text-neutral-200 fill-neutral-200'}`}
+                  />
+                ))}
+                <span className="text-[15px] font-bold text-gold-700 ml-1">{(staff.rating || 4.5).toFixed(1)}</span>
               </div>
             </div>
-
-            {/* Actions */}
-            <div className="flex gap-2 sm:gap-3">
-              <button
-                onClick={() => setIsEditModalOpen(true)}
-                className="px-3 sm:px-4 py-2 bg-[#A57865] text-white rounded-lg hover:bg-[#8E6554] transition-colors flex items-center gap-2 text-sm"
-              >
-                <Edit className="w-4 h-4" />
-                <span className="hidden sm:inline">Edit</span>
-              </button>
-              <button
-                onClick={() => setIsDisableModalOpen(true)}
-                className="px-3 sm:px-4 py-2 border border-rose-300 text-rose-600 rounded-lg hover:bg-rose-50 transition-colors flex items-center gap-2 text-sm"
-              >
-                <UserX className="w-4 h-4" />
-                <span className="hidden sm:inline">Disable</span>
-              </button>
+            <div className="p-3 rounded-lg bg-neutral-50">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-7 h-7 rounded-lg bg-white shadow-sm flex items-center justify-center">
+                  <TrendingUp className="w-3.5 h-3.5 text-sage-600" />
+                </div>
+                <span className="text-[10px] font-medium text-neutral-500">Efficiency</span>
+              </div>
+              <p className="text-[17px] font-bold text-neutral-900">{staff.efficiency || 88}%</p>
+            </div>
+            <div className="p-3 rounded-lg bg-neutral-50">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-7 h-7 rounded-lg bg-white shadow-sm flex items-center justify-center">
+                  <CheckCircle className="w-3.5 h-3.5 text-terra-500" />
+                </div>
+                <span className="text-[10px] font-medium text-neutral-500">Tasks Done</span>
+              </div>
+              <p className="text-[17px] font-bold text-neutral-900">{staff.performance?.tasksCompleted || 0}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-neutral-50">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-7 h-7 rounded-lg bg-white shadow-sm flex items-center justify-center">
+                  <Clock className="w-3.5 h-3.5 text-sage-600" />
+                </div>
+                <span className="text-[10px] font-medium text-neutral-500">Punctuality</span>
+              </div>
+              <p className="text-[17px] font-bold text-neutral-900">{staff.performance?.punctuality || 100}%</p>
             </div>
           </div>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          {/* Left Column */}
-          <div className="space-y-4 sm:space-y-6">
-            {/* Personal Information */}
-            <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
-              <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <User className="w-4 h-4 text-[#A57865]" />
-                Personal Information
-              </h3>
-              <div className="space-y-4">
+        {/* ── Bento Grid ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+
+          {/* ─── Row 1: Profile Info (1) | Attendance Overview (2) ─── */}
+          <div className="bg-white rounded-[10px] shadow-sm p-4 sm:p-5">
+            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3 flex items-center gap-2">
+              <User className="w-3.5 h-3.5 text-terra-500" />
+              Profile Information
+            </h3>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-xs text-neutral-500 mb-1">Full Name</p>
-                  <p className="text-sm font-medium text-neutral-900">{staff.name}</p>
+                  <p className="text-[11px] font-medium text-neutral-500 mb-0.5">Full Name</p>
+                  <p className="text-[13px] font-semibold text-neutral-900">{staff.name}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-neutral-500 mb-1">Employee ID</p>
-                  <p className="text-sm font-medium text-neutral-900">{staff.employeeId || `EMP-${staff.id}`}</p>
+                  <p className="text-[11px] font-medium text-neutral-500 mb-0.5">Employee ID</p>
+                  <p className="text-[13px] font-semibold text-neutral-900">{staff.employeeId || `EMP-${staff.id}`}</p>
                 </div>
-                <div>
-                  <p className="text-xs text-neutral-500 mb-1">Department</p>
-                  <p className="text-sm font-medium text-neutral-900 capitalize">{staff.department}</p>
+              </div>
+              <div className="h-px bg-neutral-100" />
+              <div>
+                <p className="text-[11px] font-medium text-neutral-500 mb-0.5">Department</p>
+                <p className="text-[13px] font-semibold text-neutral-900 capitalize">{staff.department}</p>
+              </div>
+              <div className="h-px bg-neutral-100" />
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-terra-50 flex items-center justify-center flex-shrink-0">
+                  <Phone className="w-4 h-4 text-terra-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-medium text-neutral-500">Phone</p>
+                  <p className="text-[13px] font-semibold text-neutral-900">{staff.phone}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-terra-50 flex items-center justify-center flex-shrink-0">
+                  <Mail className="w-4 h-4 text-terra-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-medium text-neutral-500">Email</p>
+                  <p className="text-[13px] font-semibold text-neutral-900 truncate">{staff.email}</p>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Contact Information */}
-            <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
-              <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Phone className="w-4 h-4 text-[#A57865]" />
-                Contact Information
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-[#FAF8F6] rounded-lg flex items-center justify-center">
-                    <Phone className="w-4 h-4 text-[#A57865]" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-500">Phone</p>
-                    <p className="text-sm font-medium text-neutral-900">{staff.phone}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-[#FAF8F6] rounded-lg flex items-center justify-center">
-                    <Mail className="w-4 h-4 text-[#A57865]" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-neutral-500">Email</p>
-                    <p className="text-sm font-medium text-neutral-900">{staff.email}</p>
-                  </div>
-                </div>
+          <div className="bg-white rounded-[10px] shadow-sm p-4 sm:p-5 lg:col-span-2">
+            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3 flex items-center gap-2">
+              <Clock className="w-3.5 h-3.5 text-sage-600" />
+              Attendance Overview
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
+              <div className="p-3 bg-emerald-50 rounded-lg text-center">
+                <p className="text-[17px] font-bold text-emerald-700">{staff.attendanceStats?.days_present ?? '--'}</p>
+                <p className="text-[10px] font-medium text-emerald-600 mt-0.5">Days Present</p>
+              </div>
+              <div className="p-3 bg-rose-50 rounded-lg text-center">
+                <p className="text-[17px] font-bold text-rose-600">{staff.attendanceStats?.days_absent ?? '--'}</p>
+                <p className="text-[10px] font-medium text-rose-500 mt-0.5">Days Absent</p>
+              </div>
+              <div className="p-3 bg-gold-50 rounded-lg text-center">
+                <p className="text-[17px] font-bold text-gold-700">{staff.attendanceStats?.days_late ?? '--'}</p>
+                <p className="text-[10px] font-medium text-gold-600 mt-0.5">Days Late</p>
+              </div>
+              <div className="p-3 bg-sage-50 rounded-lg text-center">
+                <p className="text-[17px] font-bold text-sage-700">{staff.attendanceStats?.total_hours != null ? `${staff.attendanceStats.total_hours}h` : '--'}</p>
+                <p className="text-[10px] font-medium text-sage-600 mt-0.5">Total Hours</p>
+              </div>
+              <div className="p-3 bg-terra-50 rounded-lg text-center">
+                <p className="text-[17px] font-bold text-terra-600">{staff.attendanceStats?.overtime_hours != null ? `${staff.attendanceStats.overtime_hours}h` : '--'}</p>
+                <p className="text-[10px] font-medium text-terra-500 mt-0.5">Overtime</p>
               </div>
             </div>
+            <div className="mt-3 flex items-center gap-3 p-3 bg-neutral-50 rounded-lg">
+              <span className={`relative w-3 h-3 rounded-full flex-shrink-0 ${staff.clockedIn ? 'bg-emerald-500' : 'bg-neutral-300'}`}>
+                {staff.clockedIn && <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-75" />}
+              </span>
+              <p className="text-[13px] font-semibold text-neutral-800">
+                {staff.clockedIn
+                  ? `Currently clocked in${staff.clockInTime ? ` since ${new Date(staff.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}`
+                  : 'Currently not clocked in'
+                }
+              </p>
+              {(staff.shiftStart || staff.shiftEnd) && (
+                <span className="ml-auto text-[11px] font-medium text-neutral-500">
+                  Shift: {staff.shiftStart || '--:--'} - {staff.shiftEnd || '--:--'}
+                </span>
+              )}
+            </div>
+          </div>
 
-            {/* Employment Details */}
-            <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
-              <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Briefcase className="w-4 h-4 text-[#A57865]" />
-                Employment Details
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs text-neutral-500 mb-1">Role</p>
-                  <p className="text-sm font-medium text-neutral-900">{staff.role}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-neutral-500 mb-1">Join Date</p>
-                  <p className="text-sm font-medium text-neutral-900">{staff.joinDate}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-neutral-500 mb-1">Shift</p>
-                  <p className="text-sm font-medium text-neutral-900 capitalize">{staff.shift}</p>
-                </div>
-                {staff.floorAssignment && staff.floorAssignment.length > 0 && (
+          {/* ─── Row 2: Employment (1) | Perf Trend (1) | Tasks Chart (1) ─── */}
+          <div className="bg-white rounded-[10px] shadow-sm p-4 sm:p-5">
+            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3 flex items-center gap-2">
+              <Briefcase className="w-3.5 h-3.5 text-terra-500" />
+              Employment Details
+            </h3>
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-neutral-500">Role</span>
+                <span className="text-[13px] font-semibold text-neutral-900">{staff.role}</span>
+              </div>
+              <div className="h-px bg-neutral-100" />
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-neutral-500">Join Date</span>
+                <span className="text-[13px] font-semibold text-neutral-900">{staff.joinDate}</span>
+              </div>
+              <div className="h-px bg-neutral-100" />
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-neutral-500">Shift</span>
+                <span className="text-[13px] font-semibold text-neutral-900 capitalize">{staff.shift}</span>
+              </div>
+              {(staff.shiftStart || staff.shiftEnd) && (
+                <>
+                  <div className="h-px bg-neutral-100" />
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-neutral-500">Shift Hours</span>
+                    <span className="text-[13px] font-semibold text-neutral-900">{staff.shiftStart || '--:--'} - {staff.shiftEnd || '--:--'}</span>
+                  </div>
+                </>
+              )}
+              {staff.floorAssignment && staff.floorAssignment.length > 0 && (
+                <>
+                  <div className="h-px bg-neutral-100" />
                   <div>
-                    <p className="text-xs text-neutral-500 mb-1">Floor Assignment</p>
-                    <div className="flex flex-wrap gap-2">
-                      {staff.floorAssignment.map((floor) => (
-                        <span key={floor} className="px-2 py-1 bg-[#FAF8F6] rounded text-xs font-medium text-neutral-700">
+                    <p className="text-[11px] font-medium text-neutral-500 mb-1.5">Floor Assignment</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {staff.floorAssignment.map((floor: number) => (
+                        <span key={floor} className="px-2 py-1 bg-neutral-50 rounded-md text-[11px] font-semibold text-neutral-700">
                           Floor {floor}
                         </span>
                       ))}
                     </div>
                   </div>
-                )}
-                {staff.specialty && (
-                  <div>
-                    <p className="text-xs text-neutral-500 mb-1">Specialty</p>
-                    <p className="text-sm font-medium text-neutral-900">{staff.specialty}</p>
+                </>
+              )}
+              {staff.specialty && (
+                <>
+                  <div className="h-px bg-neutral-100" />
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-neutral-500">Specialty</span>
+                    <span className="text-[13px] font-semibold text-neutral-900">{staff.specialty}</span>
                   </div>
-                )}
-                {staff.supervisorName && (
-                  <div>
-                    <p className="text-xs text-neutral-500 mb-1">Supervisor</p>
-                    <p className="text-sm font-medium text-neutral-900">{staff.supervisorName}</p>
+                </>
+              )}
+              {staff.supervisorName && (
+                <>
+                  <div className="h-px bg-neutral-100" />
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-neutral-500">Supervisor</span>
+                    <span className="text-[13px] font-semibold text-neutral-900">{staff.supervisorName}</span>
                   </div>
-                )}
-                {(staff.shiftStart || staff.shiftEnd) && (
-                  <div>
-                    <p className="text-xs text-neutral-500 mb-1">Shift Hours</p>
-                    <p className="text-sm font-medium text-neutral-900">
-                      {staff.shiftStart || '--:--'} - {staff.shiftEnd || '--:--'}
-                    </p>
+                </>
+              )}
+              {staff.hourlyRate && (
+                <>
+                  <div className="h-px bg-neutral-100" />
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-neutral-500">Hourly Rate</span>
+                    <span className="text-[13px] font-semibold text-neutral-900">${staff.hourlyRate}/hr</span>
                   </div>
-                )}
-                {staff.hourlyRate && (
-                  <div>
-                    <p className="text-xs text-neutral-500 mb-1">Hourly Rate</p>
-                    <p className="text-sm font-medium text-neutral-900">${staff.hourlyRate}/hr</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-xs text-neutral-500 mb-1">Clock-In Status</p>
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${staff.clockedIn ? 'bg-green-500' : 'bg-neutral-300'}`} />
-                    <span className="text-sm font-medium text-neutral-900">
-                      {staff.clockedIn ? 'Clocked In' : 'Clocked Out'}
-                    </span>
-                    {staff.clockedIn && staff.clockInTime && (
-                      <span className="text-xs text-neutral-500">
-                        since {new Date(staff.clockInTime).toLocaleTimeString()}
-                      </span>
-                    )}
-                  </div>
+                </>
+              )}
+              <div className="h-px bg-neutral-100" />
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-neutral-500">Clock Status</span>
+                <div className="flex items-center gap-2">
+                  <span className={`relative w-2.5 h-2.5 rounded-full ${staff.clockedIn ? 'bg-emerald-500' : 'bg-neutral-300'}`}>
+                    {staff.clockedIn && <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-75" />}
+                  </span>
+                  <span className={`text-[13px] font-semibold ${staff.clockedIn ? 'text-emerald-700' : 'text-neutral-600'}`}>
+                    {staff.clockedIn ? 'Clocked In' : 'Clocked Out'}
+                  </span>
                 </div>
-              </div>
-            </div>
-
-            {/* Skills & Certifications */}
-            {((staff.skills && staff.skills.length > 0) || (staff.certifications && staff.certifications.length > 0)) && (
-              <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
-                <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <Award className="w-4 h-4 text-[#A57865]" />
-                  Skills & Certifications
-                </h3>
-                <div className="space-y-4">
-                  {staff.skills && staff.skills.length > 0 && (
-                    <div>
-                      <p className="text-xs text-neutral-500 mb-2">Skills</p>
-                      <div className="flex flex-wrap gap-2">
-                        {staff.skills.map((skill: string, idx: number) => (
-                          <span key={idx} className="px-2 py-1 bg-[#5C9BA4]/10 border border-[#5C9BA4]/30 rounded text-xs font-medium text-[#5C9BA4]">
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {staff.certifications && staff.certifications.length > 0 && (
-                    <div>
-                      <p className="text-xs text-neutral-500 mb-2">Certifications</p>
-                      <div className="flex flex-wrap gap-2">
-                        {staff.certifications.map((cert: string, idx: number) => (
-                          <span key={idx} className="px-2 py-1 bg-[#CDB261]/10 border border-[#CDB261]/30 rounded text-xs font-medium text-[#9A8545]">
-                            {cert}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Languages */}
-            {staff.languagesSpoken && staff.languagesSpoken.length > 0 && (
-              <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
-                <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <Languages className="w-4 h-4 text-[#A57865]" />
-                  Languages
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {staff.languagesSpoken.map((lang: string, idx: number) => (
-                    <span key={idx} className="px-3 py-1 bg-[#FAF8F6] border border-neutral-200 rounded-full text-xs font-medium text-neutral-700">
-                      {lang}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Emergency Contact */}
-            {(staff.emergencyContactName || staff.emergencyContactPhone) && (
-              <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
-                <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-500" />
-                  Emergency Contact
-                </h3>
-                <div className="space-y-3">
-                  {staff.emergencyContactName && (
-                    <div>
-                      <p className="text-xs text-neutral-500 mb-1">Contact Name</p>
-                      <p className="text-sm font-medium text-neutral-900">{staff.emergencyContactName}</p>
-                    </div>
-                  )}
-                  {staff.emergencyContactPhone && (
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-rose-50 rounded-lg flex items-center justify-center">
-                        <Phone className="w-4 h-4 text-rose-500" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-neutral-500">Phone</p>
-                        <p className="text-sm font-medium text-neutral-900">{staff.emergencyContactPhone}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Permissions */}
-            <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
-              <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-[#A57865]" />
-                Permissions
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                {PERMISSIONS.map((perm) => (
-                  <label key={perm.key} className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={staffPermissions.includes(perm.key)}
-                      readOnly
-                      className="w-4 h-4 text-[#A57865] rounded border-neutral-300 focus:ring-[#A57865]"
-                    />
-                    <span className="text-sm text-neutral-700">{perm.label}</span>
-                  </label>
-                ))}
               </div>
             </div>
           </div>
 
-          {/* Right Column - Charts */}
-          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-            {/* Performance Charts */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              {/* Performance Score Trend */}
-              <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
-                <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-[#5C9BA4]" />
-                  Performance Trend
-                </h3>
-                <ResponsiveContainer width="100%" height={200}>
-                  <AreaChart data={performanceTrend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" />
-                    <XAxis dataKey="day" tick={{ fontSize: 12 }} stroke="#9CA3AF" />
-                    <YAxis domain={[50, 100]} tick={{ fontSize: 12 }} stroke="#9CA3AF" />
-                    <Tooltip
-                      contentStyle={{ borderRadius: '8px', border: '1px solid #E5E5E5' }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="score"
-                      stroke="#5C9BA4"
-                      fill="#5C9BA4"
-                      fillOpacity={0.2}
-                      strokeWidth={2}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+          <div className="bg-white rounded-[10px] shadow-sm p-4 sm:p-5">
+            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3 flex items-center gap-2">
+              <TrendingUp className="w-3.5 h-3.5 text-sage-600" />
+              Performance Trend
+            </h3>
+            <ResponsiveContainer width="100%" height={180}>
+              <AreaChart data={performanceTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" />
+                <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="#9CA3AF" />
+                <YAxis domain={[50, 100]} tick={{ fontSize: 11 }} stroke="#9CA3AF" />
+                <Tooltip contentStyle={chartTooltipStyle} />
+                <Area type="monotone" dataKey="score" stroke="#5C9BA4" fill="#5C9BA4" fillOpacity={0.15} strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
 
-              {/* Tasks Completed */}
-              <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
-                <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-[#A57865]" />
-                  Tasks Completed
+          <div className="bg-white rounded-[10px] shadow-sm p-4 sm:p-5">
+            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3 flex items-center gap-2">
+              <CheckCircle className="w-3.5 h-3.5 text-terra-500" />
+              Tasks Completed
+            </h3>
+            <ResponsiveContainer width="100%" height={180}>
+              <LineChart data={taskTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" />
+                <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="#9CA3AF" />
+                <YAxis tick={{ fontSize: 11 }} stroke="#9CA3AF" />
+                <Tooltip contentStyle={chartTooltipStyle} />
+                <Line type="monotone" dataKey="completed" stroke="#A57865" strokeWidth={2} dot={{ fill: '#A57865', strokeWidth: 2, r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* ─── Row 3: Skills & Languages (1) | Punctuality (2) ─── */}
+          <div className="bg-white rounded-[10px] shadow-sm p-4 sm:p-5">
+            <div className="space-y-5">
+              {/* Skills */}
+              {((staff.skills && staff.skills.length > 0) || (staff.certifications && staff.certifications.length > 0)) && (
+                <div>
+                  <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3 flex items-center gap-2">
+                    <Award className="w-3.5 h-3.5 text-terra-500" />
+                    Skills & Certifications
+                  </h3>
+                  <div className="space-y-3">
+                    {staff.skills && staff.skills.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {staff.skills.map((skill: string, idx: number) => (
+                          <span key={idx} className="px-2 py-1 bg-sage-50 rounded-md text-[11px] font-semibold text-sage-700">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {staff.certifications && staff.certifications.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {staff.certifications.map((cert: string, idx: number) => (
+                          <span key={idx} className="px-2 py-1 bg-gold-50 rounded-md text-[11px] font-semibold text-gold-700">
+                            {cert}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Languages */}
+              {staff.languagesSpoken && staff.languagesSpoken.length > 0 && (
+                <div>
+                  <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3 flex items-center gap-2">
+                    <Languages className="w-3.5 h-3.5 text-terra-500" />
+                    Languages
+                  </h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {staff.languagesSpoken.map((lang: string, idx: number) => (
+                      <span key={idx} className="px-2.5 py-1 bg-neutral-50 rounded-md text-[11px] font-semibold text-neutral-700">
+                        {lang}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Emergency Contact */}
+              {(staff.emergencyContactName || staff.emergencyContactPhone) && (
+                <div>
+                  <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3 flex items-center gap-2">
+                    <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
+                    Emergency Contact
+                  </h3>
+                  <div className="space-y-2">
+                    {staff.emergencyContactName && (
+                      <p className="text-[13px] font-semibold text-neutral-900">{staff.emergencyContactName}</p>
+                    )}
+                    {staff.emergencyContactPhone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-3.5 h-3.5 text-rose-500" />
+                        <p className="text-[13px] font-semibold text-neutral-900">{staff.emergencyContactPhone}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Permissions - always show at bottom of this card */}
+              <div>
+                <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3 flex items-center gap-2">
+                  <Shield className="w-3.5 h-3.5 text-terra-500" />
+                  Permissions
                 </h3>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={taskTrend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" />
-                    <XAxis dataKey="day" tick={{ fontSize: 12 }} stroke="#9CA3AF" />
-                    <YAxis tick={{ fontSize: 12 }} stroke="#9CA3AF" />
-                    <Tooltip
-                      contentStyle={{ borderRadius: '8px', border: '1px solid #E5E5E5' }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="completed"
-                      stroke="#A57865"
-                      strokeWidth={2}
-                      dot={{ fill: '#A57865', strokeWidth: 2 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <div className="grid grid-cols-2 gap-2">
+                  {PERMISSIONS.map((perm) => (
+                    <label key={perm.key} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={staffPermissions.includes(perm.key)}
+                        readOnly
+                        className="w-3.5 h-3.5 text-terra-500 rounded border-neutral-300 focus:ring-terra-500"
+                      />
+                      <span className="text-[12px] font-medium text-neutral-700">{perm.label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
+          </div>
 
-            {/* Punctuality Chart */}
-            <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
-              <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-[#5C9BA4]" />
-                Punctuality (Last 6 Months)
+          <div className="bg-white rounded-[10px] shadow-sm p-4 sm:p-5 lg:col-span-2">
+            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3 flex items-center gap-2">
+              <Clock className="w-3.5 h-3.5 text-sage-600" />
+              Punctuality (Last 6 Months)
+            </h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={punctualityData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="#9CA3AF" />
+                <YAxis domain={[60, 100]} tick={{ fontSize: 11 }} stroke="#9CA3AF" />
+                <Tooltip contentStyle={chartTooltipStyle} />
+                <Bar dataKey="onTime" fill="#5C9BA4" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* ─── Row 4: Attendance Log (full width) ─── */}
+          <div className="bg-white rounded-[10px] shadow-sm p-4 sm:p-5 md:col-span-2 lg:col-span-3">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 flex items-center gap-2">
+                <Calendar className="w-3.5 h-3.5 text-terra-500" />
+                Attendance Log
               </h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={punctualityData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#9CA3AF" />
-                  <YAxis domain={[60, 100]} tick={{ fontSize: 12 }} stroke="#9CA3AF" />
-                  <Tooltip
-                    contentStyle={{ borderRadius: '8px', border: '1px solid #E5E5E5' }}
-                  />
-                  <Bar dataKey="onTime" fill="#5C9BA4" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {attendanceData.length > 5 && (
+                <button
+                  onClick={() => setShowAllAttendance(!showAllAttendance)}
+                  className="text-[12px] font-semibold text-terra-500 hover:text-terra-600 flex items-center gap-1 transition-colors"
+                >
+                  {showAllAttendance ? 'Show Less' : 'Show All'}
+                  {showAllAttendance ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+              )}
             </div>
-
-            {/* Attendance Log */}
-            <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-[#A57865]" />
-                  Attendance Log
-                </h3>
-                {attendanceData.length > 5 && (
-                  <button
-                    onClick={() => setShowAllAttendance(!showAllAttendance)}
-                    className="text-sm text-[#A57865] hover:text-[#8E6554] flex items-center gap-1"
-                  >
-                    {showAllAttendance ? 'Show Less' : 'Show All'}
-                    {showAllAttendance ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </button>
-                )}
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-[#FAF8F6]">
-                      <th className="px-4 py-3 text-left text-xs font-bold text-neutral-700 uppercase">Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-neutral-700 uppercase">Shift</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-neutral-700 uppercase">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-100">
-                    {displayedAttendance.length > 0 ? displayedAttendance.map((record, idx) => (
-                      <tr key={idx} className="hover:bg-neutral-50">
-                        <td className="px-4 py-3 text-sm text-neutral-900">{record.date}</td>
-                        <td className="px-4 py-3 text-sm text-neutral-700 capitalize">{record.shift}</td>
-                        <td className="px-4 py-3">
-                          <span className="px-2 py-1 bg-[#5C9BA4]/10 text-[#5C9BA4] rounded text-xs font-medium">
+            <div className="overflow-x-auto rounded-lg">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-terra-50">
+                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-neutral-700 uppercase tracking-wider">Date</th>
+                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-neutral-700 uppercase tracking-wider">Shift</th>
+                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-neutral-700 uppercase tracking-wider">Time</th>
+                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-neutral-700 uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100">
+                  {displayedAttendance.length > 0 ? displayedAttendance.map((record: any, idx: number) => {
+                    const shiftTimes: Record<string, string> = { morning: '08:00 - 16:00', evening: '16:00 - 00:00', night: '00:00 - 08:00' };
+                    const timeDisplay = record.startTime && record.endTime
+                      ? `${record.startTime} - ${record.endTime}`
+                      : shiftTimes[record.shift] || '--';
+                    return (
+                      <tr key={idx} className="hover:bg-neutral-50 transition-colors">
+                        <td className="px-4 py-2.5 text-[13px] font-medium text-neutral-900">{record.date}</td>
+                        <td className="px-4 py-2.5 text-[13px] text-neutral-700 capitalize">{record.shift}</td>
+                        <td className="px-4 py-2.5 text-[11px] text-neutral-500 font-mono">{timeDisplay}</td>
+                        <td className="px-4 py-2.5">
+                          <span className="px-2 py-0.5 bg-sage-50 text-sage-700 rounded-md text-[10px] font-semibold">
                             Present
                           </span>
                         </td>
                       </tr>
-                    )) : (
-                      <tr>
-                        <td colSpan={3} className="px-4 py-8 text-center text-neutral-500">
-                          No attendance records
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Task History */}
-            <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-neutral-700 uppercase tracking-wider flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-[#5C9BA4]" />
-                  Task History
-                  {isLoadingTasks && <Loader2 className="w-4 h-4 animate-spin text-neutral-400" />}
-                </h3>
-                {taskHistory.length > 5 && (
-                  <button
-                    onClick={() => setShowAllTasks(!showAllTasks)}
-                    className="text-sm text-[#A57865] hover:text-[#8E6554] flex items-center gap-1"
-                  >
-                    {showAllTasks ? 'Show Less' : 'Show All'}
-                    {showAllTasks ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </button>
-                )}
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-[#FAF8F6]">
-                      <th className="px-4 py-3 text-left text-xs font-bold text-neutral-700 uppercase">Task</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-neutral-700 uppercase">Category</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-neutral-700 uppercase">Assigned By</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-neutral-700 uppercase">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-neutral-700 uppercase">Time</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-neutral-700 uppercase">Completed</th>
+                    );
+                  }) : (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-[13px] text-neutral-400">
+                        No attendance records
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-100">
-                    {isLoadingTasks ? (
-                      <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-neutral-500">
-                          <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-neutral-400" />
-                          Loading tasks...
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ─── Row 5: Task History (full width) ─── */}
+          <div className="bg-white rounded-[10px] shadow-sm p-4 sm:p-5 md:col-span-2 lg:col-span-3">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 flex items-center gap-2">
+                <CheckCircle className="w-3.5 h-3.5 text-sage-600" />
+                Task History
+                {isLoadingTasks && <Loader2 className="w-3.5 h-3.5 animate-spin text-neutral-400" />}
+              </h3>
+              {taskHistory.length > 5 && (
+                <button
+                  onClick={() => setShowAllTasks(!showAllTasks)}
+                  className="text-[12px] font-semibold text-terra-500 hover:text-terra-600 flex items-center gap-1 transition-colors"
+                >
+                  {showAllTasks ? 'Show Less' : 'Show All'}
+                  {showAllTasks ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+              )}
+            </div>
+            <div className="overflow-x-auto rounded-lg">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-terra-50">
+                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-neutral-700 uppercase tracking-wider">Task</th>
+                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-neutral-700 uppercase tracking-wider">Category</th>
+                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-neutral-700 uppercase tracking-wider">Assigned By</th>
+                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-neutral-700 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-neutral-700 uppercase tracking-wider">Time</th>
+                    <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-neutral-700 uppercase tracking-wider">Completed</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100">
+                  {isLoadingTasks ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-8 text-center">
+                        <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-terra-500" />
+                        <p className="text-[13px] text-neutral-400">Loading tasks...</p>
+                      </td>
+                    </tr>
+                  ) : displayedTasks.length > 0 ? (
+                    displayedTasks.map((task: any, idx: number) => (
+                      <tr key={idx} className="hover:bg-neutral-50 transition-colors">
+                        <td className="px-4 py-2.5 text-[13px] font-semibold text-neutral-900">{task.task}</td>
+                        <td className="px-4 py-2.5 text-[13px] text-neutral-700">{task.category}</td>
+                        <td className="px-4 py-2.5 text-[13px] text-neutral-700">{task.assignedBy}</td>
+                        <td className="px-4 py-2.5">
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${
+                            task.status === 'Completed' ? 'bg-sage-50 text-sage-700' :
+                            task.status === 'In Progress' ? 'bg-gold-50 text-gold-700' :
+                            'bg-neutral-50 text-neutral-600'
+                          }`}>
+                            {task.status}
+                          </span>
                         </td>
+                        <td className="px-4 py-2.5 text-[13px] text-neutral-700">{task.timeTaken}</td>
+                        <td className="px-4 py-2.5 text-[12px] text-neutral-500">{task.completedOn}</td>
                       </tr>
-                    ) : displayedTasks.length > 0 ? (
-                      displayedTasks.map((task, idx) => (
-                        <tr key={idx} className="hover:bg-neutral-50">
-                          <td className="px-4 py-3 text-sm font-medium text-neutral-900">{task.task}</td>
-                          <td className="px-4 py-3 text-sm text-neutral-700">{task.category}</td>
-                          <td className="px-4 py-3 text-sm text-neutral-700">{task.assignedBy}</td>
-                          <td className="px-4 py-3">
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              task.status === 'Completed' ? 'bg-[#5C9BA4]/10 text-[#5C9BA4]' :
-                              task.status === 'In Progress' ? 'bg-[#CDB261]/10 text-[#9A8545]' :
-                              'bg-neutral-100 text-neutral-600'
-                            }`}>
-                              {task.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-neutral-700">{task.timeTaken}</td>
-                          <td className="px-4 py-3 text-sm text-neutral-500">{task.completedOn}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-neutral-500">
-                          No task history available
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-8 text-center text-[13px] text-neutral-400">
+                        No task history available
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

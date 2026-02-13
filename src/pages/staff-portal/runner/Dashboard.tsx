@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Package,
@@ -17,6 +17,7 @@ import { StatusBadge, PriorityBadge } from '../../../components/staff-portal/ui/
 import Button from '../../../components/staff-portal/ui/Button';
 import { useProfile } from '@/hooks/staff-portal/useStaffPortal';
 import {
+  useStaffProfile,
   useMyRunnerDashboard,
   usePickupRequests,
   useDeliveries,
@@ -80,7 +81,8 @@ function SectionCard({
 
 const RunnerDashboard = () => {
   const navigate = useNavigate();
-  const { profile } = useProfile();
+  const { profile: contextProfile } = useProfile();
+  const { data: profile } = useStaffProfile();
 
   // API hooks for real data
   const { data: dashboardData, loading: dashboardLoading, refetch: refetchDashboard } = useMyRunnerDashboard();
@@ -119,6 +121,110 @@ const RunnerDashboard = () => {
     }
     return '0m';
   }, [dashboardData]);
+
+  // Use context clockedIn (updated instantly from sidebar) + API shift times
+  const isClockedIn = contextProfile?.clockedIn || profile?.clocked_in;
+  const shiftStartTime = profile?.shift_start || contextProfile?.shiftStart;
+  const shiftEndTime = profile?.shift_end || contextProfile?.shiftEnd;
+
+  // Tick every 60s so shift hours left & hours worked update while clocked in
+  const [minuteTick, setMinuteTick] = useState(0);
+  useEffect(() => {
+    if (!isClockedIn) return;
+    const id = setInterval(() => setMinuteTick(t => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, [isClockedIn]);
+
+  const shiftHoursLeft = useMemo(() => {
+    if (!shiftEndTime) return null;
+
+    if (isClockedIn) {
+      // Show remaining hours when clocked in
+      const [endHour, endMin] = shiftEndTime.split(':').map(Number);
+      const now = new Date();
+      const shiftEnd = new Date();
+      shiftEnd.setHours(endHour, endMin, 0);
+
+      const diffMs = shiftEnd.getTime() - now.getTime();
+      if (diffMs <= 0) return '0h 0m';
+
+      const hours = Math.floor(diffMs / 3600000);
+      const minutes = Math.floor((diffMs % 3600000) / 60000);
+      return `${hours}h ${minutes}m`;
+    }
+
+    // Show total shift duration when not clocked in
+    if (shiftStartTime) {
+      const [sh, sm] = shiftStartTime.split(':').map(Number);
+      const [eh, em] = shiftEndTime.split(':').map(Number);
+      let diff = (eh * 60 + em) - (sh * 60 + sm);
+      if (diff < 0) diff += 24 * 60;
+      const hours = Math.floor(diff / 60);
+      const mins = diff % 60;
+      return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    }
+
+    return null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shiftStartTime, shiftEndTime, isClockedIn, minuteTick]);
+
+  // Calculate cumulative hours worked today from clock history
+  const hoursWorkedToday = useMemo(() => {
+    const history = contextProfile?.clockHistory || [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayEntries = history
+      .filter((e: any) => new Date(e.timestamp) >= today)
+      .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    let totalMs = 0;
+    let lastClockIn: Date | null = null;
+
+    for (const entry of todayEntries) {
+      const time = new Date(entry.timestamp);
+      if (entry.action === 'clock_in') {
+        lastClockIn = time;
+      } else if (entry.action === 'clock_out' && lastClockIn) {
+        totalMs += time.getTime() - lastClockIn.getTime();
+        lastClockIn = null;
+      }
+    }
+
+    if (lastClockIn && isClockedIn) {
+      totalMs += Date.now() - lastClockIn.getTime();
+    }
+
+    if (totalMs <= 0) return null;
+    const hours = Math.floor(totalMs / 3600000);
+    const minutes = Math.floor((totalMs % 3600000) / 60000);
+    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contextProfile?.clockHistory, isClockedIn, minuteTick]);
+
+  // Calculate if staff clocked in late (first clock-in today vs scheduled shift start)
+  const lateBy = useMemo(() => {
+    if (!shiftStartTime || !isClockedIn) return null;
+    const history = contextProfile?.clockHistory || [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayClockIns = history
+      .filter((e: any) => e.action === 'clock_in' && new Date(e.timestamp) >= today)
+      .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    if (todayClockIns.length === 0) return null;
+
+    const firstClockIn = new Date(todayClockIns[0].timestamp);
+    const [sh, sm] = shiftStartTime.split(':').map(Number);
+    const scheduledStart = new Date();
+    scheduledStart.setHours(sh, sm, 0, 0);
+
+    const diffMs = firstClockIn.getTime() - scheduledStart.getTime();
+    if (diffMs <= 60000) return null; // Grace period: 1 minute
+
+    const mins = Math.floor(diffMs / 60000);
+    return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
+  }, [shiftStartTime, isClockedIn, contextProfile?.clockHistory]);
 
   const activePickups = useMemo(() => {
     return allPickups
@@ -270,10 +376,10 @@ const RunnerDashboard = () => {
         </div>
         <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
-            title="Completed Today"
-            value={stats.completedPickups + stats.deliveredDeliveries}
-            subtitle="Pickups & deliveries"
-            icon={CheckCircle}
+            title={isClockedIn ? 'Shift Hours Left' : 'Shift Duration'}
+            value={shiftHoursLeft || '--'}
+            subtitle={isClockedIn ? (hoursWorkedToday ? `${hoursWorkedToday} worked today${lateBy ? ` · Late ${lateBy}` : ''}` : (lateBy ? `Late by ${lateBy}` : 'Just clocked in')) : 'Not clocked in'}
+            icon={Clock}
             color="sage"
           />
         </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserPlus, Download } from 'lucide-react';
+import { UserPlus, Download, Users, ClipboardList } from 'lucide-react';
 import { useStaff } from '../../hooks/admin/useStaff';
 import { usePagination } from '../../hooks/usePagination';
 import { useToast } from '../../contexts/ToastContext';
@@ -16,8 +16,18 @@ import MarkLeaveModal from '../../components/staff/modals/MarkLeaveModal';
 import EditStaffModal from '../../components/staff/modals/EditStaffModal';
 import DisableStaffModal from '../../components/staff/modals/DisableStaffModal';
 import { Button } from '../../components/ui2/Button';
+import { AttendanceContent } from './Attendance';
+
+// ── View tabs config (matching Maintenance tab pattern) ──
+const VIEW_TABS = [
+  { id: 'staff' as const, label: 'Staff Management', shortLabel: 'Staff', icon: Users },
+  { id: 'attendance' as const, label: 'Attendance', shortLabel: 'Attendance', icon: ClipboardList },
+];
 
 export default function Staff() {
+  // View tab state
+  const [activeView, setActiveView] = useState<'staff' | 'attendance'>('staff');
+
   // Master state management via useStaff hook
   const {
     staff,
@@ -234,73 +244,115 @@ export default function Staff() {
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
-              Staff Management
+              Staff
             </h1>
             <p className="text-[12px] sm:text-[13px] text-neutral-500 mt-1">
-              Manage your hotel staff, assign shifts, and monitor performance
+              {activeView === 'staff'
+                ? 'Manage your hotel staff, assign shifts, and monitor performance'
+                : 'Monitor daily staff attendance, clock-in/out status, and trends'}
             </p>
           </div>
 
-          {/* Quick Actions */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Button variant="outline" icon={Download} onClick={handleExport} className="hidden sm:flex">
-              Export
-            </Button>
-            <Button variant="primary" icon={UserPlus} onClick={() => setIsAddModalOpen(true)}>
-              <span className="hidden sm:inline">Add Staff</span>
-              <span className="sm:hidden">Add</span>
-            </Button>
-          </div>
         </header>
 
-        {/* Tabs */}
-        <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-          <div className="flex items-center gap-1 p-1.5 bg-white rounded-lg w-fit">
-            <StaffTabs
-              activeTab={activeDepartment}
-              onTabChange={setActiveDepartment}
-              counts={departmentCounts}
-            />
-          </div>
+        {/* ── View Tabs (matching Maintenance tab pattern) ── */}
+        <div className="flex items-center gap-0.5 border-b border-neutral-200">
+          {VIEW_TABS.map(tab => {
+            const isActive = activeView === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveView(tab.id)}
+                className={`relative px-3 sm:px-4 py-2.5 sm:py-3 text-[12px] sm:text-[13px] font-semibold transition-all duration-150 whitespace-nowrap ${
+                  isActive ? 'text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'
+                }`}
+              >
+                <span className="flex items-center gap-1.5 sm:gap-2">
+                  <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.shortLabel}</span>
+                </span>
+                {isActive && (
+                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-terra-500 rounded-t-full" />
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Search and Filters */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-          <div className="w-full sm:w-[400px]">
-            <StaffSearch value={searchQuery} onChange={setSearchQuery} />
-          </div>
-          <StaffFilters
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            onClearFilters={clearFilters}
-            hasActiveFilters={hasActiveFilters}
-            availableRoles={availableRoles}
-          />
-        </div>
+        {/* ══════════════════════════════════════════════════════════ */}
+        {/* ── Staff Management Tab Content ── */}
+        {/* ══════════════════════════════════════════════════════════ */}
+        {activeView === 'staff' && (
+          <>
+            {/* Department Tabs + Actions */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                <div className="flex items-center gap-1 p-1.5 bg-white rounded-lg w-fit">
+                  <StaffTabs
+                    activeTab={activeDepartment}
+                    onTabChange={setActiveDepartment}
+                    counts={departmentCounts}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                <Button variant="outline" icon={Download} onClick={handleExport} className="hidden sm:flex">
+                  Export
+                </Button>
+                <Button variant="primary" icon={UserPlus} onClick={() => setIsAddModalOpen(true)}>
+                  <span className="hidden sm:inline">Add Staff</span>
+                  <span className="sm:hidden">Add</span>
+                </Button>
+              </div>
+            </div>
 
-        {/* Staff Grid */}
-        <StaffGrid
-          staff={pagination.currentPageData}
-          onStaffClick={handleStaffClick}
-          onAssignShift={handleAssignShiftClick}
-        />
+            {/* Search and Filters */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+              <div className="w-full sm:w-[400px]">
+                <StaffSearch value={searchQuery} onChange={setSearchQuery} />
+              </div>
+              <StaffFilters
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                onClearFilters={clearFilters}
+                hasActiveFilters={hasActiveFilters}
+                availableRoles={availableRoles}
+              />
+            </div>
 
-        {/* Pagination */}
-        {staff.length > 0 && (
-          <div className="bg-white rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
-            <Pagination
-              currentPage={pagination.currentPage}
-              totalPages={pagination.totalPages}
-              startIndex={pagination.startIndex}
-              endIndex={pagination.endIndex}
-              totalItems={pagination.totalItems}
-              canGoPrev={pagination.canGoPrev}
-              canGoNext={pagination.canGoNext}
-              onPrevPage={pagination.prevPage}
-              onNextPage={pagination.nextPage}
-              onGoToPage={pagination.goToPage}
+            {/* Staff Grid */}
+            <StaffGrid
+              staff={pagination.currentPageData}
+              onStaffClick={handleStaffClick}
+              onAssignShift={handleAssignShiftClick}
             />
-          </div>
+
+            {/* Pagination */}
+            {staff.length > 0 && (
+              <div className="bg-white rounded-[10px] px-4 sm:px-6 py-3 sm:py-4">
+                <Pagination
+                  currentPage={pagination.currentPage}
+                  totalPages={pagination.totalPages}
+                  startIndex={pagination.startIndex}
+                  endIndex={pagination.endIndex}
+                  totalItems={pagination.totalItems}
+                  canGoPrev={pagination.canGoPrev}
+                  canGoNext={pagination.canGoNext}
+                  onPrevPage={pagination.prevPage}
+                  onNextPage={pagination.nextPage}
+                  onGoToPage={pagination.goToPage}
+                />
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════ */}
+        {/* ── Attendance Tab Content ── */}
+        {/* ══════════════════════════════════════════════════════════ */}
+        {activeView === 'attendance' && (
+          <AttendanceContent />
         )}
       </div>
 

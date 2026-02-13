@@ -134,6 +134,43 @@ export default function StaffDrawer({ staff, isOpen, onClose, onAssignShift, onM
 
           {/* Content */}
           <div className="overflow-y-auto flex-1 custom-scrollbar p-4 sm:p-6 space-y-6">
+          {/* Clock Status */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-1 h-4 bg-[#5C9BA4] rounded-full"></div>
+              <h3 className="text-sm font-semibold text-neutral-700">Attendance Status</h3>
+            </div>
+            <div className="bg-[#FAF8F6] rounded-xl p-4 border border-neutral-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className={`relative w-3 h-3 rounded-full ${staff.clockedIn ? 'bg-emerald-500' : 'bg-neutral-300'}`}>
+                    {staff.clockedIn && (
+                      <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-75" />
+                    )}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-neutral-900">
+                      {staff.clockedIn ? 'Clocked In' : 'Clocked Out'}
+                    </p>
+                    {staff.clockedIn && staff.lastCheckIn && (
+                      <p className="text-xs text-neutral-500">
+                        since {new Date(staff.lastCheckIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    )}
+                    {!staff.clockedIn && staff.lastCheckOut && (
+                      <p className="text-xs text-neutral-500">
+                        last out {new Date(staff.lastCheckOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <span className={`px-2.5 py-1 rounded-md text-[11px] font-semibold ${staff.clockedIn ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-neutral-50 text-neutral-600 border border-neutral-200'}`}>
+                  {staff.shift ? `${staff.shift} shift` : '--'}
+                </span>
+              </div>
+            </div>
+          </div>
+
           {/* Contact Info */}
           <div>
             <div className="flex items-center gap-2 mb-3">

@@ -172,8 +172,9 @@ export function StatCard({
   };
 
   const isPositive = trend === 'up';
+  const hasLetters = typeof value === 'string' && /[a-zA-Z]/.test(value);
   const numericValue = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]/g, '')) : value;
-  const isAnimatable = !isNaN(numericValue);
+  const isAnimatable = !isNaN(numericValue) && !hasLetters;
 
   return (
     <div

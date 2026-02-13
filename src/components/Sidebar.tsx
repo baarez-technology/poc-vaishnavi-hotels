@@ -7,6 +7,7 @@ import {
   BedDouble,
   UserCheck,
   ClipboardCheck,
+  ClipboardList,
   Wrench,
   MessageSquare,
   Contact,

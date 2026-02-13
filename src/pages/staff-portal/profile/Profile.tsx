@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   User,
   Mail,
@@ -11,12 +11,16 @@ import {
   Sun,
   Moon,
   Monitor,
-  Camera
+  Camera,
+  Clock,
+  LogIn,
+  LogOut
 } from 'lucide-react';
 import Button from '../../../components/staff-portal/ui/Button';
 import { FormModal } from '../../../components/staff-portal/ui/Modal';
 import { useAuth } from '@/hooks/useAuth';
 import { useStaffProfile } from '@/hooks/staff-portal/useStaffApi';
+import { useProfile } from '@/hooks/staff-portal/useStaffPortal';
 import { userService } from '@/api/services/user.service';
 
 /**
@@ -27,6 +31,7 @@ import { userService } from '@/api/services/user.service';
 const Profile = () => {
   const { user, updateUser } = useAuth();
   const { data: profile, loading } = useStaffProfile();
+  const { profile: contextProfile } = useProfile();
 
   // Form states
   const [isSaving, setIsSaving] = useState(false);
@@ -62,18 +67,19 @@ const Profile = () => {
     sms: false
   });
 
-  // Initialize form
+  // Initialize form - use profile.name (API), then user.fullName (auth), then context
   useEffect(() => {
-    if (user) {
+    if (user || profile) {
+      const displayName = profile?.name || (user as any)?.fullName || contextProfile?.name || '';
       const initialForm = {
-        name: (user as any)?.name || '',
-        email: (user as any)?.email || '',
-        phone: (user as any)?.phone || ''
+        name: displayName,
+        email: (user as any)?.email || profile?.email || '',
+        phone: (user as any)?.phone || profile?.phone || ''
       };
       setEditForm(initialForm);
       setOriginalForm(initialForm);
     }
-  }, [user]);
+  }, [user, profile, contextProfile]);
 
   // Auto-dismiss toast
   useEffect(() => {
@@ -82,6 +88,66 @@ const Profile = () => {
       return () => clearTimeout(timer);
     }
   }, [showSaveSuccess]);
+
+  const isClockedIn = contextProfile?.clockedIn || profile?.clocked_in;
+
+  // Calculate cumulative hours worked today from clock history
+  const hoursWorkedToday = useMemo(() => {
+    const history = contextProfile?.clockHistory || [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayEntries = history
+      .filter((e: any) => new Date(e.timestamp) >= today)
+      .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    let totalMs = 0;
+    let lastClockIn: Date | null = null;
+
+    for (const entry of todayEntries) {
+      const time = new Date(entry.timestamp);
+      if (entry.action === 'clock_in') {
+        lastClockIn = time;
+      } else if (entry.action === 'clock_out' && lastClockIn) {
+        totalMs += time.getTime() - lastClockIn.getTime();
+        lastClockIn = null;
+      }
+    }
+
+    if (lastClockIn && isClockedIn) {
+      totalMs += Date.now() - lastClockIn.getTime();
+    }
+
+    if (totalMs <= 0) return null;
+    const hours = Math.floor(totalMs / 3600000);
+    const minutes = Math.floor((totalMs % 3600000) / 60000);
+    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+  }, [contextProfile?.clockHistory, isClockedIn]);
+
+  // Calculate if staff clocked in late (first clock-in today vs scheduled shift start)
+  const lateBy = useMemo(() => {
+    const shiftStart = profile?.shift_start || contextProfile?.shiftStart;
+    if (!shiftStart || !isClockedIn) return null;
+    const history = contextProfile?.clockHistory || [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayClockIns = history
+      .filter((e: any) => e.action === 'clock_in' && new Date(e.timestamp) >= today)
+      .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    if (todayClockIns.length === 0) return null;
+
+    const firstClockIn = new Date(todayClockIns[0].timestamp);
+    const [sh, sm] = shiftStart.split(':').map(Number);
+    const scheduledStart = new Date();
+    scheduledStart.setHours(sh, sm, 0, 0);
+
+    const diffMs = firstClockIn.getTime() - scheduledStart.getTime();
+    if (diffMs <= 60000) return null; // Grace period: 1 minute
+
+    const mins = Math.floor(diffMs / 60000);
+    return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
+  }, [profile?.shift_start, contextProfile?.shiftStart, isClockedIn, contextProfile?.clockHistory]);
 
   // Helpers
   const getRoleLabel = (role: string) => {
@@ -167,7 +233,8 @@ const Profile = () => {
 
   if (!user) return null;
 
-  const displayData = { ...profile, ...user };
+  const displayName = profile?.name || contextProfile?.name || (user as any)?.fullName || '';
+  const displayData = { ...profile, ...user, name: displayName };
 
   return (
     <div className="space-y-6 max-w-full overflow-x-hidden">
@@ -337,6 +404,101 @@ const Profile = () => {
               value="Yes"
               valueClassName="text-sage-600"
             />
+          </div>
+        </div>
+
+        {/* Shift & Attendance Card */}
+        <div className="col-span-1 xl:col-span-12 rounded-[10px] p-4 sm:p-6 bg-white">
+          <h3 className="text-sm font-semibold text-neutral-800 mb-4 sm:mb-5">
+            Shift & Attendance
+          </h3>
+
+          {/* Shift Info Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-5">
+            <InfoRow
+              icon={Clock}
+              label="Shift Hours"
+              value={(() => {
+                const start = profile?.shift_start || contextProfile?.shiftStart;
+                const end = profile?.shift_end || contextProfile?.shiftEnd;
+                if (!start || !end) return 'Not assigned';
+                const fmt = (t: string) => {
+                  const [h, m] = t.split(':').map(Number);
+                  const p = h >= 12 ? 'PM' : 'AM';
+                  const hr = h === 0 ? 12 : h > 12 ? h - 12 : h;
+                  return `${hr}:${String(m).padStart(2, '0')} ${p}`;
+                };
+                const [sh, sm] = start.split(':').map(Number);
+                const [eh, em] = end.split(':').map(Number);
+                let diff = (eh * 60 + em) - (sh * 60 + sm);
+                if (diff < 0) diff += 24 * 60;
+                const hrs = Math.floor(diff / 60);
+                return `${fmt(start)} – ${fmt(end)} · ${hrs} hrs`;
+              })()}
+            />
+            <InfoRow
+              icon={Shield}
+              label="Clock Status"
+              value={isClockedIn ? (lateBy ? `Clocked In · Late ${lateBy}` : 'Clocked In · On Time') : 'Clocked Out'}
+              valueClassName={isClockedIn ? (lateBy ? 'text-rose-600' : 'text-sage-600') : 'text-neutral-500'}
+            />
+            <InfoRow
+              icon={Clock}
+              label="Hours Worked Today"
+              value={hoursWorkedToday || '0m'}
+              valueClassName={hoursWorkedToday ? 'text-terra-600' : 'text-neutral-500'}
+            />
+            <InfoRow
+              icon={Calendar}
+              label="Today's Date"
+              value={new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+            />
+          </div>
+
+          {/* Clock In/Out History */}
+          <div>
+            <h4 className="text-[12px] font-semibold text-neutral-500 uppercase tracking-wide mb-3">
+              Clock History
+            </h4>
+            <div className="max-h-[240px] overflow-y-auto rounded-lg border border-neutral-100">
+              {contextProfile?.clockHistory && contextProfile.clockHistory.length > 0 ? (
+                <div className="divide-y divide-neutral-100">
+                  {contextProfile.clockHistory.map((entry: any, idx: number) => {
+                    const isIn = entry.action === 'clock_in';
+                    const time = new Date(entry.timestamp);
+                    return (
+                      <div key={idx} className="flex items-center gap-3 px-3 sm:px-4 py-2.5 hover:bg-neutral-50/50 transition-colors">
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          isIn ? 'bg-sage-50' : 'bg-rose-50'
+                        }`}>
+                          {isIn
+                            ? <LogIn className="w-3.5 h-3.5 text-sage-600" />
+                            : <LogOut className="w-3.5 h-3.5 text-rose-500" />
+                          }
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-[12px] font-semibold ${isIn ? 'text-sage-700' : 'text-rose-600'}`}>
+                            {isIn ? 'Clocked In' : 'Clocked Out'}
+                          </p>
+                          <p className="text-[11px] text-neutral-400">
+                            {time.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </p>
+                        </div>
+                        <span className="text-[12px] font-medium text-neutral-700 tabular-nums">
+                          {time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true })}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Clock className="w-8 h-8 text-neutral-200 mx-auto mb-2" />
+                  <p className="text-[12px] text-neutral-400">No clock history yet</p>
+                  <p className="text-[11px] text-neutral-300 mt-0.5">Clock in from the sidebar to start tracking</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

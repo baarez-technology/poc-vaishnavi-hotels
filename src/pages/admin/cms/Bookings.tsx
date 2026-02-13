@@ -935,7 +935,7 @@ function LuxuryPagination({ currentPage, totalPages, onPageChange }) {
 // ============================================
 // HELPER: Transform API booking to frontend format
 // ============================================
-function transformApiBooking(apiBooking: any) {
+function transformApiBooking(apiBooking: any, index?: number) {
   const guest = apiBooking.guestInfo;
   const guestName = `${guest?.firstName || ''} ${guest?.lastName || ''}`.trim() || 'Guest';
 
@@ -956,15 +956,18 @@ function transformApiBooking(apiBooking: any) {
     'direct': 'Website',
     'Dummy Channel Manager': 'Dummy Channel Manager',
     'dummy channel manager': 'Dummy Channel Manager',
-    'CRS': 'CRS',
-    'crs': 'CRS',
+    'DUMMY': 'Dummy Channel Manager',
+    'dummy': 'Dummy Channel Manager',
+    'CRS': 'Dummy Channel Manager',
+    'crs': 'Dummy Channel Manager',
     'Booking.com': 'Booking.com',
     'booking.com': 'Booking.com',
     'Expedia': 'Expedia',
     'expedia': 'Expedia',
     'Walk-in': 'Walk-in',
     'walk_in': 'Walk-in',
-    'OTA': 'Booking.com',
+    'walk-in': 'Walk-in',
+    'OTA': 'OTA',  // Do NOT map to Booking.com - Dummy CM bookings use OTA; keep generic
   };
 
   // Calculate payment amounts for accurate revenue tracking
@@ -982,8 +985,9 @@ function transformApiBooking(apiBooking: any) {
     amountPaid = totalPrice - balanceDue;
   }
 
+  const uniqueId = apiBooking.id ?? apiBooking.bookingNumber ?? apiBooking.booking_number ?? (index !== undefined ? `booking-${index}` : `booking-${Math.random()}`);
   return {
-    id: apiBooking.bookingNumber || apiBooking.id,
+    id: String(uniqueId),
     guest: guestName,
     email: guest?.email || '',
     phone: guest?.phone || '',
@@ -994,9 +998,13 @@ function transformApiBooking(apiBooking: any) {
     room: apiBooking.room?.number || null,
     status: statusMap[apiBooking.status?.toLowerCase()] || 'CONFIRMED',
     source: (() => {
+      // If ota_code/channel/metadata indicates Dummy CM, use that (backend may wrongly return Booking.com for CM bookings)
+      const otaCode = (apiBooking.ota_code || apiBooking.otaCode || apiBooking.channel_code || apiBooking.metadata?.ota || '').toString().toUpperCase();
+      const channel = (apiBooking.channel || apiBooking.source_channel || apiBooking.metadata?.channel || '').toString().toLowerCase();
+      const isDummyCM = otaCode === 'DUMMY' || otaCode === 'CRS' || channel.includes('dummy') || channel.includes('crs');
+      if (isDummyCM) return 'Dummy Channel Manager';
       const rawSource = apiBooking.bookingSource || apiBooking.booking_source || apiBooking.source || 'Direct';
       const mappedSource = sourceMap[rawSource];
-      // If mapped, use it; otherwise use raw source (don't default to Website)
       return mappedSource || rawSource;
     })(),
     vip: apiBooking.vipStatus || apiBooking.vip_flag || false,
@@ -1051,9 +1059,9 @@ export default function CMSBookings() {
       const apiBookings = response.data?.items || response.data?.data?.items || [];
       console.log('[CMS Bookings] 📦 Received bookings from API:', apiBookings.length, 'bookings');
 
-      const transformedBookings = apiBookings.map(transformApiBooking);
+      const transformedBookings = apiBookings.map((b, i) => transformApiBooking(b, i));
       console.log('[CMS Bookings] ✅ Transformed bookings:', transformedBookings.length, 'bookings');
-      console.log('[CMS Bookings] 📋 First booking sample:', transformedBookings[0]);
+      console.log('[CMS Bookings] 📋 First booking sample:', dedupedBookings[0]);
       
       setBookings(transformedBookings);
       console.log('[CMS Bookings] ✅✅✅ State updated successfully with', transformedBookings.length, 'bookings');

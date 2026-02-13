@@ -5,9 +5,28 @@
  * Uses refs for callbacks to ensure handlers are stable (registered once) and
  * always invoke the latest refetchBookings/callbacks - prevents handler churn
  * that could cause events to be missed during unregister/re-register cycles.
+ *
+ * SSE merge: When adding bookings from SSE optimistically, merge by booking.id
+ * to avoid duplicates (e.g. upsert: replace existing by id, append if new).
  */
 
 import { useEffect, useRef } from 'react';
+
+/** Merge a new/updated booking into a list by id to avoid duplicates */
+export function mergeBookingById<T extends { id?: string | number }>(
+  list: T[],
+  incoming: T
+): T[] {
+  const id = incoming.id;
+  if (id == null) return [...list, incoming];
+  const idx = list.findIndex((b) => String(b.id) === String(id));
+  if (idx >= 0) {
+    const next = [...list];
+    next[idx] = incoming;
+    return next;
+  }
+  return [...list, incoming];
+}
 import { useSSE } from '../contexts/SSEContext';
 import { SSEEvent, SSE_EVENT_TYPES } from '../api/services/sse.service';
 

@@ -89,29 +89,66 @@ export default function BulkMappingDrawer({
       }));
   }, [items, localMappings]);
 
+  /** Mappings that were previously saved but user cleared the OTA field — we delete these on save */
+  const mappingIdsToRemove = useMemo(() => {
+    return items
+      .filter(
+        (it) =>
+          it.mappingId != null &&
+          (localMappings[it.pmsRoomTypeId] ?? '').trim().length === 0
+      )
+      .map((it) => it.mappingId);
+  }, [items, localMappings]);
+
+  const hasChangesToSave =
+    mappingsToSave.length > 0 || mappingIdsToRemove.length > 0;
+
   const handleSave = async () => {
-    if (mappingsToSave.length === 0) {
-      showError('Add at least one OTA room type to save.');
+    if (!hasChangesToSave) {
+      showError('Add at least one OTA room type to save, or clear mappings to remove them.');
       return;
     }
     setSaving(true);
     try {
-      const result = await channelManagerService.bulkRoomMappings({
-        otaCode,
-        mappings: mappingsToSave,
-      });
-      const created = result?.created ?? 0;
-      const updated = result?.updated ?? 0;
-      const errs = result?.errors ?? [];
-      if (errs.length > 0) {
-        showError(errs.slice(0, 3).join('; ') + (errs.length > 3 ? '…' : ''));
+      let removedCount = 0;
+      if (mappingIdsToRemove.length > 0) {
+        await Promise.all(
+          mappingIdsToRemove.map((id) =>
+            channelManagerService.deleteRoomMapping(String(id))
+          )
+        );
+        removedCount = mappingIdsToRemove.length;
       }
-      if (created > 0 || updated > 0) {
-        success(`Mappings saved: ${created} created, ${updated} updated.`);
+      if (mappingsToSave.length > 0) {
+        const result = await channelManagerService.bulkRoomMappings({
+          otaCode,
+          mappings: mappingsToSave,
+        });
+        const created = result?.created ?? 0;
+        const updated = result?.updated ?? 0;
+        const errs = result?.errors ?? [];
+        if (errs.length > 0) {
+          showError(errs.slice(0, 3).join('; ') + (errs.length > 3 ? '…' : ''));
+        }
+        if (created > 0 || updated > 0 || removedCount > 0) {
+          const parts = [];
+          if (removedCount > 0) parts.push(`${removedCount} removed`);
+          if (created > 0) parts.push(`${created} created`);
+          if (updated > 0) parts.push(`${updated} updated`);
+          success(`Mappings saved: ${parts.join(', ')}.`);
+          onSuccess?.();
+          onClose();
+        } else if (errs.length === 0 && removedCount === 0) {
+          success('No changes to save.');
+          onClose();
+        }
+      } else {
+        success(
+          removedCount === 1
+            ? '1 mapping removed.'
+            : `${removedCount} mappings removed.`
+        );
         onSuccess?.();
-        onClose();
-      } else if (errs.length === 0) {
-        success('No changes to save.');
         onClose();
       }
     } catch (err) {
@@ -146,7 +183,7 @@ export default function BulkMappingDrawer({
             <Button
               variant="primary"
               onClick={handleSave}
-              disabled={mappingsToSave.length === 0 || saving}
+              disabled={!hasChangesToSave || saving}
               loading={saving}
               className="px-5 py-2 text-[13px] font-semibold"
             >

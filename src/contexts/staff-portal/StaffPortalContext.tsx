@@ -132,25 +132,41 @@ function reducer(state: StaffPortalState, action: Action): StaffPortalState {
         profile: { ...state.profile, ...action.payload }
       };
 
-    case actionTypes.CLOCK_IN:
+    case actionTypes.CLOCK_IN: {
+      const clockInTimestamp = new Date().toISOString();
+      const clockInHistory = state.profile?.clockHistory || [];
       return {
         ...state,
         profile: {
           ...state.profile,
           clockedIn: true,
-          clockInTime: new Date().toISOString()
+          clockInTime: clockInTimestamp,
+          clockHistory: [
+            { action: 'clock_in', timestamp: clockInTimestamp },
+            ...clockInHistory
+          ].slice(0, 50) // keep last 50 entries
         }
       };
+    }
 
-    case actionTypes.CLOCK_OUT:
+    case actionTypes.CLOCK_OUT: {
+      const clockOutTimestamp = action.payload?.clockOutTime || new Date().toISOString();
+      const clockOutHistory = state.profile?.clockHistory || [];
       return {
         ...state,
         profile: {
           ...state.profile,
           clockedIn: false,
-          clockInTime: null
+          clockOutTime: clockOutTimestamp,
+          lastClockInTime: state.profile?.clockInTime,
+          clockInTime: null,
+          clockHistory: [
+            { action: 'clock_out', timestamp: clockOutTimestamp },
+            ...clockOutHistory
+          ].slice(0, 50)
         }
       };
+    }
 
     case actionTypes.SET_NOTIFICATIONS:
       return {
@@ -935,7 +951,12 @@ export function StaffPortalProvider({ children }: StaffPortalProviderProps) {
         attendanceStats: profileData.attendance_stats
       };
 
-      dispatch({ type: actionTypes.SET_PROFILE, payload: transformedProfile });
+      // Filter out null/undefined values so they don't overwrite seeded data (e.g. shift times)
+      const filteredProfile = Object.fromEntries(
+        Object.entries(transformedProfile).filter(([_, v]) => v != null)
+      );
+      // Merge with existing profile to preserve locally-set values (shift times from seed, clock state, etc.)
+      dispatch({ type: actionTypes.UPDATE_PROFILE, payload: filteredProfile });
     } catch (error) {
       console.error('Failed to fetch staff profile:', error);
       // Fallback to demo data if API fails - the seeded data will remain
@@ -1036,6 +1057,7 @@ export function StaffPortalProvider({ children }: StaffPortalProviderProps) {
   }, [state.profile?.id, user?.id, fetchStaffProfile]);
 
   const clockOut = useCallback(async () => {
+    const clockOutTime = new Date().toISOString();
     try {
       const { staffService } = await import('../../api/services/staff.service');
       const staffId = state.profile?.id || user?.id;
@@ -1045,7 +1067,7 @@ export function StaffPortalProvider({ children }: StaffPortalProviderProps) {
     } catch (err) {
       console.error('Clock out API call failed:', err);
     }
-    dispatch({ type: actionTypes.CLOCK_OUT });
+    dispatch({ type: actionTypes.CLOCK_OUT, payload: { clockOutTime } });
     // Refresh profile from backend to sync state
     fetchStaffProfile();
   }, [state.profile?.id, user?.id, fetchStaffProfile]);

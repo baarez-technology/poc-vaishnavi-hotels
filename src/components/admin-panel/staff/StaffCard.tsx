@@ -56,6 +56,11 @@ export default function StaffCard({ staff, onClick, onAssignShift }) {
       <div className="flex items-start gap-4 mb-4">
         <div className={`relative flex-shrink-0 w-16 h-16 rounded-full ring-4 ${getStatusStyle(staff.status)} bg-gradient-to-br from-[#A57865] to-[#8E6554] flex items-center justify-center text-white font-bold text-xl shadow-md`}>
           {getAvatarInitials()}
+          {/* Clock status indicator */}
+          <span
+            className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${staff.clockedIn ? 'bg-emerald-500' : 'bg-neutral-300'}`}
+            title={staff.clockedIn ? 'Clocked In' : 'Clocked Out'}
+          />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-xl font-serif font-bold text-neutral-900 truncate mb-1">

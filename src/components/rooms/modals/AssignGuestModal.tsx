@@ -2,14 +2,20 @@
  * AssignGuestModal Component
  * Assign guest to room - Glimmora Design System v5.0
  * Side Drawer pattern using ui2/Drawer
+ *
+ * Fixes applied:
+ * - BUG-012: Validates if guest already has a room assigned (shows warning popup)
+ * - BUG-013: Persists assignment to backend via booking update
+ * - BUG-016: Requires check-in/check-out dates for proper date-based assignment
  */
 
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Bed, UsersRound, DollarSign, ChevronDown, Check, Search } from 'lucide-react';
+import { Bed, UsersRound, DollarSign, ChevronDown, Check, Search, Calendar, AlertTriangle } from 'lucide-react';
 import { Drawer } from '../../ui2/Drawer';
 import { Button } from '../../ui2/Button';
 import { guestsService } from '../../../api/services/guests.service';
+import { bookingService } from '../../../api/services/booking.service';
 import { useToast } from '../../../contexts/ToastContext';
 
 // Custom Select Dropdown Component with React Portal and Search
@@ -200,16 +206,86 @@ function GuestSelectDropdown({ value, onChange, options, placeholder, isLoading 
 
 export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
   const [selectedGuest, setSelectedGuest] = useState('');
+  const [checkInDate, setCheckInDate] = useState('');
+  const [checkOutDate, setCheckOutDate] = useState('');
   const [availableGuests, setAvailableGuests] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [existingAssignment, setExistingAssignment] = useState<any>(null);
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+  const [isCheckingGuest, setIsCheckingGuest] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
     if (isOpen) {
       setSelectedGuest('');
+      // Default check-in to today, check-out to tomorrow
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      setCheckInDate(today.toISOString().split('T')[0]);
+      setCheckOutDate(tomorrow.toISOString().split('T')[0]);
+      setExistingAssignment(null);
+      setShowDuplicateWarning(false);
       fetchGuests();
     }
   }, [isOpen]);
+
+  // BUG-012: Check if the selected guest already has an active room assignment
+  useEffect(() => {
+    if (!selectedGuest || !checkInDate || !checkOutDate) {
+      setExistingAssignment(null);
+      setShowDuplicateWarning(false);
+      return;
+    }
+    checkGuestExistingAssignment();
+  }, [selectedGuest, checkInDate, checkOutDate]);
+
+  const checkGuestExistingAssignment = async () => {
+    if (!selectedGuest) return;
+
+    setIsCheckingGuest(true);
+    try {
+      // Fetch all bookings and check if this guest already has an active room for the date range
+      const response = await bookingService.getBookings(1, 100);
+      const bookings = response.items || (Array.isArray(response) ? response : []);
+
+      const guest = availableGuests.find(g => String(g.id) === String(selectedGuest));
+      if (!guest) return;
+
+      const guestName = `${guest.first_name} ${guest.last_name}`.toLowerCase();
+      const guestEmail = (guest.email || '').toLowerCase();
+
+      // Find active bookings for this guest that overlap with selected dates
+      const conflicting = bookings.find((b: any) => {
+        const bookingGuest = (b.guestInfo?.firstName + ' ' + b.guestInfo?.lastName).toLowerCase();
+        const bookingEmail = (b.guestInfo?.email || '').toLowerCase();
+        const isMatchingGuest = bookingGuest === guestName || (guestEmail && bookingEmail === guestEmail);
+        const isActive = b.status !== 'cancelled' && b.status !== 'checked-out';
+        const hasRoom = b.room && b.room.number;
+
+        // Check date overlap
+        const bCheckIn = new Date(b.checkIn);
+        const bCheckOut = new Date(b.checkOut);
+        const selCheckIn = new Date(checkInDate);
+        const selCheckOut = new Date(checkOutDate);
+        const datesOverlap = bCheckIn < selCheckOut && bCheckOut > selCheckIn;
+
+        return isMatchingGuest && isActive && hasRoom && datesOverlap;
+      });
+
+      if (conflicting) {
+        setExistingAssignment(conflicting);
+        setShowDuplicateWarning(true);
+      } else {
+        setExistingAssignment(null);
+        setShowDuplicateWarning(false);
+      }
+    } catch (error) {
+      console.error('[AssignGuestModal] Error checking guest assignment:', error);
+    } finally {
+      setIsCheckingGuest(false);
+    }
+  };
 
   const fetchGuests = async () => {
     try {
@@ -234,25 +310,55 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
       return;
     }
 
+    // BUG-016: Validate dates
+    if (!checkInDate || !checkOutDate) {
+      toast.warning('Please select check-in and check-out dates');
+      return;
+    }
+
+    if (new Date(checkOutDate) <= new Date(checkInDate)) {
+      toast.warning('Check-out date must be after check-in date');
+      return;
+    }
+
+    // BUG-012: Block if guest already has an active room for these dates
+    if (showDuplicateWarning && existingAssignment) {
+      toast.error(`This guest is already assigned to Room ${existingAssignment.room?.number || existingAssignment.room?.name || 'N/A'} for overlapping dates. Please unassign them first.`);
+      return;
+    }
+
     const guest = availableGuests.find(g => String(g.id) === String(selectedGuest));
     if (guest) {
       onAssign(room.id, {
         id: guest.id,
         name: `${guest.first_name} ${guest.last_name}`,
         email: guest.email,
-        phone: guest.phone
+        phone: guest.phone,
+        checkIn: checkInDate,
+        checkOut: checkOutDate,
       });
       onClose();
       setSelectedGuest('');
     }
   };
 
+  // Calculate nights
+  const nights = checkInDate && checkOutDate
+    ? Math.max(0, Math.floor((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
   const renderFooter = () => (
     <div className="flex items-center justify-end gap-3">
       <Button type="button" variant="ghost" onClick={onClose} className="px-5 py-2 text-[13px] font-semibold">
         Cancel
       </Button>
-      <Button type="submit" variant="primary" form="assign-guest-form" className="px-5 py-2 text-[13px] font-semibold">
+      <Button
+        type="submit"
+        variant="primary"
+        form="assign-guest-form"
+        disabled={showDuplicateWarning || !checkInDate || !checkOutDate || nights <= 0}
+        className="px-5 py-2 text-[13px] font-semibold"
+      >
         Assign Guest
       </Button>
     </div>
@@ -289,6 +395,72 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
               isLoading={isLoading}
             />
           </div>
+        </div>
+
+        {/* BUG-012: Duplicate Assignment Warning */}
+        {showDuplicateWarning && existingAssignment && (
+          <div className="p-4 bg-rose-50 rounded-lg border border-rose-200">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[13px] font-semibold text-rose-800">Guest Already Has Room Assigned</p>
+                <p className="text-[12px] text-rose-700 mt-1">
+                  This guest is currently assigned to <span className="font-semibold">Room {existingAssignment.room?.number || existingAssignment.room?.name || 'N/A'}</span>
+                  {' '}(Booking: {existingAssignment.bookingNumber || existingAssignment.id})
+                  {' '}from {existingAssignment.checkIn} to {existingAssignment.checkOut}.
+                </p>
+                <p className="text-[12px] text-rose-600 mt-1">
+                  Please unassign the guest from their current room before making a new assignment.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BUG-016: Check-in / Check-out Dates */}
+        <div>
+          <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
+            Stay Dates
+          </h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
+                <Calendar className="w-3 h-3 inline mr-1" />
+                Check-in Date
+              </label>
+              <input
+                type="date"
+                value={checkInDate}
+                onChange={(e) => setCheckInDate(e.target.value)}
+                className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
+                <Calendar className="w-3 h-3 inline mr-1" />
+                Check-out Date
+              </label>
+              <input
+                type="date"
+                value={checkOutDate}
+                onChange={(e) => setCheckOutDate(e.target.value)}
+                min={checkInDate}
+                className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all"
+                required
+              />
+            </div>
+          </div>
+          {nights > 0 && (
+            <p className="text-[11px] text-neutral-500 mt-2">
+              {nights} night{nights !== 1 ? 's' : ''}
+            </p>
+          )}
+          {checkInDate && checkOutDate && nights <= 0 && (
+            <p className="text-[11px] text-rose-500 mt-2">
+              Check-out date must be after check-in date
+            </p>
+          )}
         </div>
 
         {/* Room Details */}

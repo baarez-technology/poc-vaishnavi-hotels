@@ -55,7 +55,7 @@ export function useStaffProfile(staffId?: number | string) {
   const id = staffId || user?.id;
 
   return useApiData<StaffFullProfile>(
-    () => staffService.get(id as number),
+    () => id ? (staffId ? staffService.get(id as number) : staffService.getMyProfile()) : Promise.reject('No user ID'),
     [id]
   );
 }
@@ -114,14 +114,12 @@ export function useHousekeepingTasks(status?: string, assignedTo?: number) {
 }
 
 export function useMyHousekeepingTasks(status?: string) {
-  const { user } = useAuth();
-
   return useApiData<HousekeepingTask[]>(
     async () => {
-      if (!user?.id) return [];
-      return housekeepingService.getStaffTasks(Number(user.id), status);
+      // Use my-tasks endpoint which resolves staff from the auth token
+      return housekeepingService.getMyTasks(status);
     },
-    [user?.id, status]
+    [status]
   );
 }
 

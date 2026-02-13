@@ -47,19 +47,23 @@ const RoomDetails = () => {
   const [checklist, setChecklist] = useState(defaultChecklist);
   const [scanModalOpen, setScanModalOpen] = useState(false);
 
-  // Fetch room data
+  // Fetch room data including task details
   useEffect(() => {
     const fetchRoom = async () => {
       try {
         setLoading(true);
-        // Fetch all rooms and find the one we need
+        // Fetch all rooms (now includes task details from backend)
         const rooms = await housekeepingService.getRooms();
         const foundRoom = rooms.find((r: any) => r.id === Number(id));
         if (foundRoom) {
           setRoom(foundRoom);
-          // Reset checklist based on room status
+          // BUG-003/BUG-022 FIX: Set checklist based on room status
           if (foundRoom.status === 'clean' || foundRoom.status === 'inspected') {
             setChecklist(defaultChecklist.map(c => ({ ...c, completed: true })));
+          }
+          // BUG-018 FIX: Pre-fill notes from task if available
+          if (foundRoom.notes) {
+            setNote(foundRoom.notes);
           }
         }
       } catch (err) {
@@ -106,7 +110,28 @@ const RoomDetails = () => {
   };
 
   const handleStatusChange = async (status: string) => {
-    const success = await updateRoomStatus(room.id, status);
+    let success = false;
+
+    if (status === 'in_progress' && room.task_id) {
+      // Use startTask API which also updates room status
+      try {
+        await housekeepingService.startTask(room.task_id);
+        success = true;
+      } catch {
+        success = await updateRoomStatus(room.id, status);
+      }
+    } else if (status === 'clean' && room.task_id) {
+      // Use completeTask API which also updates room status
+      try {
+        await housekeepingService.completeTask(room.task_id);
+        success = true;
+      } catch {
+        success = await updateRoomStatus(room.id, status);
+      }
+    } else {
+      success = await updateRoomStatus(room.id, status);
+    }
+
     if (success) {
       setRoom((prev: any) => ({ ...prev, status }));
       // Update checklist based on new status

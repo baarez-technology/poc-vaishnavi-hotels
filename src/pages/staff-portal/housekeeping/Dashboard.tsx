@@ -76,7 +76,7 @@ function SectionCard({
 const HousekeepingDashboard = () => {
   const navigate = useNavigate();
   const [scanModalOpen, setScanModalOpen] = useState(false);
-  const { data: profile } = useStaffProfile();
+  const { data: profile, refetch: refetchProfile } = useStaffProfile();
   const { data: dirtyRooms, loading: dirtyLoading, refetch: refetchDirty } = useHousekeepingRooms('dirty');
   const { data: inProgressRooms, loading: inProgressRoomLoading, refetch: refetchInProgressRooms } = useHousekeepingRooms('in_progress');
   const { data: cleanRooms } = useHousekeepingRooms('clean');
@@ -90,7 +90,7 @@ const HousekeepingDashboard = () => {
   }, [dirtyRooms, inProgressRooms, cleanRooms]);
 
   const refetchAll = async () => {
-    await Promise.all([refetchDirty(), refetchInProgressRooms(), refetchTasks()]);
+    await Promise.all([refetchProfile(), refetchDirty(), refetchInProgressRooms(), refetchTasks()]);
   };
 
   const isLoading = dirtyLoading || inProgressRoomLoading || tasksLoading;
@@ -147,10 +147,24 @@ const HousekeepingDashboard = () => {
   };
 
   const handleStartRoom = async (room: any) => {
-    const success = await updateRoomStatus(room.id, 'in_progress');
-    if (success) {
-      refetchAll();
-      navigate(`/staff/housekeeping/rooms/${room.id}`);
+    // BUG-001 FIX: Find the task for this room and start it (which also updates room status)
+    // instead of just changing room status and navigating away
+    const roomTasks = tasks?.filter((t: any) =>
+      t.room_id === room.id && (t.status === 'pending' || t.status === 'assigned')
+    );
+    const taskToStart = roomTasks?.[0];
+
+    if (taskToStart) {
+      const success = await startTask(taskToStart.id);
+      if (success) {
+        refetchAll();
+      }
+    } else {
+      // Fallback: if no task found, just update room status
+      const success = await updateRoomStatus(room.id, 'in_progress');
+      if (success) {
+        refetchAll();
+      }
     }
   };
 
@@ -257,9 +271,9 @@ const HousekeepingDashboard = () => {
                           <span className="text-neutral-300 hidden sm:inline">•</span>
                           <span className="hidden sm:inline">Check-in: {room.next_checkin || 'TBD'}</span>
                         </div>
-                        {room.special_requests && (
+                        {(room.special_requests || room.notes) && (
                           <p className="text-[10px] text-gold-600 mt-1 truncate font-medium">
-                            Note: {room.special_requests}
+                            Note: {room.special_requests || room.notes}
                           </p>
                         )}
                       </div>
@@ -409,7 +423,7 @@ const HousekeepingDashboard = () => {
 
                     {/* Bottom row on mobile: Actions */}
                     <div className="flex items-center justify-end gap-2 sm:flex-shrink-0 pl-13 sm:pl-0">
-                      {task.status === 'todo' && (
+                      {(task.status === 'todo' || task.status === 'pending' || task.status === 'assigned') && (
                         <Button
                           size="sm"
                           variant="ghost"

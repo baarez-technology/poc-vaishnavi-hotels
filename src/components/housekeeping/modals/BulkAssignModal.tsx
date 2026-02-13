@@ -72,6 +72,8 @@ export default function BulkAssignModal({
 }) {
   const [selectedRooms, setSelectedRooms] = useState<number[]>([]);
   const [selectedHousekeeper, setSelectedHousekeeper] = useState('');
+  const [selectedPriority, setSelectedPriority] = useState('normal');
+  const [bulkNotes, setBulkNotes] = useState('');
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [duplicateRooms, setDuplicateRooms] = useState<string[]>([]);
 
@@ -79,6 +81,8 @@ export default function BulkAssignModal({
     if (isOpen) {
       setSelectedRooms([]);
       setSelectedHousekeeper('');
+      setSelectedPriority('normal');
+      setBulkNotes('');
       setShowDuplicateWarning(false);
       setDuplicateRooms([]);
     }
@@ -131,8 +135,8 @@ export default function BulkAssignModal({
         }
       }
 
-      // Proceed with assignment
-      onBulkAssign(selectedRooms, selectedHousekeeper);
+      // Proceed with assignment (pass priority and notes)
+      onBulkAssign(selectedRooms, selectedHousekeeper, selectedPriority, bulkNotes);
       onClose();
     }
   };
@@ -146,7 +150,7 @@ export default function BulkAssignModal({
     // Only assign rooms that aren't already assigned to this housekeeper
     const { newRooms } = checkForDuplicates();
     if (newRooms.length > 0 && onBulkAssign) {
-      onBulkAssign(newRooms, selectedHousekeeper);
+      onBulkAssign(newRooms, selectedHousekeeper, selectedPriority, bulkNotes);
     }
     onClose();
   };
@@ -278,6 +282,48 @@ export default function BulkAssignModal({
             label: `${hk.name}${hk.efficiency ? ` (${hk.efficiency}% efficiency)` : ''}`
           }))}
         />
+
+        {/* Priority Selection (BUG-023 FIX) */}
+        <div>
+          <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
+            Priority
+          </h4>
+          <div className="flex gap-2">
+            {[
+              { value: 'low', label: 'Low', activeClass: 'bg-neutral-200 text-neutral-700' },
+              { value: 'normal', label: 'Normal', activeClass: 'bg-terra-500 text-white' },
+              { value: 'high', label: 'High', activeClass: 'bg-gold-500 text-white' },
+              { value: 'urgent', label: 'Urgent', activeClass: 'bg-rose-500 text-white' },
+            ].map(p => (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => setSelectedPriority(p.value)}
+                className={`flex-1 h-9 px-3 rounded-lg text-[12px] font-semibold transition-all ${
+                  selectedPriority === p.value
+                    ? p.activeClass
+                    : 'bg-white border border-neutral-200 text-neutral-600 hover:border-neutral-300'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Notes (BUG-023 FIX) */}
+        <div>
+          <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
+            Notes / Instructions
+          </h4>
+          <textarea
+            value={bulkNotes}
+            onChange={(e) => setBulkNotes(e.target.value)}
+            placeholder="Add instructions or notes for all selected rooms..."
+            rows={3}
+            className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-lg text-[13px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-terra-500/10 focus:border-terra-400 transition-all resize-none hover:border-neutral-300"
+          />
+        </div>
 
         {/* Room Selection */}
         <div>

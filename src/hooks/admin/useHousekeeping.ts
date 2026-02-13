@@ -99,50 +99,65 @@ export function useHousekeeping() {
 
       // Transform API rooms to frontend format
       const transformedRooms: HousekeepingRoom[] = (Array.isArray(roomsData) ? roomsData : []).map((room: any) => {
-        const task = tasksByRoomId.get(room.id);
+        // Use task data from rooms API first (includes completed tasks), fall back to tasks list
+        const taskFromRoom = room.task_id ? room : null;
+        const taskFromList = tasksByRoomId.get(room.id);
+
+        // Prefer task from tasks list for active tasks, but use room-embedded task for completed details
+        const activeTask = taskFromList;
+        const taskId = activeTask?.id || taskFromRoom?.task_id || null;
+        const assignedTo = activeTask?.assigned_to || taskFromRoom?.assigned_to || null;
+        const assignedStaffName = activeTask?.assigned_staff_name || taskFromRoom?.assigned_staff_name || null;
+        const taskPriority = activeTask?.priority || taskFromRoom?.task_priority || 'medium';
+        const startedAt = activeTask?.started_at || taskFromRoom?.started_at || null;
+        const completedAt = activeTask?.completed_at || taskFromRoom?.completed_at || null;
+        const taskNotes = activeTask?.notes || taskFromRoom?.notes || '';
 
         // Determine cleaning status from task or room status
         let cleaningStatus: 'not_started' | 'in_progress' | 'done' = 'not_started';
         if (room.status === 'clean' || room.status === 'inspected') {
           cleaningStatus = 'done';
-        } else if (task?.status === 'in_progress') {
+        } else if (room.status === 'in_progress' || activeTask?.status === 'in_progress') {
           cleaningStatus = 'in_progress';
         }
 
         // Extract floor from room number if not provided by API
-        // Room numbers like "201", "305", "1102" - first digit(s) before last 2 digits is floor
         const extractFloorFromNumber = (roomNum: string): number => {
           if (!roomNum || roomNum.length < 2) return 1;
-          // For room numbers like "201" -> floor 2, "1102" -> floor 11
           const floorPart = roomNum.slice(0, -2);
           const parsed = parseInt(floorPart, 10);
           return isNaN(parsed) || parsed < 1 ? 1 : parsed;
         };
 
+        // BUG-003/BUG-022 FIX: For clean/inspected rooms, mark checklist as all completed
+        const roomChecklist = (room.status === 'clean' || room.status === 'inspected')
+          ? defaultChecklist.map(item => ({ ...item, completed: true }))
+          : [...defaultChecklist];
+
         return {
           id: room.id,
           number: room.number,
-          roomNumber: room.number, // Add for consistency with components
+          roomNumber: room.number,
           type: room.room_type || 'Standard',
           roomType: room.room_type || 'Standard',
           floor: room.floor || extractFloorFromNumber(room.number),
           status: room.status || 'dirty',
           cleaningStatus,
-          priority: task?.priority || 'medium',
-          assignedTo: task?.assigned_to || null,
-          assignedStaffName: task?.assigned_staff_name,
+          priority: taskPriority,
+          assignedTo,
+          assignedStaffName,
           // Build assignedStaff object for StaffView and RoomCard components
-          assignedStaff: task?.assigned_to ? {
-            id: task.assigned_to,
-            name: task.assigned_staff_name || 'Unknown',
-            avatar: task.assigned_staff_name?.charAt(0) || 'U'
+          assignedStaff: assignedTo ? {
+            id: assignedTo,
+            name: assignedStaffName || 'Unknown',
+            avatar: assignedStaffName?.charAt(0) || 'U'
           } : null,
           lastCleaned: room.last_cleaned,
-          cleaningStartedAt: task?.started_at,
-          cleaningCompletedAt: task?.completed_at,
-          notes: task?.notes || '',
-          taskId: task?.id,
-          checklist: [...defaultChecklist], // Reset checklist for each room
+          cleaningStartedAt: startedAt,
+          cleaningCompletedAt: completedAt,
+          notes: taskNotes,
+          taskId,
+          checklist: roomChecklist,
           bedType: room.bed_type,
           viewType: room.view_type,
           maxOccupancy: room.max_occupancy,
@@ -288,19 +303,61 @@ export function useHousekeeping() {
   }, [rooms, staff]);
 
   /**
-   * BULK ASSIGNMENT
+   * BULK ASSIGNMENT (BUG-023 FIX: now supports priority and notes)
    */
-  const bulkAssignRooms = useCallback(async (roomIds: number[], staffId: number) => {
+  const bulkAssignRooms = useCallback(async (roomIds: number[], staffId: number, priority?: string, notes?: string) => {
     try {
       for (const roomId of roomIds) {
-        await assignStaffToRoom(roomId, staffId);
+        const room = rooms.find(r => r.id === roomId);
+        if (!room) continue;
+
+        let taskId = room.taskId;
+
+        // Create task if one doesn't exist
+        if (!taskId) {
+          const newTask = await housekeepingService.createTask({
+            room_id: roomId,
+            task_type: 'cleaning',
+            priority: priority || room.priority || 'medium',
+            notes: notes,
+          });
+          taskId = newTask.id;
+        }
+
+        // Assign staff with priority and notes
+        await housekeepingService.assignTask(taskId, {
+          staff_id: staffId,
+          priority: priority || room.priority,
+          notes: notes,
+        });
+
+        // Update local state
+        const staffMember = staff.find(s => s.id === staffId);
+        setRooms(prev => prev.map(r => {
+          if (r.id === roomId) {
+            return {
+              ...r,
+              assignedTo: staffId,
+              assignedStaffName: staffMember?.name,
+              assignedStaff: staffMember ? {
+                id: staffId,
+                name: staffMember.name,
+                avatar: staffMember.avatar || staffMember.name?.charAt(0) || 'U'
+              } : null,
+              taskId,
+              priority: (priority as any) || r.priority,
+              notes: notes || r.notes,
+            };
+          }
+          return r;
+        }));
       }
       toast.success(`${roomIds.length} rooms assigned`);
     } catch (err: any) {
       console.error('Error bulk assigning rooms:', err);
       toast.error('Failed to assign some rooms');
     }
-  }, [assignStaffToRoom]);
+  }, [rooms, staff]);
 
   /**
    * CLEANING WORKFLOW ENGINE
@@ -325,11 +382,11 @@ export function useHousekeeping() {
         taskId = newTask.id;
       }
 
-      // Start the task
-      await housekeepingService.startTask(taskId);
+      // Start the task (backend also updates room status to in_progress)
+      const result = await housekeepingService.startTask(taskId);
 
-      // Update room status
-      await housekeepingService.updateRoomStatus(roomId, { status: 'in_progress' });
+      // Use server-returned started_at for consistency (BUG-020 FIX)
+      const serverStartedAt = result?.started_at || new Date().toISOString();
 
       // Update local state
       setRooms(prev => prev.map(r => {
@@ -338,7 +395,7 @@ export function useHousekeeping() {
             ...r,
             cleaningStatus: 'in_progress',
             status: 'in_progress',
-            cleaningStartedAt: new Date().toISOString(),
+            cleaningStartedAt: serverStartedAt,
             taskId,
           };
         }
@@ -360,16 +417,18 @@ export function useHousekeeping() {
         return;
       }
 
-      // Complete the task if exists
+      // Complete the task if exists (backend also sets room to clean)
+      let serverCompletedAt: string | undefined;
       if (room.taskId) {
-        await housekeepingService.completeTask(room.taskId);
+        const result = await housekeepingService.completeTask(room.taskId);
+        serverCompletedAt = result?.completed_at;
+      } else {
+        // No task - just update room status
+        await housekeepingService.updateRoomStatus(roomId, { status: 'clean' });
       }
 
-      // Update room status to clean
-      await housekeepingService.updateRoomStatus(roomId, { status: 'clean' });
-
-      // Update local state
-      const completedAt = new Date().toISOString();
+      // Update local state - BUG-003/BUG-021 FIX: preserve task details and mark checklist completed
+      const completedAt = serverCompletedAt || new Date().toISOString();
       setRooms(prev => prev.map(r => {
         if (r.id === roomId) {
           return {
@@ -386,6 +445,8 @@ export function useHousekeeping() {
               hour12: true
             }),
             timeSinceDirtyMinutes: 0,
+            // BUG-003/BUG-022 FIX: Mark all checklist items as completed
+            checklist: r.checklist.map(item => ({ ...item, completed: true })),
           };
         }
         return r;
@@ -728,9 +789,10 @@ export function useHousekeeping() {
           message: summary,
         };
       } else {
-        // Fallback: Check if there are unassigned rooms that need tasks created first
+        // Fallback: Check if there are unassigned dirty rooms that need tasks created first
+        // BUG-005 FIX: Only create tasks for rooms that are actually dirty
         const unassignedRooms = rooms.filter(
-          r => (r.status === 'dirty' || r.cleaningStatus === 'not_started') && !r.assignedTo && !r.taskId
+          r => r.status === 'dirty' && !r.assignedTo && !r.taskId
         );
 
         if (unassignedRooms.length > 0) {
@@ -770,8 +832,9 @@ export function useHousekeeping() {
       console.error('Error in auto-assign:', err);
 
       // Fallback to simple round-robin if API fails
+      // BUG-005 FIX: Only assign dirty rooms
       const unassignedRooms = rooms.filter(
-        r => (r.status === 'dirty' || r.cleaningStatus === 'not_started') && !r.assignedTo
+        r => r.status === 'dirty' && !r.assignedTo
       );
       const availableStaff = staff.filter(s => s.status === 'available');
 

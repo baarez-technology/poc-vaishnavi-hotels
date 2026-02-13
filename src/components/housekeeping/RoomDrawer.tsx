@@ -226,7 +226,7 @@ export default function RoomDrawer({
           </div>
         )}
 
-        {/* Cleaning Progress */}
+        {/* Cleaning Progress - Show for all rooms with checklist including clean/inspected */}
         {totalTasks > 0 && room.status !== 'out_of_service' && (
           <div>
             <div className="flex items-center justify-between mb-3">

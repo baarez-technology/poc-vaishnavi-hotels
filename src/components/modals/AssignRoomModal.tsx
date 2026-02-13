@@ -205,7 +205,7 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
     if (!rooms || rooms.length === 0) return [];
 
     const recommendationMap = new Map(
-      recommendations.map(r => [r.room_id, r])
+      recommendations.map(r => [String(r.room_id), r])
     );
 
     return rooms.filter(room => {
@@ -226,7 +226,7 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
       return true;
     }).map(room => {
       // Merge recommendation data if available
-      const rec = recommendationMap.get(room.id);
+      const rec = recommendationMap.get(String(room.id));
       return {
         ...room,
         match_score: rec?.match_score || null,
@@ -436,12 +436,12 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
             </h3>
             <div className="grid grid-cols-5 gap-2">
               {recommendations.slice(0, 5).map((rec, idx) => {
-                const isSelected = selectedRoom?.id === rec.room_id;
+                const isSelected = String(selectedRoom?.id) === String(rec.room_id);
                 return (
                   <button
                     key={rec.room_id}
                     onClick={() => {
-                      const room = rooms.find(r => r.id === rec.room_id);
+                      const room = rooms.find(r => String(r.id) === String(rec.room_id));
                       if (room) setSelectedRoom(room);
                     }}
                     className={`p-2 rounded-lg border-2 text-center transition-all ${
@@ -659,6 +659,25 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
             </div>
           )}
         </section>
+
+        {/* Room Type Mismatch Warning */}
+        {selectedRoom && (() => {
+          const selectedType = (selectedRoom.room_type?.name || selectedRoom.type || '').toLowerCase();
+          const bookedType = (booking?.roomType || '').toLowerCase();
+          const isMismatch = bookedType && selectedType && selectedType !== bookedType;
+          return isMismatch ? (
+            <div className="p-3 bg-amber-50 border border-amber-300 rounded-lg">
+              <p className="text-[13px] font-semibold text-amber-800">
+                Room Type Mismatch
+              </p>
+              <p className="text-[12px] text-amber-700 mt-1">
+                Guest booked <span className="font-semibold">{booking.roomType}</span> but selected room is{' '}
+                <span className="font-semibold">{selectedRoom.room_type?.name || selectedRoom.type}</span>.
+                This may result in a price difference. Proceed only if upgrading or with guest consent.
+              </p>
+            </div>
+          ) : null;
+        })()}
 
         {/* Selected Room Summary */}
         {selectedRoom && (

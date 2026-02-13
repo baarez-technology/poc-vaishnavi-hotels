@@ -40,6 +40,7 @@ export interface WorkOrderCreate {
   scheduled_date?: string;
   estimated_hours?: number;
   notes?: string;
+  assigned_to?: number;
 }
 
 export interface WorkOrderUpdate {
@@ -231,6 +232,58 @@ export const maintenanceService = {
     return extractData<EquipmentIssue>(response.data);
   },
 
+  // ===== PREVENTIVE MAINTENANCE =====
+
+  getPreventiveSchedules: async (filters?: {
+    active_only?: boolean;
+    maintenance_type?: string;
+  }): Promise<any[]> => {
+    const response = await apiClient.get('/api/v1/maintenance/preventive-schedules', { params: filters });
+    return extractData<any[]>(response.data);
+  },
+
+  createPreventiveSchedule: async (data: {
+    name: string;
+    description?: string;
+    location?: string;
+    maintenance_type?: string;
+    frequency?: string;
+    estimated_duration?: number;
+    assigned_to?: number;
+    priority?: string;
+    next_due_date?: string;
+  }): Promise<any> => {
+    const response = await apiClient.post('/api/v1/maintenance/preventive-schedules', data);
+    return extractData<any>(response.data);
+  },
+
+  updatePreventiveSchedule: async (pmId: number, data: {
+    name?: string;
+    description?: string;
+    location?: string;
+    maintenance_type?: string;
+    frequency?: string;
+    estimated_duration?: number;
+    assigned_to?: number;
+    priority?: string;
+    active?: boolean;
+    next_due_date?: string;
+    last_performed?: string;
+  }): Promise<any> => {
+    const response = await apiClient.patch(`/api/v1/maintenance/preventive-schedules/${pmId}`, data);
+    return extractData<any>(response.data);
+  },
+
+  completePreventiveSchedule: async (pmId: number): Promise<any> => {
+    const response = await apiClient.post(`/api/v1/maintenance/preventive-schedules/${pmId}/complete`);
+    return extractData<any>(response.data);
+  },
+
+  deletePreventiveSchedule: async (pmId: number): Promise<any> => {
+    const response = await apiClient.delete(`/api/v1/maintenance/preventive-schedules/${pmId}`);
+    return extractData<any>(response.data);
+  },
+
   // ===== DASHBOARD =====
 
   getDashboard: async (): Promise<MaintenanceDashboard> => {
@@ -241,6 +294,52 @@ export const maintenanceService = {
   getMyDashboard: async (): Promise<MaintenanceDashboard> => {
     const response = await apiClient.get('/api/v1/maintenance/my-dashboard');
     return extractData<MaintenanceDashboard>(response.data);
+  },
+
+  // ===== MAINTENANCE INVENTORY =====
+
+  getInventory: async (category?: string): Promise<any[]> => {
+    const params = category ? { category } : undefined;
+    const response = await apiClient.get('/api/v1/maintenance/inventory', { params });
+    return extractData<any[]>(response.data);
+  },
+
+  createInventoryItem: async (data: {
+    name: string;
+    category?: string;
+    stock_level?: number;
+    min_stock?: number;
+    unit_cost?: number;
+    location?: string;
+  }): Promise<any> => {
+    const response = await apiClient.post('/api/v1/maintenance/inventory', data);
+    return extractData<any>(response.data);
+  },
+
+  updateInventoryItem: async (itemId: number, data: {
+    name?: string;
+    category?: string;
+    stock_level?: number;
+    min_stock?: number;
+    unit_cost?: number;
+    location?: string;
+  }): Promise<any> => {
+    const response = await apiClient.patch(`/api/v1/maintenance/inventory/${itemId}`, data);
+    return extractData<any>(response.data);
+  },
+
+  adjustInventoryStock: async (itemId: number, quantity: number, isAddition: boolean): Promise<any> => {
+    const response = await apiClient.post(
+      `/api/v1/maintenance/inventory/${itemId}/adjust-stock`,
+      null,
+      { params: { quantity, is_addition: isAddition } }
+    );
+    return extractData<any>(response.data);
+  },
+
+  deleteInventoryItem: async (itemId: number): Promise<any> => {
+    const response = await apiClient.delete(`/api/v1/maintenance/inventory/${itemId}`);
+    return extractData<any>(response.data);
   },
 
   // ===== OUT OF ORDER (OOO) MANAGEMENT =====

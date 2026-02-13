@@ -14,7 +14,7 @@ import PageHeader from '../../../layouts/staff-portal/PageHeader';
 import { StatCard } from '../../../components/staff-portal/ui/Card';
 import { StatusBadge, PriorityBadge } from '../../../components/staff-portal/ui/Badge';
 import Button from '../../../components/staff-portal/ui/Button';
-import { useHousekeepingRooms, useHousekeepingActions } from '@/hooks/staff-portal/useStaffApi';
+import { useHousekeepingRooms, useMyHousekeepingTasks, useHousekeepingActions } from '@/hooks/staff-portal/useStaffApi';
 
 // Section Card matching admin LuxurySectionCard
 function SectionCard({
@@ -73,7 +73,8 @@ const HousekeepingRooms = () => {
   const { data: dirtyRooms, loading: dirtyLoading, refetch: refetchDirty } = useHousekeepingRooms('dirty');
   const { data: inProgressRooms, loading: inProgressLoading, refetch: refetchInProgress } = useHousekeepingRooms('in_progress');
   const { data: cleanRooms, loading: cleanLoading, refetch: refetchClean } = useHousekeepingRooms('clean');
-  const { updateRoomStatus } = useHousekeepingActions();
+  const { data: myTasks, refetch: refetchTasks } = useMyHousekeepingTasks();
+  const { updateRoomStatus, startTask, completeTask } = useHousekeepingActions();
 
   // Combine all rooms
   const rooms = useMemo(() => {
@@ -81,7 +82,7 @@ const HousekeepingRooms = () => {
   }, [dirtyRooms, inProgressRooms, cleanRooms]);
 
   const refetchAll = async () => {
-    await Promise.all([refetchDirty(), refetchInProgress(), refetchClean()]);
+    await Promise.all([refetchDirty(), refetchInProgress(), refetchClean(), refetchTasks()]);
   };
 
   const isLoading = dirtyLoading || inProgressLoading || cleanLoading;
@@ -128,14 +129,33 @@ const HousekeepingRooms = () => {
 
   const handleStartCleaning = async (room: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    const success = await updateRoomStatus(room.id, 'in_progress');
-    if (success) refetchAll();
+    // BUG-002 FIX: Find task for this room and start it (backend updates room status too)
+    const roomTask = myTasks?.find((t: any) =>
+      t.room_id === room.id && (t.status === 'pending' || t.status === 'assigned')
+    );
+    if (roomTask) {
+      const success = await startTask(roomTask.id);
+      if (success) refetchAll();
+    } else {
+      // Fallback if no task found
+      const success = await updateRoomStatus(room.id, 'in_progress');
+      if (success) refetchAll();
+    }
   };
 
   const handleMarkClean = async (room: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    const success = await updateRoomStatus(room.id, 'clean');
-    if (success) refetchAll();
+    // Find in-progress task for this room and complete it (backend updates room status too)
+    const roomTask = myTasks?.find((t: any) =>
+      t.room_id === room.id && t.status === 'in_progress'
+    );
+    if (roomTask) {
+      const success = await completeTask(roomTask.id);
+      if (success) refetchAll();
+    } else {
+      const success = await updateRoomStatus(room.id, 'clean');
+      if (success) refetchAll();
+    }
   };
 
   if (isLoading) {
@@ -368,11 +388,13 @@ const HousekeepingRooms = () => {
                         </div>
                       </div>
 
-                      {/* Special Requests */}
-                      {(room.special_requests || room.specialRequests) && (
+                      {/* Special Requests / Task Notes (BUG-018 FIX) */}
+                      {(room.special_requests || room.specialRequests || room.notes) && (
                         <div className="p-2.5 rounded-lg bg-gold-50/50 border border-gold-100 mb-3">
-                          <p className="text-[10px] text-gold-700 font-semibold uppercase tracking-wide">Special Request</p>
-                          <p className="text-[11px] text-neutral-600 mt-0.5 line-clamp-2">{room.special_requests || room.specialRequests}</p>
+                          <p className="text-[10px] text-gold-700 font-semibold uppercase tracking-wide">
+                            {room.special_requests || room.specialRequests ? 'Special Request' : 'Task Notes'}
+                          </p>
+                          <p className="text-[11px] text-neutral-600 mt-0.5 line-clamp-2">{room.special_requests || room.specialRequests || room.notes}</p>
                         </div>
                       )}
 

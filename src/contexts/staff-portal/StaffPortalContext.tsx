@@ -1020,13 +1020,35 @@ export function StaffPortalProvider({ children }: StaffPortalProviderProps) {
     dispatch({ type: actionTypes.SEED_DEMO_DATA, payload: role });
   }, []);
 
-  const clockIn = useCallback(() => {
+  const clockIn = useCallback(async () => {
+    try {
+      const { staffService } = await import('../../api/services/staff.service');
+      const staffId = state.profile?.id || user?.id;
+      if (staffId) {
+        await staffService.clockInOut(staffId, { action: 'clock_in' });
+      }
+    } catch (err) {
+      console.error('Clock in API call failed:', err);
+    }
     dispatch({ type: actionTypes.CLOCK_IN });
-  }, []);
+    // Refresh profile from backend to sync state
+    fetchStaffProfile();
+  }, [state.profile?.id, user?.id, fetchStaffProfile]);
 
-  const clockOut = useCallback(() => {
+  const clockOut = useCallback(async () => {
+    try {
+      const { staffService } = await import('../../api/services/staff.service');
+      const staffId = state.profile?.id || user?.id;
+      if (staffId) {
+        await staffService.clockInOut(staffId, { action: 'clock_out' });
+      }
+    } catch (err) {
+      console.error('Clock out API call failed:', err);
+    }
     dispatch({ type: actionTypes.CLOCK_OUT });
-  }, []);
+    // Refresh profile from backend to sync state
+    fetchStaffProfile();
+  }, [state.profile?.id, user?.id, fetchStaffProfile]);
 
   const updateProfile = useCallback((updates: any) => {
     dispatch({ type: actionTypes.UPDATE_PROFILE, payload: updates });

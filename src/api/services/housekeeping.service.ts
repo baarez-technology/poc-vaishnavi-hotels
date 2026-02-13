@@ -63,12 +63,14 @@ export interface HousekeepingTask {
   priority: string;
   assigned_to?: number;
   assigned_staff_name?: string;
+  assigned_to_name?: string;
   scheduled_for?: string;
   started_at?: string;
   completed_at?: string;
   estimated_duration?: number;
   actual_duration?: number;
   notes?: string;
+  created_at?: string;
 }
 
 export interface HousekeepingDashboard {

@@ -179,7 +179,16 @@ export function useGuests() {
       if (updates.address) apiUpdates.address = updates.address;
       if (updates.postalCode || updates.postal_code) apiUpdates.postal_code = updates.postalCode || updates.postal_code;
       // Handle status updates (e.g., for blacklisting)
-      if (updates.status) apiUpdates.status = updates.status;
+      if (updates.status) {
+        apiUpdates.status = updates.status;
+        // Auto-sync vip_status when status is set to "VIP" or changed away from "VIP"
+        if (updates.status === 'VIP') {
+          apiUpdates.vip_status = true;
+        } else if (updates.vipStatus === undefined && updates.vip_status === undefined) {
+          // If status is changed to something other than VIP and vip_status isn't explicitly set, clear it
+          apiUpdates.vip_status = false;
+        }
+      }
       if (updates.vipStatus !== undefined || updates.vip_status !== undefined) {
         apiUpdates.vip_status = updates.vipStatus !== undefined ? updates.vipStatus : updates.vip_status;
       }

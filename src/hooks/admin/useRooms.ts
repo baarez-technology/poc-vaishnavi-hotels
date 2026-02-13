@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { filterByTab, filterRooms, searchRooms } from '@/utils/admin/roomFilters';
 import { roomsService } from '@/api/services/rooms.service';
+import { bookingService } from '@/api/services/booking.service';
 
 /**
  * Transform API room to admin panel format
@@ -207,11 +208,59 @@ export function useRooms() {
   };
 
   // Assign guest to room
+  // BUG-013: Persist assignment via booking system so it survives refresh
+  // BUG-016: Use check-in/check-out dates from guest data for date-based sync
   const assignGuestToRoom = async (roomId: number | string, guest: any) => {
     try {
       // Update room status to occupied via API
       await roomsService.updateRoomStatus(roomId, 'occupied');
-      console.log('[useRooms] Guest assigned via API');
+      console.log('[useRooms] Room status updated to occupied via API');
+
+      // BUG-013: Try to find an existing booking for this guest and link the room
+      // or update the room assignment via the booking system
+      if (guest.checkIn && guest.checkOut) {
+        try {
+          const response = await bookingService.getBookings(1, 100);
+          const bookings = response.items || (Array.isArray(response) ? response : []);
+
+          const guestName = (guest.name || '').toLowerCase();
+          const guestEmail = (guest.email || '').toLowerCase();
+
+          // Find existing booking for this guest with matching/overlapping dates
+          const existingBooking = bookings.find((b: any) => {
+            const bookingGuest = (
+              (b.guestInfo?.firstName || '') + ' ' + (b.guestInfo?.lastName || '')
+            ).toLowerCase().trim();
+            const bookingEmail = (b.guestInfo?.email || '').toLowerCase();
+            const isMatchingGuest =
+              bookingGuest === guestName || (guestEmail && bookingEmail === guestEmail);
+            const isActive = b.status !== 'cancelled' && b.status !== 'checked-out';
+            const hasNoRoom = !b.room || !b.room.number;
+
+            // Check date overlap
+            const bCheckIn = new Date(b.checkIn);
+            const bCheckOut = new Date(b.checkOut);
+            const selCheckIn = new Date(guest.checkIn);
+            const selCheckOut = new Date(guest.checkOut);
+            const datesOverlap = bCheckIn < selCheckOut && bCheckOut > selCheckIn;
+
+            return isMatchingGuest && isActive && hasNoRoom && datesOverlap;
+          });
+
+          if (existingBooking) {
+            // Update the existing booking with the room assignment
+            await bookingService.updateBooking(String(existingBooking.id), {
+              roomId: String(roomId),
+            });
+            console.log('[useRooms] Room assignment persisted to existing booking:', existingBooking.id);
+          } else {
+            console.log('[useRooms] No unassigned booking found for guest, room status updated only');
+          }
+        } catch (bookingErr) {
+          // Non-critical: room status is already updated, booking link is best-effort
+          console.warn('[useRooms] Could not persist room-booking link:', bookingErr);
+        }
+      }
     } catch (err) {
       console.error('[useRooms] Failed to assign guest via API:', err);
     }

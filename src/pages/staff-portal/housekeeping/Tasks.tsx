@@ -241,11 +241,16 @@ const HousekeepingTasks = () => {
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task: any) => {
-      const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.room?.toLowerCase().includes(searchQuery.toLowerCase());
+      const taskTitle = task.title || task.task_type || '';
+      const taskDescription = task.description || task.notes || '';
+      const taskRoom = task.room || task.room_number || '';
+      const matchesSearch = taskTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        taskDescription.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        taskRoom.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
+      // Map backend statuses to frontend filter categories
+      const effectiveStatus = (task.status === 'pending' || task.status === 'assigned') ? 'todo' : task.status;
+      const matchesStatus = statusFilter === 'all' || effectiveStatus === statusFilter;
 
       return matchesSearch && matchesStatus;
     }).sort((a: any, b: any) => {
@@ -260,7 +265,7 @@ const HousekeepingTasks = () => {
   }, [tasks, searchQuery, statusFilter]);
 
   const taskStats = useMemo(() => ({
-    todo: tasks.filter((t: any) => t.status === 'todo').length,
+    todo: tasks.filter((t: any) => t.status === 'todo' || t.status === 'pending' || t.status === 'assigned').length,
     in_progress: tasks.filter((t: any) => t.status === 'in_progress').length,
     completed: tasks.filter((t: any) => t.status === 'completed').length
   }), [tasks]);
@@ -464,11 +469,11 @@ const HousekeepingTasks = () => {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <h3 className={`text-[13px] font-semibold text-neutral-800 ${task.status === 'completed' ? 'line-through opacity-60' : ''}`}>
-                            {task.title}
+                            {task.title || `${(task.task_type || 'cleaning').charAt(0).toUpperCase() + (task.task_type || 'cleaning').slice(1)} Task`}
                           </h3>
                           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
                             <span className="text-[11px] text-neutral-500 font-medium">Room {task.room_number || task.room}</span>
-                            <StatusBadge status={task.status} />
+                            <StatusBadge status={task.status === 'pending' || task.status === 'assigned' ? 'todo' : task.status} />
                             <PriorityBadge priority={task.priority} />
                           </div>
                         </div>
@@ -485,8 +490,8 @@ const HousekeepingTasks = () => {
                         </button>
                       </div>
 
-                      {task.description && (
-                        <p className="text-[11px] text-neutral-500 mt-2 line-clamp-2 leading-relaxed">{task.description}</p>
+                      {(task.description || task.notes) && (
+                        <p className="text-[11px] text-neutral-500 mt-2 line-clamp-2 leading-relaxed">{task.description || task.notes}</p>
                       )}
 
                       <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 sm:mt-3 text-[10px] text-neutral-400 font-medium">
@@ -510,7 +515,7 @@ const HousekeepingTasks = () => {
                   {/* Bottom row on mobile: Actions */}
                   <div className="flex items-center justify-between sm:justify-end gap-2 sm:flex-shrink-0 pl-13 sm:pl-0">
                     <div className="flex items-center gap-2">
-                      {task.status === 'todo' && (
+                      {(task.status === 'todo' || task.status === 'pending' || task.status === 'assigned') && (
                         <Button
                           size="sm"
                           icon={Play}

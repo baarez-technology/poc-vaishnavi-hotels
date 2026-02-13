@@ -118,14 +118,21 @@ export function addActivityLog(existingLog = [], action, user = 'System') {
 
 /**
  * Format date for display
+ * Ensures date-only strings are not shifted by timezone conversion
  */
 export function formatDate(dateString) {
   if (!dateString) return '-';
   try {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    // For date-only strings (YYYY-MM-DD), parse as UTC to avoid timezone shift
+    let normalized = dateString;
+    if (typeof normalized === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+      normalized = normalized + 'T00:00:00Z';
+    }
+    return new Date(normalized).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
+      timeZone: 'UTC'
     });
   } catch {
     return '-';
@@ -134,11 +141,26 @@ export function formatDate(dateString) {
 
 /**
  * Format datetime for display
+ * Ensures UTC timestamps from backend are correctly interpreted
  */
 export function formatDateTime(dateString) {
   if (!dateString) return '-';
   try {
-    return new Date(dateString).toLocaleString('en-US', {
+    // Backend sends UTC datetimes without timezone suffix.
+    // Append 'Z' if not already present so JS treats it as UTC, not local.
+    let normalized = dateString;
+    if (typeof normalized === 'string' && !normalized.endsWith('Z') && !normalized.includes('+') && !normalized.includes('T')) {
+      // It's a date-only string, display as-is
+      return new Date(normalized + 'T00:00:00Z').toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    }
+    if (typeof normalized === 'string' && normalized.includes('T') && !normalized.endsWith('Z') && !normalized.match(/[+-]\d{2}:\d{2}$/)) {
+      normalized = normalized + 'Z';
+    }
+    return new Date(normalized).toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -421,9 +443,17 @@ export function createPreventiveTask(data) {
 
 /**
  * Calculate next due date based on frequency
+ * Uses local date arithmetic to avoid timezone-induced day shifts
  */
 export function calculateNextDueDate(lastDate, frequency) {
-  const date = lastDate ? new Date(lastDate) : new Date();
+  // Parse date string as local date components to avoid UTC conversion shift
+  let date;
+  if (lastDate && typeof lastDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(lastDate)) {
+    const [y, m, d] = lastDate.split('-').map(Number);
+    date = new Date(y, m - 1, d);
+  } else {
+    date = lastDate ? new Date(lastDate) : new Date();
+  }
 
   switch (frequency) {
     case 'daily':
@@ -445,7 +475,8 @@ export function calculateNextDueDate(lastDate, frequency) {
       date.setMonth(date.getMonth() + 1);
   }
 
-  return date.toISOString().split('T')[0];
+  // Return local date string without UTC conversion
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 /**
@@ -455,8 +486,20 @@ export function getCalendarEvents(workOrders, pmTasks, startDate, endDate) {
   const events = [];
 
   // Add work orders
+  // Use local date formatting to avoid timezone shift
+  const toLocalDateStr = (ds) => {
+    if (!ds) return null;
+    if (typeof ds === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(ds)) return ds;
+    let normalized = ds;
+    if (typeof normalized === 'string' && normalized.includes('T') && !normalized.endsWith('Z') && !normalized.match(/[+-]\d{2}:\d{2}$/)) {
+      normalized = normalized + 'Z';
+    }
+    const d = new Date(normalized);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
   workOrders.forEach(wo => {
-    const createdDate = new Date(wo.createdAt).toISOString().split('T')[0];
+    const createdDate = toLocalDateStr(wo.createdAt);
     events.push({
       id: wo.id,
       date: createdDate,

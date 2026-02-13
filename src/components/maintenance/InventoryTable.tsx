@@ -22,6 +22,7 @@ export default function InventoryTable({
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'ok'
   const [stockInput, setStockInput] = useState({});
+  const [minStockInput, setMinStockInput] = useState({});
 
   const filteredInventory = inventory.filter(item => {
     // Search filter
@@ -29,7 +30,7 @@ export default function InventoryTable({
       const query = searchQuery.toLowerCase();
       if (
         !item.name.toLowerCase().includes(query) &&
-        !item.id.toLowerCase().includes(query) &&
+        !String(item.id).toLowerCase().includes(query) &&
         !item.location?.toLowerCase().includes(query)
       ) {
         return false;
@@ -57,8 +58,10 @@ export default function InventoryTable({
   };
 
   const handleStockUpdate = (itemId, isAddition) => {
-    const quantity = parseInt(stockInput[itemId] || 0, 10);
-    if (quantity > 0) {
+    const rawValue = stockInput[itemId];
+    // Default to 1 if no quantity entered, so +/- buttons always work
+    const quantity = (rawValue !== undefined && rawValue !== '') ? parseInt(rawValue, 10) : 1;
+    if (!isNaN(quantity) && quantity > 0) {
       onUpdateStock(itemId, quantity, isAddition);
       setStockInput(prev => ({ ...prev, [itemId]: '' }));
     }
@@ -202,7 +205,7 @@ export default function InventoryTable({
                     <td className="px-4 py-3">
                       <div>
                         <p className="font-semibold text-neutral-900 text-sm">{item.name}</p>
-                        <p className="text-xs text-neutral-500 font-mono">{item.id}</p>
+                        <p className="text-xs text-neutral-500 font-mono">{typeof item.id === 'number' ? `INV-${item.id}` : item.id}</p>
                       </div>
                     </td>
 
@@ -220,9 +223,28 @@ export default function InventoryTable({
                       </span>
                     </td>
 
-                    {/* Min Stock */}
+                    {/* Min Stock - Editable */}
                     <td className="px-4 py-3 text-center">
-                      <span className="text-sm text-neutral-600">{item.minStock}</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={minStockInput[item.id] !== undefined ? minStockInput[item.id] : item.minStock}
+                        onChange={(e) => setMinStockInput(prev => ({ ...prev, [item.id]: parseInt(e.target.value) || 0 }))}
+                        onBlur={(e) => {
+                          const newVal = parseInt(e.target.value) || 0;
+                          if (newVal !== item.minStock) {
+                            onEditItem({ ...item, minStock: newVal });
+                          }
+                          setMinStockInput(prev => { const next = { ...prev }; delete next[item.id]; return next; });
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            (e.target as HTMLInputElement).blur();
+                          }
+                        }}
+                        className="w-16 px-2 py-1 border border-neutral-200 rounded text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865] bg-white hover:border-neutral-300 transition-colors"
+                        title="Edit minimum stock threshold"
+                      />
                     </td>
 
                     {/* Status */}

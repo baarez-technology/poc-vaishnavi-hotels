@@ -231,7 +231,7 @@ export default function BookingDrawer({
               </div>
               <div>
                 <p className="text-sm font-semibold text-neutral-900">{booking.guest}</p>
-                <p className="text-xs text-neutral-500">{booking.guests} {booking.guests === 1 ? 'guest' : 'guests'}</p>
+                <p className="text-xs text-neutral-500">{typeof booking.guests === 'object' ? `${booking.guests?.adults || 0} adults${booking.guests?.children ? `, ${booking.guests.children} children` : ''}` : `${booking.guests || 0} ${booking.guests === 1 ? 'guest' : 'guests'}`}</p>
               </div>
             </div>
 

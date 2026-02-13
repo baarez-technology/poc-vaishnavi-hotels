@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
+import { bookingService } from '@/api/services/booking.service';
 
 /**
- * Hook to assign a room to a booking locally.
+ * Hook to assign a room to a booking via the backend API.
  */
 export function useAssignRoom(bookings, setBookings) {
   const [isAssigning, setIsAssigning] = useState(false);
@@ -16,8 +17,13 @@ export function useAssignRoom(bookings, setBookings) {
           return false;
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        // Call backend API to persist room assignment
+        await bookingService.updateBooking(String(updatedBooking.id), {
+          room_id: updatedBooking.roomId || updatedBooking.room_id,
+          room_number: updatedBooking.room || updatedBooking.roomNumber,
+        });
 
+        // Update local state after successful API call
         setBookings((prev) =>
           prev.map((booking) =>
             booking.id === updatedBooking.id ? { ...booking, ...updatedBooking } : booking

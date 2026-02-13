@@ -141,7 +141,12 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
   const fetchRooms = async () => {
     setIsLoading(true);
     try {
-      const fetchedRooms = await roomsService.getRooms();
+      // Pass booking dates to filter rooms available for the stay period
+      const searchParams: any = {};
+      if (booking?.checkIn) searchParams.checkIn = booking.checkIn;
+      if (booking?.checkOut) searchParams.checkOut = booking.checkOut;
+      if (booking?.roomType) searchParams.type = booking.roomType;
+      const fetchedRooms = await roomsService.getRooms(searchParams);
       setRooms(fetchedRooms);
     } catch (err: any) {
       console.error('[AssignRoomModal] Error fetching rooms:', err);

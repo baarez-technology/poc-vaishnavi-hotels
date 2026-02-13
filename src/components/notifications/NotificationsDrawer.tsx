@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Bell,
   Check,
@@ -34,6 +35,7 @@ interface Notification {
   time: string;
   read: boolean;
   priority?: 'high' | 'medium' | 'low';
+  actionUrl?: string;
 }
 
 interface NotificationsDrawerProps {
@@ -74,6 +76,18 @@ const transformNotification = (apiNotification: StaffNotification): Notification
     return `${diffDays} days ago`;
   };
 
+  // Derive action URL based on notification type
+  const getActionUrl = (): string | undefined => {
+    const type = apiNotification.notification_type;
+    if (type === 'booking') return '/admin/cms/bookings';
+    if (type === 'guest') return '/admin/guests';
+    if (type === 'housekeeping') return '/admin/operations/housekeeping';
+    if (type === 'maintenance') return '/admin/operations/maintenance';
+    if (type === 'payment') return '/admin/finance';
+    if (type === 'review') return '/admin/reputation';
+    return undefined;
+  };
+
   return {
     id: String(apiNotification.id),
     type: typeMap[apiNotification.notification_type] || 'system',
@@ -83,7 +97,8 @@ const transformNotification = (apiNotification: StaffNotification): Notification
     read: apiNotification.is_read,
     priority: apiNotification.task?.priority === 'urgent' ? 'high' :
               apiNotification.task?.priority === 'high' ? 'high' :
-              apiNotification.task?.priority === 'medium' ? 'medium' : 'low'
+              apiNotification.task?.priority === 'medium' ? 'medium' : 'low',
+    actionUrl: getActionUrl()
   };
 };
 
@@ -99,6 +114,7 @@ const typeConfig = {
 };
 
 export function NotificationsDrawer({ isOpen, onClose, onUnreadCountChange }: NotificationsDrawerProps) {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [isLoading, setIsLoading] = useState(false);
@@ -315,7 +331,13 @@ export function NotificationsDrawer({ isOpen, onClose, onUnreadCountChange }: No
                   'px-6 py-4 hover:bg-neutral-50/80 transition-colors cursor-pointer group',
                   !notification.read && 'bg-terra-50/40'
                 )}
-                onClick={() => markAsRead(notification.id)}
+                onClick={() => {
+                  markAsRead(notification.id);
+                  if (notification.actionUrl) {
+                    onClose();
+                    navigate(notification.actionUrl);
+                  }
+                }}
               >
                 <div className="flex gap-3">
                   {/* Icon */}

@@ -511,6 +511,7 @@ export default function Housekeeping() {
         onBlockRoom={handleBlockRoom}
         onUnblockRoom={handleUnblockRoom}
         onToggleChecklistItem={handleToggleChecklistItem}
+        onAddNote={addNote}
       />
 
       {/* Assign Housekeeper Modal */}

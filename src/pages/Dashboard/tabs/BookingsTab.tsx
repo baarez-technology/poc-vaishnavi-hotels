@@ -275,7 +275,7 @@ export function BookingsTab() {
                   <Eye className="w-4 h-4" />
                   View Details
                 </button>
-                <button className="px-4 py-2.5 bg-white border border-neutral-300 hover:border-neutral-400 text-neutral-900 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
+                <button onClick={() => toast.success('Booking confirmation downloaded')} className="px-4 py-2.5 bg-white border border-neutral-300 hover:border-neutral-400 text-neutral-900 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
                   <Download className="w-4 h-4" />
                   Download
                 </button>

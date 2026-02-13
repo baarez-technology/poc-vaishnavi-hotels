@@ -339,6 +339,7 @@ export default function SyncLogs() {
   const stats = cachedStats;
 
   const handleRefresh = () => {
+    if (syncingOTAs.length > 0) return; // Prevent multiple clicks
     triggerManualSync('ALL');
   };
 

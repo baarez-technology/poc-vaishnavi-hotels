@@ -80,6 +80,7 @@ export const API_ENDPOINTS = {
   },
   ROOM_TYPES: {
     LIST: '/api/v1/room-types',
+    CREATE: '/api/v1/room-types',
     DETAIL: (slug: string) => `/api/v1/room-types/${slug}`,
     UPDATE: (slug: string) => `/api/v1/room-types/${slug}`,
   },

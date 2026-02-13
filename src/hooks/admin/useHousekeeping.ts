@@ -652,7 +652,7 @@ export function useHousekeeping() {
       if (room.id === roomId) {
         return {
           ...room,
-          checklist: room.checklist.filter(item => item.id !== taskId),
+          checklist: (Array.isArray(room.checklist) ? room.checklist : []).filter(item => item.id !== taskId),
         };
       }
       return room;
@@ -716,21 +716,48 @@ export function useHousekeeping() {
   }, [rooms]);
 
   /**
-   * Add note with timestamp
+   * Add note with timestamp - BUG-005 FIX: Persist to API and show confirmation
    */
-  const addNote = useCallback((roomId: number, newNote: string) => {
-    setRooms(prev => prev.map(room => {
-      if (room.id === roomId) {
-        const timestamp = new Date().toLocaleString();
-        const existingNotes = room.notes || '';
-        const updatedNotes = existingNotes
-          ? `${existingNotes}\n[${timestamp}] ${newNote}`
-          : `[${timestamp}] ${newNote}`;
-        return { ...room, notes: updatedNotes };
+  const addNote = useCallback(async (roomId: number, newNote: string) => {
+    try {
+      const room = rooms.find(r => r.id === roomId);
+      const timestamp = new Date().toLocaleString();
+      const existingNotes = room?.notes || '';
+      const updatedNotes = existingNotes
+        ? `${existingNotes}\n[${timestamp}] ${newNote}`
+        : `[${timestamp}] ${newNote}`;
+
+      // Persist to API if task exists
+      if (room?.taskId) {
+        await housekeepingService.updateTask(room.taskId, { notes: updatedNotes });
       }
-      return room;
-    }));
-  }, []);
+
+      // Update local state
+      setRooms(prev => prev.map(r => {
+        if (r.id === roomId) {
+          return { ...r, notes: updatedNotes };
+        }
+        return r;
+      }));
+
+      toast.success(`Note saved for Room ${room?.number || roomId}`);
+    } catch (err: any) {
+      console.error('Error saving note:', err);
+      // Still update locally as fallback
+      setRooms(prev => prev.map(room => {
+        if (room.id === roomId) {
+          const timestamp = new Date().toLocaleString();
+          const existingNotes = room.notes || '';
+          const updatedNotes = existingNotes
+            ? `${existingNotes}\n[${timestamp}] ${newNote}`
+            : `[${timestamp}] ${newNote}`;
+          return { ...room, notes: updatedNotes };
+        }
+        return room;
+      }));
+      toast.success(`Note saved locally for Room ${roomId}`);
+    }
+  }, [rooms]);
 
   /**
    * INSPECTION / VERIFY SYSTEM

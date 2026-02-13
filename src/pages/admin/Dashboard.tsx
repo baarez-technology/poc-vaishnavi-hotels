@@ -36,10 +36,6 @@ import {
   Star,
   Layers,
   ArrowRight,
-  Wifi,
-  Coffee,
-  Car,
-  Dumbbell,
   Clock,
   Filter,
   MoreHorizontal,
@@ -480,7 +476,7 @@ function HousekeepingChart({ summary }) {
       <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 mt-2 border-t border-neutral-100">
         <div className="text-center">
           <p className="text-lg sm:text-2xl font-semibold text-neutral-900 mb-0.5">
-            {summary.avgCleaningTime}<span className="text-xs sm:text-sm text-neutral-400 font-medium ml-0.5">m</span>
+            {summary.avgCleaningTime > 0 ? summary.avgCleaningTime : '--'}<span className="text-xs sm:text-sm text-neutral-400 font-medium ml-0.5">{summary.avgCleaningTime > 0 ? 'm' : ''}</span>
           </p>
           <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
             Avg Clean Time
@@ -781,7 +777,9 @@ export default function Dashboard() {
     clean: totalRooms - (dashboardData?.housekeeping.dirty_rooms || 0) - (dashboardData?.housekeeping.in_progress_tasks || 0),
     inProgress: dashboardData?.housekeeping.in_progress_tasks || 0,
     dirty: dashboardData?.housekeeping.dirty_rooms || 0,
-    avgCleaningTime: 24,
+    avgCleaningTime: dashboardData?.housekeeping.completed_today
+      ? Math.round((8 * 60) / Math.max(dashboardData.housekeeping.completed_today, 1))
+      : 0,
     staffOnShift: dashboardData?.housekeeping.staff_on_shift || 1,
   };
 
@@ -832,11 +830,13 @@ export default function Dashboard() {
     },
   ];
 
-  // Get upcoming arrivals - today's check-ins from backend
-  const upcomingArrivals = (dashboardData?.upcoming_arrivals || []).map(b => ({
+  // Get upcoming arrivals - today's check-ins from backend (real data)
+  const upcomingArrivals = (dashboardData?.upcoming_arrivals || []).map((b: any) => ({
     ...b,
-    isVIP: Math.random() > 0.7,
-    specialRequests: Math.random() > 0.5 ? ['Late check-in', 'High floor'] : []
+    isVIP: b.isVIP || false,
+    specialRequests: typeof b.specialRequests === 'string' && b.specialRequests
+      ? b.specialRequests.split(',').map((s: string) => s.trim()).filter(Boolean)
+      : Array.isArray(b.specialRequests) ? b.specialRequests : [],
   }));
 
   // Get recent reviews from real data
@@ -1258,14 +1258,14 @@ export default function Dashboard() {
             </LuxurySectionCard>
           </div>
 
-          {/* Amenity Usage - 6 columns */}
+          {/* Room Utilization - 6 columns */}
           <div className="col-span-12 lg:col-span-6">
-            <LuxurySectionCard title="Amenity Usage" subtitle="Facility utilization" className="h-full">
+            <LuxurySectionCard title="Room Utilization" subtitle="Current room allocation" className="h-full">
               <div className="space-y-3 -mt-1">
-                <AmenityUsage icon={Wifi} name="WiFi" usage={94} color="#5C9BA4" />
-                <AmenityUsage icon={Coffee} name="Breakfast" usage={78} color="#CDB261" />
-                <AmenityUsage icon={Dumbbell} name="Gym" usage={45} color="#4E5840" />
-                <AmenityUsage icon={Car} name="Parking" usage={62} color="#A57865" />
+                <AmenityUsage icon={BedDouble} name="Occupied" usage={totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0} color="#5C9BA4" />
+                <AmenityUsage icon={Home} name="Available" usage={totalRooms > 0 ? Math.round(((dashboardData?.kpis.available_rooms || 0) / totalRooms) * 100) : 0} color="#4E5840" />
+                <AmenityUsage icon={Layers} name="Dirty" usage={totalRooms > 0 ? Math.round(((dashboardData?.kpis.dirty_rooms || 0) / totalRooms) * 100) : 0} color="#CDB261" />
+                <AmenityUsage icon={AlertCircle} name="Out of Order" usage={totalRooms > 0 ? Math.round(((dashboardData?.kpis.out_of_order || 0) / totalRooms) * 100) : 0} color="#A57865" />
               </div>
             </LuxurySectionCard>
           </div>

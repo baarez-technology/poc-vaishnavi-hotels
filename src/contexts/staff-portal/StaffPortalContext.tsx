@@ -260,7 +260,7 @@ function reducer(state: StaffPortalState, action: Action): StaffPortalState {
             r.id === action.payload.roomId
               ? {
                   ...r,
-                  checklist: r.checklist.map((c: any) =>
+                  checklist: (Array.isArray(r.checklist) ? r.checklist : []).map((c: any) =>
                     c.id === action.payload.checklistId
                       ? { ...c, completed: action.payload.completed }
                       : c

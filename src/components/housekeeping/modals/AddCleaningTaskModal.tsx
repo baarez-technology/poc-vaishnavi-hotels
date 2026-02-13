@@ -80,6 +80,7 @@ export default function AddCleaningTaskModal({
   const [formData, setFormData] = useState({
     roomId: '',
     staffId: '',
+    taskType: 'cleaning',
     priority: 'medium',
     notes: '',
     estimatedTimeOverride: ''
@@ -88,14 +89,27 @@ export default function AddCleaningTaskModal({
 
   useEffect(() => {
     if (isOpen) {
-      setFormData({ roomId: '', staffId: '', priority: 'medium', notes: '', estimatedTimeOverride: '' });
+      setFormData({ roomId: '', staffId: '', taskType: 'cleaning', priority: 'medium', notes: '', estimatedTimeOverride: '' });
       setErrors({});
     }
   }, [isOpen]);
 
-  const availableRooms = rooms?.filter(r => (r.status === 'dirty' || r.status === 'in_progress') && !r.assignedTo) || [];
+  // BUG-006 FIX: Allow all rooms except out_of_service - occupied (clean/inspected) rooms
+  // need tasks too (turndown, mid-stay cleaning, deep clean, etc.)
+  const availableRooms = rooms?.filter(r => r.status !== 'out_of_service') || [];
   const selectedRoom = rooms?.find(r => r.id === formData.roomId);
   const estimatedTime = selectedRoom ? calculateCleaningTime({ type: selectedRoom.type, priority: formData.priority }) : 0;
+
+  // Room status label helper
+  const getRoomStatusLabel = (status: string) => {
+    switch (status) {
+      case 'clean': return 'Clean';
+      case 'inspected': return 'Inspected';
+      case 'dirty': return 'Dirty';
+      case 'in_progress': return 'In Progress';
+      default: return status;
+    }
+  };
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -115,6 +129,7 @@ export default function AddCleaningTaskModal({
     onAddTask({
       roomId: formData.roomId,
       staffId: formData.staffId,
+      taskType: formData.taskType,
       priority: formData.priority,
       notes: formData.notes,
       estimatedTime: formData.estimatedTimeOverride ? parseInt(formData.estimatedTimeOverride) : estimatedTime
@@ -136,7 +151,7 @@ export default function AddCleaningTaskModal({
       <Button variant="outline-neutral" size="md" onClick={onClose}>
         Cancel
       </Button>
-      <Button variant="primary" size="md" onClick={handleSubmit} disabled={availableRooms.length === 0}>
+      <Button variant="primary" size="md" onClick={handleSubmit} disabled={availableRooms.length === 0 || !formData.roomId || !formData.staffId}>
         Add Task
       </Button>
     </div>
@@ -151,6 +166,23 @@ export default function AddCleaningTaskModal({
       maxWidth="max-w-2xl"
     >
       <div className="space-y-6">
+        {/* Task Type Selection */}
+        <DrawerSelect
+          label="Task Type"
+          value={formData.taskType}
+          onChange={(value) => handleChange('taskType', value)}
+          placeholder="Select task type..."
+          error={false}
+          required
+          options={[
+            { value: 'cleaning', label: 'Regular Cleaning' },
+            { value: 'turndown', label: 'Turndown Service' },
+            { value: 'mid_stay', label: 'Mid-Stay Cleaning' },
+            { value: 'deep_clean', label: 'Deep Cleaning' },
+            { value: 'inspection', label: 'Inspection' },
+          ]}
+        />
+
         {/* Room Selection */}
         <div>
           <DrawerSelect
@@ -162,12 +194,12 @@ export default function AddCleaningTaskModal({
             required
             options={availableRooms.map(room => ({
               value: room.id,
-              label: `Room ${room.roomNumber} - ${room.type} (Floor ${room.floor})`
+              label: `Room ${room.roomNumber || room.number} - ${room.type || room.roomType} (Floor ${room.floor}) [${getRoomStatusLabel(room.status)}]${room.assignedTo ? ' - Assigned' : ''}`
             }))}
           />
           {errors.roomId && <p className="text-xs text-rose-500 mt-1">{errors.roomId}</p>}
           {availableRooms.length === 0 && (
-            <p className="text-[11px] text-gold-600 mt-1">No unassigned dirty rooms available</p>
+            <p className="text-[11px] text-gold-600 mt-1">No rooms available for task assignment</p>
           )}
         </div>
 
@@ -186,18 +218,20 @@ export default function AddCleaningTaskModal({
         <div>
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">Priority</h4>
           <div className="flex gap-2">
-            {['high', 'medium', 'low'].map(priority => (
+            {['urgent', 'high', 'medium', 'low'].map(priority => (
               <button
                 key={priority}
                 type="button"
                 onClick={() => handleChange('priority', priority)}
-                className={`flex-1 h-10 px-4 rounded-lg text-[13px] font-semibold transition-all ${
+                className={`flex-1 h-10 px-3 rounded-lg text-[13px] font-semibold transition-all ${
                   formData.priority === priority
-                    ? priority === 'high'
-                      ? 'bg-rose-500 text-white'
-                      : priority === 'medium'
-                        ? 'bg-gold-500 text-white'
-                        : 'bg-neutral-200 text-neutral-700'
+                    ? priority === 'urgent'
+                      ? 'bg-rose-600 text-white'
+                      : priority === 'high'
+                        ? 'bg-rose-500 text-white'
+                        : priority === 'medium'
+                          ? 'bg-gold-500 text-white'
+                          : 'bg-neutral-200 text-neutral-700'
                     : 'bg-white border border-neutral-200 text-neutral-700 hover:border-neutral-300'
                 }`}
               >

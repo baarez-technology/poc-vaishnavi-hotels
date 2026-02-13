@@ -865,13 +865,23 @@ export function ChannelManagerProvider({ children }) {
   // ============ SYNC FUNCTIONS ============
 
   const triggerManualSync = useCallback(async (otaCode: string = 'ALL') => {
+    // Prevent multiple simultaneous sync triggers
+    if (isSyncing || syncingOTAs.length > 0) {
+      return;
+    }
     setIsSyncing(true);
+    const syncTimestamp = new Date().toISOString();
     try {
       if (otaCode === 'ALL') {
+        setSyncingOTAs(otas.filter(o => o.status === 'connected').map(o => o.code));
         const result = await channelManagerService.syncAllOTAs();
+        // Update lastSync timestamp for all connected OTAs
+        setOTAs(prev => prev.map(o => o.status === 'connected' ? { ...o, lastSync: syncTimestamp } : o));
         setSyncingOTAs([]);
-        setLastGlobalSync(new Date().toISOString());
+        setLastGlobalSync(syncTimestamp);
         success('Sync initiated for all OTAs');
+        // Refresh sync logs to show updated timestamps
+        await fetchSyncLogs({ pageSize: 50 });
         return result;
       } else {
         const ota = otas.find(o => o.code === otaCode);
@@ -880,9 +890,13 @@ export function ChannelManagerProvider({ children }) {
         }
         setSyncingOTAs([otaCode]);
         const result = await channelManagerService.syncOTA(ota.id);
+        // Update lastSync timestamp for the synced OTA
+        setOTAs(prev => prev.map(o => o.code === otaCode ? { ...o, lastSync: syncTimestamp } : o));
         setSyncingOTAs([]);
-        setLastGlobalSync(new Date().toISOString());
+        setLastGlobalSync(syncTimestamp);
         success(`Sync initiated for ${ota.name}`);
+        // Refresh sync logs to show updated timestamps
+        await fetchSyncLogs({ pageSize: 50 });
         return result;
       }
     } catch (err: any) {
@@ -893,7 +907,7 @@ export function ChannelManagerProvider({ children }) {
     } finally {
       setIsSyncing(false);
     }
-  }, [otas, success, showError, addSyncLog]);
+  }, [otas, isSyncing, syncingOTAs, success, showError, addSyncLog, fetchSyncLogs]);
 
   // Auto-sync scheduler (disabled for now - backend handles this)
   useEffect(() => {

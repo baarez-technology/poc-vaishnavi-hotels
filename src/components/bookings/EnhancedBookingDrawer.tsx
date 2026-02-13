@@ -293,9 +293,9 @@ export default function EnhancedBookingDrawer({
                       <Users className="w-4 h-4" />
                       <span className="text-xs font-semibold uppercase tracking-wider">Guests</span>
                     </div>
-                    <p className="text-xl font-bold text-neutral-900">{booking.guests}</p>
+                    <p className="text-xl font-bold text-neutral-900">{typeof booking.guests === 'object' ? (booking.guests?.adults || 0) + (booking.guests?.children || 0) : (booking.guests || 0)}</p>
                     <p className="text-sm text-neutral-500 mt-1">
-                      {booking.guests === 1 ? 'Adult' : 'Adults'}
+                      {typeof booking.guests === 'object' ? `${booking.guests?.adults || 0} Adults${booking.guests?.children ? `, ${booking.guests.children} Children` : ''}` : (booking.guests === 1 ? 'Adult' : 'Adults')}
                     </p>
                   </div>
                 </div>

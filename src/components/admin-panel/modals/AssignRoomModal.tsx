@@ -36,7 +36,12 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
   const fetchRooms = async () => {
     setIsLoadingRooms(true);
     try {
-      const rooms = await roomsService.getRooms();
+      // Pass booking dates to filter rooms available for the stay period
+      const searchParams: any = {};
+      if (booking?.checkIn) searchParams.checkIn = booking.checkIn;
+      if (booking?.checkOut) searchParams.checkOut = booking.checkOut;
+      if (booking?.roomType) searchParams.type = booking.roomType;
+      const rooms = await roomsService.getRooms(searchParams);
       console.log('[AssignRoomModal] Fetched rooms:', rooms);
 
       // Handle both array and items wrapper

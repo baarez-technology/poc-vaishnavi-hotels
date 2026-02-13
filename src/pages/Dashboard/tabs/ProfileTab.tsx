@@ -196,7 +196,7 @@ export function ProfileTab() {
             {firstName.charAt(0).toUpperCase()}{lastName.charAt(0).toUpperCase() || firstName.charAt(1)?.toUpperCase() || ''}
           </div>
           <div className="flex-1">
-            <button className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors text-sm">
+            <button onClick={() => toast('Photo upload coming soon')} className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors text-sm">
               <Camera className="w-4 h-4" />
               Upload New Photo
             </button>

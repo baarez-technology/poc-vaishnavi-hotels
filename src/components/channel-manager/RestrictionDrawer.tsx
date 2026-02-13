@@ -361,33 +361,124 @@ export default function RestrictionDrawer({
             </div>
           </div>
 
-          {/* Applies To Section */}
+          {/* Applies To Section - BUG-011 FIX: Multi-select for selective application */}
           <div>
             <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
               Applies To
             </h4>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-4">
+              {/* Room Type Multi-Select */}
               <div>
                 <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
-                  Room Type
+                  Room Types
                 </label>
-                <SelectDropdown
-                  value={formData.roomType}
-                  onChange={(value) => setFormData(prev => ({ ...prev, roomType: value }))}
-                  options={roomTypeOptions}
-                  placeholder="Select room type"
-                />
+                <div className="p-3 rounded-lg border border-neutral-200 bg-white space-y-1.5 max-h-40 overflow-y-auto">
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, roomType: 'ALL' }))}
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-[13px] transition-colors ${
+                      formData.roomType === 'ALL' ? 'bg-terra-50 text-terra-700 font-medium' : 'hover:bg-neutral-50 text-neutral-700'
+                    }`}
+                  >
+                    <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${
+                      formData.roomType === 'ALL' ? 'bg-terra-500' : 'border border-neutral-300'
+                    }`}>
+                      {formData.roomType === 'ALL' && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                    All Room Types
+                  </button>
+                  {roomTypes.map(rt => {
+                    const selectedTypes = formData.roomType === 'ALL' ? [] : (Array.isArray(formData.roomType) ? formData.roomType : [formData.roomType]);
+                    const isSelected = formData.roomType === 'ALL' || selectedTypes.includes(rt.name);
+                    return (
+                      <button
+                        key={rt.name}
+                        type="button"
+                        onClick={() => {
+                          if (formData.roomType === 'ALL') {
+                            setFormData(prev => ({ ...prev, roomType: rt.name }));
+                          } else {
+                            const current = Array.isArray(formData.roomType) ? formData.roomType : [formData.roomType];
+                            const updated = current.includes(rt.name)
+                              ? current.filter(t => t !== rt.name)
+                              : [...current, rt.name];
+                            setFormData(prev => ({ ...prev, roomType: updated.length === 0 ? 'ALL' : (updated.length === 1 ? updated[0] : updated) }));
+                          }
+                        }}
+                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-[13px] transition-colors ${
+                          isSelected && formData.roomType !== 'ALL' ? 'bg-terra-50 text-terra-700 font-medium' : 'hover:bg-neutral-50 text-neutral-700'
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${
+                          isSelected && formData.roomType !== 'ALL' ? 'bg-terra-500' : 'border border-neutral-300'
+                        }`}>
+                          {isSelected && formData.roomType !== 'ALL' && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        {rt.name}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+
+              {/* Channel Multi-Select */}
               <div>
                 <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
-                  Channel
+                  Channels
                 </label>
-                <SelectDropdown
-                  value={formData.otaCode}
-                  onChange={(value) => setFormData(prev => ({ ...prev, otaCode: value }))}
-                  options={channelOptions}
-                  placeholder="Select channel"
-                />
+                <div className="p-3 rounded-lg border border-neutral-200 bg-white space-y-1.5 max-h-40 overflow-y-auto">
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, otaCode: 'ALL' }))}
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-[13px] transition-colors ${
+                      formData.otaCode === 'ALL' ? 'bg-terra-50 text-terra-700 font-medium' : 'hover:bg-neutral-50 text-neutral-700'
+                    }`}
+                  >
+                    <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${
+                      formData.otaCode === 'ALL' ? 'bg-terra-500' : 'border border-neutral-300'
+                    }`}>
+                      {formData.otaCode === 'ALL' && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                    All Channels
+                  </button>
+                  {connectedOTAs.map(ota => {
+                    const selectedCodes = formData.otaCode === 'ALL' ? [] : (Array.isArray(formData.otaCode) ? formData.otaCode : [formData.otaCode]);
+                    const isSelected = formData.otaCode === 'ALL' || selectedCodes.includes(ota.code);
+                    return (
+                      <button
+                        key={ota.code}
+                        type="button"
+                        onClick={() => {
+                          if (formData.otaCode === 'ALL') {
+                            setFormData(prev => ({ ...prev, otaCode: ota.code }));
+                          } else {
+                            const current = Array.isArray(formData.otaCode) ? formData.otaCode : [formData.otaCode];
+                            const updated = current.includes(ota.code)
+                              ? current.filter(c => c !== ota.code)
+                              : [...current, ota.code];
+                            setFormData(prev => ({ ...prev, otaCode: updated.length === 0 ? 'ALL' : (updated.length === 1 ? updated[0] : updated) }));
+                          }
+                        }}
+                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-[13px] transition-colors ${
+                          isSelected && formData.otaCode !== 'ALL' ? 'bg-terra-50 text-terra-700 font-medium' : 'hover:bg-neutral-50 text-neutral-700'
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${
+                          isSelected && formData.otaCode !== 'ALL' ? 'bg-terra-500' : 'border border-neutral-300'
+                        }`}>
+                          {isSelected && formData.otaCode !== 'ALL' && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        <div
+                          className="w-5 h-5 rounded flex items-center justify-center text-white text-[8px] font-bold flex-shrink-0"
+                          style={{ backgroundColor: ota.color || '#A57865' }}
+                        >
+                          {ota.name?.substring(0, 2).toUpperCase()}
+                        </div>
+                        {ota.name}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>

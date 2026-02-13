@@ -116,13 +116,10 @@ export default function Promotions() {
 
   const handleToggle = async (promotion) => {
     try {
-      // Note: togglePromotion should be added to context if needed
-      // For now, we'll use a placeholder
-      const newStatus = !promotion.isActive;
-      toast.success(`Promotion ${newStatus ? 'activated' : 'deactivated'} successfully`);
+      await toggleChannelPromotion(promotion.id);
       await refetchData();
     } catch (err) {
-      // Error already handled
+      // Error already handled in context
     }
   };
 

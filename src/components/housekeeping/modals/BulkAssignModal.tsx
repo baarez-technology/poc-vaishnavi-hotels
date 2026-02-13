@@ -72,7 +72,7 @@ export default function BulkAssignModal({
 }) {
   const [selectedRooms, setSelectedRooms] = useState<number[]>([]);
   const [selectedHousekeeper, setSelectedHousekeeper] = useState('');
-  const [selectedPriority, setSelectedPriority] = useState('normal');
+  const [selectedPriority, setSelectedPriority] = useState('medium');
   const [bulkNotes, setBulkNotes] = useState('');
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [duplicateRooms, setDuplicateRooms] = useState<string[]>([]);
@@ -81,7 +81,7 @@ export default function BulkAssignModal({
     if (isOpen) {
       setSelectedRooms([]);
       setSelectedHousekeeper('');
-      setSelectedPriority('normal');
+      setSelectedPriority('medium');
       setBulkNotes('');
       setShowDuplicateWarning(false);
       setDuplicateRooms([]);
@@ -291,7 +291,7 @@ export default function BulkAssignModal({
           <div className="flex gap-2">
             {[
               { value: 'low', label: 'Low', activeClass: 'bg-neutral-200 text-neutral-700' },
-              { value: 'normal', label: 'Normal', activeClass: 'bg-terra-500 text-white' },
+              { value: 'medium', label: 'Medium', activeClass: 'bg-terra-500 text-white' },
               { value: 'high', label: 'High', activeClass: 'bg-gold-500 text-white' },
               { value: 'urgent', label: 'Urgent', activeClass: 'bg-rose-500 text-white' },
             ].map(p => (

@@ -687,7 +687,7 @@ export const RoomDetailPage = () => {
                     </p>
                   </div>
                 </div>
-                <Button variant="secondary" size="sm" fullWidth className="font-semibold">
+                <Button variant="secondary" size="sm" fullWidth className="font-semibold" onClick={() => navigate('/contact')}>
                   Contact Us
                 </Button>
               </motion.div>
@@ -721,7 +721,7 @@ export const RoomDetailPage = () => {
                   <span className="text-neutral-600">({room.reviewCount} reviews)</span>
                 </div>
               </div>
-              <Button variant="outline" size="md" className="hidden sm:flex">
+              <Button variant="outline" size="md" className="hidden sm:flex" onClick={() => navigate('/feedback')}>
                 Write a Review
               </Button>
             </div>

@@ -10,13 +10,15 @@ import {
   ChevronRight,
   Sparkles,
   Loader2,
-  QrCode
+  QrCode,
+  LogIn,
+  LogOut
 } from 'lucide-react';
 import { DashboardHeader } from '../../../layouts/staff-portal/PageHeader';
 import { StatCard } from '../../../components/staff-portal/ui/Card';
 import { StatusBadge, PriorityBadge } from '../../../components/staff-portal/ui/Badge';
 import Button from '../../../components/staff-portal/ui/Button';
-import { useStaffProfile, useHousekeepingRooms, useMyHousekeepingTasks, useNotifications, useHousekeepingActions } from '@/hooks/staff-portal/useStaffApi';
+import { useStaffProfile, useHousekeepingRooms, useMyHousekeepingTasks, useNotifications, useHousekeepingActions, useClockInOut } from '@/hooks/staff-portal/useStaffApi';
 import { useProfile } from '@/hooks/staff-portal/useStaffPortal';
 import { ScanDigitalKeyModal } from '@/components/housekeeping/modals/ScanDigitalKeyModal';
 
@@ -85,6 +87,7 @@ const HousekeepingDashboard = () => {
   const { data: tasks, loading: tasksLoading, refetch: refetchTasks } = useMyHousekeepingTasks();
   const { data: notifications } = useNotifications();
   const { updateRoomStatus, startTask } = useHousekeepingActions();
+  const { clockIn, clockOut, loading: clockLoading } = useClockInOut();
 
   // Combine all rooms
   const rooms = useMemo(() => {
@@ -232,6 +235,12 @@ const HousekeepingDashboard = () => {
     const notificationsList = notifications || [];
     return notificationsList.filter((n: any) => !n.is_read).slice(0, 3);
   }, [notifications]);
+
+  const handleClockToggle = async () => {
+    const isClockedIn = profile?.clocked_in;
+    const success = isClockedIn ? await clockOut() : await clockIn();
+    if (success) refetchAll();
+  };
 
   const handleStartTask = async (task: any) => {
     const success = await startTask(task.id);
@@ -402,6 +411,39 @@ const HousekeepingDashboard = () => {
             className="h-full"
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-3 pt-4">
+              <button
+                onClick={handleClockToggle}
+                disabled={clockLoading}
+                className={`w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg text-left transition-all group ${
+                  profile?.clocked_in
+                    ? 'bg-rose-50 hover:bg-rose-100'
+                    : 'bg-sage-50 hover:bg-sage-100'
+                } ${clockLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+              >
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                  profile?.clocked_in ? 'bg-rose-100' : 'bg-sage-100'
+                }`}>
+                  {clockLoading ? (
+                    <Loader2 className="w-4.5 h-4.5 animate-spin text-neutral-500" />
+                  ) : profile?.clocked_in ? (
+                    <LogOut className="w-4.5 h-4.5 text-rose-600" />
+                  ) : (
+                    <LogIn className="w-4.5 h-4.5 text-sage-600" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-neutral-800 mb-0.5">
+                    {clockLoading ? 'Processing...' : profile?.clocked_in ? 'Clock Out' : 'Clock In'}
+                  </p>
+                  <p className="text-[11px] text-neutral-400 font-medium">
+                    {profile?.clocked_in ? 'End your shift' : 'Start your shift'}
+                  </p>
+                </div>
+                <ChevronRight className={`w-3.5 h-3.5 text-neutral-300 group-hover:translate-x-0.5 transition-all flex-shrink-0 ${
+                  profile?.clocked_in ? 'group-hover:text-rose-600' : 'group-hover:text-sage-600'
+                }`} />
+              </button>
+
               <button
                 onClick={() => setScanModalOpen(true)}
                 className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-terra-50 text-left hover:bg-terra-100 transition-all group"

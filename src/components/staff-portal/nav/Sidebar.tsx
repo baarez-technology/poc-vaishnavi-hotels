@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import ProfileMenu from './ProfileMenu';
 import { useAuth } from '@/hooks/useAuth';
-import { useNotifications } from '@/hooks/staff-portal/useStaffPortal';
+import { useUnreadNotificationCount } from '@/hooks/staff-portal/useStaffApi';
 import { LucideIcon } from 'lucide-react';
 import GlimmoraLogo from '../../../assets/G white logo.svg';
 
@@ -46,7 +46,7 @@ interface SidebarProps {
 const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly }: SidebarProps) => {
   const location = useLocation();
   const { user } = useAuth();
-  const { unreadCount } = useNotifications();
+  const { count: unreadCount } = useUnreadNotificationCount();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   // Helper function to get department from role or URL path

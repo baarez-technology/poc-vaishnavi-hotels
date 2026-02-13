@@ -237,14 +237,16 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
             </div>
 
             <label className="flex flex-col text-sm text-neutral-600 gap-2">
-              Notes
+              Guest Special Requests
               <textarea
                 name="notes"
                 value={formState.notes}
-                onChange={handleChange}
+                readOnly
                 rows={3}
-                className="bg-neutral-100 border border-neutral-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]"
+                className="bg-neutral-50 border border-neutral-200 rounded-lg p-3 text-sm text-neutral-500 cursor-not-allowed"
+                title="Guest special requests cannot be modified"
               />
+              <span className="text-[11px] text-neutral-400">Special requests submitted by the guest cannot be edited</span>
             </label>
           </form>
         </div>

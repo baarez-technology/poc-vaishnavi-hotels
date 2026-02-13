@@ -1,7 +1,7 @@
 import { Star, ThumbsUp, MessageCircle, ExternalLink } from 'lucide-react';
 import { getRelativeTime, getSentimentColor, getSentimentEmoji } from '../utils/formatters';
 
-const ReviewsCard = ({ reviews, stats }) => {
+const ReviewsCard = ({ reviews, stats, onViewAll, onReply }: { reviews: any[]; stats: any; onViewAll?: () => void; onReply?: (review: any) => void }) => {
   const renderStars = (rating) => {
     return (
       <div className="flex items-center gap-0.5">
@@ -124,12 +124,12 @@ const ReviewsCard = ({ reviews, stats }) => {
                     Replied
                   </span>
                 ) : (
-                  <button className="flex items-center gap-1 text-xs text-[#5C9BA4] hover:text-[#5C9BA4]">
+                  <button onClick={() => onReply?.(review)} className="flex items-center gap-1 text-xs text-[#5C9BA4] hover:text-[#5C9BA4]">
                     <MessageCircle className="w-3.5 h-3.5" />
                     Reply
                   </button>
                 )}
-                <button className="text-neutral-400 hover:text-neutral-600">
+                <button onClick={() => review.url && window.open(review.url, '_blank')} className="text-neutral-400 hover:text-neutral-600" title="View on platform">
                   <ExternalLink className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -139,7 +139,7 @@ const ReviewsCard = ({ reviews, stats }) => {
       </div>
 
       <div className="mt-4 pt-4 border-t border-neutral-200">
-        <button className="w-full px-4 py-2 bg-[#FAF8F6] hover:bg-neutral-100 text-neutral-700 rounded-lg transition-all text-sm font-medium">
+        <button onClick={onViewAll} className="w-full px-4 py-2 bg-[#FAF8F6] hover:bg-neutral-100 text-neutral-700 rounded-lg transition-all text-sm font-medium">
           View All Reviews
         </button>
       </div>

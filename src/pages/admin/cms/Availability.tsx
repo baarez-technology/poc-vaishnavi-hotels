@@ -1648,8 +1648,10 @@ export default function CMSAvailability() {
     }
 
     bulkSelections.forEach(key => {
-      const [date, ...roomTypeParts] = key.split('-');
-      const roomType = roomTypeParts.join('-').replace(/^/, '').trim();
+      // BUG-010 FIX: Date is YYYY-MM-DD (10 chars), rest after the dash is room type
+      // key format: "2024-01-15-Minimalist Studio" - can't split by '-' since date has dashes
+      const date = key.substring(0, 10); // YYYY-MM-DD
+      const roomType = key.substring(11); // Everything after "YYYY-MM-DD-"
       switch (action) {
         case 'close':
           cmsAvailability.closeRoomType(date, roomType);

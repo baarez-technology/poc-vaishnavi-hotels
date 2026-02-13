@@ -1,12 +1,13 @@
 import { Bell, Home, ChevronRight } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useNotifications, useUI } from '@/hooks/staff-portal/useStaffPortal';
+import { useUnreadNotificationCount } from '@/hooks/staff-portal/useStaffApi';
+import { useUI } from '@/hooks/staff-portal/useStaffPortal';
 
 export default function StaffHeader() {
   const location = useLocation();
   const { user } = useAuth();
-  const { unreadCount } = useNotifications();
+  const { count: unreadCount } = useUnreadNotificationCount();
   const { toggleNotificationDrawer } = useUI();
 
   // Get department from role or URL

@@ -97,10 +97,11 @@ const RoomDetails = () => {
     );
   }
 
+  const safeChecklist = Array.isArray(checklist) ? checklist : [];
   const checklistProgress = {
-    completed: checklist.filter(c => c.completed).length,
-    total: checklist.length,
-    percentage: Math.round((checklist.filter(c => c.completed).length / checklist.length) * 100)
+    completed: safeChecklist.filter(c => c.completed).length,
+    total: safeChecklist.length,
+    percentage: safeChecklist.length > 0 ? Math.round((safeChecklist.filter(c => c.completed).length / safeChecklist.length) * 100) : 0
   };
 
   const handleChecklistToggle = (checklistId: string) => {

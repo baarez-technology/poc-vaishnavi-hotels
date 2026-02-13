@@ -95,9 +95,12 @@ export default function ChannelDashboard() {
       icon: Wifi,
       title: 'Connected OTAs',
       value: connectedOTAs.length,
-      subtitle: errorOTAs.length > 0 ? `${errorOTAs.length} with issues` : 'All channels healthy',
+      subtitle: errorOTAs.length > 0
+        ? `${errorOTAs.length} with issues: ${errorOTAs.map(o => o.name).join(', ')}`
+        : 'All channels healthy',
       badge: errorOTAs.length > 0 ? { text: 'Error', type: 'error' } : { text: 'Live', type: 'success' },
-      accent: 'sage'
+      accent: 'sage',
+      errorOTAs: errorOTAs
     },
     {
       icon: DollarSign,
@@ -204,108 +207,51 @@ export default function ChannelDashboard() {
                     </span>
         )}
       </div>
-
-      {/* OTA Performance Details Drawer */}
-      <Drawer
-        isOpen={!!selectedOTA}
-        onClose={() => {
-          setSelectedOTA(null);
-          setOtaBookings([]);
-        }}
-        title={selectedOTA ? `${selectedOTA.name} Performance Details` : ''}
-        subtitle={`${selectedOTA?.stats?.totalBookings || 0} bookings • $${(selectedOTA?.stats?.revenue || 0).toLocaleString()} revenue`}
-        maxWidth="max-w-3xl"
-      >
-        {loadingBookings ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-terra-600" />
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Stats Summary */}
-            <div className="grid grid-cols-4 gap-4">
-              <div className="p-4 rounded-lg bg-neutral-50">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Total Bookings</p>
-                <p className="text-2xl font-bold text-terra-600">{selectedOTA?.stats?.totalBookings || 0}</p>
-              </div>
-              <div className="p-4 rounded-lg bg-neutral-50">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Revenue</p>
-                <p className="text-2xl font-bold text-sage-600">${(selectedOTA?.stats?.revenue || 0).toLocaleString()}</p>
-              </div>
-              <div className="p-4 rounded-lg bg-neutral-50">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Avg Rating</p>
-                <p className="text-2xl font-bold text-gold-600 flex items-center gap-1">
-                  {selectedOTA?.stats?.avgRating || 0}
-                  <Star className="w-5 h-5 fill-current" />
-                </p>
-              </div>
-              <div className="p-4 rounded-lg bg-neutral-50">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Commission</p>
-                <p className="text-2xl font-bold text-neutral-700">{selectedOTA?.stats?.commission || 0}%</p>
-              </div>
-            </div>
-
-            {/* Bookings List */}
-            <div>
-              <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-4">
-                Recent Bookings ({otaBookings.length})
-              </h4>
-              {otaBookings.length === 0 ? (
-                <div className="text-center py-8">
-                  <Building2 className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
-                  <p className="text-[13px] font-medium text-neutral-600 mb-1">No bookings found</p>
-                  <p className="text-[11px] text-neutral-400">Bookings from this channel will appear here</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {otaBookings.slice(0, 20).map((booking) => (
-                    <div key={booking.id} className="p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <p className="text-[13px] font-semibold text-neutral-900 mb-1">
-                            {booking.guest || booking.guestName || 'Guest'}
-                          </p>
-                          <p className="text-[11px] text-neutral-500 font-mono">{booking.id || booking.bookingNumber}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[13px] font-bold text-terra-600">${(booking.amount || booking.total || 0).toLocaleString()}</p>
-                          <p className="text-[10px] text-neutral-400 mt-0.5">
-                            {booking.checkIn ? new Date(booking.checkIn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'} - {booking.checkOut ? new Date(booking.checkOut).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4 text-[11px] text-neutral-500">
-                        {booking.email && (
-                          <div className="flex items-center gap-1.5">
-                            <Mail className="w-3 h-3" />
-                            <span className="truncate max-w-[200px]">{booking.email}</span>
-                          </div>
-                        )}
-                        {booking.phone && (
-                          <div className="flex items-center gap-1.5">
-                            <Phone className="w-3 h-3" />
-                            <span>{booking.phone}</span>
-                          </div>
-                        )}
-                        {booking.roomType && (
-                          <div className="flex items-center gap-1.5">
-                            <Building2 className="w-3 h-3" />
-                            <span>{booking.roomType}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </Drawer>
     </div>
   );
 })}
         </section>
+
+        {/* Error OTAs Alert Banner */}
+        {errorOTAs.length > 0 && (
+          <section className="rounded-[10px] bg-rose-50 border border-rose-200 p-4 sm:p-5">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-rose-100 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-rose-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xs sm:text-sm font-semibold text-rose-800 mb-2">
+                  {errorOTAs.length} OTA{errorOTAs.length > 1 ? 's' : ''} with Connection Errors
+                </h3>
+                <div className="space-y-2">
+                  {errorOTAs.map((ota) => (
+                    <div key={ota.id} className="flex items-center justify-between gap-3 p-2.5 sm:p-3 bg-white rounded-lg border border-rose-100">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-white font-bold text-[10px] sm:text-xs flex-shrink-0"
+                          style={{ backgroundColor: ota.color || '#A57865' }}
+                        >
+                          {ota.name.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs sm:text-[13px] font-semibold text-neutral-900">{ota.name}</p>
+                          <p className="text-[10px] sm:text-[11px] text-rose-600 truncate">
+                            {ota.errorMessage || 'Connection error - please check credentials'}
+                          </p>
+                        </div>
+                      </div>
+                      <Link to="/admin/channel-manager/ota">
+                        <Button variant="outline" size="sm" className="text-[10px] sm:text-xs flex-shrink-0">
+                          Fix
+                        </Button>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* AI Insights */}
         {insights.length > 0 && (
@@ -384,7 +330,8 @@ export default function ChannelDashboard() {
             </Link>
           </div>
 
-          {connectedOTAs.length === 0 ? (
+          {/* BUG-001 FIX: Show both connected and error OTAs in performance table */}
+          {connectedOTAs.length === 0 && errorOTAs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 sm:py-12">
               <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg mx-auto mb-4 sm:mb-5 flex items-center justify-center bg-neutral-50">
                 <WifiOff className="w-6 h-6 sm:w-8 sm:h-8 text-neutral-300" />
@@ -410,10 +357,12 @@ export default function ChannelDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {connectedOTAs.slice(0, 5).map((ota) => (
+                  {[...connectedOTAs, ...errorOTAs].slice(0, 7).map((ota) => (
                     <tr
                       key={ota.id}
-                      className="border-b border-neutral-50 last:border-b-0 hover:bg-neutral-50/50 transition-colors cursor-pointer"
+                      className={`border-b border-neutral-50 last:border-b-0 hover:bg-neutral-50/50 transition-colors cursor-pointer ${
+                        ota.status === 'error' ? 'bg-rose-50/40' : ''
+                      }`}
                       onClick={async () => {
                         setSelectedOTA(ota);
                         setLoadingBookings(true);
@@ -446,22 +395,42 @@ export default function ChannelDashboard() {
                               ota.status === 'connected' ? 'bg-sage-500' : 'bg-rose-500'
                             }`} />
                           </div>
-                          <span className="text-xs sm:text-[13px] font-semibold text-neutral-800">{ota.name}</span>
+                          <div className="min-w-0">
+                            <span className="text-xs sm:text-[13px] font-semibold text-neutral-800">{ota.name}</span>
+                            {ota.status === 'error' && (
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <AlertTriangle className="w-3 h-3 text-rose-500 flex-shrink-0" />
+                                <span className="text-[9px] sm:text-[10px] text-rose-600 font-medium truncate">
+                                  {ota.errorMessage || 'Connection error'}
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="py-3 sm:py-4 px-4 sm:px-6 text-right text-xs sm:text-[13px] font-semibold text-neutral-800">
-                        {ota.stats?.totalBookings || 0}
+                        {ota.status === 'error' ? (
+                          <span className="text-rose-500">—</span>
+                        ) : (ota.stats?.totalBookings || 0)}
                       </td>
                       <td className="py-3 sm:py-4 px-4 sm:px-6 text-right">
-                        <span className="text-xs sm:text-[13px] font-bold text-terra-600">
-                          ${(ota.stats?.revenue || 0).toLocaleString()}
-                        </span>
+                        {ota.status === 'error' ? (
+                          <span className="text-xs sm:text-[13px] text-rose-500">—</span>
+                        ) : (
+                          <span className="text-xs sm:text-[13px] font-bold text-terra-600">
+                            ${(ota.stats?.revenue || 0).toLocaleString()}
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 sm:py-4 px-4 sm:px-6 text-right hidden sm:table-cell">
-                        <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-gold-600">
-                          {ota.stats?.avgRating || 0}
-                          <Star className="w-3.5 h-3.5 fill-current" />
-                        </span>
+                        {ota.status === 'error' ? (
+                          <span className="px-2 py-0.5 text-[10px] font-semibold rounded bg-rose-100 text-rose-600">ERROR</span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-gold-600">
+                            {ota.stats?.avgRating || 0}
+                            <Star className="w-3.5 h-3.5 fill-current" />
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 sm:py-4 px-4 sm:px-6 text-right text-[13px] text-neutral-500 hidden sm:table-cell">
                         {formatTime(ota.lastSync)}
@@ -602,6 +571,104 @@ export default function ChannelDashboard() {
         </div>
 
       </div>
+
+      {/* OTA Performance Details Drawer - BUG-008 FIX: Moved outside KPI cards grid */}
+      <Drawer
+        isOpen={!!selectedOTA}
+        onClose={() => {
+          setSelectedOTA(null);
+          setOtaBookings([]);
+        }}
+        title={selectedOTA ? `${selectedOTA.name} Performance Details` : ''}
+        subtitle={`${selectedOTA?.stats?.totalBookings || 0} bookings • $${(selectedOTA?.stats?.revenue || 0).toLocaleString()} revenue`}
+        maxWidth="max-w-3xl"
+      >
+        {loadingBookings ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-terra-600" />
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Stats Summary */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="p-4 rounded-lg bg-neutral-50">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Total Bookings</p>
+                <p className="text-2xl font-bold text-terra-600">{selectedOTA?.stats?.totalBookings || 0}</p>
+              </div>
+              <div className="p-4 rounded-lg bg-neutral-50">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Revenue</p>
+                <p className="text-2xl font-bold text-sage-600">${(selectedOTA?.stats?.revenue || 0).toLocaleString()}</p>
+              </div>
+              <div className="p-4 rounded-lg bg-neutral-50">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Avg Rating</p>
+                <p className="text-2xl font-bold text-gold-600 flex items-center gap-1">
+                  {selectedOTA?.stats?.avgRating || 0}
+                  <Star className="w-5 h-5 fill-current" />
+                </p>
+              </div>
+              <div className="p-4 rounded-lg bg-neutral-50">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Commission</p>
+                <p className="text-2xl font-bold text-neutral-700">{selectedOTA?.stats?.commission || 0}%</p>
+              </div>
+            </div>
+
+            {/* Bookings List */}
+            <div>
+              <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-4">
+                Recent Bookings ({otaBookings.length})
+              </h4>
+              {otaBookings.length === 0 ? (
+                <div className="text-center py-8">
+                  <Building2 className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
+                  <p className="text-[13px] font-medium text-neutral-600 mb-1">No bookings found</p>
+                  <p className="text-[11px] text-neutral-400">Bookings from this channel will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {otaBookings.slice(0, 20).map((booking) => (
+                    <div key={booking.id} className="p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="text-[13px] font-semibold text-neutral-900 mb-1">
+                            {booking.guest || booking.guestName || 'Guest'}
+                          </p>
+                          <p className="text-[11px] text-neutral-500 font-mono">{booking.id || booking.bookingNumber}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[13px] font-bold text-terra-600">${(booking.amount || booking.total || 0).toLocaleString()}</p>
+                          <p className="text-[10px] text-neutral-400 mt-0.5">
+                            {booking.checkIn ? new Date(booking.checkIn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'} - {booking.checkOut ? new Date(booking.checkOut).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-[11px] text-neutral-500">
+                        {booking.email && (
+                          <div className="flex items-center gap-1.5">
+                            <Mail className="w-3 h-3" />
+                            <span className="truncate max-w-[200px]">{booking.email}</span>
+                          </div>
+                        )}
+                        {booking.phone && (
+                          <div className="flex items-center gap-1.5">
+                            <Phone className="w-3 h-3" />
+                            <span>{booking.phone}</span>
+                          </div>
+                        )}
+                        {booking.roomType && (
+                          <div className="flex items-center gap-1.5">
+                            <Building2 className="w-3 h-3" />
+                            <span>{booking.roomType}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Drawer>
     </div>
   );
 }

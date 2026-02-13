@@ -117,6 +117,15 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
 
   const isFormValid = credentials.username && credentials.apiKey && credentials.hotelId;
 
+  // BUG-009 FIX: Clear failed test result when credentials change so Connect button re-enables
+  const handleCredentialChange = (field: string, value: string) => {
+    setCredentials(prev => ({ ...prev, [field]: value }));
+    // Clear failed test result when user edits credentials
+    if (testResult && !testResult.success) {
+      setTestResult(null);
+    }
+  };
+
   const getTitle = () => {
     if (step === 1) return 'Add OTA Connection';
     return `Connect to ${selectedOTA?.name}`;
@@ -332,7 +341,7 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
               <input
                 type="text"
                 value={credentials.hotelId}
-                onChange={(e) => setCredentials({ ...credentials, hotelId: e.target.value })}
+                onChange={(e) => handleCredentialChange('hotelId', e.target.value)}
                 placeholder="Enter your property ID"
                 className="w-full h-9 px-3.5 rounded-lg text-sm bg-white border border-neutral-200 text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
               />
@@ -347,7 +356,7 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
               <input
                 type="text"
                 value={credentials.username}
-                onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
+                onChange={(e) => handleCredentialChange('username', e.target.value)}
                 placeholder="Enter your username or email"
                 className="w-full h-9 px-3.5 rounded-lg text-sm bg-white border border-neutral-200 text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
               />
@@ -363,7 +372,7 @@ export default function AddConnectionModal({ isOpen, onClose, onConnect, existin
                 <input
                   type={showApiKey ? 'text' : 'password'}
                   value={credentials.apiKey}
-                  onChange={(e) => setCredentials({ ...credentials, apiKey: e.target.value })}
+                  onChange={(e) => handleCredentialChange('apiKey', e.target.value)}
                   placeholder="Enter your API key"
                   className="w-full h-9 px-3.5 pr-10 rounded-lg text-sm bg-white border border-neutral-200 text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
                 />

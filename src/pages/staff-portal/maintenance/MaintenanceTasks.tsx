@@ -315,8 +315,8 @@ const MaintenanceTasks = () => {
     });
   };
 
-  const getChecklistProgress = (checklist: any[]) => {
-    if (!checklist || checklist.length === 0) return { completed: 0, total: 0, percentage: 0 };
+  const getChecklistProgress = (checklist: any) => {
+    if (!Array.isArray(checklist) || checklist.length === 0) return { completed: 0, total: 0, percentage: 0 };
     const completed = checklist.filter(c => c.completed).length;
     return {
       completed,

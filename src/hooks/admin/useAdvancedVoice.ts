@@ -109,6 +109,7 @@ export function useAdvancedVoice(options: UseAdvancedVoiceOptions = {}): [VoiceS
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const isTogglingRef = useRef<boolean>(false); // Guard against rapid clicks
 
   // Clear silence timer
   const clearSilenceTimer = useCallback(() => {
@@ -439,6 +440,11 @@ export function useAdvancedVoice(options: UseAdvancedVoiceOptions = {}): [VoiceS
   const startListening = useCallback(async () => {
     if (state.isListening || state.isProcessing) return;
 
+    // Cancel any ongoing speech synthesis to prevent overlapping audio
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+
     setState(prev => ({ ...prev, error: null }));
 
     if (state.useWhisper || !state.isSpeechSupported) {
@@ -482,12 +488,28 @@ export function useAdvancedVoice(options: UseAdvancedVoiceOptions = {}): [VoiceS
     }));
   }, [clearSilenceTimer, stopNoiseMonitoring]);
 
-  // Toggle listening
+  // Toggle listening (with debounce guard against rapid clicks)
   const toggleListening = useCallback(async () => {
-    if (state.isListening) {
-      stopListening();
-    } else {
-      await startListening();
+    // Prevent rapid double-clicks
+    if (isTogglingRef.current) return;
+    isTogglingRef.current = true;
+
+    // Cancel any ongoing speech synthesis to prevent overlapping audio
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+
+    try {
+      if (state.isListening) {
+        stopListening();
+      } else {
+        await startListening();
+      }
+    } finally {
+      // Release the guard after a short delay to prevent rapid re-triggering
+      setTimeout(() => {
+        isTogglingRef.current = false;
+      }, 500);
     }
   }, [state.isListening, startListening, stopListening]);
 

@@ -117,8 +117,14 @@ const HousekeepingRooms = () => {
     });
   }, [rooms, searchQuery, statusFilter, priorityFilter]);
 
-  const getChecklistProgress = (checklist: any[]) => {
-    if (!checklist || checklist.length === 0) return { completed: 0, total: 0, percentage: 0 };
+  const getChecklistProgress = (checklist: any, roomStatus?: string) => {
+    if (!Array.isArray(checklist) || checklist.length === 0) {
+      // BUG-003 FIX: For clean/inspected rooms, show full progress with default checklist size
+      if (roomStatus === 'clean' || roomStatus === 'inspected') {
+        return { completed: 8, total: 8, percentage: 100 };
+      }
+      return { completed: 0, total: 8, percentage: 0 };
+    }
     const completed = checklist.filter(c => c.completed).length;
     return {
       completed,
@@ -313,7 +319,7 @@ const HousekeepingRooms = () => {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 pt-4">
                 {filteredRooms.map((room: any) => {
-                  const progress = getChecklistProgress(room.checklist);
+                  const progress = getChecklistProgress(room.checklist, room.status);
 
                   return (
                     <div

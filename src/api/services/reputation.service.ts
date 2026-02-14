@@ -304,12 +304,13 @@ class ReputationService {
     page?: number;
     page_size?: number;
     source?: string;
-    rating?: number;
+    min_rating?: number;
+    max_rating?: number;
     sentiment?: string;
     start_date?: string;
     end_date?: string;
     keyword?: string;
-    responded?: boolean;
+    has_response?: boolean;
   }): Promise<{ reviews: Review[]; total: number; page: number }> {
     const response = await api.get(`${this.baseUrl}/reviews`, { params });
     return response.data.data || response.data;
@@ -335,6 +336,17 @@ class ReputationService {
   ): Promise<{ success: boolean; review_id: number }> {
     const response = await api.post(`${this.baseUrl}/drafts/${draftId}/approve`, {
       final_text: finalText
+    });
+    return response.data.data || response.data;
+  }
+
+  // Directly respond to a review (without draft workflow)
+  async respondToReview(
+    reviewId: number,
+    responseText: string
+  ): Promise<{ success: boolean; review_id: number; response: string; responded_at: string }> {
+    const response = await api.post(`${this.baseUrl}/reviews/${reviewId}/respond`, {
+      final_text: responseText
     });
     return response.data.data || response.data;
   }
@@ -376,6 +388,11 @@ class ReputationService {
 
   async updateGoalProgress(goalId: number): Promise<Goal> {
     const response = await api.patch(`${this.baseUrl}/goals/${goalId}/progress`);
+    return response.data.data || response.data;
+  }
+
+  async toggleGoalStatus(goalId: number): Promise<{ id: number; status: string; message: string }> {
+    const response = await api.patch(`${this.baseUrl}/goals/${goalId}/toggle`);
     return response.data.data || response.data;
   }
 
@@ -547,7 +564,7 @@ class ReputationService {
   // ========================
 
   async getEngineStats(): Promise<EngineStats> {
-    const response = await api.get(`${this.baseUrl}/engine/stats`);
+    const response = await api.get(`${this.baseUrl}/stats/engine`);
     return response.data.data || response.data;
   }
 

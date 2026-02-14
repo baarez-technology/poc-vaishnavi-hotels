@@ -237,35 +237,43 @@ const HousekeepingDashboard = () => {
   }, [notifications]);
 
   const handleClockToggle = async () => {
-    const isClockedIn = profile?.clocked_in;
-    const success = isClockedIn ? await clockOut() : await clockIn();
-    if (success) refetchAll();
+    try {
+      const success = isClockedIn ? await clockOut() : await clockIn();
+      if (success) refetchAll();
+    } catch (err) {
+      console.error('Clock toggle failed:', err);
+    }
   };
 
   const handleStartTask = async (task: any) => {
-    const success = await startTask(task.id);
-    if (success) refetchAll();
+    try {
+      const success = await startTask(task.id);
+      if (success) refetchAll();
+    } catch (err) {
+      console.error('Failed to start task:', err);
+    }
   };
 
   const handleStartRoom = async (room: any) => {
-    // BUG-001 FIX: Find the task for this room and start it (which also updates room status)
-    // instead of just changing room status and navigating away
-    const roomTasks = tasks?.filter((t: any) =>
-      t.room_id === room.id && (t.status === 'pending' || t.status === 'assigned')
-    );
-    const taskToStart = roomTasks?.[0];
+    try {
+      const roomTasks = tasks?.filter((t: any) =>
+        t.room_id === room.id && (t.status === 'pending' || t.status === 'assigned')
+      );
+      const taskToStart = roomTasks?.[0];
 
-    if (taskToStart) {
-      const success = await startTask(taskToStart.id);
-      if (success) {
-        refetchAll();
+      if (taskToStart) {
+        const success = await startTask(taskToStart.id);
+        if (success) {
+          refetchAll();
+        }
+      } else {
+        const success = await updateRoomStatus(room.id, 'in_progress');
+        if (success) {
+          refetchAll();
+        }
       }
-    } else {
-      // Fallback: if no task found, just update room status
-      const success = await updateRoomStatus(room.id, 'in_progress');
-      if (success) {
-        refetchAll();
-      }
+    } catch (err) {
+      console.error('Failed to start room:', err);
     }
   };
 
@@ -415,17 +423,17 @@ const HousekeepingDashboard = () => {
                 onClick={handleClockToggle}
                 disabled={clockLoading}
                 className={`w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg text-left transition-all group ${
-                  profile?.clocked_in
+                  isClockedIn
                     ? 'bg-rose-50 hover:bg-rose-100'
                     : 'bg-sage-50 hover:bg-sage-100'
                 } ${clockLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  profile?.clocked_in ? 'bg-rose-100' : 'bg-sage-100'
+                  isClockedIn ? 'bg-rose-100' : 'bg-sage-100'
                 }`}>
                   {clockLoading ? (
                     <Loader2 className="w-4.5 h-4.5 animate-spin text-neutral-500" />
-                  ) : profile?.clocked_in ? (
+                  ) : isClockedIn ? (
                     <LogOut className="w-4.5 h-4.5 text-rose-600" />
                   ) : (
                     <LogIn className="w-4.5 h-4.5 text-sage-600" />
@@ -433,14 +441,14 @@ const HousekeepingDashboard = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-semibold text-neutral-800 mb-0.5">
-                    {clockLoading ? 'Processing...' : profile?.clocked_in ? 'Clock Out' : 'Clock In'}
+                    {clockLoading ? 'Processing...' : isClockedIn ? 'Clock Out' : 'Clock In'}
                   </p>
                   <p className="text-[11px] text-neutral-400 font-medium">
-                    {profile?.clocked_in ? 'End your shift' : 'Start your shift'}
+                    {isClockedIn ? 'End your shift' : 'Start your shift'}
                   </p>
                 </div>
                 <ChevronRight className={`w-3.5 h-3.5 text-neutral-300 group-hover:translate-x-0.5 transition-all flex-shrink-0 ${
-                  profile?.clocked_in ? 'group-hover:text-rose-600' : 'group-hover:text-sage-600'
+                  isClockedIn ? 'group-hover:text-rose-600' : 'group-hover:text-sage-600'
                 }`} />
               </button>
 
@@ -461,7 +469,11 @@ const HousekeepingDashboard = () => {
               <button
                 onClick={() => {
                   const nextRoom = rooms.find((r: any) => r.status === 'dirty');
-                  if (nextRoom) handleStartRoom(nextRoom);
+                  if (nextRoom) {
+                    handleStartRoom(nextRoom);
+                  } else {
+                    navigate('/staff/housekeeping/rooms');
+                  }
                 }}
                 className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-sage-50/50 text-left hover:bg-sage-50 transition-all group"
               >

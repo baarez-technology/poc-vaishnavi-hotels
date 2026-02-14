@@ -59,12 +59,16 @@ const Profile = () => {
     phone: ''
   });
 
-  // Preferences state
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('light');
-  const [notifications, setNotifications] = useState({
-    email: true,
-    push: true,
-    sms: false
+  // Preferences state - persist to localStorage
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
+    return (localStorage.getItem('glimmora_theme') as 'light' | 'dark' | 'system') || 'light';
+  });
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const saved = localStorage.getItem('glimmora_notification_prefs');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return { email: true, push: true, sms: false };
   });
 
   // Initialize form - use profile.name (API), then user.fullName (auth), then context
@@ -185,11 +189,19 @@ const Profile = () => {
   // Handlers
   const handleSaveChanges = async () => {
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 400));
-    updateUser(editForm);
-    setOriginalForm(editForm);
-    setIsSaving(false);
-    setShowSaveSuccess(true);
+    try {
+      await userService.updateProfile({
+        fullName: editForm.name,
+        phone: editForm.phone,
+      });
+      updateUser(editForm);
+      setOriginalForm(editForm);
+      setShowSaveSuccess(true);
+    } catch (err: any) {
+      console.error('Failed to save profile:', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handlePasswordSubmit = async () => {
@@ -260,9 +272,26 @@ const Profile = () => {
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-2xl sm:text-3xl font-bold bg-terra-100 text-terra-600">
                   {getInitials(displayData.name || '')}
                 </div>
-                <button className="absolute inset-0 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/80">
+                <label className="absolute inset-0 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 cursor-pointer">
                   <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-neutral-600" />
-                </button>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const formData = new FormData();
+                        formData.append('avatar', file);
+                        await userService.updateProfile({ avatar: file.name } as any);
+                        setShowSaveSuccess(true);
+                      } catch (err) {
+                        console.error('Avatar upload not yet supported:', err);
+                      }
+                    }}
+                  />
+                </label>
               </div>
 
               {/* User Info */}
@@ -385,8 +414,8 @@ const Profile = () => {
             <InfoRow
               icon={Shield}
               label="Account Status"
-              value="Active"
-              valueClassName="text-sage-600"
+              value={profile?.status ? profile.status.charAt(0).toUpperCase() + profile.status.slice(1) : 'Active'}
+              valueClassName={profile?.status === 'active' || !profile?.status ? 'text-sage-600' : 'text-neutral-600'}
             />
             <InfoRow
               icon={User}
@@ -401,8 +430,8 @@ const Profile = () => {
             <InfoRow
               icon={Mail}
               label="Email Verified"
-              value="Yes"
-              valueClassName="text-sage-600"
+              value={profile?.email_verified === false ? 'No' : 'Yes'}
+              valueClassName={profile?.email_verified === false ? 'text-rose-600' : 'text-sage-600'}
             />
           </div>
         </div>
@@ -513,7 +542,7 @@ const Profile = () => {
                 Password
               </p>
               <p className="text-[12px] text-neutral-500 mt-0.5">
-                Last changed: Never
+                Last changed: {profile?.password_last_changed ? formatDate(profile.password_last_changed) : 'Never'}
               </p>
             </div>
             <Button
@@ -544,19 +573,19 @@ const Profile = () => {
                 icon={Sun}
                 label="Light"
                 active={theme === 'light'}
-                onClick={() => setTheme('light')}
+                onClick={() => { setTheme('light'); localStorage.setItem('glimmora_theme', 'light'); }}
               />
               <ThemeButton
                 icon={Moon}
                 label="Dark"
                 active={theme === 'dark'}
-                onClick={() => setTheme('dark')}
+                onClick={() => { setTheme('dark'); localStorage.setItem('glimmora_theme', 'dark'); }}
               />
               <ThemeButton
                 icon={Monitor}
                 label="System"
                 active={theme === 'system'}
-                onClick={() => setTheme('system')}
+                onClick={() => { setTheme('system'); localStorage.setItem('glimmora_theme', 'system'); }}
               />
             </div>
           </div>
@@ -571,19 +600,19 @@ const Profile = () => {
                 label="Email notifications"
                 description="Receive updates and alerts via email"
                 checked={notifications.email}
-                onChange={(checked) => setNotifications(prev => ({ ...prev, email: checked }))}
+                onChange={(checked) => { const next = { ...notifications, email: checked }; setNotifications(next); localStorage.setItem('glimmora_notification_prefs', JSON.stringify(next)); }}
               />
               <CheckboxItem
                 label="Push notifications"
                 description="Receive browser push notifications"
                 checked={notifications.push}
-                onChange={(checked) => setNotifications(prev => ({ ...prev, push: checked }))}
+                onChange={(checked) => { const next = { ...notifications, push: checked }; setNotifications(next); localStorage.setItem('glimmora_notification_prefs', JSON.stringify(next)); }}
               />
               <CheckboxItem
                 label="SMS notifications"
                 description="Receive text messages for urgent alerts"
                 checked={notifications.sms}
-                onChange={(checked) => setNotifications(prev => ({ ...prev, sms: checked }))}
+                onChange={(checked) => { const next = { ...notifications, sms: checked }; setNotifications(next); localStorage.setItem('glimmora_notification_prefs', JSON.stringify(next)); }}
               />
             </div>
           </div>

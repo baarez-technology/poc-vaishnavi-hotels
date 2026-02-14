@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Target,
   Plus,
@@ -9,7 +9,8 @@ import {
   AlertCircle,
   Pencil,
   Trash2,
-  X
+  X,
+  Power
 } from 'lucide-react';
 import { useReputation } from '@/context/ReputationContext';
 import { Drawer, ConfirmDrawer } from '../ui2/Drawer';
@@ -51,10 +52,29 @@ interface GoalDrawerProps {
 }
 
 function GoalDrawer({ isOpen, onClose, onSubmit, initialData, mode }: GoalDrawerProps) {
+  const today = new Date().toISOString().split('T')[0];
+  const defaultEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
   const [metricType, setMetricType] = useState(initialData?.metric_type || 'rating');
   const [targetValue, setTargetValue] = useState(initialData?.target_value || 4.5);
-  const [startDate, setStartDate] = useState(initialData?.start_date || '');
-  const [endDate, setEndDate] = useState(initialData?.end_date || '');
+  const [startDate, setStartDate] = useState(initialData?.start_date || today);
+  const [endDate, setEndDate] = useState(initialData?.end_date || defaultEndDate);
+
+  // Update state when initialData changes (for edit mode)
+  useEffect(() => {
+    if (initialData) {
+      setMetricType(initialData.metric_type || 'rating');
+      setTargetValue(initialData.target_value || 4.5);
+      setStartDate(initialData.start_date || today);
+      setEndDate(initialData.end_date || defaultEndDate);
+    } else {
+      // Reset to defaults for create mode
+      setMetricType('rating');
+      setTargetValue(4.5);
+      setStartDate(today);
+      setEndDate(defaultEndDate);
+    }
+  }, [initialData, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,6 +140,7 @@ function GoalDrawer({ isOpen, onClose, onSubmit, initialData, mode }: GoalDrawer
               value={startDate}
               onChange={(value) => setStartDate(value)}
               placeholder="Select start date"
+              minDate={mode === 'edit' ? (initialData?.start_date || today) : today}
               className="w-full"
             />
           </div>
@@ -131,7 +152,7 @@ function GoalDrawer({ isOpen, onClose, onSubmit, initialData, mode }: GoalDrawer
               value={endDate}
               onChange={(value) => setEndDate(value)}
               placeholder="Select end date"
-              minDate={startDate}
+              minDate={startDate || today}
               className="w-full"
             />
           </div>
@@ -196,7 +217,7 @@ function getDaysRemaining(endDate: string): number {
 }
 
 export default function GoalsPanel() {
-  const { goals, createGoal, updateGoalProgress, isLoading } = useReputation();
+  const { goals, createGoal, updateGoal, deleteGoal, toggleGoalStatus, updateGoalProgress, isLoading } = useReputation();
   const [showDrawer, setShowDrawer] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [deletingGoal, setDeletingGoal] = useState<Goal | null>(null);
@@ -209,6 +230,8 @@ export default function GoalsPanel() {
         return <Clock className="w-4 h-4 text-[#5C9BA4]" />;
       case 'expired':
         return <AlertCircle className="w-4 h-4 text-rose-500" />;
+      case 'deactivated':
+        return <Power className="w-4 h-4 text-neutral-400" />;
       default:
         return <Target className="w-4 h-4 text-neutral-500" />;
     }
@@ -222,6 +245,8 @@ export default function GoalsPanel() {
         return 'bg-[#5C9BA4]/10 text-[#5C9BA4] border border-[#5C9BA4]/20';
       case 'expired':
         return 'bg-neutral-100 text-neutral-500 border border-neutral-200';
+      case 'deactivated':
+        return 'bg-neutral-100 text-neutral-400 border border-neutral-200';
       default:
         return 'bg-neutral-100 text-neutral-600 border border-neutral-200';
     }
@@ -255,16 +280,38 @@ export default function GoalsPanel() {
     }
   };
 
+  const handleToggleStatus = async (goal: Goal) => {
+    try {
+      await toggleGoalStatus(goal.id);
+    } catch (error) {
+      console.error('Failed to toggle goal status:', error);
+    }
+  };
+
   const handleEditGoal = async (data: GoalFormData) => {
-    // In a real implementation, this would call an API to update the goal
-    console.log('Editing goal:', editingGoal?.id, data);
-    setEditingGoal(null);
+    if (!editingGoal) return;
+    try {
+      await updateGoal(editingGoal.id, {
+        target_value: data.targetValue,
+        start_date: data.startDate,
+        end_date: data.endDate
+      });
+    } catch (error) {
+      console.error('Failed to update goal:', error);
+    } finally {
+      setEditingGoal(null);
+    }
   };
 
   const handleDeleteGoal = async () => {
-    // In a real implementation, this would call an API to delete the goal
-    console.log('Deleting goal:', deletingGoal?.id);
-    setDeletingGoal(null);
+    if (!deletingGoal) return;
+    try {
+      await deleteGoal(deletingGoal.id);
+    } catch (error) {
+      console.error('Failed to delete goal:', error);
+    } finally {
+      setDeletingGoal(null);
+    }
   };
 
   const openCreateDrawer = () => {
@@ -319,7 +366,9 @@ export default function GoalsPanel() {
               return (
                 <div
                   key={goal.id}
-                  className="bg-neutral-50 rounded-[8px] p-5 border border-neutral-100 hover:border-neutral-200 transition-colors"
+                  className={`bg-neutral-50 rounded-[8px] p-5 border border-neutral-100 hover:border-neutral-200 transition-colors ${
+                    goal.status === 'deactivated' ? 'opacity-60' : ''
+                  }`}
                 >
                   {/* Goal Header */}
                   <div className="flex items-start justify-between mb-4">
@@ -351,6 +400,17 @@ export default function GoalsPanel() {
                         title="Edit goal"
                       >
                         <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleToggleStatus(goal)}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          goal.status === 'deactivated'
+                            ? 'text-green-500 hover:text-green-600 hover:bg-green-50'
+                            : 'text-neutral-400 hover:text-amber-500 hover:bg-amber-50'
+                        }`}
+                        title={goal.status === 'deactivated' ? 'Activate goal' : 'Deactivate goal'}
+                      >
+                        <Power className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setDeletingGoal(goal)}

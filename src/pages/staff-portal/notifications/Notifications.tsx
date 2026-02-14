@@ -226,25 +226,50 @@ const Notifications = () => {
     await Promise.all([refetchNotifications(), refetchUnreadCount()]);
   };
 
+  // Loading state for bulk actions
+  const [actionInProgress, setActionInProgress] = useState(false);
+
   // Actions
   const markNotificationRead = async (id: number) => {
-    await markAsRead(id);
-    refetchAll();
+    try {
+      await markAsRead(id);
+      refetchAll();
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+    }
   };
 
   const markAllNotificationsRead = async () => {
-    await markAllAsRead();
-    refetchAll();
+    setActionInProgress(true);
+    try {
+      await markAllAsRead();
+      await refetchAll();
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+    } finally {
+      setActionInProgress(false);
+    }
   };
 
   const deleteNotification = async (id: number) => {
-    await apiDeleteNotification(id);
-    refetchAll();
+    try {
+      await apiDeleteNotification(id);
+      refetchAll();
+    } catch (err) {
+      console.error('Failed to delete notification:', err);
+    }
   };
 
   const clearNotifications = async () => {
-    await deleteAllNotifications();
-    refetchAll();
+    setActionInProgress(true);
+    try {
+      await deleteAllNotifications();
+      await refetchAll();
+    } catch (err) {
+      console.error('Failed to clear notifications:', err);
+    } finally {
+      setActionInProgress(false);
+    }
   };
 
   // Helper functions
@@ -422,6 +447,8 @@ const Notifications = () => {
               size="sm"
               icon={CheckCheck}
               onClick={markAllNotificationsRead}
+              disabled={actionInProgress}
+              isLoading={actionInProgress}
               className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0"
             >
               Mark all read
@@ -433,6 +460,7 @@ const Notifications = () => {
               size="sm"
               icon={Trash2}
               onClick={() => setShowClearModal(true)}
+              disabled={actionInProgress}
               className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0"
             >
               Clear all
@@ -504,10 +532,7 @@ const Notifications = () => {
       <ConfirmModal
         isOpen={showClearModal}
         onClose={() => setShowClearModal(false)}
-        onConfirm={() => {
-          clearNotifications();
-          setShowClearModal(false);
-        }}
+        onConfirm={clearNotifications}
         title="Clear All Notifications"
         message="Are you sure you want to clear all notifications? This action cannot be undone."
         confirmText="Clear All"

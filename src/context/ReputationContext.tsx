@@ -102,6 +102,7 @@ interface ReputationContextType {
   createGoal: (metricType: string, targetValue: number, startDate: string, endDate: string) => Promise<void>;
   updateGoal: (id: number, data: Partial<Goal>) => Promise<void>;
   deleteGoal: (id: number) => Promise<void>;
+  toggleGoalStatus: (id: number) => Promise<void>;
   updateGoalProgress: (id: number) => Promise<void>;
 
   // Automation Functions
@@ -151,7 +152,7 @@ interface ReputationContextType {
   deleteTemplate: (id: number) => Promise<void>;
 
   // Legacy compatibility
-  addReviewResponse: (reviewId: number, responseText: string) => void;
+  addReviewResponse: (reviewId: number, responseText: string) => Promise<void>;
   settings: {
     autoReply: {
       enabled: boolean;
@@ -180,6 +181,9 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   const [analytics, setAnalytics] = useState<ReviewAnalytics | null>(null);
   const [trends, setTrends] = useState<TrendData | null>(null);
   const [pendingReviews, setPendingReviews] = useState<Review[]>([]);
+  const [allReviews, setAllReviews] = useState<Review[]>([]);
+  const [reviewsTotal, setReviewsTotal] = useState(0);
+  const [reviewsPage, setReviewsPage] = useState(1);
   const [templates, setTemplates] = useState<ResponseTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -258,6 +262,25 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
+  const loadReviews = useCallback(async () => {
+    try {
+      const params: any = {};
+      if (filters.source !== 'all') params.source = filters.source;
+      if (filters.sentimentRange !== 'all') params.sentiment = filters.sentimentRange;
+      if (filters.rating !== 'all') {
+        params.min_rating = parseFloat(filters.rating);
+        params.max_rating = parseFloat(filters.rating) + 0.9;
+      }
+      if (filters.keyword) params.keyword = filters.keyword;
+
+      const data = await reputationService.getReviews(params);
+      setAllReviews(data.reviews || []);
+      setReviewsTotal(data.total || 0);
+    } catch (err: any) {
+      console.error('Error fetching reviews:', err);
+    }
+  }, [filters]);
+
   const loadAlerts = useCallback(async (status?: string, type?: string) => {
     try {
       const data = await reputationService.getAlerts(status, type);
@@ -300,22 +323,35 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     try {
       const data = await reputationService.getAutomationConfig();
       setAutomationConfig(data);
-      // Sync with legacy settings
+      // Sync with legacy settings using DB templates
       if (data) {
+        const dbTemplates = await loadTemplates();
+        const templateMap: Record<string, string> = {};
+        if (dbTemplates && dbTemplates.length > 0) {
+          dbTemplates.forEach((t: any) => {
+            if (t.sentiment && t.content) {
+              templateMap[t.sentiment] = t.content;
+            }
+          });
+        }
         setSettings(prev => ({
           ...prev,
           autoReply: {
             enabled: data.global_enabled,
             delay: `${data.response_delay_hours}h`,
             language: 'en',
-            templates: data.templates
+            templates: {
+              positive: templateMap.positive || prev.autoReply.templates.positive,
+              neutral: templateMap.neutral || prev.autoReply.templates.neutral,
+              negative: templateMap.negative || prev.autoReply.templates.negative,
+            }
           }
         }));
       }
     } catch (err: any) {
       console.error('Error fetching automation config:', err);
     }
-  }, []);
+  }, [loadTemplates]);
 
   const loadPendingApprovals = useCallback(async () => {
     try {
@@ -353,6 +389,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
         refreshAnalytics(),
         refreshTrends(),
         loadPendingReviews(),
+        loadReviews(),
         loadAlerts(),
         loadCategories(),
         loadGoals(),
@@ -372,6 +409,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     refreshAnalytics,
     refreshTrends,
     loadPendingReviews,
+    loadReviews,
     loadAlerts,
     loadCategories,
     loadGoals,
@@ -386,6 +424,11 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     loadReputation();
   }, [loadReputation]);
+
+  // Reload reviews when filters change
+  useEffect(() => {
+    loadReviews();
+  }, [loadReviews]);
 
   // ========================
   // ALERTS
@@ -537,6 +580,16 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
       await loadGoals();
     } catch (err: any) {
       console.error('Error deleting goal:', err);
+      throw err;
+    }
+  }, [loadGoals]);
+
+  const toggleGoalStatus = useCallback(async (id: number) => {
+    try {
+      await reputationService.toggleGoalStatus(id);
+      await loadGoals();
+    } catch (err: any) {
+      console.error('Error toggling goal status:', err);
       throw err;
     }
   }, [loadGoals]);
@@ -719,9 +772,11 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   // ========================
 
   const reviews = useMemo(() => {
-    if (!dashboard?.recent_reviews) return [];
+    const sourceReviews = allReviews.length > 0 ? allReviews : (dashboard?.recent_reviews || []);
+    if (sourceReviews.length === 0) return [];
+
     // Transform reviews to match component expectations - all data from DB
-    return dashboard.recent_reviews.map(r => {
+    return sourceReviews.map(r => {
       // Backend returns sentiment as string: 'positive', 'neutral', 'negative'
       // Convert to numeric score for components that need it
       const sentimentScore = r.sentiment === 'positive' ? 85 :
@@ -741,10 +796,13 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
         // Backend uses has_response, components use responded
         responded: r.has_response || false,
         // Ensure rating is present
-        rating: r.rating || 0
+        rating: r.rating || 0,
+        // Response data
+        responseText: r.response_text || '',
+        responseDate: r.response_date || ''
       };
     });
-  }, [dashboard]);
+  }, [allReviews, dashboard]);
 
   const keywords = useMemo(() => {
     // If analytics has top_keywords, use them
@@ -964,7 +1022,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
 
   const affectDemandWeighting = useMemo(() => {
     const avgSentiment = dashboard?.metrics?.sentiment
-      ? (dashboard.metrics.sentiment.positive * 100) / (dashboard.metrics.sentiment.positive + dashboard.metrics.sentiment.neutral + dashboard.metrics.sentiment.negative || 1)
+      ? ((dashboard.metrics.sentiment.positive || 0) * 100) / ((dashboard.metrics.sentiment.positive || 0) + (dashboard.metrics.sentiment.neutral || 0) + (dashboard.metrics.sentiment.negative || 0) || 1)
       : 50;
 
     if (avgSentiment < 50) return { modifier: -0.1, reason: 'Low sentiment affecting demand' };
@@ -975,10 +1033,10 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   const affectRateRecommendations = useMemo(() => {
     const recommendations: Array<{ type: string; suggestion: string; reason: string; confidence: string }> = [];
 
-    if (!dashboard?.metrics || !trends) return recommendations;
+    if (!dashboard?.metrics?.sentiment || !trends) return recommendations;
 
-    const avgSentiment = (dashboard.metrics.sentiment.positive * 100) /
-      (dashboard.metrics.sentiment.positive + dashboard.metrics.sentiment.neutral + dashboard.metrics.sentiment.negative || 1);
+    const avgSentiment = ((dashboard.metrics.sentiment.positive || 0) * 100) /
+      ((dashboard.metrics.sentiment.positive || 0) + (dashboard.metrics.sentiment.neutral || 0) + (dashboard.metrics.sentiment.negative || 0) || 1);
     const trendChange = trends.sentiment_change || 0;
 
     if (avgSentiment < 50) {
@@ -1011,9 +1069,16 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   // LEGACY FUNCTIONS
   // ========================
 
-  const addReviewResponse = useCallback((reviewId: number, responseText: string) => {
-    setPendingReviews(prev => prev.filter(r => r.id !== reviewId));
-  }, []);
+  const addReviewResponse = useCallback(async (reviewId: number, responseText: string) => {
+    try {
+      await reputationService.respondToReview(reviewId, responseText);
+      setPendingReviews(prev => prev.filter(r => r.id !== reviewId));
+      await loadReviews();
+    } catch (err: any) {
+      console.error('Error responding to review:', err);
+      throw err;
+    }
+  }, [loadReviews]);
 
   const updateFilters = useCallback((newFilters: Partial<typeof filters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -1032,52 +1097,15 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     }
   }, [automationConfig, updateAutomationConfig]);
 
-  // Filtered reviews - filters data from DB
+  // Filtered reviews - server-side filtering handles source/rating/sentiment/keyword
+  // Client just sorts by date
   const filteredReviews = useMemo(() => {
-    // Normalize source names for filter matching
-    const normalizeSource = (source: string): string => {
-      const s = (source || '').toLowerCase();
-      if (s === 'booking_com' || s === 'booking') return 'booking.com';
-      return s;
-    };
-
-    return reviews.filter(review => {
-      // Source filter
-      if (filters.source !== 'all') {
-        const reviewSource = normalizeSource(review.source);
-        const filterSource = filters.source.toLowerCase();
-        if (reviewSource !== filterSource) return false;
-      }
-
-      // Rating filter
-      if (filters.rating !== 'all') {
-        const ratingNum = parseFloat(filters.rating);
-        const reviewRating = review.rating || 0;
-        if (reviewRating < ratingNum || reviewRating >= ratingNum + 1) return false;
-      }
-
-      // Sentiment filter - uses sentimentLabel from DB (string: 'positive'/'neutral'/'negative')
-      if (filters.sentimentRange !== 'all') {
-        const label = review.sentimentLabel;
-        if (filters.sentimentRange !== label) return false;
-      }
-
-      // Keyword search
-      if (filters.keyword) {
-        const searchTerm = filters.keyword.toLowerCase();
-        const inTitle = review.title?.toLowerCase().includes(searchTerm);
-        const inComment = review.review?.toLowerCase().includes(searchTerm);
-        const inGuest = review.guest?.toLowerCase().includes(searchTerm);
-        if (!inTitle && !inComment && !inGuest) return false;
-      }
-
-      return true;
-    }).sort((a, b) => {
+    return [...reviews].sort((a, b) => {
       const dateA = new Date(a.date || 0).getTime();
       const dateB = new Date(b.date || 0).getTime();
       return dateB - dateA;
     });
-  }, [reviews, filters]);
+  }, [reviews]);
 
   // Computed metrics
   const metrics = useMemo(() => {
@@ -1095,14 +1123,14 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     }
 
     const { sentiment, total_reviews, average_rating } = dashboard.metrics;
-    const total = sentiment.positive + sentiment.neutral + sentiment.negative || 1;
+    const total = (sentiment?.positive || 0) + (sentiment?.neutral || 0) + (sentiment?.negative || 0) || 1;
 
     return {
-      overallSentiment: Math.round((sentiment.positive * 100 + sentiment.neutral * 50) / total),
-      positivePercent: Math.round((sentiment.positive / total) * 100),
-      negativePercent: Math.round((sentiment.negative / total) * 100),
-      neutralPercent: Math.round((sentiment.neutral / total) * 100),
-      avgOTARating: average_rating.toFixed(1),
+      overallSentiment: Math.round(((sentiment?.positive || 0) * 100 + (sentiment?.neutral || 0) * 50) / total),
+      positivePercent: Math.round(((sentiment?.positive || 0) / total) * 100),
+      negativePercent: Math.round(((sentiment?.negative || 0) / total) * 100),
+      neutralPercent: Math.round(((sentiment?.neutral || 0) / total) * 100),
+      avgOTARating: (average_rating || 0).toFixed(1),
       newReviewsToday: reviews.filter(r => {
         const today = new Date().toISOString().split('T')[0];
         return r.created_at?.startsWith(today);
@@ -1171,6 +1199,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     createGoal,
     updateGoal,
     deleteGoal,
+    toggleGoalStatus,
     updateGoalProgress,
 
     // Automation Functions

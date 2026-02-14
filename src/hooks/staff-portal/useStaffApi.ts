@@ -27,6 +27,7 @@ function useApiData<T>(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetch = useCallback(async () => {
     try {
       setLoading(true);
@@ -65,7 +66,7 @@ export function useStaffTasks(staffId?: number | string, status?: string) {
   const id = staffId || user?.id;
 
   return useApiData<Task[]>(
-    () => staffService.getTasks(id as number, status),
+    () => id ? staffService.getTasks(id as number, status) : Promise.reject('No staff ID'),
     [id, status]
   );
 }
@@ -78,7 +79,7 @@ export function useStaffPerformance(
   const id = staffId || user?.id;
 
   return useApiData<PerformanceMetrics>(
-    () => staffService.getPerformance(id as number, period),
+    () => id ? staffService.getPerformance(id as number, period) : Promise.reject('No staff ID'),
     [id, period]
   );
 }
@@ -314,7 +315,21 @@ export function useHousekeepingActions() {
     }
   }, []);
 
-  return { updateRoomStatus, startTask, completeTask, loading, error };
+  const cancelTask = useCallback(async (taskId: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await housekeepingService.cancelTask(taskId);
+      return true;
+    } catch (err: any) {
+      setError(err.message);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { updateRoomStatus, startTask, completeTask, cancelTask, loading, error };
 }
 
 export function useMaintenanceActions() {

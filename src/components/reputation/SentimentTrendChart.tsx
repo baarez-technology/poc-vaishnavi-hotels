@@ -43,6 +43,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function SentimentTrendChart({ data }) {
   const chartData = useMemo(() => {
+    if (!data || data.length === 0) return [];
     return data.map((item) => ({
       ...item,
       date: new Date(item.date).toLocaleDateString('en-US', {
@@ -70,16 +71,22 @@ export default function SentimentTrendChart({ data }) {
   const latestData = useMemo(() => {
     if (!data || data.length === 0) return { positive: 0, negative: 0, neutral: 0 };
     const last = data[data.length - 1];
+    if (!last) return { positive: 0, negative: 0, neutral: 0 };
     // Convert raw counts to percentages if needed
-    const total = (last.positive || 0) + (last.neutral || 0) + (last.negative || 0);
+    const positive = last.positive || 0;
+    const neutral = last.neutral || 0;
+    const negative = last.negative || 0;
+    const total = positive + neutral + negative;
     if (total === 0) return { positive: 0, negative: 0, neutral: 0 };
-    // If values are already percentages (sum ~100), return as-is
-    if (total >= 90 && total <= 110) return last;
+    // If values are already percentages (sum ~100), return with guaranteed properties
+    if (total >= 90 && total <= 110) {
+      return { positive, neutral, negative };
+    }
     // Otherwise convert to percentages
     return {
-      positive: Math.round((last.positive || 0) / total * 100),
-      neutral: Math.round((last.neutral || 0) / total * 100),
-      negative: Math.round((last.negative || 0) / total * 100)
+      positive: Math.round(positive / total * 100),
+      neutral: Math.round(neutral / total * 100),
+      negative: Math.round(negative / total * 100)
     };
   }, [data]);
 

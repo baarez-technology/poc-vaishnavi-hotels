@@ -1,13 +1,12 @@
 import { Bell, Home, ChevronRight } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useUnreadNotificationCount } from '@/hooks/staff-portal/useStaffApi';
-import { useUI } from '@/hooks/staff-portal/useStaffPortal';
+import { useUI, useNotifications as usePortalNotifications } from '@/hooks/staff-portal/useStaffPortal';
 
 export default function StaffHeader() {
   const location = useLocation();
   const { user } = useAuth();
-  const { count: unreadCount } = useUnreadNotificationCount();
+  const { unreadCount } = usePortalNotifications();
   const { toggleNotificationDrawer } = useUI();
 
   // Get department from role or URL
@@ -56,7 +55,9 @@ export default function StaffHeader() {
     };
 
     // Skip 'staff' and department, start from the actual page
-    const startIndex = 2; // Skip 'staff' and 'housekeeping/maintenance/runner'
+    // For non-department pages like /staff/profile, startIndex is 1
+    const isDepartmentPage = ['housekeeping', 'maintenance', 'runner'].includes(segments[1]);
+    const startIndex = isDepartmentPage ? 2 : 1;
 
     for (let i = startIndex; i < segments.length; i++) {
       const segment = segments[i];

@@ -125,8 +125,8 @@ export default function TaskAcceptance() {
     try {
       // Fetch both housekeeping and maintenance pending tasks
       const [hkRes, mtRes] = await Promise.all([
-        api.get('/housekeeping/tasks/pending-acceptance').catch(() => ({ data: { tasks: [] } })),
-        api.get('/maintenance/work-orders/pending-acceptance').catch(() => ({ data: { work_orders: [] } }))
+        api.get('/api/v1/housekeeping/tasks/pending-acceptance').catch(() => ({ data: { tasks: [] } })),
+        api.get('/api/v1/maintenance/work-orders/pending-acceptance').catch(() => ({ data: { work_orders: [] } }))
       ]);
 
       setHousekeepingTasks(hkRes.data.tasks || []);
@@ -145,7 +145,7 @@ export default function TaskAcceptance() {
 
   const handleAcceptHK = async (taskId: number) => {
     try {
-      await api.post(`/housekeeping/tasks/${taskId}/accept`);
+      await api.post(`/api/v1/housekeeping/tasks/${taskId}/accept`);
       showToast('Task accepted! You can now start working.', 'success');
       setHousekeepingTasks(prev => prev.filter(t => t.id !== taskId));
     } catch (err) {
@@ -156,7 +156,7 @@ export default function TaskAcceptance() {
 
   const handleDeclineHK = async (taskId: number, reason: string) => {
     try {
-      await api.post(`/housekeeping/tasks/${taskId}/decline`, { reason });
+      await api.post(`/api/v1/housekeeping/tasks/${taskId}/decline`, { reason });
       showToast('Task declined. Manager has been notified.', 'info');
       setHousekeepingTasks(prev => prev.filter(t => t.id !== taskId));
       setDeclineModal({ isOpen: false, task: null, type: 'housekeeping' });
@@ -168,7 +168,7 @@ export default function TaskAcceptance() {
 
   const handleAcceptMT = async (taskId: number) => {
     try {
-      await api.post(`/maintenance/work-orders/${taskId}/accept-assignment`);
+      await api.post(`/api/v1/maintenance/work-orders/${taskId}/accept-assignment`);
       showToast('Work order accepted! You can now start working.', 'success');
       setMaintenanceTasks(prev => prev.filter(t => t.id !== taskId));
     } catch (err) {
@@ -179,7 +179,7 @@ export default function TaskAcceptance() {
 
   const handleDeclineMT = async (taskId: number, reason: string) => {
     try {
-      await api.post(`/maintenance/work-orders/${taskId}/decline-assignment`, { reason });
+      await api.post(`/api/v1/maintenance/work-orders/${taskId}/decline-assignment`, { reason });
       showToast('Work order declined. Manager has been notified.', 'info');
       setMaintenanceTasks(prev => prev.filter(t => t.id !== taskId));
       setDeclineModal({ isOpen: false, task: null, type: 'maintenance' });

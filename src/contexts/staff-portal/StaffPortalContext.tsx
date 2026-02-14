@@ -2,9 +2,10 @@ import { createContext, useContext, useReducer, useEffect, useCallback, ReactNod
 import { seedDemoData, generateId } from '../../data/staff-portal/seedDemo';
 import { useAuth } from '../../hooks/useAuth';
 import { notificationsService, StaffNotification as APINotification } from '../../api/services/notifications.service';
-import { staffService } from '../../api/services/staff.service';
 
 const STORAGE_KEY = 'glimmora_staff_portal';
+
+export const StaffPortalContext = createContext<any>(null);
 
 interface StaffPortalState {
   profile: any;
@@ -48,7 +49,7 @@ const initialState: StaffPortalState = {
     deliveries: []
   },
   ui: {
-    sidebarOpen: true,
+    sidebarOpen: false,
     notificationDrawerOpen: false,
     activeModal: null,
     modalData: null,
@@ -1048,12 +1049,12 @@ export function StaffPortalProvider({ children }: StaffPortalProviderProps) {
       if (staffId) {
         await staffService.clockInOut(staffId, { action: 'clock_in' });
       }
+      dispatch({ type: actionTypes.CLOCK_IN });
+      // Refresh profile from backend to sync state
+      fetchStaffProfile();
     } catch (err) {
       console.error('Clock in API call failed:', err);
     }
-    dispatch({ type: actionTypes.CLOCK_IN });
-    // Refresh profile from backend to sync state
-    fetchStaffProfile();
   }, [state.profile?.id, user?.id, fetchStaffProfile]);
 
   const clockOut = useCallback(async () => {
@@ -1064,12 +1065,12 @@ export function StaffPortalProvider({ children }: StaffPortalProviderProps) {
       if (staffId) {
         await staffService.clockInOut(staffId, { action: 'clock_out' });
       }
+      dispatch({ type: actionTypes.CLOCK_OUT, payload: { clockOutTime } });
+      // Refresh profile from backend to sync state
+      fetchStaffProfile();
     } catch (err) {
       console.error('Clock out API call failed:', err);
     }
-    dispatch({ type: actionTypes.CLOCK_OUT, payload: { clockOutTime } });
-    // Refresh profile from backend to sync state
-    fetchStaffProfile();
   }, [state.profile?.id, user?.id, fetchStaffProfile]);
 
   const updateProfile = useCallback((updates: any) => {
@@ -1450,7 +1451,6 @@ export function useStaffPortalContext() {
   return context;
 }
 
-export const StaffPortalContext = createContext<any>(null);
 export default StaffPortalProvider;
 
 

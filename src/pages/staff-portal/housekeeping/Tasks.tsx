@@ -18,6 +18,7 @@ import Button from '../../../components/staff-portal/ui/Button';
 import { Drawer, ConfirmModal } from '../../../components/staff-portal/ui/Modal';
 import { SearchInput } from '../../../components/staff-portal/ui/Input';
 import { useMyHousekeepingTasks, useHousekeepingRooms, useHousekeepingActions } from '@/hooks/staff-portal/useStaffApi';
+import { housekeepingService } from '@/api/services/housekeeping.service';
 
 // Custom Select Dropdown Component - matching admin PromotionDrawer
 function SelectDropdown({
@@ -212,7 +213,7 @@ const HousekeepingTasks = () => {
   const { data: inProgressTasks, loading: inProgressLoading, refetch: refetchInProgress } = useMyHousekeepingTasks('in_progress');
   const { data: completedTasks, loading: completedLoading, refetch: refetchCompleted } = useMyHousekeepingTasks('completed');
   const { data: rooms } = useHousekeepingRooms();
-  const { startTask, completeTask } = useHousekeepingActions();
+  const { startTask, completeTask, cancelTask } = useHousekeepingActions();
 
   // Combine all tasks
   const tasks = useMemo(() => {
@@ -276,17 +277,35 @@ const HousekeepingTasks = () => {
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
-  const handleAddTask = () => {
-    // Note: Create task API not implemented yet, just close modal
-    setNewTask({
-      title: '',
-      description: '',
-      room: '',
-      priority: 'normal',
-      category: 'cleaning',
-      estimatedMinutes: 30
-    });
-    setShowAddModal(false);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const handleAddTask = async () => {
+    if (!newTask.title.trim() || !newTask.room) return;
+    setIsCreating(true);
+    try {
+      const room = roomsList.find((r: any) => (r.room_number || r.number) === newTask.room);
+      await housekeepingService.createTask({
+        room_id: room?.id,
+        task_type: newTask.category,
+        priority: newTask.priority,
+        notes: newTask.description || undefined,
+        estimated_duration: newTask.estimatedMinutes,
+      });
+      setNewTask({
+        title: '',
+        description: '',
+        room: '',
+        priority: 'normal',
+        category: 'cleaning',
+        estimatedMinutes: 30
+      });
+      setShowAddModal(false);
+      refetchAll();
+    } catch (err) {
+      console.error('Failed to create task:', err);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleStartTask = async (task: any) => {
@@ -299,8 +318,12 @@ const HousekeepingTasks = () => {
     if (success) refetchAll();
   };
 
-  const handleDeleteConfirm = () => {
-    // Note: Delete task API not implemented yet
+  const handleDeleteConfirm = async () => {
+    if (!selectedTask) return;
+    const success = await cancelTask(selectedTask.id);
+    if (success) {
+      refetchAll();
+    }
     setSelectedTask(null);
     setShowDeleteModal(false);
   };
@@ -585,6 +608,8 @@ const HousekeepingTasks = () => {
               form="task-form"
               variant="primary"
               className="w-full sm:w-auto"
+              isLoading={isCreating}
+              disabled={isCreating}
             >
               Create Task
             </Button>

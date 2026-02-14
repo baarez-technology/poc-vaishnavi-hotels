@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import {
   Download,
   RefreshCw,
@@ -60,7 +61,6 @@ function ReputationAIContent() {
     updateFilters,
     updateSettings,
     addReviewResponse,
-    generateAutoReply,
     influenceChurnProbability,
     influenceLTVCurve,
     affectRateRecommendations,
@@ -111,9 +111,15 @@ function ReputationAIContent() {
     setSelectedReview(null);
   }, []);
 
-  const handleRespondToReview = useCallback((reviewId: number, responseText: string) => {
-    addReviewResponse(reviewId, responseText);
-    setSelectedReview(null);
+  const handleRespondToReview = useCallback(async (reviewId: number, responseText: string) => {
+    try {
+      await addReviewResponse(reviewId, responseText);
+      setSelectedReview(null);
+      toast.success('Response published successfully');
+    } catch (err) {
+      console.error('Failed to respond to review:', err);
+      toast.error('Failed to publish response');
+    }
   }, [addReviewResponse]);
 
   const handleRefresh = useCallback(async () => {
@@ -366,7 +372,6 @@ function ReputationAIContent() {
           review={selectedReview}
           onClose={handleCloseDrawer}
           onRespond={handleRespondToReview}
-          generateAutoReply={generateAutoReply}
           guestCRMData={{
             totalStays: selectedReview.guest_stays || 1,
             ltv: selectedReview.guest_ltv || 50000,

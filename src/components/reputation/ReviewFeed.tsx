@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { MessageSquare, Star, Calendar, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react';
 import { Button } from '../ui2/Button';
 
@@ -52,6 +52,8 @@ const StarRating = ({ rating }) => {
 };
 
 export default function ReviewFeed({ reviews, onReviewClick }) {
+  const [showAll, setShowAll] = useState(false);
+
   const stats = useMemo(() => {
     const responded = reviews.filter(r => r.responded).length;
     const pending = reviews.length - responded;
@@ -81,7 +83,7 @@ export default function ReviewFeed({ reviews, onReviewClick }) {
       </div>
 
       {/* Reviews List */}
-      <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+      <div className={`space-y-4 pr-2 ${showAll ? '' : 'max-h-[500px] overflow-y-auto'}`}>
         {reviews.map((review) => {
           const sentimentStyle = getSentimentBadge(
             review.sentiment ?? review.sentiment_score,
@@ -187,8 +189,8 @@ export default function ReviewFeed({ reviews, onReviewClick }) {
       {/* Load More */}
       {reviews.length > 5 && (
         <div className="mt-5 pt-4 border-t border-neutral-100 text-center">
-          <Button variant="ghost" size="sm">
-            View All Reviews
+          <Button variant="ghost" size="sm" onClick={() => setShowAll(!showAll)}>
+            {showAll ? 'Show Less' : 'View All Reviews'}
           </Button>
         </div>
       )}

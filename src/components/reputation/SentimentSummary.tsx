@@ -17,9 +17,10 @@ interface SentimentSummaryProps {
     positivePercent: number;
     negativePercent: number;
     neutralPercent: number;
-    avgOTARating: number;
+    avgOTARating: string | number;
     newReviewsToday: number;
     reviewVolumeTrend: number;
+    totalReviews?: number;
   };
 }
 

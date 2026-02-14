@@ -97,9 +97,9 @@ const MaintenanceDashboard = () => {
     inProgressWorkOrders: inProgressWorkOrders?.length || 0,
     completedWorkOrders: completedWorkOrders?.length || 0,
     criticalWorkOrders: workOrders.filter(wo => wo.priority === 'critical' && wo.status !== 'completed').length,
-    pendingTasks: 0,
-    inProgressTasks: 0,
-    completedTasks: 0,
+    pendingTasks: workOrders.filter(wo => wo.status === 'pending').length,
+    inProgressTasks: workOrders.filter(wo => wo.status === 'in_progress').length,
+    completedTasks: completedWorkOrders?.length || 0,
     pendingIssues: equipmentIssues?.filter(i => i.status === 'pending').length || 0
   }), [pendingWorkOrders, inProgressWorkOrders, completedWorkOrders, workOrders, equipmentIssues]);
 
@@ -235,12 +235,14 @@ const MaintenanceDashboard = () => {
   const urgentNotifications = useMemo(() => {
     const notificationsList = notifications || [];
     return notificationsList
-      .filter((n: any) => !n.is_read && (n.task?.priority === 'urgent' || n.task?.priority === 'high'))
+      .filter((n: any) => !n.is_read && (n.priority === 'urgent' || n.priority === 'high' || n.task?.priority === 'urgent' || n.task?.priority === 'high'))
       .slice(0, 3);
   }, [notifications]);
 
   const formatTimestamp = (timestamp: string) => {
+    if (!timestamp) return 'N/A';
     const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return 'N/A';
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffHours = Math.floor(diffMs / 3600000);
@@ -251,8 +253,12 @@ const MaintenanceDashboard = () => {
   };
 
   const handleStartWorkOrder = async (workOrder: any) => {
-    const success = await acceptWorkOrder(workOrder.id);
-    if (success) refetchAll();
+    try {
+      const success = await acceptWorkOrder(workOrder.id);
+      if (success) refetchAll();
+    } catch (err) {
+      console.error('Failed to start work order:', err);
+    }
   };
 
   if (isLoading) {
@@ -394,7 +400,11 @@ const MaintenanceDashboard = () => {
               <button
                 onClick={() => {
                   const nextOrder = workOrders.find((wo: any) => wo.status === 'pending');
-                  if (nextOrder) handleStartWorkOrder(nextOrder);
+                  if (nextOrder) {
+                    handleStartWorkOrder(nextOrder);
+                  } else {
+                    navigate('/staff/maintenance/work-orders');
+                  }
                 }}
                 className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-terra-50 text-left hover:bg-terra-100 transition-all group"
               >

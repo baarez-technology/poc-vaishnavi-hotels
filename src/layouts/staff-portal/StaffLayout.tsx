@@ -2,8 +2,9 @@ import { useState, ReactNode } from 'react';
 import Sidebar from '../../components/staff-portal/nav/Sidebar';
 import StaffHeader from '../../components/staff-portal/nav/StaffHeader';
 import NotificationDrawer from '../../components/staff-portal/notifications/NotificationDrawer';
-import { Menu } from 'lucide-react';
+import { Menu, Bell } from 'lucide-react';
 import { useUI } from '../../hooks/staff-portal/useStaffPortal';
+import { useUnreadNotificationCount } from '../../hooks/staff-portal/useStaffApi';
 
 interface StaffLayoutProps {
   children: ReactNode;
@@ -12,7 +13,8 @@ interface StaffLayoutProps {
 export default function StaffLayout({ children }: StaffLayoutProps) {
   // Sidebar collapse state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const { sidebarOpen, toggleSidebar } = useUI();
+  const { sidebarOpen, toggleSidebar, toggleNotificationDrawer } = useUI();
+  const { count: unreadCount } = useUnreadNotificationCount();
 
   // Handle sidebar toggle
   const handleSidebarToggle = () => {
@@ -73,17 +75,30 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
       {/* Mobile Layout */}
       <div className="lg:hidden w-screen h-screen bg-gradient-to-br from-terra-50 via-terra-50/80 to-terra-100 overflow-hidden flex flex-col">
         {/* Mobile Header */}
-        <div className="h-14 bg-white border-b border-neutral-100 flex items-center px-4 flex-shrink-0">
-          <button
-            onClick={toggleSidebar}
-            className="p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 transition-colors"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          <div className="ml-3">
-            <h1 className="text-sm font-semibold text-neutral-800">Glimmora</h1>
-            <p className="text-[10px] text-neutral-400">Staff Portal</p>
+        <div className="h-14 bg-white border-b border-neutral-100 flex items-center justify-between px-4 flex-shrink-0">
+          <div className="flex items-center">
+            <button
+              onClick={toggleSidebar}
+              className="p-2 rounded-lg text-neutral-600 hover:bg-neutral-100 transition-colors"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="ml-3">
+              <h1 className="text-sm font-semibold text-neutral-800">Glimmora</h1>
+              <p className="text-[10px] text-neutral-400">Staff Portal</p>
+            </div>
           </div>
+          <button
+            onClick={toggleNotificationDrawer}
+            className="relative p-2 rounded-lg text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
+          >
+            <Bell className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 flex items-center justify-center text-[10px] font-bold rounded-full bg-terra-500 text-white">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Mobile Content */}

@@ -214,6 +214,15 @@ export const housekeepingService = {
     return response.data.data || response.data;
   },
 
+  // Cancel (soft-delete) a task by setting status to cancelled
+  cancelTask: async (taskId: number) => {
+    const response = await apiClient.patch(
+      `/api/v1/housekeeping/tasks/${taskId}`,
+      { status: 'cancelled' }
+    );
+    return response.data.data || response.data;
+  },
+
   // Task assignment operations
   assignTask: async (taskId: number, data: TaskAssignData) => {
     const response = await apiClient.post(

@@ -1073,7 +1073,7 @@ export const revenueIntelligenceService = {
    * Dismiss a pricing recommendation
    */
   async dismissRecommendation(id: string): Promise<void> {
-    await apiClient.post(`${BASE_URL}/pricing/recommendations/${id}/dismiss`);
+    await apiClient.post(`${BASE_URL}/pricing/recommendations/${id}/dismiss`, {});
     requestCache.invalidate('pricing-recommendations');
   },
 

@@ -10,6 +10,14 @@ import { Button } from '../../../components/ui2/Button';
 import { DropdownMenu, DropdownMenuItem } from '../../../components/ui2/DropdownMenu';
 import { useChannelManagerSSEEvents } from '../../../hooks/useChannelManagerSSEEvents';
 
+// Local date to YYYY-MM-DD without UTC conversion
+function toDateStr(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 // KPI Card Component - Consistent with Design System
 function KPICard({ title, value, trendValue, icon: Icon, accentColor = 'terra', subtitle, children }) {
   const isPositive = trendValue >= 0;
@@ -208,7 +216,7 @@ const RateCalendar = () => {
         yPos += 5;
 
         doc.setFont('helvetica', 'normal');
-        const today = new Date().toISOString().split('T')[0];
+        const today = toDateStr(new Date());
         const firstRoomTypeId = roomTypes.length > 0 ? roomTypes[0].id : 'STD';
 
         calendarEntries
@@ -232,7 +240,7 @@ const RateCalendar = () => {
           });
 
         // Save PDF
-        doc.save(`rate-calendar-${new Date().toISOString().split('T')[0]}.pdf`);
+        doc.save(`rate-calendar-${toDateStr(new Date())}.pdf`);
         toast.success('Rate calendar exported as PDF');
       } else {
         // CSV Export
@@ -253,7 +261,7 @@ const RateCalendar = () => {
         csvData.push(['DAILY RATES & OCCUPANCY']);
         csvData.push(['Date', 'Occupancy %', 'Rate', 'Available', 'Sold']);
 
-        const today = new Date().toISOString().split('T')[0];
+        const today = toDateStr(new Date());
         const firstRoomTypeId = roomTypes.length > 0 ? roomTypes[0].id : 'STD';
 
         calendarEntries
@@ -278,7 +286,7 @@ const RateCalendar = () => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `rate-calendar-${new Date().toISOString().split('T')[0]}.csv`;
+        a.download = `rate-calendar-${toDateStr(new Date())}.csv`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -349,7 +357,7 @@ const RateCalendar = () => {
   };
 
   // Calculate summary stats - handle empty data gracefully
-  const today = new Date().toISOString().split('T')[0];
+  const today = toDateStr(new Date());
   const calendarEntries = Object.entries(rateCalendar || {});
   const hasCalendarData = calendarEntries.length > 0;
 

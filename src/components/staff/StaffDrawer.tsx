@@ -4,15 +4,89 @@
  * Side drawer pattern matching Channel Manager
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Phone, Mail, Calendar, TrendingUp, Star, Sparkles, Clock,
   MessageSquare, Edit2, Save, Coffee, Briefcase, CheckCircle,
-  User, UserX
+  User, UserX, ChevronDown
 } from 'lucide-react';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
+
+// Status options for the custom dropdown
+const STATUS_OPTIONS = [
+  { value: 'active', label: 'Active' },
+  { value: 'off-duty', label: 'Off Duty' },
+  { value: 'sick', label: 'Sick' },
+  { value: 'leave', label: 'On Leave' },
+];
+
+function StatusSelect({ value, onChange, getStatusConfig }: {
+  value: string;
+  onChange: (val: string) => void;
+  getStatusConfig: (status: string) => { dot: string; badge: string; label: string };
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!isOpen) return;
+    const handle = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [isOpen]);
+
+  const selected = STATUS_OPTIONS.find(o => o.value === value);
+  const config = getStatusConfig(value);
+
+  return (
+    <div className="relative flex-1" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border transition-all duration-150 text-left flex items-center justify-between focus:outline-none ${
+          isOpen
+            ? 'border-terra-400 ring-2 ring-terra-500/10'
+            : 'border-neutral-200 hover:border-neutral-300'
+        }`}
+      >
+        <span className="flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-full ${config.dot}`} />
+          <span className="text-neutral-900">{selected?.label || 'Select status'}</span>
+        </span>
+        <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-[90] w-full mt-1 bg-white rounded-lg border border-neutral-200 shadow-lg overflow-hidden">
+          {STATUS_OPTIONS.map((option) => {
+            const optConfig = getStatusConfig(option.value);
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                className={`w-full px-3.5 py-2.5 text-[13px] text-left hover:bg-neutral-50 transition-colors flex items-center gap-2 ${
+                  value === option.value ? 'bg-terra-50 text-terra-700' : 'text-neutral-700'
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${optConfig.dot}`} />
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function StaffDrawer({
   staff,
@@ -307,19 +381,14 @@ export default function StaffDrawer({
           </h4>
           <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100">
             <div className="flex items-center gap-2">
-              <select
+              <StatusSelect
                 value={selectedStatus}
-                onChange={(e) => {
-                  setSelectedStatus(e.target.value);
+                onChange={(val) => {
+                  setSelectedStatus(val);
                   setIsStatusEditing(true);
                 }}
-                className="flex-1 h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 text-neutral-900 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all cursor-pointer"
-              >
-                <option value="active">Active</option>
-                <option value="off-duty">Off Duty</option>
-                <option value="sick">Sick</option>
-                <option value="leave">On Leave</option>
-              </select>
+                getStatusConfig={getStatusConfig}
+              />
               <Button
                 variant={isStatusEditing && selectedStatus !== staff.status ? 'primary' : 'outline'}
                 size="sm"

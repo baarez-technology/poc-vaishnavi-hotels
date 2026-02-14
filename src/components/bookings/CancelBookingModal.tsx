@@ -150,7 +150,7 @@ export default function CancelBookingModal({
       showClose={true}
     >
       {/* Header */}
-      <div className="bg-rose-50 border-b border-rose-100 px-6 py-5">
+      <div className="bg-rose-50 border-b border-rose-100 px-6 py-5 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-rose-100 rounded-lg flex items-center justify-center">
             <AlertTriangle className="w-5 h-5 text-rose-600" />
@@ -167,7 +167,7 @@ export default function CancelBookingModal({
       </div>
 
       {/* Content */}
-      <form onSubmit={handleSubmit} className="p-6 space-y-5">
+      <form onSubmit={handleSubmit} className="p-6 space-y-5 flex-1 overflow-y-auto min-h-0">
         {/* Booking Summary */}
         <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-200">
           <div className="flex items-center justify-between mb-2">
@@ -209,16 +209,19 @@ export default function CancelBookingModal({
               className="w-full px-3.5 py-2.5 bg-white border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/10 focus:border-rose-400 text-[13px] resize-none"
             />
             <div className="flex items-center gap-3">
-              <select
-                value={aiTone}
-                onChange={(e) => setAiTone(e.target.value as typeof aiTone)}
-                className="h-9 px-3.5 bg-white border border-neutral-200 rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-rose-500/10 focus:border-rose-400"
-              >
-                <option value="professional">Professional</option>
-                <option value="friendly">Friendly</option>
-                <option value="formal">Formal</option>
-                <option value="casual">Casual</option>
-              </select>
+              <div className="w-[150px] flex-shrink-0">
+                <CustomSelect
+                  value={aiTone}
+                  onChange={(val) => setAiTone(val as typeof aiTone)}
+                  options={[
+                    { value: 'professional', label: 'Professional' },
+                    { value: 'friendly', label: 'Friendly' },
+                    { value: 'formal', label: 'Formal' },
+                    { value: 'casual', label: 'Casual' },
+                  ]}
+                  placeholder="Tone"
+                />
+              </div>
               <button
                 type="button"
                 onClick={handleAIDraft}
@@ -265,7 +268,7 @@ export default function CancelBookingModal({
       </form>
 
       {/* Footer */}
-      <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-100 bg-neutral-50/50">
+      <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-100 bg-neutral-50/50 flex-shrink-0">
         <Button variant="outline" onClick={onClose}>
           Keep Booking
         </Button>

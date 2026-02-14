@@ -7,9 +7,11 @@ import { Button } from '../../../components/ui2/Button';
 import { StatusBadge } from '../../../components/ui2/Badge';
 import { TableSearchBar } from '../../../components/ui2/DataTableView';
 import { revenueIntelligenceService, PickupAIInsight } from '../../../api/services/revenue-intelligence.service';
+import { useToast } from '../../../contexts/ToastContext';
 
 const PickupAnalysis = () => {
   const { pickup, pickupMetrics, refreshPickup, compareToHistorical, predictPickup, isLoading } = useRMS();
+  const toast = useToast() as any;
 
   const [dateRange, setDateRange] = useState(14);
   const [chartType, setChartType] = useState('area');
@@ -17,6 +19,8 @@ const PickupAnalysis = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [aiInsights, setAiInsights] = useState<PickupAIInsight[]>([]);
   const [insightsLoading, setInsightsLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [showAlertDetails, setShowAlertDetails] = useState(false);
 
   // Fetch AI insights from API
   useEffect(() => {
@@ -42,8 +46,12 @@ const PickupAnalysis = () => {
       // Re-fetch AI insights after refresh
       const response = await revenueIntelligenceService.getPickupMetrics(dateRange);
       setAiInsights(response.ai_insights || []);
+      // Bump key so child components (summary cards, chart) re-fetch
+      setRefreshKey(prev => prev + 1);
+      toast.success('Pickup data refreshed successfully');
     } catch (err) {
       console.error('Failed to refresh pickup data:', err);
+      toast.error('Failed to refresh pickup data');
     } finally {
       setIsRefreshing(false);
     }
@@ -169,9 +177,9 @@ const PickupAnalysis = () => {
 
       {/* Summary Cards */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        <PickupSummaryCard period="next7Days" />
-        <PickupSummaryCard period="next14Days" />
-        <PickupSummaryCard period="next30Days" />
+        <PickupSummaryCard period="next7Days" refreshKey={refreshKey} />
+        <PickupSummaryCard period="next14Days" refreshKey={refreshKey} />
+        <PickupSummaryCard period="next30Days" refreshKey={refreshKey} />
       </section>
 
       {/* AI Insights Section */}
@@ -241,6 +249,7 @@ const PickupAnalysis = () => {
 
       {/* Alerts Banner */}
       {allAlerts.length > 0 && (
+        <>
         <div className="rounded-[10px] p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gold-50">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center bg-gold-100 flex-shrink-0">
@@ -260,10 +269,51 @@ const PickupAnalysis = () => {
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm" className="w-full sm:w-auto">
-            View Details
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full sm:w-auto"
+            onClick={() => setShowAlertDetails(prev => !prev)}
+          >
+            {showAlertDetails ? 'Hide Details' : 'View Details'}
           </Button>
         </div>
+
+        {/* Expanded Alert Details */}
+        {showAlertDetails && (
+          <div className="mt-3 space-y-2">
+            {allAlerts.map((alert, idx) => (
+              <div
+                key={idx}
+                className={`flex items-start gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border ${
+                  alert.severity === 'critical'
+                    ? 'bg-rose-50 border-rose-200'
+                    : 'bg-gold-50 border-gold-200'
+                }`}
+              >
+                <AlertCircle className={`w-4 h-4 flex-shrink-0 mt-0.5 ${
+                  alert.severity === 'critical' ? 'text-rose-600' : 'text-gold-600'
+                }`} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-0.5">
+                    <span className={`text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                      alert.severity === 'critical'
+                        ? 'bg-rose-100 text-rose-700'
+                        : 'bg-gold-100 text-gold-700'
+                    }`}>
+                      {alert.severity}
+                    </span>
+                    <span className="text-[10px] sm:text-[11px] font-medium text-neutral-500 capitalize">
+                      {alert.type}
+                    </span>
+                  </div>
+                  <p className="text-[12px] sm:text-[13px] text-neutral-800 font-medium">{alert.message}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        </>
       )}
 
       {/* Chart Section */}
@@ -299,7 +349,7 @@ const PickupAnalysis = () => {
           </div>
         </div>
         <div className="px-2 sm:px-6 pb-4 sm:pb-6">
-          <PickupChart dateRange={dateRange} chartType={chartType} />
+          <PickupChart dateRange={dateRange} chartType={chartType} refreshKey={refreshKey} />
         </div>
       </section>
 

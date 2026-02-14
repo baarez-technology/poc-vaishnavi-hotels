@@ -11,6 +11,14 @@ import revenueIntelligenceService, {
 import { useChannelManagerSSEEvents } from '../../hooks/useChannelManagerSSEEvents';
 import { Modal } from '../ui2/Modal';
 
+// Local date to YYYY-MM-DD without UTC conversion
+function toDateStr(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 interface RateCalendarViewProps {
   onDateSelect?: (date: string) => void;
   onOpenDrawer?: () => void;
@@ -52,18 +60,18 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
   const [apiCalendarData, setApiCalendarData] = useState<RateCalendarData | null>(null);
   const [updatingRates, setUpdatingRates] = useState<Set<string>>(new Set());
   const [suggestionPopupDate, setSuggestionPopupDate] = useState<string | null>(null);
+  const [pendingScrollToToday, setPendingScrollToToday] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const dropdownPortalRef = useRef<HTMLDivElement>(null);
   const [dropdownBounds, setDropdownBounds] = useState<{ top: number; left: number; width: number } | null>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
-  const scrollToTodayRequestedRef = useRef(false);
 
   // Fetch rate calendar data from API
   const fetchCalendarData = useCallback(async () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    const startDate = new Date(year, month, 1).toISOString().split('T')[0];
-    const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
+    const startDate = toDateStr(new Date(year, month, 1));
+    const endDate = toDateStr(new Date(year, month + 1, 0));
 
     setIsLoading(true);
     try {
@@ -81,6 +89,19 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
   useEffect(() => {
     fetchCalendarData();
   }, [fetchCalendarData]);
+
+  // Scroll to today's cell after month change + loading finishes
+  useEffect(() => {
+    if (!pendingScrollToToday || isLoading) return;
+    const todayStr = toDateStr(new Date());
+    requestAnimationFrame(() => {
+      const cell = calendarRef.current?.querySelector(`[data-date="${todayStr}"]`);
+      if (cell) {
+        (cell as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+    setPendingScrollToToday(false);
+  }, [pendingScrollToToday, isLoading]);
 
   // SSE Integration for real-time rates updates
   useChannelManagerSSEEvents({
@@ -175,7 +196,7 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
     return days;
   }, [currentMonth]);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = toDateStr(new Date());
 
   // Helper function for toast notifications
   const showToastSuccess = (message: string) => {
@@ -192,28 +213,32 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
 
   const handleGoToToday = useCallback(() => {
     const now = new Date();
-    setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
-    scrollToTodayRequestedRef.current = true;
-  }, []);
+    const todayStr = toDateStr(now);
+    const year = now.getFullYear();
+    const month = now.getMonth();
 
-  // After month changes to current month, scroll to today's cell (runs once DOM has updated)
-  useEffect(() => {
-    if (!scrollToTodayRequestedRef.current || !calendarRef.current) return;
-    const todayIndex = calendarDays.findIndex(({ date }) => date.toISOString().split('T')[0] === today);
-    if (todayIndex === -1) {
-      scrollToTodayRequestedRef.current = false;
-      return;
-    }
+    // Set focused index for today
+    const firstDay = new Date(year, month, 1);
+    const startPadding = firstDay.getDay();
+    const todayIndex = startPadding + now.getDate() - 1;
     setFocusedDateIndex(todayIndex);
-    scrollToTodayRequestedRef.current = false;
-    const cells = calendarRef.current.querySelectorAll('[data-calendar-cell]');
-    const cell = cells[todayIndex] as HTMLElement | undefined;
-    if (cell) {
-      requestAnimationFrame(() => {
-        cell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-      });
+
+    // Check if already viewing the current month
+    const alreadyOnMonth =
+      currentMonth.getFullYear() === year && currentMonth.getMonth() === month;
+
+    if (alreadyOnMonth) {
+      // Already on correct month — scroll immediately
+      const cell = calendarRef.current?.querySelector(`[data-date="${todayStr}"]`);
+      if (cell) {
+        (cell as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    } else {
+      // Switch month, then scroll after loading finishes
+      setCurrentMonth(new Date(year, month, 1));
+      setPendingScrollToToday(true);
     }
-  }, [currentMonth, calendarDays, today]);
+  }, [currentMonth]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -237,7 +262,7 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
         if (focusedDateIndex === null) {
           // Start from today if available, otherwise first current month date
           const todayIndex = calendarDays.findIndex(({ date }) => {
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = toDateStr(date);
             return dateStr === today;
           });
 
@@ -278,7 +303,7 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
       if (e.key === 'Enter' && focusedDateIndex !== null) {
         e.preventDefault();
         const { date, isCurrentMonth } = calendarDays[focusedDateIndex];
-        const dateStr = date.toISOString().split('T')[0];
+        const dateStr = toDateStr(date);
         const isPast = dateStr < today;
 
         if (isCurrentMonth && !isPast) {
@@ -386,7 +411,7 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
   };
 
   const handleDateSelect = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = toDateStr(date);
     setSelectedDate(dateStr);
     if (onDateSelect) onDateSelect(dateStr);
   };
@@ -668,7 +693,7 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
           {/* Calendar Days */}
           <div ref={calendarRef} className="grid grid-cols-7 gap-1 sm:gap-2 min-w-[500px] sm:min-w-0">
             {calendarDays.map(({ date, isCurrentMonth }, index) => {
-              const dateStr = date.toISOString().split('T')[0];
+              const dateStr = toDateStr(date);
               const calendarData = rateCalendar[dateStr];
               const roomData = calendarData?.rooms?.[selectedRoomType];
               const isToday = dateStr === today;
@@ -686,7 +711,7 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
                   data-date={dateStr}
                   className={`min-h-[80px] sm:min-h-[130px] rounded-lg border border-neutral-100 bg-neutral-50/50 transition-all ${!isCurrentMonth ? 'opacity-30' : ''} ${isPast ? 'opacity-50 bg-neutral-100' : ''} ${
                     bulkEditMode && isSelected ? 'ring-2 ring-terra-500 bg-terra-50/30' : ''
-                  } ${isFocused ? 'ring-2 ring-ocean-500 shadow-md scale-[1.02]' : ''}`}
+                  } ${isFocused ? 'ring-2 ring-terra-300 shadow-md scale-[1.02]' : ''}`}
                   onClick={bulkEditMode && !isPast ? () => onDateSelect?.(dateStr) : undefined}
                   style={{ cursor: bulkEditMode && !isPast ? 'pointer' : 'default' }}
                 >

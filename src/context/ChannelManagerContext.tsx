@@ -345,11 +345,13 @@ export function ChannelManagerProvider({ children }) {
 
   const disconnectOTA = useCallback(async (otaId: string) => {
     try {
-      await channelManagerService.deleteOTA(otaId);
+      // Use updateOTA to set status instead of deleteOTA which removes the record.
+      // Preserving the record lets reconnect and subsequent syncs work correctly.
+      await channelManagerService.updateOTA(otaId, { status: 'disconnected' });
       const ota = otas.find(o => o.id === otaId);
       if (ota) {
         addSyncLog(ota.code, ota.name, 'connection', 'success', `Disconnected from ${ota.name}`);
-        setOTAs(prev => prev.filter(o => o.id !== otaId));
+        setOTAs(prev => prev.map(o => o.id === otaId ? { ...o, status: 'disconnected' as const } : o));
         success(`Disconnected from ${ota.name}`);
       }
     } catch (err: any) {
@@ -368,7 +370,18 @@ export function ChannelManagerProvider({ children }) {
         status: 'connected',
         errorMessage: undefined,
       });
-      setOTAs(prev => prev.map(o => o.id === otaId ? updated : o));
+
+      // Defensive merge: keep existing OTA fields, overlay API response, force connected status
+      // The API response may not echo back the updated status correctly
+      const reconnectedOTA = {
+        ...ota,
+        ...(updated && typeof updated === 'object' && updated.id ? updated : {}),
+        status: 'connected' as const,
+        errorMessage: undefined,
+        lastSync: new Date().toISOString(),
+      };
+
+      setOTAs(prev => prev.map(o => o.id === otaId ? reconnectedOTA : o));
       addSyncLog(ota.code, ota.name, 'connection', 'success', `Reconnected to ${ota.name}`);
       success(`Reconnected to ${ota.name}`);
     } catch (err: any) {

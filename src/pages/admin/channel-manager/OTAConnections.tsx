@@ -86,18 +86,20 @@ export default function OTAConnections() {
     try {
       await disconnectOTA(otaId);
       setShowDisconnectModal(false);
-      await refetchData();
+      setOtaToDisconnect(null);
     } catch (err) {
-      // Error already handled in context
+      // On error, refetch to restore correct state
+      await refetchData();
     }
   };
 
   const handleReconnect = async (otaId) => {
     try {
       await reconnectOTA(otaId);
-      await refetchData();
+      // Don't refetch immediately — reconnectOTA already updates state optimistically
     } catch (err) {
-      // Error already handled in context
+      // On error, refetch to restore correct state
+      await refetchData();
     }
   };
 

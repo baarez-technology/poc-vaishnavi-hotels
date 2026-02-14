@@ -8,7 +8,6 @@ import { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Modal } from '../ui2/Modal';
 import { Button } from '../ui2/Button';
-import { useToast } from '../../contexts/ToastContext';
 
 export default function DisconnectOTAModal({
   isOpen,
@@ -16,19 +15,18 @@ export default function DisconnectOTAModal({
   ota,
   onConfirm
 }) {
-  const toast = useToast();
   const [isDisconnecting, setIsDisconnecting] = useState(false);
 
   const handleDisconnect = async () => {
     setIsDisconnecting(true);
-
-    // Simulate disconnect process
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    onConfirm(ota?.id);
-    setIsDisconnecting(false);
-    toast.success(`${ota?.name} has been disconnected`);
-    onClose();
+    try {
+      await onConfirm(ota?.id);
+      onClose();
+    } catch (err) {
+      // Error handled in context
+    } finally {
+      setIsDisconnecting(false);
+    }
   };
 
   if (!ota) return null;

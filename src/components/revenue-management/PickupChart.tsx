@@ -30,6 +30,7 @@ interface PickupChartProps {
   dateRange?: number;
   chartType?: 'area' | 'bar';
   showYoYComparison?: boolean;
+  refreshKey?: number;
 }
 
 interface ChartDataPoint {
@@ -47,7 +48,7 @@ interface ChartDataPoint {
   yoyChange?: number;
 }
 
-const PickupChart = ({ dateRange = 14, chartType = 'area', showYoYComparison = true }: PickupChartProps) => {
+const PickupChart = ({ dateRange = 14, chartType = 'area', showYoYComparison = true, refreshKey = 0 }: PickupChartProps) => {
   const { showToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -70,7 +71,7 @@ const PickupChart = ({ dateRange = 14, chartType = 'area', showYoYComparison = t
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [dateRange, showToast]);
+  }, [dateRange, showToast, refreshKey]);
 
   useEffect(() => {
     fetchData();
@@ -418,9 +419,10 @@ const PickupChart = ({ dateRange = 14, chartType = 'area', showYoYComparison = t
 // Pickup Summary Card Component - Connected to API
 interface PickupSummaryCardProps {
   period?: 'next7Days' | 'next14Days' | 'next30Days';
+  refreshKey?: number;
 }
 
-export const PickupSummaryCard = ({ period = 'next7Days' }: PickupSummaryCardProps) => {
+export const PickupSummaryCard = ({ period = 'next7Days', refreshKey = 0 }: PickupSummaryCardProps) => {
   const { showToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [metrics, setMetrics] = useState<{
@@ -458,7 +460,7 @@ export const PickupSummaryCard = ({ period = 'next7Days' }: PickupSummaryCardPro
     };
 
     fetchMetrics();
-  }, [period, showToast]);
+  }, [period, showToast, refreshKey]);
 
   const accentColors = {
     next7Days: { bg: 'bg-terra-50', icon: 'text-terra-600' },

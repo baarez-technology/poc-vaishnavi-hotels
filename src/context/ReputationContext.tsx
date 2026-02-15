@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import reputationService, {
   ReputationDashboard,
   ReviewAnalytics,
@@ -12,7 +12,6 @@ import reputationService, {
   EngineStats,
   ReputationSettings,
   RoutingRule,
-  
   ResponseTemplate
 } from '../api/services/reputation.service';
 
@@ -72,7 +71,7 @@ interface ReputationContextType {
   updateFilters: (newFilters: Partial<ReputationContextType['filters']>) => void;
 
   // Alerts Functions
-  loadAlerts: (status?: string, type?: string, forceRefresh?: boolean) => Promise<void>;
+  loadAlerts: (status?: string, type?: string) => Promise<void>;
   acknowledgeAlert: (id: number) => Promise<void>;
   resolveAlert: (id: number, notes: string) => Promise<void>;
   dismissAlert: (id: number) => Promise<void>;
@@ -86,7 +85,7 @@ interface ReputationContextType {
   runAlertDetection: () => Promise<{ alerts_created: number; categories_scanned: number; issues_detected: number }>;
 
   // Categories Functions
-  loadCategories: (forceRefresh?: boolean) => Promise<void>;
+  loadCategories: () => Promise<void>;
   createCategory: (data: {
     name: string;
     description?: string;
@@ -100,7 +99,7 @@ interface ReputationContextType {
   updateRoutingRules: (categoryId: number, rules: RoutingRule) => Promise<void>;
 
   // Goals Functions
-  loadGoals: (forceRefresh?: boolean) => Promise<void>;
+  loadGoals: () => Promise<void>;
   createGoal: (metricType: string, targetValue: number, startDate: string, endDate: string) => Promise<void>;
   updateGoal: (id: number, data: Partial<Goal>) => Promise<void>;
   deleteGoal: (id: number) => Promise<void>;
@@ -178,17 +177,18 @@ interface ReputationContextType {
 const ReputationContext = createContext<ReputationContextType | null>(null);
 
 export function ReputationProvider({ children }: { children: React.ReactNode }) {
+  // Ref to prevent StrictMode double-mounting
+  const isInitializedRef = useRef(false);
+
   // Core state from API
   const [dashboard, setDashboard] = useState<ReputationDashboard | null>(null);
   const [analytics, setAnalytics] = useState<ReviewAnalytics | null>(null);
   const [trends, setTrends] = useState<TrendData | null>(null);
   const [pendingReviews, setPendingReviews] = useState<Review[]>([]);
   const [allReviews, setAllReviews] = useState<Review[]>([]);
-  const [reviewsTotal, setReviewsTotal] = useState(0);
-  const [reviewsPage, setReviewsPage] = useState(1);
   const [templates, setTemplates] = useState<ResponseTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSecondaryLoading, setIsSecondaryLoading] = useState(false);
+  const [isFilterLoading, setIsFilterLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // New state
@@ -199,9 +199,6 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   const [pendingApprovals, setPendingApprovals] = useState<ResponseDraft[]>([]);
   const [engineStats, setEngineStats] = useState<EngineStats | null>(null);
   const [userSettings, setUserSettings] = useState<ReputationSettings | null>(null);
-
-  // Cache flags to prevent redundant fetches
-  const [hasFetchedSecondary, setHasFetchedSecondary] = useState(false);
 
   // Filter state
   const [filters, setFilters] = useState({
@@ -268,7 +265,10 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
-  const loadReviews = useCallback(async () => {
+  const loadReviews = useCallback(async (isFilterChange = false) => {
+    if (isFilterChange) {
+      setIsFilterLoading(true);
+    }
     try {
       const params: any = {};
       if (filters.source !== 'all') params.source = filters.source;
@@ -281,49 +281,41 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
 
       const data = await reputationService.getReviews(params);
       setAllReviews(data.reviews || []);
-      setReviewsTotal(data.total || 0);
-
-      return { success: true, count: data.reviews?.length || 0 };
     } catch (err: any) {
       console.error('Error fetching reviews:', err);
-      return { success: false, count: 0 };
+    } finally {
+      if (isFilterChange) {
+        setIsFilterLoading(false);
+      }
     }
   }, [filters]);
 
-  const loadAlerts = useCallback(async (status?: string, type?: string, forceRefresh = false) => {
-    // Skip if already loaded and not forcing refresh (unless filtering)
-    if (!forceRefresh && alerts.length > 0 && !status && !type) return;
+  const loadAlerts = useCallback(async (status?: string, type?: string) => {
     try {
       const data = await reputationService.getAlerts(status, type);
-      // Ensure we always set an array
-      setAlerts(Array.isArray(data) ? data : []);
+      setAlerts(data || []);
     } catch (err: any) {
       console.error('Error fetching alerts:', err);
-      setAlerts([]);
     }
-  }, [alerts.length]);
+  }, []);
 
-  const loadCategories = useCallback(async (forceRefresh = false) => {
-    // Skip if already loaded and not forcing refresh
-    if (!forceRefresh && categories.length > 0) return;
+  const loadCategories = useCallback(async () => {
     try {
       const data = await reputationService.getCategories();
       setCategories(data || []);
     } catch (err: any) {
       console.error('Error fetching categories:', err);
     }
-  }, [categories.length]);
+  }, []);
 
-  const loadGoals = useCallback(async (forceRefresh = false) => {
-    // Skip if we already have goals from dashboard and not forcing refresh
-    if (!forceRefresh && goals.length > 0) return;
+  const loadGoals = useCallback(async () => {
     try {
       const data = await reputationService.getGoals();
       setGoals(data || []);
     } catch (err: any) {
       console.error('Error fetching goals:', err);
     }
-  }, [goals.length]);
+  }, []);
 
   const loadTemplates = useCallback(async (tone?: string, sentiment?: string) => {
     try {
@@ -340,44 +332,29 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     try {
       const data = await reputationService.getAutomationConfig();
       setAutomationConfig(data);
-      // Sync with legacy settings using DB templates
+      // Sync with legacy settings - templates are loaded separately by loadReputation
       if (data) {
-        const dbTemplates = await loadTemplates();
-        const templateMap: Record<string, string> = {};
-        if (dbTemplates && dbTemplates.length > 0) {
-          dbTemplates.forEach((t: any) => {
-            if (t.sentiment && t.content) {
-              templateMap[t.sentiment] = t.content;
-            }
-          });
-        }
         setSettings(prev => ({
           ...prev,
           autoReply: {
             enabled: data.global_enabled,
             delay: `${data.response_delay_hours}h`,
             language: 'en',
-            templates: {
-              positive: templateMap.positive || prev.autoReply.templates.positive,
-              neutral: templateMap.neutral || prev.autoReply.templates.neutral,
-              negative: templateMap.negative || prev.autoReply.templates.negative,
-            }
+            templates: data.templates || prev.autoReply.templates
           }
         }));
       }
     } catch (err: any) {
       console.error('Error fetching automation config:', err);
     }
-  }, [loadTemplates]);
+  }, []);
 
   const loadPendingApprovals = useCallback(async () => {
     try {
       const data = await reputationService.getPendingApprovals();
-      // Ensure we always set an array
-      setPendingApprovals(Array.isArray(data) ? data : []);
+      setPendingApprovals(data || []);
     } catch (err: any) {
       console.error('Error fetching pending approvals:', err);
-      setPendingApprovals([]);
     }
   }, []);
 
@@ -399,52 +376,34 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
-  // Load secondary/non-critical data (lazy loaded after initial render)
-  const loadSecondaryData = useCallback(async () => {
-    if (hasFetchedSecondary) return; // Skip if already fetched
-
-    setIsSecondaryLoading(true);
-    try {
-      await Promise.all([
-        loadAlerts(),
-        loadCategories(),
-        loadAutomationConfig(), // This also loads templates internally
-        loadPendingApprovals(),
-        loadEngineStats(),
-        loadUserSettings()
-      ]);
-      setHasFetchedSecondary(true);
-    } catch (err: any) {
-      console.error('Error loading secondary data:', err);
-    } finally {
-      setIsSecondaryLoading(false);
-    }
-  }, [
-    hasFetchedSecondary,
-    loadAlerts,
-    loadCategories,
-    loadAutomationConfig,
-    loadPendingApprovals,
-    loadEngineStats,
-    loadUserSettings
-  ]);
-
   const loadReputation = useCallback(async () => {
+    // Prevent StrictMode double-mount
+    if (isInitializedRef.current) return;
+    isInitializedRef.current = true;
+
     setIsLoading(true);
     setError(null);
     try {
-      // Phase 1: Load critical data only (dashboard has recent_reviews and active_goals)
-      // This reduces initial API calls from 13 to 4
-      await Promise.all([
+      // Get default reviews (no filters on initial load)
+      const reviewsPromise = reputationService.getReviews({});
+
+      const [reviewsData] = await Promise.all([
+        reviewsPromise,
         refreshDashboard(),
         refreshAnalytics(),
         refreshTrends(),
-        loadPendingReviews()
+        loadPendingReviews(),
+        loadAlerts(),
+        loadCategories(),
+        loadGoals(),
+        loadAutomationConfig(),
+        loadPendingApprovals(),
+        loadEngineStats(),
+        loadUserSettings(),
+        loadTemplates()
       ]);
 
-      // Phase 2: Load secondary data in background (non-blocking)
-      // Don't await - let it run in background after UI renders
-      loadSecondaryData();
+      setAllReviews(reviewsData.reviews || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load reputation data');
     } finally {
@@ -455,77 +414,40 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     refreshAnalytics,
     refreshTrends,
     loadPendingReviews,
-    loadSecondaryData
+    loadAlerts,
+    loadCategories,
+    loadGoals,
+    loadAutomationConfig,
+    loadPendingApprovals,
+    loadEngineStats,
+    loadUserSettings,
+    loadTemplates
   ]);
 
-  // Load on mount
+  // Load on mount only
   useEffect(() => {
     loadReputation();
   }, [loadReputation]);
 
-  // Use dashboard goals as initial data, load full list only when GoalsPanel needs it
+  // Track previous filters to detect actual changes
+  const prevFiltersRef = useRef(filters);
+
+  // Reload reviews only when filters actually change (not on mount)
   useEffect(() => {
-    if (dashboard?.active_goals && dashboard.active_goals.length > 0 && goals.length === 0) {
-      // Dashboard active_goals is a summary - map to Goal structure for initial display
-      const mappedGoals: Goal[] = dashboard.active_goals.map((g: any) => ({
-        id: g.id,
-        metric_type: g.metric_type || 'rating',
-        target_value: g.target_value ?? 0,
-        current_value: g.current_value ?? 0,
-        baseline_value: g.baseline_value ?? 0,
-        progress_percentage: g.progress_percentage ?? g.progress ?? 0,
-        status: g.status || 'active',
-        start_date: g.start_date || '',
-        end_date: g.end_date || ''
-      }));
-      setGoals(mappedGoals);
-    }
-  }, [dashboard, goals.length]);
+    const prevFilters = prevFiltersRef.current;
+    const hasFilterChanged =
+      prevFilters.source !== filters.source ||
+      prevFilters.rating !== filters.rating ||
+      prevFilters.sentimentRange !== filters.sentimentRange ||
+      prevFilters.dateRange !== filters.dateRange ||
+      prevFilters.keyword !== filters.keyword;
 
-  // State for filter loading
-  const [isFilterLoading, setIsFilterLoading] = useState(false);
-
-  // Track if this is the initial mount to skip first effect run
-  const [hasInitialized, setHasInitialized] = useState(false);
-
-  // Reload reviews when filter values change
-  useEffect(() => {
-    // Skip on initial mount - dashboard.recent_reviews handles initial data
-    if (!hasInitialized) {
-      setHasInitialized(true);
-      return;
+    if (hasFilterChanged && isInitializedRef.current) {
+      loadReviews(true);
     }
 
-    // Don't run while main loading is in progress
-    if (isLoading) return;
-
-    // Apply filters by fetching reviews with current filter params
-    const applyFilters = async () => {
-      setIsFilterLoading(true);
-      try {
-        const params: Record<string, any> = {};
-        if (filters.source !== 'all') params.source = filters.source;
-        if (filters.sentimentRange !== 'all') params.sentiment = filters.sentimentRange;
-        if (filters.rating !== 'all') {
-          params.min_rating = parseFloat(filters.rating);
-          params.max_rating = parseFloat(filters.rating) + 0.9;
-        }
-        if (filters.keyword) params.keyword = filters.keyword;
-
-        const data = await reputationService.getReviews(params);
-        setAllReviews(data.reviews || []);
-        setReviewsTotal(data.total || 0);
-
-        console.log(`Filters applied: ${data.reviews?.length || 0} reviews found`, params);
-      } catch (err: any) {
-        console.error('Error applying filters:', err);
-      } finally {
-        setIsFilterLoading(false);
-      }
-    };
-
-    applyFilters();
-  }, [filters.source, filters.rating, filters.sentimentRange, filters.keyword, isLoading]); // Depend on actual filter values
+    prevFiltersRef.current = filters;
+  }, [filters, loadReviews]);
 
   // ========================
   // ALERTS
@@ -535,7 +457,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   const acknowledgeAlert = useCallback(async (id: number) => {
     try {
       await reputationService.acknowledgeAlert(id);
-      await loadAlerts(undefined, undefined, true); // Force refresh after mutation
+      await loadAlerts();
     } catch (err: any) {
       console.error('Error acknowledging alert:', err);
       throw err;
@@ -545,7 +467,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   const resolveAlert = useCallback(async (id: number, notes: string) => {
     try {
       await reputationService.resolveAlert(id, notes);
-      await loadAlerts(undefined, undefined, true); // Force refresh after mutation
+      await loadAlerts();
     } catch (err: any) {
       console.error('Error resolving alert:', err);
       throw err;
@@ -555,7 +477,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   const dismissAlert = useCallback(async (id: number) => {
     try {
       await reputationService.dismissAlert(id);
-      await loadAlerts(undefined, undefined, true); // Force refresh after mutation
+      await loadAlerts();
     } catch (err: any) {
       console.error('Error dismissing alert:', err);
       throw err;
@@ -571,7 +493,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   }) => {
     try {
       await reputationService.createWorkOrderFromAlert(id, data);
-      await loadAlerts(undefined, undefined, true); // Force refresh after mutation
+      await loadAlerts();
     } catch (err: any) {
       console.error('Error creating work order:', err);
       throw err;
@@ -581,7 +503,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   const runAlertDetection = useCallback(async () => {
     try {
       const result = await reputationService.runAlertDetection();
-      await loadAlerts(undefined, undefined, true); // Force refresh after mutation
+      await loadAlerts();
       return result;
     } catch (err: any) {
       console.error('Error running alert detection:', err);
@@ -604,7 +526,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   }) => {
     try {
       await reputationService.createCategory(data);
-      await loadCategories(true); // Force refresh after mutation
+      await loadCategories();
     } catch (err: any) {
       console.error('Error creating category:', err);
       throw err;
@@ -614,7 +536,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   const updateCategory = useCallback(async (id: number, data: Partial<Category>) => {
     try {
       await reputationService.updateCategory(id, data);
-      await loadCategories(true); // Force refresh after mutation
+      await loadCategories();
     } catch (err: any) {
       console.error('Error updating category:', err);
       throw err;
@@ -624,7 +546,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   const deleteCategory = useCallback(async (id: number) => {
     try {
       await reputationService.deleteCategory(id);
-      await loadCategories(true); // Force refresh after mutation
+      await loadCategories();
     } catch (err: any) {
       console.error('Error deleting category:', err);
       throw err;
@@ -634,7 +556,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   const updateRoutingRules = useCallback(async (categoryId: number, rules: RoutingRule) => {
     try {
       await reputationService.updateRoutingRules(categoryId, rules);
-      await loadCategories(true); // Force refresh after mutation
+      await loadCategories();
     } catch (err: any) {
       console.error('Error updating routing rules:', err);
       throw err;
@@ -654,7 +576,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
         start_date: startDate,
         end_date: endDate
       });
-      await loadGoals(true); // Force refresh after mutation
+      await loadGoals();
     } catch (err: any) {
       console.error('Error creating goal:', err);
       throw err;
@@ -664,7 +586,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   const updateGoal = useCallback(async (id: number, data: Partial<Goal>) => {
     try {
       await reputationService.updateGoal(id, data);
-      await loadGoals(true); // Force refresh after mutation
+      await loadGoals();
     } catch (err: any) {
       console.error('Error updating goal:', err);
       throw err;
@@ -674,7 +596,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   const deleteGoal = useCallback(async (id: number) => {
     try {
       await reputationService.deleteGoal(id);
-      await loadGoals(true); // Force refresh after mutation
+      await loadGoals();
     } catch (err: any) {
       console.error('Error deleting goal:', err);
       throw err;
@@ -684,7 +606,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   const toggleGoalStatus = useCallback(async (id: number) => {
     try {
       await reputationService.toggleGoalStatus(id);
-      await loadGoals(true); // Force refresh after mutation
+      await loadGoals();
     } catch (err: any) {
       console.error('Error toggling goal status:', err);
       throw err;
@@ -694,7 +616,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
   const updateGoalProgress = useCallback(async (id: number) => {
     try {
       await reputationService.updateGoalProgress(id);
-      await loadGoals(true); // Force refresh after mutation
+      await loadGoals();
     } catch (err: any) {
       console.error('Error updating goal progress:', err);
       throw err;
@@ -890,16 +812,13 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
         date: r.review_date || r.date,
         review: r.comment || r.content,
         title: r.title || '',
-        // Backend uses has_response or responded, components use responded
-        // Backend also sends 'response' field (not response_text)
-        responded: r.has_response || r.responded || !!r.response || !!r.response_text || false,
+        // Backend uses has_response, components use responded
+        responded: r.has_response || false,
         // Ensure rating is present
         rating: r.rating || 0,
-        // Map response to responseText for drawer display (backend sends 'response' field)
-        responseText: r.response || r.response_text || '',
-        response: r.response || r.response_text || '',
-        responseDate: r.responded_at || r.response_date || '',
-        responded_at: r.responded_at || r.response_date || ''
+        // Response data
+        responseText: r.response_text || '',
+        responseDate: r.response_date || ''
       };
     });
   }, [allReviews, dashboard]);
@@ -1171,24 +1090,8 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
 
   const addReviewResponse = useCallback(async (reviewId: number, responseText: string) => {
     try {
-      const result = await reputationService.respondToReview(reviewId, responseText);
+      await reputationService.respondToReview(reviewId, responseText);
       setPendingReviews(prev => prev.filter(r => r.id !== reviewId));
-      // Update the review in allReviews to show the response immediately
-      // Backend sends 'response' field, so we update both for compatibility
-      setAllReviews(prev => prev.map(r =>
-        r.id === reviewId
-          ? {
-            ...r,
-            response: responseText,
-            response_text: responseText,
-            responded: true,
-            has_response: true,
-            responded_at: result?.responded_at,
-            response_date: result?.responded_at
-          }
-          : r
-      ));
-      // Reload reviews to get updated data from server
       await loadReviews();
     } catch (err: any) {
       console.error('Error responding to review:', err);
@@ -1223,41 +1126,53 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
     });
   }, [reviews]);
 
-  // Check if filters are active
-  const hasActiveFilters = filters.source !== 'all' || filters.rating !== 'all' ||
-    filters.sentimentRange !== 'all' || filters.keyword !== '';
+  // Check if filters are applied
+  const hasFiltersApplied = useMemo(() => {
+    return filters.source !== 'all' ||
+           filters.rating !== 'all' ||
+           filters.sentimentRange !== 'all' ||
+           filters.keyword !== '';
+  }, [filters]);
 
-  // Computed metrics - use filtered reviews when filters are active
+  // Computed metrics - uses filtered reviews when filters are applied
   const metrics = useMemo(() => {
-    // When filters are active, compute metrics from filtered reviews
-    if (hasActiveFilters && reviews.length > 0) {
-      const positiveCount = reviews.filter(r =>
-        r.sentimentLabel === 'positive' || r.sentiment >= 70
-      ).length;
-      const negativeCount = reviews.filter(r =>
-        r.sentimentLabel === 'negative' || (typeof r.sentiment === 'number' && r.sentiment < 40)
-      ).length;
-      const neutralCount = reviews.length - positiveCount - negativeCount;
-      const total = reviews.length || 1;
+    // When filters are applied, compute metrics from filtered reviews
+    if (hasFiltersApplied && filteredReviews.length > 0) {
+      let positive = 0, neutral = 0, negative = 0;
+      let totalRating = 0;
+      const today = new Date().toISOString().split('T')[0];
+      let newToday = 0;
 
-      const avgRating = reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / total;
+      filteredReviews.forEach(r => {
+        // Count by sentiment label
+        const sentimentLabel = (r as any).sentimentLabel || 'neutral';
+        if (sentimentLabel === 'positive') positive++;
+        else if (sentimentLabel === 'negative') negative++;
+        else neutral++;
+
+        // Sum ratings
+        totalRating += r.rating || 0;
+
+        // Count new today
+        if (r.created_at?.startsWith(today)) newToday++;
+      });
+
+      const total = filteredReviews.length || 1;
+      const avgRating = totalRating / total;
 
       return {
-        overallSentiment: Math.round((positiveCount * 100 + neutralCount * 50) / total),
-        positivePercent: Math.round((positiveCount / total) * 100),
-        negativePercent: Math.round((negativeCount / total) * 100),
-        neutralPercent: Math.round((neutralCount / total) * 100),
+        overallSentiment: Math.round((positive * 100 + neutral * 50) / total),
+        positivePercent: Math.round((positive / total) * 100),
+        negativePercent: Math.round((negative / total) * 100),
+        neutralPercent: Math.round((neutral / total) * 100),
         avgOTARating: avgRating.toFixed(1),
-        newReviewsToday: reviews.filter(r => {
-          const today = new Date().toISOString().split('T')[0];
-          return r.created_at?.startsWith(today);
-        }).length,
+        newReviewsToday: newToday,
         reviewVolumeTrend: computeTrend,
-        totalReviews: reviews.length
+        totalReviews: filteredReviews.length
       };
     }
 
-    // No filters - use dashboard metrics
+    // Default: use dashboard metrics
     if (!dashboard?.metrics) {
       return {
         overallSentiment: 0,
@@ -1287,7 +1202,7 @@ export function ReputationProvider({ children }: { children: React.ReactNode }) 
       reviewVolumeTrend: computeTrend,
       totalReviews: total_reviews
     };
-  }, [dashboard, reviews, computeTrend, hasActiveFilters, filters]);
+  }, [dashboard, reviews, filteredReviews, hasFiltersApplied, computeTrend]);
 
   const value: ReputationContextType = {
     // Core State

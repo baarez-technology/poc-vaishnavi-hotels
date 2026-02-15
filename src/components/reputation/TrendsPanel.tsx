@@ -1,5 +1,4 @@
 import { TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react';
-// Icons used in content, not headers
 import { useReputation } from '@/context/ReputationContext';
 
 export default function TrendsPanel() {

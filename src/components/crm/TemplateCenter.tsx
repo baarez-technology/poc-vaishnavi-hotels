@@ -804,6 +804,18 @@ function TemplateModal({ isOpen, onClose, onSave, template, mode }) {
     };
   }, [isOpen, onClose]);
 
+  // Sync form data when modal opens or template changes (fixes edit mode showing empty)
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        name: template?.name || '',
+        type: template?.type || 'email',
+        subject: template?.subject || '',
+        body: template?.body || ''
+      });
+    }
+  }, [isOpen, template]);
+
   // Reset AI states when modal opens
   useEffect(() => {
     if (isOpen) {

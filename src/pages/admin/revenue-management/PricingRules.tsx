@@ -109,14 +109,32 @@ const PricingRules = () => {
     try {
       const result = await revenueIntelligenceService.togglePricingRule(rule.id);
       const newActive = result?.is_active ?? !rule.isActive;
+      const activatedAt = newActive ? new Date().toISOString() : null;
       setRules((prev) =>
-        prev.map((r) => (r.id === rule.id ? { ...r, isActive: newActive } : r))
+        prev.map((r) => {
+          if (r.id !== rule.id) return r;
+          const updates: Partial<PricingRule> = { isActive: newActive };
+          if (newActive) {
+            updates.lastTriggered = activatedAt;
+          }
+          return { ...r, ...updates };
+        })
       );
       showToast(
         `Rule ${newActive ? 'enabled' : 'disabled'} successfully`,
         'success'
       );
       await fetchRules();
+      // Preserve lastTriggered for just-activated rule if API did not return it
+      if (activatedAt) {
+        setRules((prev) =>
+          prev.map((r) =>
+            r.id === rule.id && !r.lastTriggered
+              ? { ...r, lastTriggered: activatedAt }
+              : r
+          )
+        );
+      }
     } catch (err) {
       console.error('Failed to toggle rule:', err);
       showToast('Failed to toggle rule', 'error');

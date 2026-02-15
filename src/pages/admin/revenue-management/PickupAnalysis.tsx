@@ -6,10 +6,17 @@ import { Button } from '../../../components/ui2/Button';
 // Table components replaced with native table for better responsive control
 import { StatusBadge } from '../../../components/ui2/Badge';
 import { TableSearchBar } from '../../../components/ui2/DataTableView';
-import { revenueIntelligenceService, PickupAIInsight } from '../../../api/services/revenue-intelligence.service';
+import {
+  revenueIntelligenceService,
+  PickupAIInsight,
+  invalidateRevenueCache,
+} from '../../../api/services/revenue-intelligence.service';
+import { Drawer } from '../../../components/ui2/Drawer';
+import { useToast } from '../../../contexts/ToastContext';
 
 const PickupAnalysis = () => {
   const { pickup, pickupMetrics, refreshPickup, compareToHistorical, predictPickup, isLoading } = useRMS();
+  const toast = useToast();
 
   const [dateRange, setDateRange] = useState(14);
   const [chartType, setChartType] = useState('area');
@@ -17,6 +24,7 @@ const PickupAnalysis = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [aiInsights, setAiInsights] = useState<PickupAIInsight[]>([]);
   const [insightsLoading, setInsightsLoading] = useState(true);
+  const [showAlertsDrawer, setShowAlertsDrawer] = useState(false);
 
   // Fetch AI insights from API
   useEffect(() => {
@@ -38,12 +46,16 @@ const PickupAnalysis = () => {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await refreshPickup();
-      // Re-fetch AI insights after refresh
-      const response = await revenueIntelligenceService.getPickupMetrics(dateRange);
+      invalidateRevenueCache('pickup-metrics');
+      // Force a fresh backend call (bypass cache) so refresh always hits the API
+      await refreshPickup(true);
+      // Re-fetch AI insights after refresh (bypass cache for fresh data)
+      const response = await revenueIntelligenceService.getPickupMetrics(dateRange, { bypassCache: true });
       setAiInsights(response.ai_insights || []);
+      toast.success('Pickup data refreshed successfully');
     } catch (err) {
       console.error('Failed to refresh pickup data:', err);
+      toast.error('Failed to refresh pickup data');
     } finally {
       setIsRefreshing(false);
     }
@@ -82,11 +94,18 @@ const PickupAnalysis = () => {
     }
   };
 
-  // Get pickup alerts
-  const allAlerts = Object.values(pickup)
-    .flatMap(p => p.alerts || [])
-    .filter(a => a.severity === 'critical' || a.severity === 'high')
-    .slice(0, 5);
+  // Get pickup alerts with date for each alert
+  const allAlertsWithDates = useMemo(() => {
+    return Object.entries(pickup)
+      .flatMap(([date, p]) =>
+        (p.alerts || [])
+          .filter((a: { severity?: string }) => a.severity === 'critical' || a.severity === 'high')
+          .map((a: { type?: string; severity?: string; message?: string }) => ({ ...a, date }))
+      )
+      .slice(0, 20);
+  }, [pickup]);
+
+  const allAlerts = allAlertsWithDates;
 
   // Get dates for the table with search filtering
   const tableDates = useMemo(() => {
@@ -260,11 +279,71 @@ const PickupAnalysis = () => {
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm" className="w-full sm:w-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full sm:w-auto"
+            onClick={() => setShowAlertsDrawer(true)}
+          >
             View Details
           </Button>
         </div>
       )}
+
+      {/* Pickup Alerts Details Drawer */}
+      <Drawer
+        isOpen={showAlertsDrawer}
+        onClose={() => setShowAlertsDrawer(false)}
+        title="Pickup Alert Details"
+        subtitle={`${allAlerts.length} critical and high priority alert${allAlerts.length !== 1 ? 's' : ''}`}
+      >
+        <div className="space-y-3">
+          {allAlerts.map((alert, idx) => (
+            <div
+              key={idx}
+              className={`rounded-lg border p-3 sm:p-4 ${
+                alert.severity === 'critical'
+                  ? 'bg-rose-50 border-rose-200'
+                  : 'bg-gold-50 border-gold-200'
+              }`}
+            >
+              <div className="flex items-start gap-2 sm:gap-3">
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    alert.severity === 'critical' ? 'bg-rose-100' : 'bg-gold-100'
+                  }`}
+                >
+                  <AlertCircle
+                    className={`w-4 h-4 ${
+                      alert.severity === 'critical' ? 'text-rose-600' : 'text-gold-600'
+                    }`}
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] sm:text-[11px] font-medium text-neutral-500 mb-0.5">
+                    {new Date(alert.date).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </p>
+                  <span
+                    className={`text-[9px] sm:text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                      alert.severity === 'critical'
+                        ? 'bg-rose-100 text-rose-700'
+                        : 'bg-gold-100 text-gold-700'
+                    }`}
+                  >
+                    {alert.severity}
+                  </span>
+                  <p className="text-[12px] sm:text-[13px] text-neutral-800 mt-2">{alert.message}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Drawer>
 
       {/* Chart Section */}
       <section className="rounded-[10px] bg-white overflow-hidden">

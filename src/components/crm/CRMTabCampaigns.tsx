@@ -297,7 +297,34 @@ function CampaignModal({ isOpen, onClose, onSave, campaign, mode, segments, temp
     };
   }, [isOpen, onClose]);
 
-  // Pre-fill from AI suggestion
+  // Sync form data when modal opens or campaign/aiSuggestion changes (fixes edit mode showing empty)
+  useEffect(() => {
+    if (isOpen) {
+      if (campaign) {
+        setFormData({
+          name: campaign.name || '',
+          type: campaign.type || 'email',
+          status: campaign.status || 'draft',
+          segmentId: campaign.segmentId || '',
+          templateId: campaign.templateId || '',
+          subject: campaign.subject || '',
+          scheduleDate: campaign.scheduleDate || ''
+        });
+      } else {
+        setFormData({
+          name: aiSuggestion?.title || '',
+          type: 'email',
+          status: 'draft',
+          segmentId: '',
+          templateId: '',
+          subject: '',
+          scheduleDate: ''
+        });
+      }
+    }
+  }, [isOpen, campaign, aiSuggestion]);
+
+  // Pre-fill from AI suggestion (when suggestion changes while modal is open)
   useEffect(() => {
     if (aiSuggestion && mode === 'create') {
       setFormData(prev => ({
@@ -493,6 +520,10 @@ function CampaignModal({ isOpen, onClose, onSave, campaign, mode, segments, temp
               type="datetime-local"
               value={formData.scheduleDate}
               onChange={(e) => setFormData(prev => ({ ...prev, scheduleDate: e.target.value }))}
+              min={(() => {
+                const n = new Date();
+                return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}T${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`;
+              })()}
               className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
             />
           </div>

@@ -5,6 +5,7 @@ import { useRMS } from '../../../context/RMSContext';
 import SegmentCard, { SegmentDetailPanel } from '../../../components/revenue-management/SegmentCard';
 import { segments } from '../../../data/rms/sampleSegments';
 import { Button } from '../../../components/ui2/Button';
+import { useToast } from '../../../contexts/ToastContext';
 
 const Segmentation = () => {
   const {
@@ -12,6 +13,7 @@ const Segmentation = () => {
     segmentComparison,
     updateSegmentPerformance,
   } = useRMS();
+  const toast = useToast();
 
   const [selectedSegment, setSelectedSegment] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -21,7 +23,11 @@ const Segmentation = () => {
     setIsRefreshing(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      updateSegmentPerformance();
+      await updateSegmentPerformance();
+      toast.success('Segmentation data refreshed successfully');
+    } catch (err) {
+      console.error('Failed to refresh segmentation data:', err);
+      toast.error('Failed to refresh segmentation data');
     } finally {
       setIsRefreshing(false);
     }

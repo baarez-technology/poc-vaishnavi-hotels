@@ -95,7 +95,7 @@ interface RMSContextType {
   opportunityDays: ForecastItem[];
 
   // Pickup
-  refreshPickup: () => Promise<void>;
+  refreshPickup: (forceRefresh?: boolean) => Promise<void>;
   updatePickup: () => any;
   calculatePickupByDate: (date: string | Date) => any;
   compareToHistorical: (date: string | Date) => any;
@@ -257,9 +257,9 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const loadPickup = useCallback(async () => {
+  const loadPickup = useCallback(async (forceRefresh = false) => {
     try {
-      const response = await revenueIntelligenceService.getPickupMetrics(90);
+      const response = await revenueIntelligenceService.getPickupMetrics(90, { bypassCache: forceRefresh });
       setPickupApiData(response);
 
       // Transform API data to match the expected pickup format (keyed by date)
@@ -1120,13 +1120,13 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
   // PICKUP FUNCTIONS
   // ============================================
 
-  const refreshPickup = useCallback(async () => {
-    await loadPickup();
+  const refreshPickup = useCallback(async (forceRefresh = false) => {
+    await loadPickup(forceRefresh);
   }, [loadPickup]);
 
   const updatePickup = useCallback(async () => {
     // Refresh from API and return the promise (caller can access pickup from context after refresh)
-    await loadPickup();
+    await loadPickup(false);
   }, [loadPickup]);
 
   const calculatePickupByDate = useCallback((date: string | Date) => {

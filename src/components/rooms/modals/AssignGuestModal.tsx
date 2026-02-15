@@ -212,6 +212,7 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
   const [isLoading, setIsLoading] = useState(false);
   const [existingAssignment, setExistingAssignment] = useState<any>(null);
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+  const [reassignConfirmed, setReassignConfirmed] = useState(false);
   const [isCheckingGuest, setIsCheckingGuest] = useState(false);
   const toast = useToast();
 
@@ -226,6 +227,7 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
       setCheckOutDate(tomorrow.toISOString().split('T')[0]);
       setExistingAssignment(null);
       setShowDuplicateWarning(false);
+      setReassignConfirmed(false);
       fetchGuests();
     }
   }, [isOpen]);
@@ -235,6 +237,7 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
     if (!selectedGuest || !checkInDate || !checkOutDate) {
       setExistingAssignment(null);
       setShowDuplicateWarning(false);
+      setReassignConfirmed(false);
       return;
     }
     checkGuestExistingAssignment();
@@ -244,6 +247,7 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
     if (!selectedGuest) return;
 
     setIsCheckingGuest(true);
+    setReassignConfirmed(false);
     try {
       // Fetch all bookings and check if this guest already has an active room for the date range
       const response = await bookingService.getBookings(1, 100);
@@ -252,15 +256,26 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
       const guest = availableGuests.find(g => String(g.id) === String(selectedGuest));
       if (!guest) return;
 
-      const guestName = `${guest.first_name} ${guest.last_name}`.toLowerCase();
-      const guestEmail = (guest.email || '').toLowerCase();
+      const guestId = guest.id;
+      const guestName = `${guest.first_name} ${guest.last_name}`.toLowerCase().trim();
+      const guestEmail = (guest.email || '').toLowerCase().trim();
 
       // Find active bookings for this guest that overlap with selected dates
       const conflicting = bookings.find((b: any) => {
-        const bookingGuest = (b.guestInfo?.firstName + ' ' + b.guestInfo?.lastName).toLowerCase();
-        const bookingEmail = (b.guestInfo?.email || '').toLowerCase();
-        const isMatchingGuest = bookingGuest === guestName || (guestEmail && bookingEmail === guestEmail);
-        const isActive = b.status !== 'cancelled' && b.status !== 'checked-out';
+        // Primary match: use guestId if available in booking response
+        const matchById = b.guestId && Number(b.guestId) === Number(guestId);
+
+        // Fallback match: name or email
+        const bookingGuestName = ((b.guestInfo?.firstName || '') + ' ' + (b.guestInfo?.lastName || '')).toLowerCase().trim();
+        const bookingEmail = (b.guestInfo?.email || '').toLowerCase().trim();
+        const matchByName = bookingGuestName && bookingGuestName === guestName;
+        const matchByEmail = guestEmail && bookingEmail && bookingEmail === guestEmail;
+
+        const isMatchingGuest = matchById || matchByName || matchByEmail;
+
+        // Handle both hyphen and underscore status formats from API
+        const status = (b.status || '').toLowerCase().replace('-', '_');
+        const isActive = status !== 'cancelled' && status !== 'checked_out';
         const hasRoom = b.room && b.room.number;
 
         // Check date overlap
@@ -321,9 +336,9 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
       return;
     }
 
-    // BUG-012: Block if guest already has an active room for these dates
-    if (showDuplicateWarning && existingAssignment) {
-      toast.error(`This guest is already assigned to Room ${existingAssignment.room?.number || existingAssignment.room?.name || 'N/A'} for overlapping dates. Please unassign them first.`);
+    // BUG-012: If duplicate warning shown and user hasn't confirmed reassign, block
+    if (showDuplicateWarning && existingAssignment && !reassignConfirmed) {
+      toast.warning('Please confirm reassignment or select a different guest.');
       return;
     }
 
@@ -356,10 +371,10 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
         type="submit"
         variant="primary"
         form="assign-guest-form"
-        disabled={showDuplicateWarning || !checkInDate || !checkOutDate || nights <= 0}
+        disabled={(showDuplicateWarning && !reassignConfirmed) || !checkInDate || !checkOutDate || nights <= 0}
         className="px-5 py-2 text-[13px] font-semibold"
       >
-        Assign Guest
+        {showDuplicateWarning && reassignConfirmed ? 'Reassign Guest' : 'Assign Guest'}
       </Button>
     </div>
   );
@@ -397,21 +412,36 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
           </div>
         </div>
 
-        {/* BUG-012: Duplicate Assignment Warning */}
+        {/* BUG-012: Duplicate Assignment Warning with Reassign Option */}
         {showDuplicateWarning && existingAssignment && (
-          <div className="p-4 bg-rose-50 rounded-lg border border-rose-200">
+          <div className={`p-4 rounded-lg border ${reassignConfirmed ? 'bg-amber-50 border-amber-200' : 'bg-rose-50 border-rose-200'}`}>
             <div className="flex items-start gap-2">
-              <AlertTriangle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-[13px] font-semibold text-rose-800">Guest Already Has Room Assigned</p>
-                <p className="text-[12px] text-rose-700 mt-1">
-                  This guest is currently assigned to <span className="font-semibold">Room {existingAssignment.room?.number || existingAssignment.room?.name || 'N/A'}</span>
+              <AlertTriangle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${reassignConfirmed ? 'text-amber-600' : 'text-rose-600'}`} />
+              <div className="flex-1">
+                <p className={`text-[13px] font-semibold ${reassignConfirmed ? 'text-amber-800' : 'text-rose-800'}`}>
+                  This guest already has a room assigned
+                </p>
+                <p className={`text-[12px] mt-1 ${reassignConfirmed ? 'text-amber-700' : 'text-rose-700'}`}>
+                  Currently assigned to <span className="font-semibold">Room {existingAssignment.room?.number || existingAssignment.room?.name || 'N/A'}</span>
                   {' '}(Booking: {existingAssignment.bookingNumber || existingAssignment.id})
                   {' '}from {existingAssignment.checkIn} to {existingAssignment.checkOut}.
                 </p>
-                <p className="text-[12px] text-rose-600 mt-1">
-                  Please unassign the guest from their current room before making a new assignment.
-                </p>
+                {!reassignConfirmed ? (
+                  <div className="mt-3 flex items-center gap-2">
+                    <p className="text-[12px] text-rose-600">Do you want to reassign this guest?</p>
+                    <button
+                      type="button"
+                      onClick={() => setReassignConfirmed(true)}
+                      className="px-3 py-1 text-[12px] font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-md transition-colors"
+                    >
+                      Yes, Reassign
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-[12px] text-amber-600 mt-1 font-medium">
+                    Reassignment confirmed. Click "Reassign Guest" to proceed.
+                  </p>
+                )}
               </div>
             </div>
           </div>

@@ -43,11 +43,12 @@ export default function InventoryTable({
       return false;
     }
 
-    // Stock level filter
-    if (stockFilter === 'low' && item.stockLevel > item.minStock) {
+    // Stock level filter — matches getStockStatus logic
+    const isLowStock = item.stockLevel === 0 || (item.minStock > 0 && item.stockLevel <= item.minStock);
+    if (stockFilter === 'low' && !isLowStock) {
       return false;
     }
-    if (stockFilter === 'ok' && item.stockLevel <= item.minStock) {
+    if (stockFilter === 'ok' && isLowStock) {
       return false;
     }
 
@@ -74,17 +75,21 @@ export default function InventoryTable({
   };
 
   const getStockStatus = (item) => {
-    if (item.stockLevel <= item.minStock * 0.5) {
+    // BUG-019 FIX: Handle minStock=0 properly — only flag as Low/Critical when threshold is set
+    if (item.stockLevel === 0) {
+      return { label: 'Out', bgColor: 'bg-rose-50', textColor: 'text-rose-600', hasIcon: true };
+    }
+    if (item.minStock > 0 && item.stockLevel <= item.minStock * 0.5) {
       return { label: 'Critical', bgColor: 'bg-rose-50', textColor: 'text-rose-600', hasIcon: true };
     }
-    if (item.stockLevel <= item.minStock) {
+    if (item.minStock > 0 && item.stockLevel <= item.minStock) {
       return { label: 'Low', bgColor: 'bg-[#CDB261]/15', textColor: 'text-[#9A8545]', hasIcon: false };
     }
     return { label: 'OK', bgColor: 'bg-[#5C9BA4]/10', textColor: 'text-[#5C9BA4]', hasIcon: false };
   };
 
   const totalValue = inventory.reduce((sum, item) => sum + (item.stockLevel * item.unitCost), 0);
-  const lowStockCount = inventory.filter(item => item.stockLevel <= item.minStock).length;
+  const lowStockCount = inventory.filter(item => item.stockLevel === 0 || (item.minStock > 0 && item.stockLevel <= item.minStock)).length;
 
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -189,7 +194,7 @@ export default function InventoryTable({
                 <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wider">Item</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wider">Category</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-neutral-600 uppercase tracking-wider">Stock</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-neutral-600 uppercase tracking-wider">Min Stock</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-neutral-600 uppercase tracking-wider cursor-help" title="Set the minimum stock threshold — items below this level will show as Low or Critical">Min Stock</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-neutral-600 uppercase tracking-wider">Status</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-neutral-600 uppercase tracking-wider">Unit Cost</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wider">Location</th>
@@ -252,9 +257,18 @@ export default function InventoryTable({
                       />
                     </td>
 
-                    {/* Status */}
+                    {/* Status - BUG-019 FIX: Show tooltip explaining status logic */}
                     <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold ${stockStatus.bgColor} ${stockStatus.textColor}`}>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold ${stockStatus.bgColor} ${stockStatus.textColor} cursor-help`}
+                        title={
+                          item.stockLevel === 0
+                            ? 'Out of stock — add stock using the adjust controls'
+                            : item.minStock > 0
+                              ? `Stock: ${item.stockLevel} / Min: ${item.minStock} — ${stockStatus.label === 'Critical' ? 'Below 50% of minimum' : stockStatus.label === 'Low' ? 'Below minimum threshold' : 'Above minimum threshold'}`
+                              : `Stock: ${item.stockLevel} — Set min stock to enable low-stock alerts`
+                        }
+                      >
                         {stockStatus.label === 'Critical' && <AlertTriangle className="w-3 h-3" />}
                         {stockStatus.label}
                       </span>

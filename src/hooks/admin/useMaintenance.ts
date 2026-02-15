@@ -169,7 +169,7 @@ export function useMaintenance() {
               name: item.name,
               category: item.category || 'general',
               stockLevel: item.stock_level || 0,
-              minStock: item.min_stock || 10,
+              minStock: item.min_stock ?? 0,
               unitCost: item.unit_cost || 0,
               location: item.location || '',
               lastRestocked: item.last_restocked || null
@@ -184,7 +184,7 @@ export function useMaintenance() {
                 name: item.item_type || item.name,
                 category: 'linen',
                 stockLevel: item.quantity || 0,
-                minStock: item.min_stock || 10,
+                minStock: item.min_stock ?? 0,
                 unitCost: 0,
                 location: item.location || 'Storage',
                 lastRestocked: item.last_updated?.split('T')[0] || new Date().toISOString().split('T')[0]
@@ -202,7 +202,7 @@ export function useMaintenance() {
                 name: item.item_type || item.name,
                 category: 'linen',
                 stockLevel: item.quantity || 0,
-                minStock: item.min_stock || 10,
+                minStock: item.min_stock ?? 0,
                 unitCost: 0,
                 location: item.location || 'Storage',
                 lastRestocked: item.last_updated?.split('T')[0] || new Date().toISOString().split('T')[0]
@@ -941,7 +941,7 @@ export function useMaintenance() {
         name: data.name,
         category: data.category || 'general',
         stock_level: data.stockLevel || 0,
-        min_stock: data.minStock || 10,
+        min_stock: data.minStock ?? 0,
         unit_cost: data.unitCost || 0,
         location: data.location || '',
       });
@@ -951,7 +951,7 @@ export function useMaintenance() {
         name: apiResponse.name,
         category: apiResponse.category,
         stockLevel: apiResponse.stock_level || 0,
-        minStock: apiResponse.min_stock || 10,
+        minStock: apiResponse.min_stock ?? 0,
         unitCost: apiResponse.unit_cost || 0,
         location: apiResponse.location || '',
         lastRestocked: apiResponse.last_restocked || null
@@ -1085,7 +1085,7 @@ export function useMaintenance() {
    * Get low stock items
    */
   const getLowStockItems = useCallback(() => {
-    return inventory.filter(item => item.stockLevel <= item.minStock);
+    return inventory.filter(item => item.stockLevel === 0 || (item.minStock > 0 && item.stockLevel <= item.minStock));
   }, [inventory]);
 
   // =========================================
@@ -1222,7 +1222,7 @@ export function useMaintenance() {
             name: item.name,
             category: item.category || 'general',
             stockLevel: item.stock_level || 0,
-            minStock: item.min_stock || 10,
+            minStock: item.min_stock ?? 0,
             unitCost: item.unit_cost || 0,
             location: item.location || '',
             lastRestocked: item.last_restocked || null

@@ -930,16 +930,21 @@ export const revenueIntelligenceService = {
 
   /**
    * Get pickup metrics
-   * Cached for 30 seconds to prevent duplicate calls
+   * Cached for 30 seconds to prevent duplicate calls.
+   * Pass { bypassCache: true } to force a fresh request (e.g. when user clicks Refresh).
    */
-  async getPickupMetrics(days?: number): Promise<PickupMetricsResponse> {
+  async getPickupMetrics(days?: number, options?: { bypassCache?: boolean }): Promise<PickupMetricsResponse> {
     const cacheKey = `pickup-metrics:${days || 'default'}`;
-    return requestCache.get(cacheKey, async () => {
+    const fetcher = async () => {
       const response = await apiClient.get<PickupMetricsResponse>(`${BASE_URL}/metrics/pickup`, {
         params: { days },
       });
       return response.data;
-    });
+    };
+    if (options?.bypassCache) {
+      return fetcher();
+    }
+    return requestCache.get(cacheKey, fetcher);
   },
 
   /**

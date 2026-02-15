@@ -37,8 +37,8 @@ function TierModal({ isOpen, onClose, onSave, tier, mode }) {
         name: tier?.name ?? '',
         color: tier?.color ?? TIER_COLORS[0],
         icon: tier?.icon ?? TIER_ICONS[0],
-        minNights: tier?.minNights ?? 0,
-        minRevenue: tier?.minRevenue ?? 0,
+        minNights: Math.max(0, Number(tier?.minNights) || 0),
+        minRevenue: Math.max(0, Number(tier?.minRevenue) || 0),
         benefits: Array.isArray(tier?.benefits) && tier.benefits.length > 0 ? [...tier.benefits] : ['']
       });
     }
@@ -69,8 +69,8 @@ function TierModal({ isOpen, onClose, onSave, tier, mode }) {
       name: formData.name.trim(),
       color: formData.color,
       icon: formData.icon,
-      minNights: parseInt(formData.minNights) || 0,
-      minRevenue: parseInt(formData.minRevenue) || 0,
+      minNights: Math.max(0, parseInt(formData.minNights, 10) || 0),
+      minRevenue: Math.max(0, parseFloat(formData.minRevenue) || 0),
       benefits: formData.benefits.filter(b => b.trim())
     };
 
@@ -162,7 +162,12 @@ function TierModal({ isOpen, onClose, onSave, tier, mode }) {
                 type="number"
                 min="0"
                 value={formData.minNights}
-                onChange={(e) => setFormData(prev => ({ ...prev, minNights: e.target.value }))}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  const num = parseInt(v, 10);
+                  if (v !== '' && !Number.isNaN(num) && num < 0) return;
+                  setFormData(prev => ({ ...prev, minNights: v }));
+                }}
                 className="w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
               />
             </div>
@@ -175,7 +180,12 @@ function TierModal({ isOpen, onClose, onSave, tier, mode }) {
                 type="number"
                 min="0"
                 value={formData.minRevenue}
-                onChange={(e) => setFormData(prev => ({ ...prev, minRevenue: e.target.value }))}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  const num = parseFloat(v);
+                  if (v !== '' && !Number.isNaN(num) && num < 0) return;
+                  setFormData(prev => ({ ...prev, minRevenue: v }));
+                }}
                 className="w-full px-3 py-2.5 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
               />
             </div>

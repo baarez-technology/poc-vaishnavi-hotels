@@ -298,11 +298,11 @@ export function searchWorkOrders(workOrders, query) {
 
   const searchTerm = query.toLowerCase().trim();
   return workOrders.filter(wo => {
-    const woId = (wo.id || '').toLowerCase();
-    const room = (wo.roomNumber || '').toLowerCase();
-    const issue = (wo.issue || '').toLowerCase();
-    const description = (wo.description || '').toLowerCase();
-    const technician = (wo.technicianName || '').toLowerCase();
+    const woId = String(wo.id || '').toLowerCase();
+    const room = String(wo.roomNumber || '').toLowerCase();
+    const issue = String(wo.issue || '').toLowerCase();
+    const description = String(wo.description || '').toLowerCase();
+    const technician = String(wo.technicianName || '').toLowerCase();
 
     return woId.includes(searchTerm) ||
            room.includes(searchTerm) ||

@@ -621,7 +621,7 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
                 const roomFloor = room.floor || Math.floor(parseInt(roomNumber) / 100);
                 const roomPrice = room.room_type?.base_price || room.price || 0;
                 const isSelected = selectedRoom?.id === room.id;
-                const isMatchingType = roomType === booking?.roomType;
+                const isMatchingType = roomType.toLowerCase() === (booking?.roomType || '').toLowerCase();
                 const isRecommended = room.is_recommended;
 
                 return (

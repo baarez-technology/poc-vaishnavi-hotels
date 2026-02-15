@@ -103,7 +103,7 @@ export default function GuestsTable({ guests, sortField, sortDirection, onSort, 
 
   const statusConfig = {
     vip: { color: 'bg-terra-50 text-terra-700 border-terra-200', label: '⭐ VIP' },
-    normal: { color: 'bg-neutral-100 text-neutral-700 border-neutral-200', label: 'Normal' },
+    normal: { color: 'bg-[#4E5840]/10 text-[#4E5840] border-[#4E5840]/20', label: 'Active' },
     review: { color: 'bg-amber-50 text-amber-700 border-amber-200', label: '⚠️ Review' },
     blacklisted: { color: 'bg-rose-50 text-rose-700 border-rose-200', label: '🚫 Blocked' }
   };

@@ -2,17 +2,18 @@ import { useState, useEffect } from 'react';
 import {
   Target,
   Plus,
-  TrendingUp,
   Calendar,
   Check,
   Clock,
   AlertCircle,
   Pencil,
   Trash2,
-  X,
-  Power
+  Power,
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 import { useReputation } from '@/context/ReputationContext';
+import { useToast } from '@/contexts/ToastContext';
 import { Drawer, ConfirmDrawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 import { SelectDropdown, Input } from '../ui2/Input';
@@ -53,33 +54,101 @@ interface GoalDrawerProps {
 
 function GoalDrawer({ isOpen, onClose, onSubmit, initialData, mode }: GoalDrawerProps) {
   const today = new Date().toISOString().split('T')[0];
-  const defaultEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   const [metricType, setMetricType] = useState(initialData?.metric_type || 'rating');
-  const [targetValue, setTargetValue] = useState(initialData?.target_value || 4.5);
-  const [startDate, setStartDate] = useState(initialData?.start_date || today);
-  const [endDate, setEndDate] = useState(initialData?.end_date || defaultEndDate);
+  const [targetValue, setTargetValue] = useState<string>(String(initialData?.target_value || 4.5));
+  const [startDate, setStartDate] = useState(initialData?.start_date || '');
+  const [endDate, setEndDate] = useState(initialData?.end_date || '');
+  const [errors, setErrors] = useState<{ startDate?: string; endDate?: string; targetValue?: string }>({});
+  const [showErrors, setShowErrors] = useState(false);
+
+  // Parse target value as number
+  const targetValueNum = parseFloat(targetValue) || 0;
+
+  // Check if end date is valid (not before start date)
+  const isEndDateValid = !startDate || !endDate || new Date(endDate) >= new Date(startDate);
+
+  // Validation: check if form is valid
+  const isFormValid = startDate && endDate && targetValueNum > 0 && isEndDateValid;
 
   // Update state when initialData changes (for edit mode)
   useEffect(() => {
     if (initialData) {
       setMetricType(initialData.metric_type || 'rating');
-      setTargetValue(initialData.target_value || 4.5);
-      setStartDate(initialData.start_date || today);
-      setEndDate(initialData.end_date || defaultEndDate);
+      setTargetValue(String(initialData.target_value || 4.5));
+      setStartDate(initialData.start_date || '');
+      setEndDate(initialData.end_date || '');
     } else {
-      // Reset to defaults for create mode
+      // Reset to defaults for create mode - leave dates empty to require selection
       setMetricType('rating');
-      setTargetValue(4.5);
-      setStartDate(today);
-      setEndDate(defaultEndDate);
+      setTargetValue('4.5');
+      setStartDate('');
+      setEndDate('');
     }
+    setErrors({});
+    setShowErrors(false);
   }, [initialData, isOpen]);
+
+  // Get max value based on metric type
+  const getMaxValue = () => {
+    if (metricType === 'rating') return 5;
+    return 100;
+  };
+
+  // Handle target value change with max limit based on metric type
+  const handleTargetValueChange = (value: string) => {
+    // Remove leading zeros but keep the value valid
+    let cleanValue = value.replace(/^0+(?=\d)/, '');
+
+    const numValue = parseFloat(cleanValue);
+    if (!isNaN(numValue)) {
+      const maxVal = getMaxValue();
+      const minVal = metricType === 'nps' ? -100 : 0;
+
+      if (numValue > maxVal) {
+        cleanValue = String(maxVal);
+      } else if (numValue < minVal) {
+        cleanValue = String(minVal);
+      }
+    }
+
+    setTargetValue(cleanValue);
+    if (showErrors) {
+      setErrors(prev => ({ ...prev, targetValue: undefined }));
+    }
+  };
+
+  // Validate form and show errors
+  const validateForm = () => {
+    const newErrors: typeof errors = {};
+
+    if (!startDate) {
+      newErrors.startDate = 'Start date is required';
+    }
+    if (!endDate) {
+      newErrors.endDate = 'End date is required';
+    } else if (startDate && new Date(endDate) < new Date(startDate)) {
+      newErrors.endDate = 'End date must be after start date';
+    }
+    if (targetValueNum <= 0) {
+      newErrors.targetValue = 'Target value must be greater than 0';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ metricType, targetValue, startDate, endDate });
-    onClose();
+    if (validateForm()) {
+      onSubmit({ metricType, targetValue: targetValueNum, startDate, endDate });
+      onClose();
+    }
+  };
+
+  const handleSaveClick = () => {
+    setShowErrors(true);
+    validateForm();
   };
 
   const footer = (
@@ -87,7 +156,13 @@ function GoalDrawer({ isOpen, onClose, onSubmit, initialData, mode }: GoalDrawer
       <Button variant="outline" onClick={onClose}>
         Cancel
       </Button>
-      <Button variant="primary" type="submit" form="goal-form">
+      <Button
+        variant="primary"
+        type="submit"
+        form="goal-form"
+        disabled={!isFormValid}
+        onClick={!isFormValid ? handleSaveClick : undefined}
+      >
         {mode === 'create' ? 'Create Goal' : 'Save Changes'}
       </Button>
     </div>
@@ -122,14 +197,21 @@ function GoalDrawer({ isOpen, onClose, onSubmit, initialData, mode }: GoalDrawer
           <Input
             type="number"
             step="0.1"
+            min={metricType === 'nps' ? -100 : 0}
+            max={metricType === 'rating' ? 5 : 100}
             value={targetValue}
-            onChange={(e) => setTargetValue(parseFloat(e.target.value))}
+            onChange={(e) => handleTargetValueChange(e.target.value)}
+            className={showErrors && errors.targetValue ? 'border-rose-500' : ''}
           />
-          <p className="text-[11px] text-neutral-400 mt-1">
-            {metricType === 'rating' && 'Rating target (1.0 - 5.0)'}
-            {metricType === 'response_rate' && 'Response rate percentage (0 - 100)'}
-            {metricType === 'nps' && 'Net Promoter Score (-100 to 100)'}
-          </p>
+          {showErrors && errors.targetValue ? (
+            <p className="text-[11px] text-rose-500 mt-1">{errors.targetValue}</p>
+          ) : (
+            <p className="text-[11px] text-neutral-400 mt-1">
+              {metricType === 'rating' && 'Rating target (1.0 - 5.0)'}
+              {metricType === 'response_rate' && 'Response rate percentage (0 - 100)'}
+              {metricType === 'nps' && 'Net Promoter Score (-100 to 100)'}
+            </p>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -138,11 +220,18 @@ function GoalDrawer({ isOpen, onClose, onSubmit, initialData, mode }: GoalDrawer
             </label>
             <DatePicker
               value={startDate}
-              onChange={(value) => setStartDate(value)}
+              onChange={(value) => {
+                setStartDate(value);
+                // Clear start date error and also end date error (in case it was about date order)
+                if (showErrors) setErrors(prev => ({ ...prev, startDate: undefined, endDate: undefined }));
+              }}
               placeholder="Select start date"
               minDate={mode === 'edit' ? (initialData?.start_date || today) : today}
-              className="w-full"
+              className={`w-full ${showErrors && errors.startDate ? 'border-rose-500' : ''}`}
             />
+            {showErrors && errors.startDate && (
+              <p className="text-[11px] text-rose-500 mt-1">{errors.startDate}</p>
+            )}
           </div>
           <div>
             <label className="block text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2">
@@ -150,11 +239,17 @@ function GoalDrawer({ isOpen, onClose, onSubmit, initialData, mode }: GoalDrawer
             </label>
             <DatePicker
               value={endDate}
-              onChange={(value) => setEndDate(value)}
+              onChange={(value) => {
+                setEndDate(value);
+                if (showErrors) setErrors(prev => ({ ...prev, endDate: undefined }));
+              }}
               placeholder="Select end date"
               minDate={startDate || today}
-              className="w-full"
+              className={`w-full ${showErrors && errors.endDate ? 'border-rose-500' : ''}`}
             />
+            {showErrors && errors.endDate && (
+              <p className="text-[11px] text-rose-500 mt-1">{errors.endDate}</p>
+            )}
           </div>
         </div>
       </form>
@@ -218,24 +313,11 @@ function getDaysRemaining(endDate: string): number {
 
 export default function GoalsPanel() {
   const { goals, createGoal, updateGoal, deleteGoal, toggleGoalStatus, updateGoalProgress, isLoading } = useReputation();
+  const { showToast } = useToast();
   const [showDrawer, setShowDrawer] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [deletingGoal, setDeletingGoal] = useState<Goal | null>(null);
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'achieved':
-        return <Check className="w-4 h-4 text-[#4E5840]" />;
-      case 'active':
-        return <Clock className="w-4 h-4 text-[#5C9BA4]" />;
-      case 'expired':
-        return <AlertCircle className="w-4 h-4 text-rose-500" />;
-      case 'deactivated':
-        return <Power className="w-4 h-4 text-neutral-400" />;
-      default:
-        return <Target className="w-4 h-4 text-neutral-500" />;
-    }
-  };
+  const [refreshingGoalId, setRefreshingGoalId] = useState<number | null>(null);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -265,8 +347,8 @@ export default function GoalsPanel() {
     }
   };
 
-  const formatValue = (metricType: string, value: number | null) => {
-    if (value === null) return '-';
+  const formatValue = (metricType: string, value: number | null | undefined) => {
+    if (value === null || value === undefined) return '-';
     if (metricType === 'rating') return value.toFixed(1);
     if (metricType === 'response_rate') return `${value.toFixed(0)}%`;
     return value.toFixed(0);
@@ -275,16 +357,21 @@ export default function GoalsPanel() {
   const handleCreateGoal = async (data: GoalFormData) => {
     try {
       await createGoal(data.metricType, data.targetValue, data.startDate, data.endDate);
+      showToast('Goal created successfully', 'success');
     } catch (error) {
       console.error('Failed to create goal:', error);
+      showToast('Failed to create goal', 'error');
     }
   };
 
   const handleToggleStatus = async (goal: Goal) => {
     try {
       await toggleGoalStatus(goal.id);
+      const newStatus = goal.status === 'deactivated' ? 'activated' : 'deactivated';
+      showToast(`Goal ${newStatus} successfully`, 'success');
     } catch (error) {
       console.error('Failed to toggle goal status:', error);
+      showToast('Failed to update goal status', 'error');
     }
   };
 
@@ -296,8 +383,10 @@ export default function GoalsPanel() {
         start_date: data.startDate,
         end_date: data.endDate
       });
+      showToast('Goal updated successfully', 'success');
     } catch (error) {
       console.error('Failed to update goal:', error);
+      showToast('Failed to update goal', 'error');
     } finally {
       setEditingGoal(null);
     }
@@ -307,10 +396,25 @@ export default function GoalsPanel() {
     if (!deletingGoal) return;
     try {
       await deleteGoal(deletingGoal.id);
+      showToast('Goal deleted successfully', 'success');
     } catch (error) {
       console.error('Failed to delete goal:', error);
+      showToast('Failed to delete goal', 'error');
     } finally {
       setDeletingGoal(null);
+    }
+  };
+
+  const handleRefreshProgress = async (goalId: number) => {
+    setRefreshingGoalId(goalId);
+    try {
+      await updateGoalProgress(goalId);
+      showToast('Progress updated successfully', 'success');
+    } catch (error) {
+      console.error('Failed to refresh progress:', error);
+      showToast('Failed to refresh progress', 'error');
+    } finally {
+      setRefreshingGoalId(null);
     }
   };
 
@@ -472,11 +576,12 @@ export default function GoalsPanel() {
                     <Button
                       variant="ghost"
                       size="xs"
-                      icon={TrendingUp}
-                      onClick={() => updateGoalProgress(goal.id)}
-                      className="w-full mt-3"
+                      icon={refreshingGoalId === goal.id ? Loader2 : RefreshCw}
+                      onClick={() => handleRefreshProgress(goal.id)}
+                      disabled={refreshingGoalId === goal.id}
+                      className={`w-full mt-3 ${refreshingGoalId === goal.id ? '[&>svg]:animate-spin' : ''}`}
                     >
-                      Refresh Progress
+                      {refreshingGoalId === goal.id ? 'Refreshing...' : 'Refresh Progress'}
                     </Button>
                   )}
                 </div>

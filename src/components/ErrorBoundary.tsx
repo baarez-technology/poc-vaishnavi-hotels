@@ -59,10 +59,34 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+// Helper to get the correct dashboard path based on user role
+const getDashboardPath = () => {
+  try {
+    const userStr = localStorage.getItem('glimmora_user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      const role = user?.role?.toLowerCase();
+      // Admin roles go to admin dashboard
+      if (role === 'admin' || role === 'owner' || role === 'manager') {
+        return '/admin';
+      }
+      // Staff roles go to staff portal
+      if (role === 'staff' || role === 'receptionist' || role === 'housekeeping' || role === 'maintenance') {
+        return '/staff';
+      }
+    }
+  } catch (e) {
+    console.error('Error reading user from localStorage:', e);
+  }
+  // Default to home for guests/unknown
+  return '/';
+};
+
 // Fallback UI Component
 function ErrorFallback({ error, errorInfo, onReset }) {
   const { isDark } = useTheme();
   const cardBg = isDark ? 'bg-white/[0.03] border border-white/[0.08] backdrop-blur-sm' : 'luxury-glass';
+  const dashboardPath = getDashboardPath();
 
   return (
     <div className={`min-h-screen flex items-center justify-center p-6 ${isDark ? 'bg-[#0a0a0a]' : 'luxury-bg'}`}>
@@ -110,7 +134,7 @@ function ErrorFallback({ error, errorInfo, onReset }) {
             Try Again
           </button>
           <button
-            onClick={() => window.location.href = '/'}
+            onClick={() => window.location.href = dashboardPath}
             className={`flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-xl transition-all luxury-card-hover border focus:outline-none focus:ring-2 focus:ring-[#A57865]/50 ${
               isDark
                 ? 'border-white/20 text-white hover:bg-white/5'
@@ -118,7 +142,7 @@ function ErrorFallback({ error, errorInfo, onReset }) {
             }`}
           >
             <Home className="w-4 h-4" />
-            Go Home
+            {dashboardPath === '/admin' ? 'Go to Admin Dashboard' : dashboardPath === '/staff' ? 'Go to Staff Portal' : 'Go Home'}
           </button>
         </div>
 

@@ -11,11 +11,12 @@ import { Button } from '../ui2/Button';
 
 const SOURCE_OPTIONS = [
   { value: 'all', label: 'All Sources' },
-  { value: 'booking.com', label: 'Booking.com' },
+  { value: 'booking_com', label: 'Booking.com' },
   { value: 'google', label: 'Google' },
   { value: 'expedia', label: 'Expedia' },
   { value: 'tripadvisor', label: 'Tripadvisor' },
-  { value: 'agoda', label: 'Agoda' }
+  { value: 'agoda', label: 'Agoda' },
+  { value: 'direct', label: 'Direct' }
 ];
 
 const RATING_OPTIONS = [

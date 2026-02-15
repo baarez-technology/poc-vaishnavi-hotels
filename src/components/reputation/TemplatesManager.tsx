@@ -327,9 +327,11 @@ export default function TemplatesManager() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    // Initial load
-    loadTemplates().catch(console.error);
-  }, [loadTemplates]);
+    // Only load if templates not already loaded (ReputationContext loads them in secondary data)
+    if (!templates || templates.length === 0) {
+      loadTemplates().catch(console.error);
+    }
+  }, [templates, loadTemplates]);
 
   // Handle expanding first template once templates are loaded
   useEffect(() => {

@@ -1,6 +1,29 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { Button } from '@/components/ui';
 
+// Helper to get the correct dashboard path based on user role
+const getDashboardPath = (): string => {
+  try {
+    const userStr = localStorage.getItem('glimmora_user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      const role = user?.role?.toLowerCase();
+      // Admin roles go to admin dashboard
+      if (role === 'admin' || role === 'owner' || role === 'manager') {
+        return '/admin';
+      }
+      // Staff roles go to staff portal
+      if (role === 'staff' || role === 'receptionist' || role === 'housekeeping' || role === 'maintenance') {
+        return '/staff';
+      }
+    }
+  } catch (e) {
+    console.error('Error reading user from localStorage:', e);
+  }
+  // Default to home for guests/unknown
+  return '/';
+};
+
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
@@ -75,10 +98,16 @@ export class ErrorBoundary extends Component<Props, State> {
               </Button>
               <Button
                 variant="ghost"
-                onClick={() => (window.location.href = '/')}
+                onClick={() => {
+                  const path = getDashboardPath();
+                  window.location.href = path;
+                }}
                 fullWidth
               >
-                Go to home page
+                {(() => {
+                  const path = getDashboardPath();
+                  return path === '/admin' ? 'Go to Admin Dashboard' : path === '/staff' ? 'Go to Staff Portal' : 'Go to Home';
+                })()}
               </Button>
             </div>
           </div>

@@ -33,6 +33,7 @@ function ReputationAIContent() {
     settings,
     metrics,
     isLoading,
+    isFilterLoading,
     updateFilters,
     updateSettings,
     addReviewResponse,
@@ -57,10 +58,16 @@ function ReputationAIContent() {
     setSelectedReview(null);
   }, []);
 
-  const handleRespondToReview = useCallback((reviewId, responseText) => {
-    addReviewResponse(reviewId, responseText);
-    setSelectedReview(null);
-  }, [addReviewResponse]);
+  const handleRespondToReview = useCallback(async (reviewId, responseText) => {
+    try {
+      await addReviewResponse(reviewId, responseText);
+      showToast('Response published successfully', 'success');
+      setSelectedReview(null);
+    } catch (error) {
+      console.error('Failed to respond to review:', error);
+      showToast('Failed to publish response', 'error');
+    }
+  }, [addReviewResponse, showToast]);
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -191,7 +198,7 @@ function ReputationAIContent() {
         {/* Keywords & Reviews - Stacked */}
         <div className="space-y-4 sm:space-y-6">
           <KeywordFrequency data={keywords} />
-          <ReviewFeed reviews={filteredReviews} onReviewClick={handleReviewClick} />
+          <ReviewFeed reviews={filteredReviews} onReviewClick={handleReviewClick} isLoading={isFilterLoading} />
         </div>
 
         {/* AI Integration - Stacked */}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MessageSquare, Wand2, Star, Clock, Send, Loader2 } from 'lucide-react';
 import { useReputation } from '@/context/ReputationContext';
+import { useToast } from '@/contexts/ToastContext';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 import { Textarea } from '../ui2/Input';
@@ -14,6 +15,7 @@ interface ReviewDraftDrawerProps {
 
 function ReviewDraftDrawer({ isOpen, review, onClose, onApprove }: ReviewDraftDrawerProps) {
   const { generateDraft } = useReputation();
+  const { showToast } = useToast();
   const [draft, setDraft] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [tone, setTone] = useState('professional');
@@ -30,6 +32,7 @@ function ReviewDraftDrawer({ isOpen, review, onClose, onApprove }: ReviewDraftDr
       setEditedText(text);
     } catch (error) {
       console.error('Failed to generate draft:', error);
+      showToast('Failed to generate AI response', 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -172,19 +175,23 @@ function ReviewDraftDrawer({ isOpen, review, onClose, onApprove }: ReviewDraftDr
 }
 
 export default function PendingReviewsPanel() {
-  const { pendingReviews, fetchPendingReviews, approveDraft, isLoading } = useReputation();
+  const { pendingReviews, fetchPendingReviews, addReviewResponse, isLoading } = useReputation();
+  const { showToast } = useToast();
   const [selectedReview, setSelectedReview] = useState<any>(null);
   const [showAll, setShowAll] = useState(false);
 
   const handleApprove = async (text: string) => {
     if (!selectedReview) return;
     try {
-      // In a real implementation, you'd have the draft ID from generateDraft
-      // For now, we'll just close the modal and refresh
+      // Call the API to respond to the review
+      const reviewId = typeof selectedReview.id === 'string' ? parseInt(selectedReview.id, 10) : selectedReview.id;
+      await addReviewResponse(reviewId, text);
+      showToast('Response published successfully', 'success');
       setSelectedReview(null);
       await fetchPendingReviews();
     } catch (error) {
       console.error('Failed to approve response:', error);
+      showToast('Failed to publish response', 'error');
     }
   };
 

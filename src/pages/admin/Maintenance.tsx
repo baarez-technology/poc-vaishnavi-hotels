@@ -107,6 +107,17 @@ export default function Maintenance() {
   const [openPMMenuId, setOpenPMMenuId] = useState(null);
   const pmMenuRef = useRef(null);
 
+  // BUG-025 FIX: Sync selectedWO with latest workOrders state
+  // When workOrders updates (e.g., after assign, start, complete), keep the drawer in sync
+  useEffect(() => {
+    if (selectedWO) {
+      const updated = workOrders.find(wo => wo.id === selectedWO.id);
+      if (updated && updated !== selectedWO) {
+        setSelectedWO(updated);
+      }
+    }
+  }, [workOrders]);
+
   // Close PM menu on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {

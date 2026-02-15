@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -41,6 +41,7 @@ export const RoomDetailPage = () => {
   const [searchParams] = useSearchParams();
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(0);
+  const reviewsRef = useRef<HTMLDivElement>(null);
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [room, setRoom] = useState<Room | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -696,7 +697,7 @@ export const RoomDetailPage = () => {
         </div>
 
         {/* Reviews Section */}
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl mt-16 pb-16">
+        <div ref={reviewsRef} className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl mt-16 pb-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -721,7 +722,7 @@ export const RoomDetailPage = () => {
                   <span className="text-neutral-600">({room.reviewCount} reviews)</span>
                 </div>
               </div>
-              <Button variant="outline" size="md" className="hidden sm:flex" onClick={() => navigate('/feedback')}>
+              <Button variant="outline" size="md" className="hidden sm:flex" onClick={() => reviewsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
                 Write a Review
               </Button>
             </div>
@@ -835,7 +836,7 @@ export const RoomDetailPage = () => {
 
             {/* Load More Button */}
             <div className="flex justify-center mt-8">
-              <Button variant="outline" size="lg" className="font-semibold">
+              <Button variant="outline" size="lg" className="font-semibold" onClick={() => reviewsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
                 View All {room.reviewCount} Reviews
               </Button>
             </div>

@@ -353,9 +353,9 @@ export default function CRM() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4">
-        <div className="bg-white rounded-[10px] p-4 sm:p-5">
+        <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-5">
           <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-terra-50 flex items-center justify-center flex-shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-[8px] bg-terra-50 flex items-center justify-center flex-shrink-0">
               <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-terra-600" />
             </div>
             <p className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Total Guests</p>
@@ -365,9 +365,9 @@ export default function CRM() {
           </div>
         </div>
 
-        <div className="bg-white rounded-[10px] p-4 sm:p-5">
+        <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-5">
           <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-sage-50 flex items-center justify-center flex-shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-[8px] bg-sage-50 flex items-center justify-center flex-shrink-0">
               <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sage-600" />
             </div>
             <p className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Repeat Guests</p>
@@ -377,9 +377,9 @@ export default function CRM() {
           </div>
         </div>
 
-        <div className="bg-white rounded-[10px] p-4 sm:p-5">
+        <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-5">
           <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gold-50 flex items-center justify-center flex-shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-[8px] bg-gold-50 flex items-center justify-center flex-shrink-0">
               <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gold-600" />
             </div>
             <p className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Avg LTV</p>
@@ -389,9 +389,9 @@ export default function CRM() {
           </div>
         </div>
 
-        <div className="bg-white rounded-[10px] p-4 sm:p-5">
+        <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-5">
           <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-ocean-50 flex items-center justify-center flex-shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-[8px] bg-ocean-50 flex items-center justify-center flex-shrink-0">
               <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-ocean-600" />
             </div>
             <p className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Loyalty Members</p>
@@ -401,9 +401,9 @@ export default function CRM() {
           </div>
         </div>
 
-        <div className="bg-white rounded-[10px] p-4 sm:p-5">
+        <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-5">
           <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-terra-50 flex items-center justify-center flex-shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-[8px] bg-terra-50 flex items-center justify-center flex-shrink-0">
               <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-terra-600" />
             </div>
             <p className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Active Segments</p>
@@ -413,9 +413,9 @@ export default function CRM() {
           </div>
         </div>
 
-        <div className="bg-white rounded-[10px] p-4 sm:p-5">
+        <div className="bg-white rounded-[10px] border border-neutral-200 p-4 sm:p-5">
           <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-sage-50 flex items-center justify-center flex-shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-[8px] bg-sage-50 flex items-center justify-center flex-shrink-0">
               <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sage-600" />
             </div>
             <p className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Engagement Rate</p>
@@ -429,7 +429,7 @@ export default function CRM() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
         {/* LTV Trend */}
-        <div className="bg-white rounded-[10px] p-3 sm:p-4">
+        <div className="bg-white rounded-[10px] border border-neutral-200 p-3 sm:p-4">
           <h3 className="text-[12px] sm:text-[13px] font-semibold text-neutral-900 mb-3 sm:mb-4">LTV Trend</h3>
           <div className="h-[180px] sm:h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -459,7 +459,7 @@ export default function CRM() {
         </div>
 
         {/* Stay Frequency */}
-        <div className="bg-white rounded-[10px] p-3 sm:p-4">
+        <div className="bg-white rounded-[10px] border border-neutral-200 p-3 sm:p-4">
           <h3 className="text-[12px] sm:text-[13px] font-semibold text-neutral-900 mb-3 sm:mb-4">Stay Frequency Distribution</h3>
           <div className="h-[180px] sm:h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -483,33 +483,33 @@ export default function CRM() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white rounded-[10px] overflow-hidden">
-        <div className="border-b border-neutral-100">
-          <div className="px-2 sm:px-6 pt-2 sm:pt-4 overflow-x-auto scrollbar-hide">
-            <div className="flex items-center gap-0 min-w-max">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`relative flex-shrink-0 px-3 sm:px-4 py-2.5 sm:py-3 text-[11px] sm:text-[13px] font-semibold transition-all duration-150 whitespace-nowrap ${
-                      isActive ? 'text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1 sm:gap-2">
-                      <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline">{tab.label}</span>
-                      <span className="sm:hidden">{tab.shortLabel}</span>
-                    </span>
-                    {isActive && (
-                      <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-terra-500 rounded-t-full" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+      <div className="bg-white rounded-[10px] border border-neutral-200">
+        <div className="px-2 sm:px-5 pt-1 sm:pt-0 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-1 min-w-max">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative flex-shrink-0 px-3 sm:px-4 py-3 sm:py-3.5 text-[11px] sm:text-[13px] font-semibold transition-all duration-150 whitespace-nowrap ${
+                    isActive
+                      ? 'text-[#A57865]'
+                      : 'text-neutral-400 hover:text-neutral-600'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 sm:gap-2">
+                    <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isActive ? 'text-[#A57865]' : ''}`} />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">{tab.shortLabel}</span>
+                  </span>
+                  {isActive && (
+                    <span className="absolute bottom-0 left-2 right-2 h-[2px] bg-[#A57865] rounded-t-full" />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

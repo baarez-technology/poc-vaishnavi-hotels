@@ -595,7 +595,7 @@ export const RoomDetailPageVariant = () => {
                   <p className="text-sm text-neutral-600 mb-4">
                     Our concierge team is here to assist you with any questions.
                   </p>
-                  <Button variant="secondary" size="sm" fullWidth>
+                  <Button variant="secondary" size="sm" fullWidth onClick={() => navigate('/contact')}>
                     Contact Us
                   </Button>
                 </Card>

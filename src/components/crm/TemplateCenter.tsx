@@ -424,10 +424,10 @@ function ScoreBadge({ score, label, icon: Icon, color }) {
   };
 
   return (
-    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg ${color || getScoreColor(score)}`}>
+    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-[6px] ${color || getScoreColor(score)}`}>
       {Icon && <Icon className="w-3 h-3" />}
-      <span className="text-xs font-medium">{score}%</span>
-      <span className="text-xs opacity-75">{label}</span>
+      <span className="text-[11px] font-medium">{score}%</span>
+      <span className="text-[11px] opacity-75">{label}</span>
     </div>
   );
 }
@@ -479,7 +479,7 @@ function AIInsightsPanel({ template, expanded, onToggle }) {
 
           {/* Suggestions */}
           {analysis.suggestions.length > 0 && (
-            <div className="p-2.5 bg-[#CDB261]/10 border border-[#CDB261]/20 rounded-lg">
+            <div className="p-2.5 bg-[#CDB261]/10 border border-[#CDB261]/20 rounded-[6px]">
               <div className="flex items-center gap-1.5 text-xs font-medium text-[#CDB261] mb-1.5">
                 <Lightbulb className="w-3.5 h-3.5" />
                 Suggestions
@@ -541,20 +541,20 @@ function AITemplateGenerator({ onGenerate, isGenerating }) {
   };
 
   return (
-    <div className="mb-4 p-4 bg-gradient-to-r from-[#5C9BA4]/5 to-[#A57865]/5 border border-[#5C9BA4]/20 rounded-xl">
+    <div className="mb-4 p-4 bg-neutral-50 border border-neutral-100 rounded-[8px]">
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#5C9BA4] to-[#A57865] flex items-center justify-center">
-          <Sparkles className="w-4 h-4 text-white" />
+        <div className="w-9 h-9 rounded-[8px] bg-[#5C9BA4]/10 flex items-center justify-center">
+          <Sparkles className="w-[18px] h-[18px] text-[#5C9BA4]" />
         </div>
         <div>
-          <h4 className="text-sm font-semibold text-neutral-900">AI Template Generator</h4>
-          <p className="text-xs text-neutral-500">Generate templates with AI assistance</p>
+          <h4 className="text-[13px] font-semibold text-neutral-900">AI Template Generator</h4>
+          <p className="text-[11px] text-neutral-400">Generate templates with AI assistance</p>
         </div>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex-1 min-w-[140px]">
-          <label className="text-xs font-medium text-neutral-500 mb-1.5 block">Purpose</label>
+          <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-1.5 block">Purpose</label>
           <CustomDropdown
             options={TEMPLATE_PURPOSE_OPTIONS}
             value={purpose}
@@ -563,7 +563,7 @@ function AITemplateGenerator({ onGenerate, isGenerating }) {
           />
         </div>
         <div className="flex-1 min-w-[100px]">
-          <label className="text-xs font-medium text-neutral-500 mb-1.5 block">Type</label>
+          <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-1.5 block">Type</label>
           <CustomDropdown
             options={TEMPLATE_TYPE_OPTIONS}
             value={type}
@@ -574,7 +574,7 @@ function AITemplateGenerator({ onGenerate, isGenerating }) {
         <button
           onClick={handleGenerate}
           disabled={isGenerating}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#5C9BA4] to-[#A57865] text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2.5 bg-[#A57865] text-white rounded-[8px] text-[13px] font-semibold hover:bg-[#8E6554] transition-colors disabled:opacity-50"
         >
           {isGenerating ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -587,7 +587,7 @@ function AITemplateGenerator({ onGenerate, isGenerating }) {
 
       {/* Generated Template Preview */}
       {showGenerated && generatedTemplate && (
-        <div className="mt-4 p-4 bg-white border border-neutral-200 rounded-xl animate-in slide-in-from-top-2 duration-300">
+        <div className="mt-4 p-4 bg-white border border-neutral-200 rounded-[8px] animate-in slide-in-from-top-2 duration-300">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#5C9BA4]" />
@@ -608,7 +608,7 @@ function AITemplateGenerator({ onGenerate, isGenerating }) {
             </p>
           )}
 
-          <div className="p-3 bg-neutral-50 rounded-lg max-h-32 overflow-y-auto">
+          <div className="p-3 bg-neutral-50 rounded-[6px] border border-neutral-100 max-h-32 overflow-y-auto">
             <p className="text-sm text-neutral-600 whitespace-pre-line font-mono text-xs">
               {generatedTemplate.body}
             </p>
@@ -617,14 +617,14 @@ function AITemplateGenerator({ onGenerate, isGenerating }) {
           <div className="flex items-center gap-2 mt-3">
             <button
               onClick={handleSave}
-              className="flex items-center gap-2 px-4 py-2 bg-[#4E5840] text-white rounded-lg text-sm font-medium hover:bg-[#3d4632] transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[#4E5840] text-white rounded-[8px] text-[13px] font-semibold hover:bg-[#3d4632] transition-colors"
             >
               <Check className="w-4 h-4" />
               Save Template
             </button>
             <button
               onClick={() => setShowGenerated(false)}
-              className="px-4 py-2 text-neutral-600 hover:bg-neutral-100 rounded-lg text-sm font-medium transition-colors"
+              className="px-4 py-2 text-neutral-600 hover:bg-neutral-100 rounded-[8px] text-[13px] font-medium transition-colors"
             >
               Dismiss
             </button>
@@ -672,24 +672,24 @@ function ABTestModal({ isOpen, onClose, template, onCreateTest }) {
 
   return createPortal(
     <div className="fixed inset-0 z-50">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/40" onClick={onClose} />
       <div className="fixed right-0 top-0 bottom-0 w-full sm:max-w-xl flex flex-col bg-white border-l border-neutral-200 shadow-2xl h-screen">
         {/* Header */}
         <div className="relative px-4 sm:px-6 py-4 sm:py-5 pr-12 sm:pr-14 border-b border-neutral-100 bg-white flex-shrink-0 z-10">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-[#CDB261]/10 flex items-center justify-center flex-shrink-0">
-              <TestTube2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#CDB261]" />
+            <div className="w-9 h-9 rounded-[8px] bg-[#CDB261]/10 flex items-center justify-center flex-shrink-0">
+              <TestTube2 className="w-[18px] h-[18px] text-[#CDB261]" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-base sm:text-lg font-semibold text-neutral-900">A/B Test Suggestions</h2>
-              <p className="text-xs sm:text-sm text-neutral-500 truncate">AI-generated variants for "{template?.name}"</p>
+              <h2 className="text-[15px] font-semibold text-neutral-900">A/B Test Suggestions</h2>
+              <p className="text-[12px] text-neutral-400 truncate">AI-generated variants for "{template?.name}"</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors"
+            className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-[8px] transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -703,7 +703,7 @@ function ABTestModal({ isOpen, onClose, template, onCreateTest }) {
           ) : (
             <div className="space-y-3 sm:space-y-4">
               {/* Original */}
-              <div className="p-3 sm:p-4 border border-[#4E5840]/30 bg-[#4E5840]/5 rounded-xl">
+              <div className="p-3 sm:p-4 border border-[#4E5840]/30 bg-[#4E5840]/5 rounded-[8px]">
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <span className="px-2 py-0.5 bg-[#4E5840] text-white text-[10px] sm:text-xs rounded-full">Original</span>
                   <span className="text-xs sm:text-sm font-medium text-neutral-900 truncate">{template?.name}</span>
@@ -715,7 +715,7 @@ function ABTestModal({ isOpen, onClose, template, onCreateTest }) {
               {variants.map((variant, idx) => (
                 <div
                   key={variant.id}
-                  className={`p-3 sm:p-4 border rounded-xl cursor-pointer transition-all ${
+                  className={`p-3 sm:p-4 border rounded-[8px] cursor-pointer transition-all ${
                     selectedVariants.includes(variant.id)
                       ? 'border-[#5C9BA4] bg-[#5C9BA4]/5'
                       : 'border-neutral-200 hover:border-neutral-300'
@@ -745,20 +745,20 @@ function ABTestModal({ isOpen, onClose, template, onCreateTest }) {
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-t border-neutral-100 px-4 sm:px-6 py-4 sm:py-5 bg-neutral-50/50">
+        <div className="flex-shrink-0 border-t border-neutral-100 px-4 sm:px-6 py-4 bg-white">
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 border border-neutral-200 text-neutral-700 rounded-xl text-xs sm:text-sm font-medium hover:bg-neutral-50 transition-colors"
+              className="flex-1 px-3 sm:px-4 py-2.5 border border-neutral-200 text-neutral-700 rounded-[8px] text-[13px] font-medium hover:bg-neutral-50 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleCreate}
               disabled={selectedVariants.length === 0 || isLoading}
-              className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
+              className={`flex-1 px-3 sm:px-4 py-2.5 rounded-[8px] text-[13px] font-semibold transition-colors ${
                 selectedVariants.length > 0 && !isLoading
-                  ? 'bg-[#CDB261] text-white hover:bg-[#CDB261]/90'
+                  ? 'bg-[#A57865] text-white hover:bg-[#8E6554]'
                   : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
               }`}
             >
@@ -897,7 +897,7 @@ function TemplateModal({ isOpen, onClose, onSave, template, mode }) {
     <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/40"
         onClick={onClose}
       />
 
@@ -908,19 +908,24 @@ function TemplateModal({ isOpen, onClose, onSave, template, mode }) {
       >
         {/* Header */}
         <div className="relative px-4 sm:px-6 py-4 sm:py-5 pr-12 sm:pr-14 border-b border-neutral-100 bg-white flex-shrink-0 z-10">
-          <div>
-            <h2 className="text-base sm:text-lg font-semibold text-neutral-900">
-              {mode === 'create' ? 'Create Template' : 'Edit Template'}
-            </h2>
-            <p className="text-xs sm:text-sm text-neutral-500">
-              {formData.type === 'email' ? 'Email template' : 'SMS template'}
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-[8px] bg-[#A57865]/10 flex items-center justify-center flex-shrink-0">
+              <FileText className="w-[18px] h-[18px] text-[#A57865]" />
+            </div>
+            <div>
+              <h2 className="text-[15px] font-semibold text-neutral-900">
+                {mode === 'create' ? 'Create Template' : 'Edit Template'}
+              </h2>
+              <p className="text-[12px] text-neutral-400">
+                {formData.type === 'email' ? 'Email template' : 'SMS template'}
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors"
+            className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-[8px] transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -928,17 +933,17 @@ function TemplateModal({ isOpen, onClose, onSave, template, mode }) {
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 bg-white space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Template Name *</label>
+              <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-1.5 block">Template Name *</label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g., Welcome Email"
-                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
+                className="w-full px-3 py-2.5 bg-white border border-neutral-200 rounded-[8px] text-[13px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865] transition-colors"
               />
             </div>
             <div>
-              <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Type</label>
+              <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-1.5 block">Type</label>
               <CustomDropdown
                 options={TEMPLATE_TYPE_OPTIONS}
                 value={formData.type}
@@ -951,7 +956,7 @@ function TemplateModal({ isOpen, onClose, onSave, template, mode }) {
           {formData.type === 'email' && (
             <div>
               <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide">Subject Line *</label>
+                <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest">Subject Line *</label>
                 <button
                   onClick={handleGenerateSubjectLine}
                   disabled={isAIProcessing || !formData.body.trim()}
@@ -971,12 +976,12 @@ function TemplateModal({ isOpen, onClose, onSave, template, mode }) {
                 value={formData.subject}
                 onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
                 placeholder="e.g., Welcome to Glimmora, {{guest.firstName}}!"
-                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
+                className="w-full px-3 py-2.5 bg-white border border-neutral-200 rounded-[8px] text-[13px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865] transition-colors"
               />
 
               {/* Subject Suggestions */}
               {showSubjectSuggestions && subjectSuggestions.length > 0 && (
-                <div className="mt-2 p-2 sm:p-3 bg-[#5C9BA4]/5 border border-[#5C9BA4]/20 rounded-xl animate-in slide-in-from-top-2 duration-200">
+                <div className="mt-2 p-2 sm:p-3 bg-[#5C9BA4]/5 border border-[#5C9BA4]/20 rounded-[8px] animate-in slide-in-from-top-2 duration-200">
                   <p className="text-[10px] sm:text-xs text-neutral-600 mb-1.5 sm:mb-2 flex items-center gap-1">
                     <Sparkles className="w-3 h-3 text-[#5C9BA4]" />
                     AI Suggestions (click to use):
@@ -986,7 +991,7 @@ function TemplateModal({ isOpen, onClose, onSave, template, mode }) {
                       <button
                         key={idx}
                         onClick={() => selectSubjectSuggestion(suggestion)}
-                        className="w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-white border border-neutral-200 rounded-lg hover:bg-[#5C9BA4]/10 hover:border-[#5C9BA4] transition-colors"
+                        className="w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 text-[12px] bg-white border border-neutral-200 rounded-[6px] hover:bg-[#5C9BA4]/10 hover:border-[#5C9BA4] transition-colors"
                       >
                         {suggestion}
                       </button>
@@ -999,14 +1004,14 @@ function TemplateModal({ isOpen, onClose, onSave, template, mode }) {
 
           <div>
             <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-              <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide">Message Body *</label>
+              <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest">Message Body *</label>
               <div className="flex items-center gap-1.5 sm:gap-2">
                 {/* AI Assist Button */}
                 <div className="relative">
                   <button
                     onClick={() => setShowAIAssist(!showAIAssist)}
                     disabled={isAIProcessing || !formData.body.trim()}
-                    className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 bg-gradient-to-r from-[#5C9BA4] to-[#A57865] text-white text-[10px] sm:text-xs rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                    className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 bg-[#5C9BA4] text-white text-[10px] sm:text-[11px] rounded-[6px] hover:bg-[#5C9BA4]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {isAIProcessing ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
@@ -1019,7 +1024,7 @@ function TemplateModal({ isOpen, onClose, onSave, template, mode }) {
 
                   {/* AI Assist Dropdown */}
                   {showAIAssist && (
-                    <div className="absolute right-0 top-full mt-1 w-40 sm:w-48 bg-white border border-neutral-200 rounded-xl shadow-lg z-10 py-1 animate-in slide-in-from-top-2 duration-200">
+                    <div className="absolute right-0 top-full mt-1 w-40 sm:w-48 bg-white border border-neutral-200 rounded-[8px] shadow-lg z-10 py-1 animate-in slide-in-from-top-2 duration-200">
                       {AI_ASSIST_OPTIONS.map(({ value, label, icon: Icon }) => (
                         <button
                           key={value}
@@ -1046,7 +1051,7 @@ function TemplateModal({ isOpen, onClose, onSave, template, mode }) {
             </div>
 
             {showTagsHelp && (
-              <div className="mb-2 p-2 sm:p-3 bg-[#5C9BA4]/5 border border-[#5C9BA4]/20 rounded-xl">
+              <div className="mb-2 p-2 sm:p-3 bg-[#5C9BA4]/5 border border-[#5C9BA4]/20 rounded-[8px]">
                 <p className="text-[10px] sm:text-xs text-neutral-600 mb-1.5 sm:mb-2">Click to insert:</p>
                 <div className="flex flex-wrap gap-1">
                   {PERSONALIZATION_TAGS.map(({ tag, description }) => (
@@ -1054,7 +1059,7 @@ function TemplateModal({ isOpen, onClose, onSave, template, mode }) {
                       key={tag}
                       onClick={() => insertTag(tag)}
                       title={description}
-                      className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs bg-white border border-neutral-200 rounded-lg hover:bg-[#5C9BA4]/10 hover:border-[#5C9BA4] transition-colors"
+                      className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px] bg-white border border-neutral-200 rounded-[6px] hover:bg-[#5C9BA4]/10 hover:border-[#5C9BA4] transition-colors"
                     >
                       {tag}
                     </button>
@@ -1068,12 +1073,12 @@ function TemplateModal({ isOpen, onClose, onSave, template, mode }) {
               onChange={(e) => setFormData(prev => ({ ...prev, body: e.target.value }))}
               placeholder="Write your message here..."
               rows={formData.type === 'email' ? 8 : 4}
-              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865] resize-none font-mono"
+              className="w-full px-3 py-2.5 bg-white border border-neutral-200 rounded-[8px] text-[13px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865] resize-none font-mono transition-colors"
             />
 
             {/* SMS Character Count with AI Suggestions */}
             {formData.type === 'sms' && (
-              <div className="mt-2 p-2 sm:p-3 bg-neutral-50 rounded-xl">
+              <div className="mt-2 p-2 sm:p-3 bg-neutral-50 rounded-[8px] border border-neutral-100">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     <span className={`text-xs sm:text-sm font-medium ${
@@ -1112,20 +1117,20 @@ function TemplateModal({ isOpen, onClose, onSave, template, mode }) {
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-t border-neutral-100 px-4 sm:px-6 py-4 sm:py-5 bg-neutral-50/50">
+        <div className="flex-shrink-0 border-t border-neutral-100 px-4 sm:px-6 py-4 bg-white">
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 border border-neutral-200 text-neutral-700 rounded-xl text-xs sm:text-sm font-medium hover:bg-neutral-50 transition-colors"
+              className="flex-1 px-3 sm:px-4 py-2.5 border border-neutral-200 text-neutral-700 rounded-[8px] text-[13px] font-medium hover:bg-neutral-50 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={!isValid}
-              className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
+              className={`flex-1 px-3 sm:px-4 py-2.5 rounded-[8px] text-[13px] font-semibold transition-colors ${
                 isValid
-                  ? 'bg-[#4E5840] text-white hover:bg-[#3d4632]'
+                  ? 'bg-[#A57865] text-white hover:bg-[#8E6554]'
                   : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
               }`}
             >
@@ -1204,62 +1209,65 @@ export default function TemplateCenter({ templates, onSave, onDelete }) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-3 sm:p-5">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-[#5C9BA4]/10 flex items-center justify-center flex-shrink-0">
-            <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-[#5C9BA4]" />
+    <div className="bg-white rounded-[10px] border border-neutral-200">
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-neutral-100">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-[8px] bg-[#5C9BA4]/10 flex items-center justify-center flex-shrink-0">
+              <FileText className="w-[18px] h-[18px] text-[#5C9BA4]" />
+            </div>
+            <div>
+              <h3 className="text-[15px] font-semibold text-neutral-900">Template Center</h3>
+              <p className="text-[12px] text-neutral-400 mt-0.5">{templates.length} templates</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-base sm:text-lg font-bold text-neutral-900">Template Center</h3>
-            <p className="text-xs sm:text-sm text-neutral-500">{templates.length} templates</p>
+          <div className="flex items-center gap-2">
+            <CustomDropdown
+              options={[
+                { value: 'all', label: 'All Types' },
+                { value: 'email', label: 'Email' },
+                { value: 'sms', label: 'SMS' }
+              ]}
+              value={filter}
+              onChange={setFilter}
+              className="[&_button]:min-w-[90px] sm:[&_button]:min-w-[110px]"
+            />
+            <button
+              onClick={handleCreateTemplate}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-[#A57865] text-white rounded-[8px] text-[12px] sm:text-[13px] font-semibold hover:bg-[#8E6554] transition-colors whitespace-nowrap"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Add Template</span>
+              <span className="sm:hidden">Add</span>
+            </button>
           </div>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <CustomDropdown
-            options={[
-              { value: 'all', label: 'All Types' },
-              { value: 'email', label: 'Email' },
-              { value: 'sms', label: 'SMS' }
-            ]}
-            value={filter}
-            onChange={setFilter}
-            className="[&_button]:min-w-[90px] sm:[&_button]:min-w-[110px]"
-          />
-          <button
-            onClick={handleCreateTemplate}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-[#A57865] text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-[#A57865]/90 transition-colors whitespace-nowrap"
-          >
-            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline">Add Template</span>
-            <span className="sm:hidden">Add</span>
-          </button>
         </div>
       </div>
 
-      {/* AI Template Generator Section */}
-      <AITemplateGenerator onGenerate={handleAIGenerate} isGenerating={isGenerating} />
-
-      <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+      {/* Content */}
+      <div className="p-4 space-y-3">
+        {/* AI Template Generator Section */}
+        <AITemplateGenerator onGenerate={handleAIGenerate} isGenerating={isGenerating} />
         {filteredTemplates.map((template) => (
           <div
             key={template.id}
-            className="border border-neutral-200 rounded-xl p-4 hover:border-[#A57865]/30 transition-colors"
+            className="bg-neutral-50 border border-neutral-100 rounded-[8px] p-4 hover:border-neutral-200 transition-colors"
           >
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-3">
                 {template.type === 'email' ? (
-                  <div className="w-10 h-10 rounded-lg bg-[#4E5840]/10 flex items-center justify-center">
-                    <Mail className="w-5 h-5 text-[#4E5840]" />
+                  <div className="w-9 h-9 rounded-[8px] bg-[#4E5840]/10 flex items-center justify-center">
+                    <Mail className="w-[18px] h-[18px] text-[#4E5840]" />
                   </div>
                 ) : (
-                  <div className="w-10 h-10 rounded-lg bg-[#5C9BA4]/10 flex items-center justify-center">
-                    <MessageSquare className="w-5 h-5 text-[#5C9BA4]" />
+                  <div className="w-9 h-9 rounded-[8px] bg-[#5C9BA4]/10 flex items-center justify-center">
+                    <MessageSquare className="w-[18px] h-[18px] text-[#5C9BA4]" />
                   </div>
                 )}
                 <div>
-                  <h4 className="font-semibold text-neutral-900">{template.name}</h4>
-                  <div className="flex items-center gap-2 text-xs text-neutral-500">
+                  <h4 className="text-[13px] font-semibold text-neutral-900">{template.name}</h4>
+                  <div className="flex items-center gap-2 text-[11px] text-neutral-500">
                     <span className={`px-2 py-0.5 rounded-full ${
                       template.type === 'email'
                         ? 'bg-[#4E5840]/10 text-[#4E5840]'
@@ -1275,14 +1283,14 @@ export default function TemplateCenter({ templates, onSave, onDelete }) {
                 {/* A/B Test Button */}
                 <button
                   onClick={() => setABTestModal({ isOpen: true, template })}
-                  className="p-2 hover:bg-[#CDB261]/10 rounded-lg transition-colors"
+                  className="p-1.5 hover:bg-[#CDB261]/10 rounded-[6px] transition-colors"
                   title="Create A/B Test"
                 >
                   <TestTube2 className="w-4 h-4 text-[#CDB261]" />
                 </button>
                 <button
                   onClick={() => handleCopyBody(template)}
-                  className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+                  className="p-1.5 hover:bg-neutral-100 rounded-[6px] transition-colors"
                   title="Copy body"
                 >
                   {copiedId === template.id ? (
@@ -1293,13 +1301,13 @@ export default function TemplateCenter({ templates, onSave, onDelete }) {
                 </button>
                 <button
                   onClick={() => handleEditTemplate(template)}
-                  className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+                  className="p-1.5 hover:bg-neutral-100 rounded-[6px] transition-colors"
                 >
                   <Edit2 className="w-4 h-4 text-neutral-500" />
                 </button>
                 <button
                   onClick={() => setDeleteConfirm(template.id)}
-                  className="p-2 hover:bg-rose-50 rounded-lg transition-colors"
+                  className="p-1.5 hover:bg-rose-50 rounded-[6px] transition-colors"
                 >
                   <Trash2 className="w-4 h-4 text-rose-500" />
                 </button>
@@ -1307,12 +1315,12 @@ export default function TemplateCenter({ templates, onSave, onDelete }) {
             </div>
 
             {template.subject && (
-              <p className="text-sm font-medium text-neutral-700 mb-1">
+              <p className="text-[12px] font-medium text-neutral-700 mb-1">
                 Subject: {template.subject}
               </p>
             )}
 
-            <p className="text-sm text-neutral-600 line-clamp-2">
+            <p className="text-[12px] text-neutral-500 line-clamp-2">
               {template.body}
             </p>
 
@@ -1324,18 +1332,18 @@ export default function TemplateCenter({ templates, onSave, onDelete }) {
             />
 
             {deleteConfirm === template.id && (
-              <div className="mt-3 pt-3 border-t border-neutral-100 bg-rose-50 -mx-4 -mb-4 p-4 rounded-b-xl">
-                <p className="text-sm text-rose-800 mb-2">Delete this template?</p>
+              <div className="mt-3 pt-3 border-t border-neutral-100 bg-rose-50 -mx-4 -mb-4 p-4 rounded-b-[8px]">
+                <p className="text-[12px] text-rose-800 mb-2">Delete this template?</p>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleDeleteTemplate(template.id)}
-                    className="px-3 py-1.5 bg-rose-600 text-white text-xs font-medium rounded-lg hover:bg-rose-700 transition-colors"
+                    className="px-3 py-1.5 bg-rose-600 text-white text-[11px] font-semibold rounded-[6px] hover:bg-rose-700 transition-colors"
                   >
                     Delete
                   </button>
                   <button
                     onClick={() => setDeleteConfirm(null)}
-                    className="px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-200 rounded-lg transition-colors"
+                    className="px-3 py-1.5 text-[11px] font-medium text-neutral-700 hover:bg-neutral-200 rounded-[6px] transition-colors"
                   >
                     Cancel
                   </button>
@@ -1347,12 +1355,17 @@ export default function TemplateCenter({ templates, onSave, onDelete }) {
 
         {filteredTemplates.length === 0 && (
           <div className="text-center py-8">
-            <p className="text-neutral-500">No templates found</p>
+            <div className="w-10 h-10 rounded-[8px] bg-neutral-100 flex items-center justify-center mx-auto mb-3">
+              <FileText className="w-5 h-5 text-neutral-300" />
+            </div>
+            <p className="text-[13px] font-medium text-neutral-600">No templates found</p>
+            <p className="text-[11px] text-neutral-400 mt-1">Create your first template to get started</p>
             <button
               onClick={handleCreateTemplate}
-              className="mt-2 text-sm text-[#A57865] hover:underline"
+              className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#A57865] text-white rounded-[8px] text-[12px] font-semibold hover:bg-[#8E6554] transition-colors"
             >
-              Create your first template
+              <Plus className="w-3.5 h-3.5" />
+              Create Template
             </button>
           </div>
         )}

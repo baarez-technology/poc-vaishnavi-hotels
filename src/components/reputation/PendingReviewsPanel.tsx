@@ -269,12 +269,7 @@ export default function PendingReviewsPanel() {
           ))}
 
           {pendingReviews.length > 5 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              fullWidth
-              onClick={() => setShowAll(!showAll)}
-            >
+            <Button variant="ghost" size="sm" fullWidth onClick={() => setShowAll(!showAll)}>
               {showAll ? 'Show less' : `View all ${pendingReviews.length} pending reviews`}
             </Button>
           )}

@@ -79,9 +79,9 @@ export default function NotificationDrawer() {
 
   const handleNotificationClick = (notification: any) => {
     markNotificationRead(notification.id);
+    toggleNotificationDrawer();
     if (notification.actionUrl) {
       navigate(notification.actionUrl);
-      toggleNotificationDrawer();
     }
   };
 

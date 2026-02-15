@@ -14,7 +14,6 @@ import {
   Gift,
   MessageCircle,
   Layers,
-  ChevronRight,
   Loader2,
   Play,
   CheckCircle2,
@@ -42,28 +41,28 @@ const ICON_MAP: Record<string, any> = {
   gift: Gift,
 };
 
-const getPriorityColor = (priority: string) => {
+const getPriorityBadge = (priority: string) => {
   switch (priority) {
-    case 'high': return 'bg-rose-100 text-rose-700 border-rose-200';
-    case 'medium': return 'bg-amber-100 text-amber-700 border-amber-200';
-    case 'low': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-    default: return 'bg-neutral-100 text-neutral-700 border-neutral-200';
+    case 'high': return 'bg-rose-50 text-rose-600 border border-rose-100';
+    case 'medium': return 'bg-[#CDB261]/10 text-[#CDB261] border border-[#CDB261]/20';
+    case 'low': return 'bg-[#4E5840]/10 text-[#4E5840] border border-[#4E5840]/20';
+    default: return 'bg-neutral-100 text-neutral-600 border border-neutral-200';
   }
 };
 
-const getUrgencyColor = (urgency: string) => {
+const getUrgencyAccent = (urgency: string) => {
   switch (urgency) {
-    case 'high': return 'border-l-rose-500';
-    case 'medium': return 'border-l-amber-500';
-    case 'low': return 'border-l-emerald-500';
-    default: return 'border-l-neutral-300';
+    case 'high': return 'border-l-rose-400';
+    case 'medium': return 'border-l-[#CDB261]';
+    case 'low': return 'border-l-[#4E5840]';
+    default: return 'border-l-neutral-200';
   }
 };
 
-const getImpactColor = (impact: string) => {
+const getImpactDot = (impact: string) => {
   switch (impact) {
-    case 'high': return 'bg-emerald-500';
-    case 'medium': return 'bg-amber-500';
+    case 'high': return 'bg-[#4E5840]';
+    case 'medium': return 'bg-[#CDB261]';
     case 'low': return 'bg-neutral-400';
     default: return 'bg-neutral-300';
   }
@@ -73,7 +72,7 @@ export default function AISuggestions({ onCreateCampaign, onActionClick }: AISug
   const [suggestions, setSuggestions] = useState<AISuggestionsType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedSection, setExpandedSection] = useState<string>('campaigns');
+  const [activeTab, setActiveTab] = useState<string>('campaigns');
   const [appliedSuggestions, setAppliedSuggestions] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -109,18 +108,20 @@ export default function AISuggestions({ onCreateCampaign, onActionClick }: AISug
 
   if (loading) {
     return (
-      <div className="bg-gradient-to-br from-[#A57865]/5 to-[#5C9BA4]/5 rounded-xl border border-neutral-200 p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#A57865] to-[#5C9BA4] flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-neutral-900">ReConnect AI Suggestions</h3>
-            <p className="text-sm text-neutral-500">Analyzing your guest data...</p>
+      <div className="bg-white rounded-[10px] border border-neutral-200">
+        <div className="px-5 py-4 border-b border-neutral-100">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-[8px] bg-[#A57865]/10 flex items-center justify-center">
+              <Sparkles className="w-[18px] h-[18px] text-[#A57865]" />
+            </div>
+            <div>
+              <h3 className="text-[15px] font-semibold text-neutral-900">ReConnect AI Suggestions</h3>
+              <p className="text-[12px] text-neutral-400 mt-0.5">Analyzing your guest data...</p>
+            </div>
           </div>
         </div>
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-[#A57865] animate-spin" />
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-7 h-7 text-[#A57865] animate-spin" />
         </div>
       </div>
     );
@@ -128,24 +129,28 @@ export default function AISuggestions({ onCreateCampaign, onActionClick }: AISug
 
   if (error) {
     return (
-      <div className="bg-gradient-to-br from-[#A57865]/5 to-[#5C9BA4]/5 rounded-xl border border-neutral-200 p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#A57865] to-[#5C9BA4] flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-neutral-900">ReConnect AI Suggestions</h3>
-            <p className="text-sm text-neutral-500">AI-powered campaign recommendations</p>
+      <div className="bg-white rounded-[10px] border border-neutral-200">
+        <div className="px-5 py-4 border-b border-neutral-100">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-[8px] bg-[#A57865]/10 flex items-center justify-center">
+              <Sparkles className="w-[18px] h-[18px] text-[#A57865]" />
+            </div>
+            <div>
+              <h3 className="text-[15px] font-semibold text-neutral-900">ReConnect AI Suggestions</h3>
+              <p className="text-[12px] text-neutral-400 mt-0.5">AI-powered campaign recommendations</p>
+            </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-neutral-200 p-6 text-center">
-          <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
-          <p className="text-neutral-700 mb-4">{error}</p>
+        <div className="p-6 text-center">
+          <div className="w-12 h-12 rounded-[10px] bg-[#CDB261]/10 flex items-center justify-center mx-auto mb-3">
+            <AlertCircle className="w-6 h-6 text-[#CDB261]" />
+          </div>
+          <p className="text-[13px] text-neutral-600 mb-4">{error}</p>
           <button
             onClick={fetchSuggestions}
-            className="flex items-center gap-2 px-4 py-2 bg-[#A57865] text-white rounded-lg text-sm font-medium hover:bg-[#8E6554] transition-colors mx-auto"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#A57865] text-white rounded-[8px] text-[13px] font-medium hover:bg-[#8E6554] transition-colors"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-3.5 h-3.5" />
             Try Again
           </button>
         </div>
@@ -157,53 +162,55 @@ export default function AISuggestions({ onCreateCampaign, onActionClick }: AISug
 
   const { campaign_suggestions, segment_insights, action_items, quick_wins } = suggestions;
 
+  const tabs = [
+    { id: 'campaigns', label: 'Campaigns', count: campaign_suggestions.length, icon: Target },
+    { id: 'insights', label: 'Insights', count: segment_insights.length, icon: TrendingUp },
+    { id: 'actions', label: 'Actions', count: action_items.length, icon: AlertCircle },
+    { id: 'quickwins', label: 'Quick Wins', count: quick_wins.length, icon: Zap },
+  ];
+
   return (
-    <div className="bg-gradient-to-br from-[#A57865]/5 to-[#5C9BA4]/5 rounded-xl border border-neutral-200 overflow-hidden">
+    <div className="bg-white rounded-[10px] border border-neutral-200">
       {/* Header */}
-      <div className="p-5 border-b border-neutral-200 bg-white/50">
+      <div className="px-5 py-4 border-b border-neutral-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#A57865] to-[#5C9BA4] flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 rounded-[8px] bg-[#A57865]/10 flex items-center justify-center">
+              <Sparkles className="w-[18px] h-[18px] text-[#A57865]" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-neutral-900">ReConnect AI Suggestions</h3>
-              <p className="text-sm text-neutral-500">
+              <h3 className="text-[15px] font-semibold text-neutral-900">ReConnect AI Suggestions</h3>
+              <p className="text-[12px] text-neutral-400 mt-0.5">
                 Based on {suggestions.analyzed_guests} guests analyzed
               </p>
             </div>
           </div>
           <button
             onClick={fetchSuggestions}
-            className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-neutral-100 rounded-[8px] transition-colors"
             title="Refresh suggestions"
           >
-            <RefreshCw className="w-4 h-4 text-neutral-500" />
+            <RefreshCw className="w-4 h-4 text-neutral-400" />
           </button>
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex border-b border-neutral-200 bg-white/30">
-        {[
-          { id: 'campaigns', label: 'Campaigns', count: campaign_suggestions.length, icon: Target },
-          { id: 'insights', label: 'Insights', count: segment_insights.length, icon: TrendingUp },
-          { id: 'actions', label: 'Actions', count: action_items.length, icon: AlertCircle },
-          { id: 'quickwins', label: 'Quick Wins', count: quick_wins.length, icon: Zap },
-        ].map(tab => (
+      {/* Tabs */}
+      <div className="flex border-b border-neutral-100">
+        {tabs.map(tab => (
           <button
             key={tab.id}
-            onClick={() => setExpandedSection(tab.id)}
-            className={`flex-1 px-4 py-3 flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
-              expandedSection === tab.id
-                ? 'bg-white text-[#A57865] border-b-2 border-[#A57865]'
-                : 'text-neutral-600 hover:bg-white/50'
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 px-3 py-2.5 flex items-center justify-center gap-1.5 text-[12px] font-medium transition-colors ${
+              activeTab === tab.id
+                ? 'text-[#A57865] border-b-2 border-[#A57865]'
+                : 'text-neutral-500 hover:text-neutral-700'
             }`}
           >
-            <tab.icon className="w-4 h-4" />
+            <tab.icon className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{tab.label}</span>
-            <span className={`px-1.5 py-0.5 rounded-full text-xs ${
-              expandedSection === tab.id ? 'bg-[#A57865]/10' : 'bg-neutral-200'
+            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+              activeTab === tab.id ? 'bg-[#A57865]/10 text-[#A57865]' : 'bg-neutral-100 text-neutral-500'
             }`}>
               {tab.count}
             </span>
@@ -212,15 +219,17 @@ export default function AISuggestions({ onCreateCampaign, onActionClick }: AISug
       </div>
 
       {/* Content */}
-      <div className="p-5 max-h-[500px] overflow-y-auto">
+      <div className="p-4 max-h-[480px] overflow-y-auto custom-scrollbar">
         {/* Campaign Suggestions */}
-        {expandedSection === 'campaigns' && (
+        {activeTab === 'campaigns' && (
           <div className="space-y-3">
             {campaign_suggestions.length === 0 ? (
-              <div className="text-center py-8">
-                <Target className="w-10 h-10 text-neutral-300 mx-auto mb-3" />
-                <p className="text-neutral-500">No campaign suggestions at this time</p>
-                <p className="text-sm text-neutral-400 mt-1">AI will suggest campaigns based on your guest data</p>
+              <div className="text-center py-10">
+                <div className="w-12 h-12 rounded-[10px] bg-neutral-100 flex items-center justify-center mx-auto mb-3">
+                  <Target className="w-6 h-6 text-neutral-300" />
+                </div>
+                <p className="text-[13px] font-medium text-neutral-600">No campaign suggestions</p>
+                <p className="text-[11px] text-neutral-400 mt-1">AI will suggest campaigns based on your guest data</p>
               </div>
             ) : (
               campaign_suggestions.map((suggestion) => {
@@ -229,59 +238,58 @@ export default function AISuggestions({ onCreateCampaign, onActionClick }: AISug
                 return (
                   <div
                     key={suggestion.id}
-                    className={`bg-white rounded-xl p-4 border transition-all ${
+                    className={`rounded-[8px] p-4 border transition-all ${
                       isApplied
-                        ? 'border-emerald-300 bg-emerald-50/50'
-                        : 'border-neutral-200 hover:border-[#A57865]/30 hover:shadow-sm'
+                        ? 'bg-[#4E5840]/5 border-[#4E5840]/20'
+                        : 'bg-neutral-50 border-neutral-100 hover:border-neutral-200'
                     }`}
                   >
-                    <div className="flex items-start gap-4">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        isApplied ? 'bg-emerald-100' : 'bg-[#A57865]/10'
+                    <div className="flex items-start gap-3">
+                      <div className={`w-9 h-9 rounded-[8px] flex items-center justify-center flex-shrink-0 ${
+                        isApplied ? 'bg-[#4E5840]/10' : 'bg-[#A57865]/10'
                       }`}>
                         {isApplied ? (
-                          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                          <CheckCircle2 className="w-[18px] h-[18px] text-[#4E5840]" />
                         ) : (
-                          <IconComponent className="w-5 h-5 text-[#A57865]" />
+                          <IconComponent className="w-[18px] h-[18px] text-[#A57865]" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold text-neutral-900">{suggestion.title}</h4>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${getPriorityColor(suggestion.priority)}`}>
-                            {suggestion.priority.toUpperCase()}
+                          <h4 className="text-[13px] font-semibold text-neutral-900">{suggestion.title}</h4>
+                          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase ${getPriorityBadge(suggestion.priority)}`}>
+                            {suggestion.priority}
                           </span>
                         </div>
-                        <p className="text-sm text-neutral-600 mb-3">{suggestion.description}</p>
-                        <div className="grid grid-cols-2 gap-3 text-xs mb-3">
-                          <div className="flex items-center gap-2">
-                            <Users className="w-3.5 h-3.5 text-neutral-400" />
+                        <p className="text-[12px] text-neutral-500 mb-3">{suggestion.description}</p>
+                        <div className="grid grid-cols-2 gap-2 text-[11px] mb-3">
+                          <div className="flex items-center gap-1.5">
+                            <Users className="w-3 h-3 text-neutral-400" />
                             <span className="text-neutral-600">{suggestion.target_count} guests</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <TrendingUp className="w-3.5 h-3.5 text-neutral-400" />
+                          <div className="flex items-center gap-1.5">
+                            <TrendingUp className="w-3 h-3 text-neutral-400" />
                             <span className="text-neutral-600">{suggestion.estimated_impact}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Gift className="w-3.5 h-3.5 text-neutral-400" />
+                          <div className="flex items-center gap-1.5">
+                            <Gift className="w-3 h-3 text-neutral-400" />
                             <span className="text-neutral-600">{suggestion.recommended_offer}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Mail className="w-3.5 h-3.5 text-neutral-400" />
+                          <div className="flex items-center gap-1.5">
+                            <Mail className="w-3 h-3 text-neutral-400" />
                             <span className="text-neutral-600 capitalize">{suggestion.best_channel}</span>
                           </div>
                         </div>
-                        {!isApplied && (
+                        {!isApplied ? (
                           <button
                             onClick={() => handleApplySuggestion(suggestion)}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-[#A57865] text-white rounded-lg text-xs font-medium hover:bg-[#8E6554] transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#A57865] text-white rounded-[6px] text-[11px] font-semibold hover:bg-[#8E6554] transition-colors"
                           >
-                            <Play className="w-3.5 h-3.5" />
+                            <Play className="w-3 h-3" />
                             Create Campaign
                           </button>
-                        )}
-                        {isApplied && (
-                          <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] text-[#4E5840] font-semibold">
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             Campaign created
                           </span>
@@ -296,12 +304,14 @@ export default function AISuggestions({ onCreateCampaign, onActionClick }: AISug
         )}
 
         {/* Segment Insights */}
-        {expandedSection === 'insights' && (
+        {activeTab === 'insights' && (
           <div className="space-y-3">
             {segment_insights.length === 0 ? (
-              <div className="text-center py-8">
-                <TrendingUp className="w-10 h-10 text-neutral-300 mx-auto mb-3" />
-                <p className="text-neutral-500">No segment insights available</p>
+              <div className="text-center py-10">
+                <div className="w-12 h-12 rounded-[10px] bg-neutral-100 flex items-center justify-center mx-auto mb-3">
+                  <TrendingUp className="w-6 h-6 text-neutral-300" />
+                </div>
+                <p className="text-[13px] font-medium text-neutral-600">No segment insights available</p>
               </div>
             ) : (
               segment_insights.map((insight, index) => {
@@ -309,18 +319,18 @@ export default function AISuggestions({ onCreateCampaign, onActionClick }: AISug
                 return (
                   <div
                     key={index}
-                    className="bg-white rounded-xl p-4 border border-neutral-200 hover:shadow-sm transition-shadow"
+                    className="bg-neutral-50 rounded-[8px] p-4 border border-neutral-100 hover:border-neutral-200 transition-colors"
                   >
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-[#5C9BA4]/10 flex items-center justify-center flex-shrink-0">
-                        <IconComponent className="w-5 h-5 text-[#5C9BA4]" />
+                      <div className="w-9 h-9 rounded-[8px] bg-[#5C9BA4]/10 flex items-center justify-center flex-shrink-0">
+                        <IconComponent className="w-[18px] h-[18px] text-[#5C9BA4]" />
                       </div>
-                      <div>
-                        <h4 className="font-semibold text-neutral-900 mb-1">{insight.title}</h4>
-                        <p className="text-sm text-neutral-700 mb-2">{insight.insight}</p>
-                        <div className="flex items-start gap-1 bg-[#5C9BA4]/5 rounded-lg p-2">
-                          <Sparkles className="w-3.5 h-3.5 text-[#5C9BA4] flex-shrink-0 mt-0.5" />
-                          <p className="text-xs text-[#5C9BA4]">{insight.recommendation}</p>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-[13px] font-semibold text-neutral-900 mb-1">{insight.title}</h4>
+                        <p className="text-[12px] text-neutral-600 mb-2">{insight.insight}</p>
+                        <div className="flex items-start gap-1.5 bg-[#5C9BA4]/5 rounded-[6px] p-2.5">
+                          <Sparkles className="w-3 h-3 text-[#5C9BA4] flex-shrink-0 mt-0.5" />
+                          <p className="text-[11px] text-[#5C9BA4] font-medium">{insight.recommendation}</p>
                         </div>
                       </div>
                     </div>
@@ -332,13 +342,15 @@ export default function AISuggestions({ onCreateCampaign, onActionClick }: AISug
         )}
 
         {/* Action Items */}
-        {expandedSection === 'actions' && (
+        {activeTab === 'actions' && (
           <div className="space-y-3">
             {action_items.length === 0 ? (
-              <div className="text-center py-8">
-                <CheckCircle2 className="w-10 h-10 text-emerald-300 mx-auto mb-3" />
-                <p className="text-neutral-500">No action items at this time</p>
-                <p className="text-sm text-neutral-400 mt-1">You're all caught up!</p>
+              <div className="text-center py-10">
+                <div className="w-12 h-12 rounded-[10px] bg-[#4E5840]/10 flex items-center justify-center mx-auto mb-3">
+                  <CheckCircle2 className="w-6 h-6 text-[#4E5840]" />
+                </div>
+                <p className="text-[13px] font-medium text-neutral-600">No action items</p>
+                <p className="text-[11px] text-neutral-400 mt-1">You're all caught up!</p>
               </div>
             ) : (
               action_items.map((item, index) => {
@@ -346,25 +358,25 @@ export default function AISuggestions({ onCreateCampaign, onActionClick }: AISug
                 return (
                   <div
                     key={index}
-                    className={`bg-white rounded-xl p-4 border border-neutral-200 border-l-4 hover:shadow-sm transition-shadow ${getUrgencyColor(item.urgency)}`}
+                    className={`bg-neutral-50 rounded-[8px] p-4 border border-neutral-100 border-l-[3px] hover:border-neutral-200 transition-colors ${getUrgencyAccent(item.urgency)}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-[#4E5840]/10 flex items-center justify-center flex-shrink-0">
-                        <IconComponent className="w-5 h-5 text-[#4E5840]" />
+                      <div className="w-9 h-9 rounded-[8px] bg-[#4E5840]/10 flex items-center justify-center flex-shrink-0">
+                        <IconComponent className="w-[18px] h-[18px] text-[#4E5840]" />
                       </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-neutral-900">{item.title}</h4>
-                        <p className="text-sm text-neutral-600">{item.description}</p>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-[13px] font-semibold text-neutral-900">{item.title}</h4>
+                        <p className="text-[12px] text-neutral-500 mt-0.5">{item.description}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(item.urgency)}`}>
-                          {item.urgency.toUpperCase()}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase ${getPriorityBadge(item.urgency)}`}>
+                          {item.urgency}
                         </span>
                         <button
                           onClick={() => handleActionClick(item)}
-                          className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+                          className="p-1.5 hover:bg-neutral-200 rounded-[6px] transition-colors"
                         >
-                          <ArrowRight className="w-4 h-4 text-neutral-400" />
+                          <ArrowRight className="w-3.5 h-3.5 text-neutral-400" />
                         </button>
                       </div>
                     </div>
@@ -376,12 +388,15 @@ export default function AISuggestions({ onCreateCampaign, onActionClick }: AISug
         )}
 
         {/* Quick Wins */}
-        {expandedSection === 'quickwins' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {activeTab === 'quickwins' && (
+          <div className="space-y-3">
             {quick_wins.length === 0 ? (
-              <div className="text-center py-8 col-span-2">
-                <Zap className="w-10 h-10 text-neutral-300 mx-auto mb-3" />
-                <p className="text-neutral-500">No quick wins available</p>
+              <div className="text-center py-10">
+                <div className="w-12 h-12 rounded-[10px] bg-[#CDB261]/10 flex items-center justify-center mx-auto mb-3">
+                  <Zap className="w-6 h-6 text-[#CDB261]" />
+                </div>
+                <p className="text-[13px] font-medium text-neutral-600">No quick wins available</p>
+                <p className="text-[11px] text-neutral-400 mt-1">AI will identify quick wins based on your guest data</p>
               </div>
             ) : (
               quick_wins.map((win, index) => {
@@ -389,28 +404,48 @@ export default function AISuggestions({ onCreateCampaign, onActionClick }: AISug
                 return (
                   <div
                     key={index}
-                    className="bg-white rounded-xl p-4 border border-neutral-200 hover:border-[#CDB261]/30 hover:shadow-sm transition-all"
+                    className="bg-neutral-50 rounded-[8px] p-4 border border-neutral-100 hover:border-neutral-200 transition-colors"
                   >
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-[#CDB261]/10 flex items-center justify-center flex-shrink-0">
-                        <IconComponent className="w-5 h-5 text-[#CDB261]" />
+                      <div className="w-9 h-9 rounded-[8px] bg-[#CDB261]/10 flex items-center justify-center flex-shrink-0">
+                        <IconComponent className="w-[18px] h-[18px] text-[#CDB261]" />
                       </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-neutral-900 mb-1">{win.title}</h4>
-                        <p className="text-sm text-neutral-600 mb-3">{win.description}</p>
-                        <div className="flex items-center gap-4 text-xs">
-                          <div className="flex items-center gap-1">
-                            <span className="text-neutral-500">Effort:</span>
-                            <span className={`w-2 h-2 rounded-full ${
-                              win.effort === 'low' ? 'bg-emerald-500' : win.effort === 'medium' ? 'bg-amber-500' : 'bg-rose-500'
-                            }`} />
-                            <span className="text-neutral-700 capitalize">{win.effort}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="text-[13px] font-semibold text-neutral-900">{win.title}</h4>
+                        </div>
+                        <p className="text-[12px] text-neutral-500 mb-3">{win.description}</p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-semibold ${
+                              win.effort === 'low'
+                                ? 'bg-[#4E5840]/10 text-[#4E5840] border border-[#4E5840]/20'
+                                : win.effort === 'medium'
+                                  ? 'bg-[#CDB261]/10 text-[#CDB261] border border-[#CDB261]/20'
+                                  : 'bg-rose-50 text-rose-600 border border-rose-100'
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${
+                                win.effort === 'low' ? 'bg-[#4E5840]' : win.effort === 'medium' ? 'bg-[#CDB261]' : 'bg-rose-500'
+                              }`} />
+                              {win.effort} effort
+                            </span>
+                            <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-semibold ${
+                              win.impact === 'high'
+                                ? 'bg-[#4E5840]/10 text-[#4E5840] border border-[#4E5840]/20'
+                                : win.impact === 'medium'
+                                  ? 'bg-[#CDB261]/10 text-[#CDB261] border border-[#CDB261]/20'
+                                  : 'bg-neutral-100 text-neutral-600 border border-neutral-200'
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${getImpactDot(win.impact)}`} />
+                              {win.impact} impact
+                            </span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-neutral-500">Impact:</span>
-                            <span className={`w-2 h-2 rounded-full ${getImpactColor(win.impact)}`} />
-                            <span className="text-neutral-700 capitalize">{win.impact}</span>
-                          </div>
+                          <button
+                            onClick={() => handleActionClick(win)}
+                            className="p-1.5 hover:bg-neutral-200 rounded-[6px] transition-colors"
+                          >
+                            <ArrowRight className="w-3.5 h-3.5 text-neutral-400" />
+                          </button>
                         </div>
                       </div>
                     </div>

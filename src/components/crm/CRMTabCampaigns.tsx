@@ -13,7 +13,6 @@ import {
   Users,
   Play,
   Pause,
-  BarChart2,
   Sparkles,
   Brain,
   Wand2,
@@ -30,7 +29,7 @@ import {
 } from 'lucide-react';
 import { generateId, formatDate, CAMPAIGN_TYPES, CAMPAIGN_STATUS } from '../../utils/crm';
 import CustomDropdown from '../ui/CustomDropdown';
-import { crmAIService, CampaignRecommendations, CampaignSuggestion, AISuggestions } from '../../api/services/crm-ai.service';
+import { crmAIService, CampaignSuggestion, AISuggestions } from '../../api/services/crm-ai.service';
 
 const CAMPAIGN_TYPE_OPTIONS = CAMPAIGN_TYPES.map(type => ({
   value: type.id,
@@ -44,11 +43,10 @@ const CAMPAIGN_STATUS_OPTIONS = [
   { value: 'paused', label: 'Paused' }
 ];
 
-// Priority badge colors
 const PRIORITY_COLORS = {
-  high: { bg: 'bg-rose-100', text: 'text-rose-700', border: 'border-rose-200' },
-  medium: { bg: 'bg-[#CDB261]/20', text: 'text-[#CDB261]', border: 'border-[#CDB261]/30' },
-  low: { bg: 'bg-[#5C9BA4]/20', text: 'text-[#5C9BA4]', border: 'border-[#5C9BA4]/30' }
+  high: { bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-100' },
+  medium: { bg: 'bg-[#CDB261]/10', text: 'text-[#CDB261]', border: 'border-[#CDB261]/20' },
+  low: { bg: 'bg-[#5C9BA4]/10', text: 'text-[#5C9BA4]', border: 'border-[#5C9BA4]/20' }
 };
 
 // AI Subject Line Suggestions Component
@@ -57,9 +55,9 @@ function AISubjectLineSuggestions({ suggestions, onSelect, isLoading }) {
 
   if (isLoading) {
     return (
-      <div className="mt-2 p-3 bg-gradient-to-r from-[#4E5840]/5 to-[#5C9BA4]/5 rounded-lg border border-[#4E5840]/10">
-        <div className="flex items-center gap-2 text-sm text-neutral-600">
-          <Loader2 className="w-4 h-4 animate-spin text-[#4E5840]" />
+      <div className="mt-2 p-3 bg-neutral-50 rounded-[8px] border border-neutral-100">
+        <div className="flex items-center gap-2 text-[12px] text-neutral-600">
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#4E5840]" />
           <span>Generating AI suggestions...</span>
         </div>
       </div>
@@ -69,18 +67,18 @@ function AISubjectLineSuggestions({ suggestions, onSelect, isLoading }) {
   if (!suggestions || suggestions.length === 0) return null;
 
   return (
-    <div className="mt-2 p-3 bg-gradient-to-r from-[#4E5840]/5 to-[#5C9BA4]/5 rounded-lg border border-[#4E5840]/10">
+    <div className="mt-2 p-3 bg-neutral-50 rounded-[8px] border border-neutral-100">
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-2 text-sm font-medium text-[#4E5840] hover:text-[#3d4632] transition-colors w-full"
+        className="flex items-center gap-2 text-[12px] font-medium text-[#4E5840] hover:text-[#3d4632] transition-colors w-full"
       >
-        <Sparkles className="w-4 h-4" />
+        <Sparkles className="w-3.5 h-3.5" />
         <span>AI Subject Line Suggestions</span>
         {isExpanded ? (
-          <ChevronUp className="w-4 h-4 ml-auto" />
+          <ChevronUp className="w-3.5 h-3.5 ml-auto" />
         ) : (
-          <ChevronDown className="w-4 h-4 ml-auto" />
+          <ChevronDown className="w-3.5 h-3.5 ml-auto" />
         )}
       </button>
       {isExpanded && (
@@ -90,7 +88,7 @@ function AISubjectLineSuggestions({ suggestions, onSelect, isLoading }) {
               key={idx}
               type="button"
               onClick={() => onSelect(suggestion)}
-              className="w-full text-left px-3 py-2 text-sm text-neutral-700 bg-white rounded-lg border border-neutral-200 hover:border-[#A57865] hover:bg-[#A57865]/5 transition-all"
+              className="w-full text-left px-3 py-2 text-[12px] text-neutral-700 bg-white rounded-[6px] border border-neutral-200 hover:border-[#A57865] hover:bg-[#A57865]/5 transition-all"
             >
               {suggestion}
             </button>
@@ -105,36 +103,38 @@ function AISubjectLineSuggestions({ suggestions, onSelect, isLoading }) {
 function AIPredictions({ openRate, clickRate, optimalSendTime, isLoading }) {
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-r from-[#5C9BA4]/10 to-[#4E5840]/10 rounded-xl p-4 border border-[#5C9BA4]/20">
+      <div className="bg-neutral-50 rounded-[8px] p-4 border border-neutral-100">
         <div className="flex items-center gap-2">
-          <Loader2 className="w-5 h-5 animate-spin text-[#5C9BA4]" />
-          <span className="text-sm text-neutral-600">Analyzing campaign performance...</span>
+          <Loader2 className="w-4 h-4 animate-spin text-[#5C9BA4]" />
+          <span className="text-[12px] text-neutral-600">Analyzing campaign performance...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gradient-to-r from-[#5C9BA4]/10 to-[#4E5840]/10 rounded-xl p-4 border border-[#5C9BA4]/20">
+    <div className="bg-neutral-50 rounded-[8px] p-4 border border-neutral-100">
       <div className="flex items-center gap-2 mb-3">
-        <Brain className="w-5 h-5 text-[#5C9BA4]" />
-        <h4 className="text-sm font-semibold text-neutral-800">AI Performance Predictions</h4>
+        <div className="w-7 h-7 rounded-[6px] bg-[#5C9BA4]/10 flex items-center justify-center">
+          <Brain className="w-4 h-4 text-[#5C9BA4]" />
+        </div>
+        <h4 className="text-[13px] font-semibold text-neutral-900">AI Performance Predictions</h4>
       </div>
-      <div className="grid grid-cols-3 gap-3">
-        <div className="text-center p-2 bg-white/60 rounded-lg">
-          <p className="text-lg font-bold text-[#4E5840]">{openRate}%</p>
-          <p className="text-xs text-neutral-500">Predicted Open Rate</p>
+      <div className="grid grid-cols-3 gap-2">
+        <div className="text-center p-2.5 bg-white rounded-[6px] border border-neutral-100">
+          <p className="text-[15px] font-bold text-[#4E5840]">{openRate}%</p>
+          <p className="text-[10px] text-neutral-500 mt-0.5">Open Rate</p>
         </div>
-        <div className="text-center p-2 bg-white/60 rounded-lg">
-          <p className="text-lg font-bold text-[#5C9BA4]">{clickRate}%</p>
-          <p className="text-xs text-neutral-500">Predicted Click Rate</p>
+        <div className="text-center p-2.5 bg-white rounded-[6px] border border-neutral-100">
+          <p className="text-[15px] font-bold text-[#5C9BA4]">{clickRate}%</p>
+          <p className="text-[10px] text-neutral-500 mt-0.5">Click Rate</p>
         </div>
-        <div className="text-center p-2 bg-white/60 rounded-lg">
+        <div className="text-center p-2.5 bg-white rounded-[6px] border border-neutral-100">
           <div className="flex items-center justify-center gap-1">
-            <Clock className="w-4 h-4 text-[#CDB261]" />
-            <p className="text-sm font-semibold text-[#CDB261]">{optimalSendTime}</p>
+            <Clock className="w-3.5 h-3.5 text-[#CDB261]" />
+            <p className="text-[13px] font-semibold text-[#CDB261]">{optimalSendTime}</p>
           </div>
-          <p className="text-xs text-neutral-500">Best Send Time</p>
+          <p className="text-[10px] text-neutral-500 mt-0.5">Best Time</p>
         </div>
       </div>
     </div>
@@ -144,7 +144,6 @@ function AIPredictions({ openRate, clickRate, optimalSendTime, isLoading }) {
 // AI Recommended Segments Component
 function AIRecommendedSegments({ campaignType, segments, selectedSegmentId, onSelect }) {
   const getRecommendedSegments = () => {
-    // AI logic to recommend segments based on campaign type
     const segmentScores = segments.map(seg => {
       let score = 0;
       const name = seg.name?.toLowerCase() || '';
@@ -183,10 +182,10 @@ function AIRecommendedSegments({ campaignType, segments, selectedSegmentId, onSe
   if (recommendedSegments.length === 0) return null;
 
   return (
-    <div className="mt-3 p-3 bg-[#CDB261]/10 rounded-lg border border-[#CDB261]/20">
+    <div className="mt-2.5 p-3 bg-[#CDB261]/5 rounded-[8px] border border-[#CDB261]/15">
       <div className="flex items-center gap-2 mb-2">
-        <Target className="w-4 h-4 text-[#CDB261]" />
-        <span className="text-xs font-medium text-[#CDB261] uppercase tracking-wide">AI Recommended Segments</span>
+        <Target className="w-3.5 h-3.5 text-[#CDB261]" />
+        <span className="text-[10px] font-semibold text-[#CDB261] uppercase tracking-widest">AI Recommended</span>
       </div>
       <div className="flex flex-wrap gap-2">
         {recommendedSegments.map(seg => (
@@ -194,7 +193,7 @@ function AIRecommendedSegments({ campaignType, segments, selectedSegmentId, onSe
             key={seg.id}
             type="button"
             onClick={() => onSelect(seg.id)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+            className={`px-2.5 py-1.5 text-[11px] font-medium rounded-[6px] transition-all ${
               selectedSegmentId === seg.id
                 ? 'bg-[#4E5840] text-white'
                 : 'bg-white text-neutral-700 border border-neutral-200 hover:border-[#4E5840] hover:bg-[#4E5840]/5'
@@ -235,7 +234,6 @@ function CampaignModal({ isOpen, onClose, onSave, campaign, mode, segments, temp
   useEffect(() => {
     if (formData.segmentId && formData.type) {
       setIsLoadingPredictions(true);
-      // Simulate AI prediction based on segment data
       const timeout = setTimeout(() => {
         const segment = segments.find(s => s.id === formData.segmentId);
         const baseOpenRate = segment?.repeatRate ? Math.min(35 + segment.repeatRate * 0.3, 55) : 25;
@@ -258,7 +256,6 @@ function CampaignModal({ isOpen, onClose, onSave, campaign, mode, segments, temp
   const generateSubjectLines = useCallback(async () => {
     setIsLoadingSubjects(true);
     try {
-      // Simulate AI generation - in production, this would call an AI endpoint
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       const campaignName = formData.name || 'your campaign';
@@ -361,55 +358,64 @@ function CampaignModal({ isOpen, onClose, onSave, campaign, mode, segments, temp
     <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Right-side Drawer */}
       <div
-        className="fixed right-0 top-0 bottom-0 w-full sm:max-w-lg flex flex-col bg-white border-l border-neutral-200 shadow-2xl h-screen"
+        className="fixed right-0 top-0 bottom-0 w-full sm:max-w-[480px] flex flex-col bg-white border-l border-neutral-200 shadow-2xl h-screen"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative px-4 sm:px-6 py-4 sm:py-5 pr-12 sm:pr-14 border-b border-neutral-100 bg-white flex-shrink-0 z-10">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-base sm:text-lg font-semibold text-neutral-900">
-                {mode === 'create' ? 'Create Campaign' : 'Edit Campaign'}
-              </h2>
-              {aiSuggestion && (
-                <span className="px-2 py-0.5 bg-[#4E5840]/10 text-[#4E5840] text-[10px] sm:text-xs font-medium rounded-full flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" />
-                  AI Suggested
-                </span>
-              )}
+        <div className="px-5 py-4 border-b border-neutral-100 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-[8px] bg-[#A57865]/10 flex items-center justify-center">
+                <Send className="w-[18px] h-[18px] text-[#A57865]" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-[15px] font-semibold text-neutral-900">
+                    {mode === 'create' ? 'Create Campaign' : 'Edit Campaign'}
+                  </h2>
+                  {aiSuggestion && (
+                    <span className="px-2 py-0.5 bg-[#4E5840]/10 text-[#4E5840] text-[10px] font-semibold rounded-full flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      AI
+                    </span>
+                  )}
+                </div>
+                <p className="text-[12px] text-neutral-400 mt-0.5">Configure campaign settings</p>
+              </div>
             </div>
-            <p className="text-xs sm:text-sm text-neutral-500">Configure campaign settings</p>
+            <button
+              onClick={onClose}
+              className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-[8px] transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 bg-white space-y-4">
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+          {/* Campaign Name */}
           <div>
-            <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Campaign Name *</label>
+            <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2 block">Campaign Name *</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="e.g., Holiday Season Promotion"
-              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
+              className="w-full px-3.5 py-2.5 bg-white border border-neutral-200 rounded-[8px] text-[13px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865] transition-colors"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          {/* Type & Status */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Type</label>
+              <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2 block">Type</label>
               <CustomDropdown
                 options={CAMPAIGN_TYPE_OPTIONS}
                 value={formData.type}
@@ -418,7 +424,7 @@ function CampaignModal({ isOpen, onClose, onSave, campaign, mode, segments, temp
               />
             </div>
             <div>
-              <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Status</label>
+              <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2 block">Status</label>
               <CustomDropdown
                 options={CAMPAIGN_STATUS_OPTIONS}
                 value={formData.status}
@@ -428,15 +434,15 @@ function CampaignModal({ isOpen, onClose, onSave, campaign, mode, segments, temp
             </div>
           </div>
 
+          {/* Target Segment */}
           <div>
-            <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Target Segment *</label>
+            <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2 block">Target Segment *</label>
             <CustomDropdown
               options={segmentOptions}
               value={formData.segmentId}
               onChange={(value) => setFormData(prev => ({ ...prev, segmentId: value }))}
               className="w-full"
             />
-            {/* AI Recommended Segments */}
             {aiSuggestion?.type && (
               <AIRecommendedSegments
                 campaignType={aiSuggestion.type}
@@ -447,8 +453,9 @@ function CampaignModal({ isOpen, onClose, onSave, campaign, mode, segments, temp
             )}
           </div>
 
+          {/* Message Template */}
           <div>
-            <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Message Template</label>
+            <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2 block">Message Template</label>
             <CustomDropdown
               options={templateOptions}
               value={formData.templateId}
@@ -457,19 +464,19 @@ function CampaignModal({ isOpen, onClose, onSave, campaign, mode, segments, temp
             />
           </div>
 
+          {/* Subject Line (email only) */}
           {formData.type === 'email' && (
             <div>
-              <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide">Subject Line</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest">Subject Line</label>
                 <button
                   type="button"
                   onClick={generateSubjectLines}
                   disabled={isLoadingSubjects}
-                  className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-medium text-[#4E5840] bg-[#4E5840]/10 rounded-lg hover:bg-[#4E5840]/20 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-[#4E5840] bg-[#4E5840]/10 rounded-[6px] hover:bg-[#4E5840]/15 transition-colors disabled:opacity-50"
                 >
-                  <Wand2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span className="hidden sm:inline">Generate with AI</span>
-                  <span className="sm:hidden">AI</span>
+                  <Wand2 className="w-3 h-3" />
+                  Generate with AI
                 </button>
               </div>
               <input
@@ -477,7 +484,7 @@ function CampaignModal({ isOpen, onClose, onSave, campaign, mode, segments, temp
                 value={formData.subject}
                 onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
                 placeholder="Email subject..."
-                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
+                className="w-full px-3.5 py-2.5 bg-white border border-neutral-200 rounded-[8px] text-[13px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865] transition-colors"
               />
               <AISubjectLineSuggestions
                 suggestions={aiSubjectSuggestions}
@@ -487,14 +494,18 @@ function CampaignModal({ isOpen, onClose, onSave, campaign, mode, segments, temp
             </div>
           )}
 
+          {/* Schedule Date */}
           <div>
-            <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Schedule Date</label>
-            <input
-              type="datetime-local"
-              value={formData.scheduleDate}
-              onChange={(e) => setFormData(prev => ({ ...prev, scheduleDate: e.target.value }))}
-              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
-            />
+            <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2 block">Schedule Date</label>
+            <div className="relative">
+              <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+              <input
+                type="datetime-local"
+                value={formData.scheduleDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, scheduleDate: e.target.value }))}
+                className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-neutral-200 rounded-[8px] text-[13px] text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865] transition-colors [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:hover:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+              />
+            </div>
           </div>
 
           {/* AI Predictions */}
@@ -507,17 +518,18 @@ function CampaignModal({ isOpen, onClose, onSave, campaign, mode, segments, temp
             />
           )}
 
+          {/* Target Audience Summary */}
           {selectedSegment && (
-            <div className="bg-neutral-50 rounded-xl p-3 sm:p-4 border border-neutral-200">
-              <h4 className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2 sm:mb-3">Target Audience</h4>
-              <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                <div className="text-center">
-                  <p className="text-lg sm:text-xl font-bold text-[#A57865]">{selectedSegment.guestCount || 0}</p>
-                  <p className="text-[10px] sm:text-xs text-neutral-500">Recipients</p>
+            <div className="bg-neutral-50 rounded-[8px] p-4 border border-neutral-100">
+              <h4 className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-3">Target Audience</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-2.5 bg-white rounded-[6px] border border-neutral-100">
+                  <p className="text-[15px] font-bold text-[#A57865]">{selectedSegment.guestCount || 0}</p>
+                  <p className="text-[10px] text-neutral-500 mt-0.5">Recipients</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-lg sm:text-xl font-bold text-[#4E5840]">${(selectedSegment.avgRevenue || 0).toLocaleString()}</p>
-                  <p className="text-[10px] sm:text-xs text-neutral-500">Avg LTV</p>
+                <div className="text-center p-2.5 bg-white rounded-[6px] border border-neutral-100">
+                  <p className="text-[15px] font-bold text-[#4E5840]">${(selectedSegment.avgRevenue || 0).toLocaleString()}</p>
+                  <p className="text-[10px] text-neutral-500 mt-0.5">Avg LTV</p>
                 </div>
               </div>
             </div>
@@ -525,20 +537,20 @@ function CampaignModal({ isOpen, onClose, onSave, campaign, mode, segments, temp
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-t border-neutral-100 px-4 sm:px-6 py-4 sm:py-5 bg-neutral-50/50">
-          <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex-shrink-0 border-t border-neutral-100 px-5 py-4">
+          <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 border border-neutral-200 text-neutral-700 rounded-xl text-xs sm:text-sm font-medium hover:bg-neutral-50 transition-colors"
+              className="flex-1 px-4 py-2.5 border border-neutral-200 text-neutral-700 rounded-[8px] text-[13px] font-medium hover:bg-neutral-50 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={!formData.name.trim() || !formData.segmentId}
-              className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
+              className={`flex-1 px-4 py-2.5 rounded-[8px] text-[13px] font-semibold transition-colors ${
                 formData.name.trim() && formData.segmentId
-                  ? 'bg-[#4E5840] text-white hover:bg-[#3d4632]'
+                  ? 'bg-[#A57865] text-white hover:bg-[#8E6554]'
                   : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
               }`}
             >
@@ -559,20 +571,20 @@ function AIRecommendationsPanel({ onCreateCampaign, isLoading, error, recommenda
 
   if (error) {
     return (
-      <div className="mb-5 p-4 bg-rose-50 border border-rose-200 rounded-xl">
+      <div className="mb-4 p-4 bg-rose-50 border border-rose-100 rounded-[8px]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-rose-500" />
+            <AlertCircle className="w-4 h-4 text-rose-500" />
             <div>
-              <p className="text-sm font-medium text-rose-800">Failed to load AI recommendations</p>
-              <p className="text-xs text-rose-600 mt-0.5">{error}</p>
+              <p className="text-[13px] font-medium text-rose-800">Failed to load AI recommendations</p>
+              <p className="text-[11px] text-rose-600 mt-0.5">{error}</p>
             </div>
           </div>
           <button
             onClick={onRetry}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-rose-700 bg-rose-100 rounded-lg hover:bg-rose-200 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-rose-700 bg-rose-100 rounded-[6px] hover:bg-rose-200 transition-colors"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className="w-3 h-3" />
             Retry
           </button>
         </div>
@@ -582,14 +594,14 @@ function AIRecommendationsPanel({ onCreateCampaign, isLoading, error, recommenda
 
   if (isLoading) {
     return (
-      <div className="mb-5 p-6 bg-gradient-to-r from-[#4E5840]/5 via-[#5C9BA4]/5 to-[#CDB261]/5 border border-[#4E5840]/10 rounded-xl">
+      <div className="mb-4 p-5 bg-neutral-50 border border-neutral-100 rounded-[8px]">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[#4E5840]/10 flex items-center justify-center">
-            <Loader2 className="w-5 h-5 text-[#4E5840] animate-spin" />
+          <div className="w-9 h-9 rounded-[8px] bg-[#4E5840]/10 flex items-center justify-center">
+            <Loader2 className="w-[18px] h-[18px] text-[#4E5840] animate-spin" />
           </div>
           <div>
-            <p className="text-sm font-medium text-neutral-700">Analyzing guest data...</p>
-            <p className="text-xs text-neutral-500">AI is generating campaign recommendations</p>
+            <p className="text-[13px] font-medium text-neutral-700">Analyzing guest data...</p>
+            <p className="text-[11px] text-neutral-400">AI is generating campaign recommendations</p>
           </div>
         </div>
       </div>
@@ -601,63 +613,63 @@ function AIRecommendationsPanel({ onCreateCampaign, isLoading, error, recommenda
   }
 
   return (
-    <div className="mb-5 bg-gradient-to-r from-[#4E5840]/5 via-[#5C9BA4]/5 to-[#CDB261]/5 border border-[#4E5840]/10 rounded-xl overflow-hidden">
+    <div className="mb-4 bg-neutral-50 border border-neutral-100 rounded-[8px] overflow-hidden">
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-5 py-4 flex items-center justify-between hover:bg-white/30 transition-colors"
+        className="w-full px-4 py-3.5 flex items-center justify-between hover:bg-neutral-100/50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#4E5840] to-[#5C9BA4] flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
+          <div className="w-9 h-9 rounded-[8px] bg-[#4E5840]/10 flex items-center justify-center">
+            <Sparkles className="w-[18px] h-[18px] text-[#4E5840]" />
           </div>
           <div className="text-left">
-            <h3 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+            <h3 className="text-[13px] font-semibold text-neutral-900 flex items-center gap-2">
               AI Campaign Recommendations
-              <span className="px-2 py-0.5 bg-[#4E5840] text-white text-xs rounded-full">{recommendations.length}</span>
+              <span className="px-1.5 py-0.5 bg-[#4E5840]/10 text-[#4E5840] text-[10px] font-semibold rounded-full">{recommendations.length}</span>
             </h3>
-            <p className="text-xs text-neutral-500">Personalized suggestions based on guest intelligence</p>
+            <p className="text-[11px] text-neutral-400 mt-0.5">Personalized suggestions based on guest intelligence</p>
           </div>
         </div>
         {isExpanded ? (
-          <ChevronUp className="w-5 h-5 text-neutral-400" />
+          <ChevronUp className="w-4 h-4 text-neutral-400" />
         ) : (
-          <ChevronDown className="w-5 h-5 text-neutral-400" />
+          <ChevronDown className="w-4 h-4 text-neutral-400" />
         )}
       </button>
 
       {/* Recommendations List */}
       {isExpanded && (
-        <div className="px-5 pb-5 space-y-3">
+        <div className="px-4 pb-4 space-y-2.5">
           {recommendations.map((rec, idx) => {
             const priorityStyle = PRIORITY_COLORS[rec.priority] || PRIORITY_COLORS.medium;
 
             return (
               <div
                 key={rec.id || idx}
-                className="p-4 bg-white rounded-xl border border-neutral-200 hover:border-[#A57865]/30 hover:shadow-sm transition-all"
+                className="p-3.5 bg-white rounded-[8px] border border-neutral-100 hover:border-neutral-200 transition-all"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-semibold text-neutral-900">{rec.title}</h4>
-                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${priorityStyle.bg} ${priorityStyle.text}`}>
+                      <h4 className="text-[13px] font-semibold text-neutral-900">{rec.title}</h4>
+                      <span className={`px-1.5 py-0.5 text-[10px] font-semibold rounded-full uppercase ${priorityStyle.bg} ${priorityStyle.text}`}>
                         {rec.priority}
                       </span>
                     </div>
-                    <p className="text-sm text-neutral-600 mb-3">{rec.description}</p>
+                    <p className="text-[12px] text-neutral-500 mb-2.5">{rec.description}</p>
 
-                    <div className="flex items-center gap-4 text-xs text-neutral-500">
+                    <div className="flex items-center gap-3 text-[11px] text-neutral-500">
                       <span className="flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5 text-[#A57865]" />
+                        <Users className="w-3 h-3 text-neutral-400" />
                         {rec.target_count} guests
                       </span>
                       <span className="flex items-center gap-1">
-                        <TrendingUp className="w-3.5 h-3.5 text-[#4E5840]" />
+                        <TrendingUp className="w-3 h-3 text-neutral-400" />
                         {rec.estimated_impact}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Zap className="w-3.5 h-3.5 text-[#CDB261]" />
+                        <Zap className="w-3 h-3 text-neutral-400" />
                         {rec.best_channel}
                       </span>
                     </div>
@@ -665,9 +677,9 @@ function AIRecommendationsPanel({ onCreateCampaign, isLoading, error, recommenda
 
                   <button
                     onClick={() => onCreateCampaign(rec)}
-                    className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 bg-[#A57865] text-white text-sm font-medium rounded-lg hover:bg-[#A57865]/90 transition-colors"
+                    className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-[#A57865] text-white text-[11px] font-semibold rounded-[6px] hover:bg-[#8E6554] transition-colors"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3.5 h-3.5" />
                     Create
                   </button>
                 </div>
@@ -682,7 +694,6 @@ function AIRecommendationsPanel({ onCreateCampaign, isLoading, error, recommenda
 
 // AI Insights Badge for Campaign Card
 function CampaignAIInsights({ campaign, isExpanded, onToggle }) {
-  // Generate AI insights based on campaign data
   const getPerformancePrediction = () => {
     const metrics = campaign.metrics || {};
     const openRate = metrics.sent > 0 ? (metrics.opened / metrics.sent) * 100 : 0;
@@ -694,7 +705,6 @@ function CampaignAIInsights({ campaign, isExpanded, onToggle }) {
   };
 
   const getOptimalSendTime = () => {
-    // AI-generated optimal send time based on segment analysis
     const times = ['9:00 AM', '10:30 AM', '2:00 PM', '4:30 PM'];
     return campaign.aiPredictions?.optimalSendTime || times[Math.floor(Math.random() * times.length)];
   };
@@ -714,9 +724,9 @@ function CampaignAIInsights({ campaign, isExpanded, onToggle }) {
     <div className="mt-3 pt-3 border-t border-neutral-100">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between text-xs text-[#5C9BA4] hover:text-[#4a8a94] transition-colors"
+        className="w-full flex items-center justify-between text-[11px] text-[#5C9BA4] hover:text-[#4a8a94] transition-colors"
       >
-        <span className="flex items-center gap-1.5 font-medium">
+        <span className="flex items-center gap-1.5 font-semibold">
           <Brain className="w-3.5 h-3.5" />
           AI Insights
         </span>
@@ -728,36 +738,36 @@ function CampaignAIInsights({ campaign, isExpanded, onToggle }) {
       </button>
 
       {isExpanded && (
-        <div className="mt-3 space-y-3">
+        <div className="mt-2.5 space-y-2">
           {/* Performance Prediction */}
-          <div className="flex items-center justify-between p-2 bg-neutral-50 rounded-lg">
-            <span className="text-xs text-neutral-600 flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5 text-neutral-400" />
+          <div className="flex items-center justify-between p-2.5 bg-neutral-50 rounded-[6px] border border-neutral-100">
+            <span className="text-[11px] text-neutral-600 flex items-center gap-1.5">
+              <TrendingUp className="w-3 h-3 text-neutral-400" />
               Predicted Performance
             </span>
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${prediction.bgColor} ${prediction.color}`}>
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${prediction.bgColor} ${prediction.color}`}>
               {prediction.label}
             </span>
           </div>
 
           {/* Optimal Send Time */}
-          <div className="flex items-center justify-between p-2 bg-neutral-50 rounded-lg">
-            <span className="text-xs text-neutral-600 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-neutral-400" />
+          <div className="flex items-center justify-between p-2.5 bg-neutral-50 rounded-[6px] border border-neutral-100">
+            <span className="text-[11px] text-neutral-600 flex items-center gap-1.5">
+              <Clock className="w-3 h-3 text-neutral-400" />
               Optimal Send Time
             </span>
-            <span className="text-xs font-medium text-[#CDB261]">{getOptimalSendTime()}</span>
+            <span className="text-[11px] font-semibold text-[#CDB261]">{getOptimalSendTime()}</span>
           </div>
 
           {/* Subject Line Suggestions */}
-          <div className="p-2 bg-[#4E5840]/5 rounded-lg">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Lightbulb className="w-3.5 h-3.5 text-[#4E5840]" />
-              <span className="text-xs font-medium text-[#4E5840]">Subject Line Suggestions</span>
+          <div className="p-2.5 bg-[#4E5840]/5 rounded-[6px] border border-[#4E5840]/10">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Lightbulb className="w-3 h-3 text-[#4E5840]" />
+              <span className="text-[10px] font-semibold text-[#4E5840]">Subject Line Suggestions</span>
             </div>
             <div className="space-y-1">
               {subjectSuggestions.slice(0, 2).map((suggestion, idx) => (
-                <p key={idx} className="text-xs text-neutral-600 truncate" title={suggestion}>
+                <p key={idx} className="text-[11px] text-neutral-600 truncate" title={suggestion}>
                   {idx + 1}. {suggestion}
                 </p>
               ))}
@@ -879,196 +889,206 @@ export default function CRMTabCampaigns({ campaigns, segments, templates, onSave
   const getTypeIcon = (type) => {
     switch (type) {
       case 'email':
-        return <Mail className="w-5 h-5 text-[#4E5840]" />;
+        return <Mail className="w-[18px] h-[18px] text-[#4E5840]" />;
       case 'sms':
-        return <MessageSquare className="w-5 h-5 text-[#5C9BA4]" />;
+        return <MessageSquare className="w-[18px] h-[18px] text-[#5C9BA4]" />;
       case 'push':
-        return <Bell className="w-5 h-5 text-[#CDB261]" />;
+        return <Bell className="w-[18px] h-[18px] text-[#CDB261]" />;
       default:
-        return <Send className="w-5 h-5 text-neutral-500" />;
+        return <Send className="w-[18px] h-[18px] text-neutral-500" />;
     }
   };
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-3 sm:p-5">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-[#4E5840]/10 flex items-center justify-center flex-shrink-0">
-            <Send className="w-4 h-4 sm:w-5 sm:h-5 text-[#4E5840]" />
+    <div className="bg-white rounded-[10px] border border-neutral-200">
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-neutral-100">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-[8px] bg-[#4E5840]/10 flex items-center justify-center flex-shrink-0">
+              <Send className="w-[18px] h-[18px] text-[#4E5840]" />
+            </div>
+            <div>
+              <h3 className="text-[15px] font-semibold text-neutral-900">Campaigns</h3>
+              <p className="text-[12px] text-neutral-400 mt-0.5">{campaigns.length} campaigns</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-base sm:text-lg font-bold text-neutral-900">Campaigns</h3>
-            <p className="text-xs sm:text-sm text-neutral-500">{campaigns.length} campaigns</p>
+          <div className="flex items-center gap-2">
+            <CustomDropdown
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'draft', label: 'Draft' },
+                { value: 'scheduled', label: 'Scheduled' },
+                { value: 'active', label: 'Active' },
+                { value: 'completed', label: 'Completed' },
+                { value: 'paused', label: 'Paused' }
+              ]}
+              value={filter}
+              onChange={setFilter}
+              className="[&_button]:min-w-[90px] sm:[&_button]:min-w-[120px]"
+            />
+            <button
+              onClick={() => handleCreateCampaign()}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-[#A57865] text-white rounded-[8px] text-[12px] sm:text-[13px] font-semibold hover:bg-[#8E6554] transition-colors whitespace-nowrap"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Create Campaign</span>
+              <span className="sm:hidden">Add</span>
+            </button>
           </div>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <CustomDropdown
-            options={[
-              { value: 'all', label: 'All Status' },
-              { value: 'draft', label: 'Draft' },
-              { value: 'scheduled', label: 'Scheduled' },
-              { value: 'active', label: 'Active' },
-              { value: 'completed', label: 'Completed' },
-              { value: 'paused', label: 'Paused' }
-            ]}
-            value={filter}
-            onChange={setFilter}
-            className="[&_button]:min-w-[90px] sm:[&_button]:min-w-[120px]"
-          />
-          <button
-            onClick={() => handleCreateCampaign()}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-[#A57865] text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-[#A57865]/90 transition-colors whitespace-nowrap"
-          >
-            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline">Create Campaign</span>
-            <span className="sm:hidden">Add</span>
-          </button>
         </div>
       </div>
 
-      {/* AI Recommendations Panel */}
-      <AIRecommendationsPanel
-        recommendations={aiRecommendations}
-        isLoading={isLoadingAI}
-        error={aiError}
-        onCreateCampaign={handleCreateCampaign}
-        onRetry={fetchAIRecommendations}
-      />
+      {/* Content */}
+      <div className="p-4">
+        {/* AI Recommendations Panel */}
+        <AIRecommendationsPanel
+          recommendations={aiRecommendations}
+          isLoading={isLoadingAI}
+          error={aiError}
+          onCreateCampaign={handleCreateCampaign}
+          onRetry={fetchAIRecommendations}
+        />
 
-      <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-        {filteredCampaigns.map((campaign) => {
-          const statusConfig = CAMPAIGN_STATUS[campaign.status] || CAMPAIGN_STATUS.draft;
-          const metrics = campaign.metrics || {};
-          const openRate = metrics.sent > 0 ? Math.round((metrics.opened / metrics.sent) * 100) : 0;
-          const clickRate = metrics.opened > 0 ? Math.round((metrics.clicked / metrics.opened) * 100) : 0;
+        {/* Campaign Cards */}
+        <div className="space-y-3 max-h-[500px] overflow-y-auto">
+          {filteredCampaigns.map((campaign) => {
+            const statusConfig = CAMPAIGN_STATUS[campaign.status] || CAMPAIGN_STATUS.draft;
+            const metrics = campaign.metrics || {};
+            const openRate = metrics.sent > 0 ? Math.round((metrics.opened / metrics.sent) * 100) : 0;
+            const clickRate = metrics.opened > 0 ? Math.round((metrics.clicked / metrics.opened) * 100) : 0;
 
-          return (
-            <div
-              key={campaign.id}
-              className="border border-neutral-200 rounded-xl p-4 hover:border-[#A57865]/30 transition-colors"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center">
-                    {getTypeIcon(campaign.type)}
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-neutral-900">{campaign.name}</h4>
-                    <div className="flex items-center gap-2 text-xs text-neutral-500 mt-0.5">
-                      <span className={`px-2 py-0.5 rounded-full ${statusConfig.bgColor} ${statusConfig.textColor}`}>
-                        {statusConfig.label}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="w-3 h-3" />
-                        {campaign.segmentName}
-                      </span>
+            return (
+              <div
+                key={campaign.id}
+                className="border border-neutral-100 rounded-[8px] p-4 bg-neutral-50 hover:border-neutral-200 transition-colors"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-[8px] bg-white border border-neutral-100 flex items-center justify-center">
+                      {getTypeIcon(campaign.type)}
+                    </div>
+                    <div>
+                      <h4 className="text-[13px] font-semibold text-neutral-900">{campaign.name}</h4>
+                      <div className="flex items-center gap-2 text-[11px] text-neutral-500 mt-0.5">
+                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${statusConfig.bgColor} ${statusConfig.textColor}`}>
+                          {statusConfig.label}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          {campaign.segmentName}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  {(campaign.status === 'active' || campaign.status === 'paused') && (
+                  <div className="flex items-center gap-0.5">
+                    {(campaign.status === 'active' || campaign.status === 'paused') && (
+                      <button
+                        onClick={() => handleToggleStatus(campaign)}
+                        className={`p-1.5 rounded-[6px] transition-colors ${
+                          campaign.status === 'active'
+                            ? 'hover:bg-[#CDB261]/10 text-[#CDB261]'
+                            : 'hover:bg-[#4E5840]/10 text-[#4E5840]'
+                        }`}
+                        title={campaign.status === 'active' ? 'Pause' : 'Resume'}
+                      >
+                        {campaign.status === 'active' ? (
+                          <Pause className="w-3.5 h-3.5" />
+                        ) : (
+                          <Play className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    )}
                     <button
-                      onClick={() => handleToggleStatus(campaign)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        campaign.status === 'active'
-                          ? 'hover:bg-[#CDB261]/10 text-[#CDB261]'
-                          : 'hover:bg-[#4E5840]/10 text-[#4E5840]'
-                      }`}
-                      title={campaign.status === 'active' ? 'Pause' : 'Resume'}
+                      onClick={() => handleEditCampaign(campaign)}
+                      className="p-1.5 hover:bg-neutral-200 rounded-[6px] transition-colors"
                     >
-                      {campaign.status === 'active' ? (
-                        <Pause className="w-4 h-4" />
-                      ) : (
-                        <Play className="w-4 h-4" />
-                      )}
+                      <Edit2 className="w-3.5 h-3.5 text-neutral-500" />
                     </button>
-                  )}
-                  <button
-                    onClick={() => handleEditCampaign(campaign)}
-                    className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
-                  >
-                    <Edit2 className="w-4 h-4 text-neutral-500" />
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirm(campaign.id)}
-                    className="p-2 hover:bg-rose-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4 text-rose-500" />
-                  </button>
+                    <button
+                      onClick={() => setDeleteConfirm(campaign.id)}
+                      className="p-1.5 hover:bg-rose-50 rounded-[6px] transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                    </button>
+                  </div>
                 </div>
+
+                {/* Schedule Info */}
+                {campaign.scheduleDate && (
+                  <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 mb-3">
+                    <Calendar className="w-3 h-3" />
+                    Scheduled: {formatDate(campaign.scheduleDate)}
+                  </div>
+                )}
+
+                {/* Metrics */}
+                {(campaign.status === 'active' || campaign.status === 'completed') && (
+                  <div className="grid grid-cols-4 gap-2 bg-white rounded-[6px] p-3 border border-neutral-100">
+                    <div className="text-center">
+                      <p className="text-[15px] font-bold text-neutral-900">{metrics.sent || 0}</p>
+                      <p className="text-[10px] text-neutral-500">Sent</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[15px] font-bold text-neutral-900">{metrics.delivered || 0}</p>
+                      <p className="text-[10px] text-neutral-500">Delivered</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[15px] font-bold text-[#4E5840]">{openRate}%</p>
+                      <p className="text-[10px] text-neutral-500">Open Rate</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[15px] font-bold text-[#5C9BA4]">{clickRate}%</p>
+                      <p className="text-[10px] text-neutral-500">Click Rate</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Insights for each campaign */}
+                <CampaignAIInsights
+                  campaign={campaign}
+                  isExpanded={expandedInsights[campaign.id] || false}
+                  onToggle={() => toggleInsights(campaign.id)}
+                />
+
+                {deleteConfirm === campaign.id && (
+                  <div className="mt-3 pt-3 border-t border-neutral-200 bg-rose-50 -mx-4 -mb-4 p-4 rounded-b-[8px]">
+                    <p className="text-[13px] text-rose-800 font-medium mb-2">Delete this campaign?</p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleDeleteCampaign(campaign.id)}
+                        className="px-3 py-1.5 bg-rose-600 text-white text-[11px] font-semibold rounded-[6px] hover:bg-rose-700 transition-colors"
+                      >
+                        Delete
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirm(null)}
+                        className="px-3 py-1.5 text-[11px] font-medium text-neutral-700 hover:bg-neutral-200 rounded-[6px] transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
+            );
+          })}
 
-              {/* Schedule Info */}
-              {campaign.scheduleDate && (
-                <div className="flex items-center gap-2 text-xs text-neutral-600 mb-3">
-                  <Calendar className="w-3 h-3" />
-                  Scheduled: {formatDate(campaign.scheduleDate)}
-                </div>
-              )}
-
-              {/* Metrics */}
-              {(campaign.status === 'active' || campaign.status === 'completed') && (
-                <div className="grid grid-cols-4 gap-2 bg-neutral-50 rounded-lg p-3">
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-neutral-900">{metrics.sent || 0}</p>
-                    <p className="text-xs text-neutral-500">Sent</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-neutral-900">{metrics.delivered || 0}</p>
-                    <p className="text-xs text-neutral-500">Delivered</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-[#4E5840]">{openRate}%</p>
-                    <p className="text-xs text-neutral-500">Open Rate</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-[#5C9BA4]">{clickRate}%</p>
-                    <p className="text-xs text-neutral-500">Click Rate</p>
-                  </div>
-                </div>
-              )}
-
-              {/* AI Insights for each campaign */}
-              <CampaignAIInsights
-                campaign={campaign}
-                isExpanded={expandedInsights[campaign.id] || false}
-                onToggle={() => toggleInsights(campaign.id)}
-              />
-
-              {deleteConfirm === campaign.id && (
-                <div className="mt-3 pt-3 border-t border-neutral-100 bg-rose-50 -mx-4 -mb-4 p-4 rounded-b-xl">
-                  <p className="text-sm text-rose-800 mb-2">Delete this campaign?</p>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleDeleteCampaign(campaign.id)}
-                      className="px-3 py-1.5 bg-rose-600 text-white text-xs font-medium rounded-lg hover:bg-rose-700 transition-colors"
-                    >
-                      Delete
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirm(null)}
-                      className="px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-200 rounded-lg transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
+          {filteredCampaigns.length === 0 && (
+            <div className="text-center py-10">
+              <div className="w-12 h-12 rounded-[10px] bg-neutral-100 flex items-center justify-center mx-auto mb-3">
+                <Send className="w-6 h-6 text-neutral-300" />
+              </div>
+              <p className="text-[13px] font-medium text-neutral-600">No campaigns found</p>
+              <button
+                onClick={() => handleCreateCampaign()}
+                className="mt-2 text-[12px] text-[#A57865] font-medium hover:underline"
+              >
+                Create your first campaign
+              </button>
             </div>
-          );
-        })}
-
-        {filteredCampaigns.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-neutral-500">No campaigns found</p>
-            <button
-              onClick={() => handleCreateCampaign()}
-              className="mt-2 text-sm text-[#A57865] hover:underline"
-            >
-              Create your first campaign
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <CampaignModal

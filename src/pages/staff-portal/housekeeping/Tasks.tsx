@@ -514,7 +514,9 @@ const HousekeepingTasks = () => {
                       </div>
 
                       {(task.description || task.notes) && (
-                        <p className="text-[11px] text-neutral-500 mt-2 line-clamp-2 leading-relaxed">{task.description || task.notes}</p>
+                        <div className="text-[11px] text-gold-700 bg-gold-50 rounded px-2 py-1.5 mt-2 leading-relaxed">
+                          <span className="font-semibold">Notes:</span> {task.description || task.notes}
+                        </div>
                       )}
 
                       <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 sm:mt-3 text-[10px] text-neutral-400 font-medium">

@@ -361,24 +361,34 @@ export function useMaintenance() {
   }, [technicians]);
 
   /**
-   * Delete work order
+   * Delete work order - cancels via backend API then removes from local state
+   * BUG-027 FIX: Previously local-only — deleted WOs reappeared after refresh
    */
-  const deleteWorkOrder = useCallback((woId) => {
-    setWorkOrders(prev => {
-      const wo = prev.find(w => w.id === woId);
+  const deleteWorkOrder = useCallback(async (woId: number) => {
+    try {
+      // No DELETE endpoint exists — soft-delete by setting status to 'cancelled'
+      await maintenanceService.updateWorkOrder(woId, { status: 'cancelled' });
 
-      // Decrement technician assigned tasks if assigned
-      if (wo?.assignedTo) {
-        setTechnicians(prevTech => prevTech.map(t => {
-          if (t.id === wo.assignedTo) {
-            return { ...t, assignedTasks: Math.max(0, t.assignedTasks - 1) };
-          }
-          return t;
-        }));
-      }
+      setWorkOrders(prev => {
+        const wo = prev.find(w => w.id === woId);
 
-      return prev.filter(w => w.id !== woId);
-    });
+        // Decrement technician assigned tasks if assigned
+        if (wo?.assignedTo) {
+          setTechnicians(prevTech => prevTech.map(t => {
+            if (t.id === wo.assignedTo) {
+              return { ...t, assignedTasks: Math.max(0, t.assignedTasks - 1) };
+            }
+            return t;
+          }));
+        }
+
+        return prev.filter(w => w.id !== woId);
+      });
+      toast.success('Work order cancelled');
+    } catch (err: any) {
+      console.error('Error deleting work order:', err);
+      toast.error(err.response?.data?.detail || 'Failed to delete work order');
+    }
   }, []);
 
   // =========================================
@@ -847,29 +857,12 @@ export function useMaintenance() {
           }
           return pm;
         }));
-      } else {
-        // Fallback for local-only tasks
-        setPMTasks(prev => prev.map(pm => {
-          if (pm.id === pmId) {
-            const now = new Date().toISOString().split('T')[0];
-            const nextDue = calculateNextDueDate(now, pm.frequency);
-            return { ...pm, lastCompleted: now, nextDueDate: nextDue, updatedAt: new Date().toISOString() };
-          }
-          return pm;
-        }));
       }
       toast.success('PM Task completed, next scheduled');
     } catch (err: any) {
       console.error('Error completing PM task:', err);
-      // Fallback: still update locally
-      setPMTasks(prev => prev.map(pm => {
-        if (pm.id === pmId) {
-          const now = new Date().toISOString().split('T')[0];
-          const nextDue = calculateNextDueDate(now, pm.frequency);
-          return { ...pm, lastCompleted: now, nextDueDate: nextDue, updatedAt: new Date().toISOString() };
-        }
-        return pm;
-      }));
+      // BUG-027 FIX: Don't update local state on failure — causes data inconsistency on refresh
+      toast.error(err.response?.data?.detail || 'Failed to complete PM task');
     }
   }, []);
 
@@ -884,6 +877,7 @@ export function useMaintenance() {
       if (typeof pmId === 'number') {
         await maintenanceService.updatePreventiveSchedule(pmId, { active: newActive });
       }
+      // Only update local state after successful API call
       setPMTasks(prev => prev.map(p => {
         if (p.id === pmId) {
           return { ...p, isActive: newActive, updatedAt: new Date().toISOString() };
@@ -892,12 +886,8 @@ export function useMaintenance() {
       }));
     } catch (err: any) {
       console.error('Error toggling PM active:', err);
-      setPMTasks(prev => prev.map(p => {
-        if (p.id === pmId) {
-          return { ...p, isActive: newActive, updatedAt: new Date().toISOString() };
-        }
-        return p;
-      }));
+      // BUG-027 FIX: Don't update local state on failure — causes data inconsistency on refresh
+      toast.error(err.response?.data?.detail || 'Failed to update PM task status');
     }
   }, [pmTasks]);
 

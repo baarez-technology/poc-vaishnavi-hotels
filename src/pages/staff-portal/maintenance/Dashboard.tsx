@@ -18,6 +18,7 @@ import { StatusBadge, SeverityBadge } from '../../../components/staff-portal/ui/
 import Button from '../../../components/staff-portal/ui/Button';
 import { useStaffProfile, useMyMaintenanceDashboard, useWorkOrders, useEquipmentIssues, useNotifications, useMaintenanceActions } from '@/hooks/staff-portal/useStaffApi';
 import { useProfile } from '@/hooks/staff-portal/useStaffPortal';
+import { normalizeUTCDate } from '@/utils/maintenance';
 
 // Section Card matching admin LuxurySectionCard
 function SectionCard({
@@ -228,7 +229,7 @@ const MaintenanceDashboard = () => {
     }));
 
     return activities
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .sort((a, b) => (normalizeUTCDate(b.timestamp)?.getTime() || 0) - (normalizeUTCDate(a.timestamp)?.getTime() || 0))
       .slice(0, 5);
   }, [workOrders]);
 
@@ -241,8 +242,8 @@ const MaintenanceDashboard = () => {
 
   const formatTimestamp = (timestamp: string) => {
     if (!timestamp) return 'N/A';
-    const date = new Date(timestamp);
-    if (isNaN(date.getTime())) return 'N/A';
+    const date = normalizeUTCDate(timestamp);
+    if (!date || isNaN(date.getTime())) return 'N/A';
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffHours = Math.floor(diffMs / 3600000);

@@ -26,6 +26,7 @@ import { useEquipmentIssues, useMaintenanceActions, useStaffProfile } from '@/ho
 import { StatCard } from '../../../components/staff-portal/ui/Card';
 import { StatusBadge, SeverityBadge } from '../../../components/staff-portal/ui/Badge';
 import Button from '../../../components/staff-portal/ui/Button';
+import { normalizeUTCDate } from '@/utils/maintenance';
 
 // Custom Select Dropdown Component - matching admin PromotionDrawer style
 function SelectDropdown({
@@ -328,7 +329,9 @@ const EquipmentIssues = () => {
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
+    const date = normalizeUTCDate(dateString);
+    if (!date || isNaN(date.getTime())) return 'N/A';
+    return date.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: 'numeric',

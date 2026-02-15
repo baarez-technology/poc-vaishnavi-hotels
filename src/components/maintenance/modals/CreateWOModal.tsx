@@ -142,10 +142,20 @@ export default function CreateWOModal({ isOpen, onClose, onSubmit, technicians, 
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
-    if (validate()) {
-      onSubmit(formData);
+  // BUG-027 FIX: Await async onSubmit before closing — ensures the API call
+  // succeeds before the modal closes, preventing phantom tasks on refresh.
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!validate()) return;
+    setIsSubmitting(true);
+    try {
+      await onSubmit(formData);
       onClose();
+    } catch {
+      // Error toast is shown by the hook — keep modal open so user can retry
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -194,9 +204,10 @@ export default function CreateWOModal({ isOpen, onClose, onSubmit, technicians, 
       <Button
         variant="primary"
         onClick={handleSubmit}
+        disabled={isSubmitting}
         className="px-5 py-2 text-[13px] font-semibold"
       >
-        Create Work Order
+        {isSubmitting ? 'Creating...' : 'Create Work Order'}
       </Button>
     </div>
   );

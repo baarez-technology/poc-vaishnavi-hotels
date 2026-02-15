@@ -140,27 +140,49 @@ export function formatDate(dateString) {
 }
 
 /**
+ * Normalize a UTC datetime string from the backend so JS treats it as UTC.
+ * Backend sends UTC datetimes without timezone suffix (e.g. "2025-02-15T14:30:00"
+ * or "2025-02-15 14:30:00"). Without 'Z', JS Date() treats these as local time.
+ */
+export function normalizeUTCDate(dateString: string): Date | null {
+  if (!dateString) return null;
+  let s = String(dateString).trim();
+  // Already has timezone info → parse as-is
+  if (s.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(s)) {
+    return new Date(s);
+  }
+  // Replace space separator with 'T' for ISO compliance (Python's default format)
+  if (!s.includes('T') && /\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) {
+    s = s.replace(' ', 'T');
+  }
+  // Datetime with 'T' but no timezone → append 'Z' to mark as UTC
+  if (s.includes('T')) {
+    return new Date(s + 'Z');
+  }
+  // Date-only string → treat as UTC midnight
+  return new Date(s + 'T00:00:00Z');
+}
+
+/**
  * Format datetime for display
  * Ensures UTC timestamps from backend are correctly interpreted
  */
 export function formatDateTime(dateString) {
   if (!dateString) return '-';
   try {
-    // Backend sends UTC datetimes without timezone suffix.
-    // Append 'Z' if not already present so JS treats it as UTC, not local.
-    let normalized = dateString;
-    if (typeof normalized === 'string' && !normalized.endsWith('Z') && !normalized.includes('+') && !normalized.includes('T')) {
-      // It's a date-only string, display as-is
-      return new Date(normalized + 'T00:00:00Z').toLocaleDateString('en-US', {
+    const date = normalizeUTCDate(dateString);
+    if (!date || isNaN(date.getTime())) return '-';
+    // Date-only strings (no time component) → show date only
+    const s = String(dateString).trim();
+    const isDateOnly = !s.includes('T') && !/\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s);
+    if (isDateOnly) {
+      return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric'
       });
     }
-    if (typeof normalized === 'string' && normalized.includes('T') && !normalized.endsWith('Z') && !normalized.match(/[+-]\d{2}:\d{2}$/)) {
-      normalized = normalized + 'Z';
-    }
-    return new Date(normalized).toLocaleString('en-US', {
+    return date.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -177,9 +199,10 @@ export function formatDateTime(dateString) {
  */
 export function calculateResolutionTime(createdAt, completedAt) {
   if (!createdAt || !completedAt) return null;
-  const start = new Date(createdAt);
-  const end = new Date(completedAt);
-  const diff = (end - start) / (1000 * 60 * 60); // hours
+  const start = normalizeUTCDate(createdAt);
+  const end = normalizeUTCDate(completedAt);
+  if (!start || !end) return null;
+  const diff = (end.getTime() - start.getTime()) / (1000 * 60 * 60); // hours
   // Ensure we don't return negative values (data integrity issue)
   return Math.max(0, Math.round(diff * 10) / 10);
 }

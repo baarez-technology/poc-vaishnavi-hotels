@@ -57,6 +57,19 @@ const defaultChecklist: ChecklistItem[] = [
 ];
 
 /**
+ * BUG-020 FIX: Normalize UTC datetime strings from backend.
+ * Backend uses datetime.utcnow() but returns ISO strings without Z suffix.
+ * Without Z, JavaScript treats the string as local time, causing timezone offset errors.
+ */
+function normalizeUtcDateTime(dt: string | null | undefined): string | null {
+  if (!dt) return null;
+  // If it already has timezone info (Z or +/-offset), return as-is
+  if (dt.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(dt)) return dt;
+  // Append Z to indicate UTC
+  return dt + 'Z';
+}
+
+/**
  * Master Housekeeping Hook - Manages all housekeeping operations
  * Connected to backend APIs for real data
  */
@@ -109,8 +122,8 @@ export function useHousekeeping() {
         const assignedTo = activeTask?.assigned_to || taskFromRoom?.assigned_to || null;
         const assignedStaffName = activeTask?.assigned_staff_name || taskFromRoom?.assigned_staff_name || null;
         const taskPriority = activeTask?.priority || taskFromRoom?.task_priority || 'medium';
-        const startedAt = activeTask?.started_at || taskFromRoom?.started_at || null;
-        const completedAt = activeTask?.completed_at || taskFromRoom?.completed_at || null;
+        const startedAt = normalizeUtcDateTime(activeTask?.started_at || taskFromRoom?.started_at || null);
+        const completedAt = normalizeUtcDateTime(activeTask?.completed_at || taskFromRoom?.completed_at || null);
         const taskNotes = activeTask?.notes || taskFromRoom?.notes || '';
 
         // Determine cleaning status from task or room status
@@ -385,8 +398,8 @@ export function useHousekeeping() {
       // Start the task (backend also updates room status to in_progress)
       const result = await housekeepingService.startTask(taskId);
 
-      // Use server-returned started_at for consistency (BUG-020 FIX)
-      const serverStartedAt = result?.started_at || new Date().toISOString();
+      // BUG-020 FIX: Use server-returned started_at (normalized to UTC) for consistency
+      const serverStartedAt = normalizeUtcDateTime(result?.started_at) || new Date().toISOString();
 
       // Update local state
       setRooms(prev => prev.map(r => {
@@ -816,82 +829,19 @@ export function useHousekeeping() {
           message: summary,
         };
       } else {
-        // Fallback: Check if there are unassigned dirty rooms that need tasks created first
-        // BUG-005 FIX: Only create tasks for rooms that are actually dirty
-        const unassignedRooms = rooms.filter(
-          r => r.status === 'dirty' && !r.assignedTo && !r.taskId
-        );
-
-        if (unassignedRooms.length > 0) {
-          // Create tasks for rooms that don't have one, then auto-assign
-          let assigned = 0;
-          for (const room of unassignedRooms) {
-            try {
-              const newTask = await housekeepingService.createTask({
-                room_id: room.id,
-                task_type: 'cleaning',
-                priority: room.priority || 'medium',
-              });
-
-              if (newTask.id) {
-                const assignResult = await housekeepingService.autoAssignTask(newTask.id);
-                if (assignResult.success) {
-                  assigned++;
-                }
-              }
-            } catch (err) {
-              console.warn(`Failed to create/assign task for room ${room.number}:`, err);
-            }
-          }
-
-          if (assigned > 0) {
-            await fetchRooms();
-            const summary = `Created and assigned ${assigned} task(s) using intelligent matching`;
-            toast.success(summary);
-            return { assignments: [], summary, message: summary };
-          }
-        }
-
-        toast.info('No unassigned tasks to process');
+        // BUG-017 FIX: Do not create tasks from the frontend when the backend reports
+        // nothing to assign. The backend is the single source of truth for task creation
+        // and validates room status (dirty check). Creating tasks here bypasses that
+        // validation and generates phantom tasks for rooms that don't need cleaning.
+        toast('No unassigned tasks to process');
         return { assignments: [], summary: 'No tasks to assign', message: 'No tasks to assign' };
       }
     } catch (err: any) {
       console.error('Error in auto-assign:', err);
-
-      // Fallback to simple round-robin if API fails
-      // BUG-005 FIX: Only assign dirty rooms
-      const unassignedRooms = rooms.filter(
-        r => r.status === 'dirty' && !r.assignedTo
-      );
-      const availableStaff = staff.filter(s => s.status === 'available');
-
-      if (unassignedRooms.length === 0 || availableStaff.length === 0) {
-        toast.error(unassignedRooms.length === 0 ? 'No rooms need assignment' : 'No available staff');
-        return { assignments: [], message: 'No assignments possible' };
-      }
-
-      // Simple fallback
-      let staffIndex = 0;
-      let assigned = 0;
-      for (const room of unassignedRooms.slice(0, 10)) { // Limit fallback to 10
-        const staffMember = availableStaff[staffIndex % availableStaff.length];
-        try {
-          await assignStaffToRoom(room.id, staffMember.id);
-          assigned++;
-          staffIndex++;
-        } catch (e) {
-          console.warn(`Fallback assign failed for room ${room.number}`);
-        }
-      }
-
-      if (assigned > 0) {
-        toast.success(`Assigned ${assigned} rooms (fallback mode)`);
-      } else {
-        toast.error('Failed to auto-assign rooms');
-      }
-      return { assignments: [], message: `Fallback assigned ${assigned} rooms` };
+      toast.error('Failed to auto-assign tasks. Please try again.');
+      return { assignments: [], message: 'Auto-assign failed' };
     }
-  }, [rooms, staff, assignStaffToRoom, fetchRooms]);
+  }, [fetchRooms]);
 
   /**
    * ADD CLEANING TASK

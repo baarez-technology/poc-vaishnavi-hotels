@@ -120,11 +120,12 @@ const HousekeepingRooms = () => {
   }, [rooms, searchQuery, statusFilter, priorityFilter]);
 
   const getChecklistProgress = (checklist: any, roomStatus?: string) => {
+    // BUG-022 FIX: Clean/inspected rooms should ALWAYS show 100% regardless of stale checklist data
+    if (roomStatus === 'clean' || roomStatus === 'inspected') {
+      const total = Array.isArray(checklist) && checklist.length > 0 ? checklist.length : 8;
+      return { completed: total, total, percentage: 100 };
+    }
     if (!Array.isArray(checklist) || checklist.length === 0) {
-      // BUG-003 FIX: For clean/inspected rooms, show full progress with default checklist size
-      if (roomStatus === 'clean' || roomStatus === 'inspected') {
-        return { completed: 8, total: 8, percentage: 100 };
-      }
       return { completed: 0, total: 8, percentage: 0 };
     }
     const completed = checklist.filter(c => c.completed).length;

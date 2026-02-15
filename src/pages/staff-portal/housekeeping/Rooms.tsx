@@ -14,7 +14,7 @@ import PageHeader from '../../../layouts/staff-portal/PageHeader';
 import { StatCard } from '../../../components/staff-portal/ui/Card';
 import { StatusBadge, PriorityBadge } from '../../../components/staff-portal/ui/Badge';
 import Button from '../../../components/staff-portal/ui/Button';
-import { useHousekeepingRooms, useMyHousekeepingTasks, useHousekeepingActions } from '@/hooks/staff-portal/useStaffApi';
+import { useMyHousekeepingRooms, useMyHousekeepingTasks, useHousekeepingActions } from '@/hooks/staff-portal/useStaffApi';
 
 // Section Card matching admin LuxurySectionCard
 function SectionCard({
@@ -69,31 +69,33 @@ const HousekeepingRooms = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // API hooks
-  const { data: dirtyRooms, loading: dirtyLoading, refetch: refetchDirty } = useHousekeepingRooms('dirty');
-  const { data: inProgressRooms, loading: inProgressLoading, refetch: refetchInProgress } = useHousekeepingRooms('in_progress');
-  const { data: cleanRooms, loading: cleanLoading, refetch: refetchClean } = useHousekeepingRooms('clean');
+  // API hooks - BUG-002 FIX: Use useMyHousekeepingRooms to only show rooms assigned to current user
+  const { data: dirtyRooms, loading: dirtyLoading, refetch: refetchDirty } = useMyHousekeepingRooms('dirty');
+  const { data: inProgressRooms, loading: inProgressLoading, refetch: refetchInProgress } = useMyHousekeepingRooms('in_progress');
+  const { data: cleanRooms, loading: cleanLoading, refetch: refetchClean } = useMyHousekeepingRooms('clean');
+  const { data: inspectedRooms, loading: inspectedLoading, refetch: refetchInspected } = useMyHousekeepingRooms('inspected');
   const { data: myTasks, refetch: refetchTasks } = useMyHousekeepingTasks();
   const { updateRoomStatus, startTask, completeTask } = useHousekeepingActions();
 
-  // Combine all rooms
+  // Combine all rooms (BUG-034 FIX: include inspected rooms so they don't disappear after inspection)
   const rooms = useMemo(() => {
-    return [...(dirtyRooms || []), ...(inProgressRooms || []), ...(cleanRooms || [])];
-  }, [dirtyRooms, inProgressRooms, cleanRooms]);
+    return [...(dirtyRooms || []), ...(inProgressRooms || []), ...(cleanRooms || []), ...(inspectedRooms || [])];
+  }, [dirtyRooms, inProgressRooms, cleanRooms, inspectedRooms]);
 
   const refetchAll = async () => {
-    await Promise.all([refetchDirty(), refetchInProgress(), refetchClean(), refetchTasks()]);
+    await Promise.all([refetchDirty(), refetchInProgress(), refetchClean(), refetchInspected(), refetchTasks()]);
   };
 
-  const isLoading = dirtyLoading || inProgressLoading || cleanLoading;
+  const isLoading = dirtyLoading || inProgressLoading || cleanLoading || inspectedLoading;
 
   // Calculate stats from data
   const stats = useMemo(() => ({
     dirtyRooms: dirtyRooms?.length || 0,
     inProgressRooms: inProgressRooms?.length || 0,
     cleanRooms: cleanRooms?.length || 0,
-    urgentRooms: rooms.filter(r => r.priority === 'urgent' && r.status !== 'clean').length
-  }), [dirtyRooms, inProgressRooms, cleanRooms, rooms]);
+    inspectedRooms: inspectedRooms?.length || 0,
+    urgentRooms: rooms.filter(r => r.priority === 'urgent' && r.status !== 'clean' && r.status !== 'inspected').length
+  }), [dirtyRooms, inProgressRooms, cleanRooms, inspectedRooms, rooms]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all');
@@ -202,8 +204,8 @@ const HousekeepingRooms = () => {
         </div>
         <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
-            title="Clean Rooms"
-            value={stats.cleanRooms}
+            title="Clean / Inspected"
+            value={stats.cleanRooms + stats.inspectedRooms}
             subtitle="Ready for guests"
             icon={Sparkles}
             color="sage"
@@ -257,6 +259,7 @@ const HousekeepingRooms = () => {
               {statusFilter === 'dirty' && `Dirty (${stats.dirtyRooms})`}
               {statusFilter === 'in_progress' && `In Progress (${stats.inProgressRooms})`}
               {statusFilter === 'clean' && `Clean (${stats.cleanRooms})`}
+              {statusFilter === 'inspected' && `Inspected (${stats.inspectedRooms})`}
             </span>
             <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
           </button>
@@ -274,7 +277,8 @@ const HousekeepingRooms = () => {
                   { value: 'all', label: 'All', count: rooms.length },
                   { value: 'dirty', label: 'Dirty', count: stats.dirtyRooms },
                   { value: 'in_progress', label: 'In Progress', count: stats.inProgressRooms },
-                  { value: 'clean', label: 'Clean', count: stats.cleanRooms }
+                  { value: 'clean', label: 'Clean', count: stats.cleanRooms },
+                  { value: 'inspected', label: 'Inspected', count: stats.inspectedRooms }
                 ].map((option) => (
                   <button
                     key={option.value}

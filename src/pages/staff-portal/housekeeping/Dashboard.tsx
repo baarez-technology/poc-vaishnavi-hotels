@@ -18,7 +18,7 @@ import { DashboardHeader } from '../../../layouts/staff-portal/PageHeader';
 import { StatCard } from '../../../components/staff-portal/ui/Card';
 import { StatusBadge, PriorityBadge } from '../../../components/staff-portal/ui/Badge';
 import Button from '../../../components/staff-portal/ui/Button';
-import { useStaffProfile, useHousekeepingRooms, useMyHousekeepingTasks, useNotifications, useHousekeepingActions, useClockInOut } from '@/hooks/staff-portal/useStaffApi';
+import { useStaffProfile, useHousekeepingRooms, useMyHousekeepingTasks, useNotifications, useHousekeepingActions } from '@/hooks/staff-portal/useStaffApi';
 import { useProfile } from '@/hooks/staff-portal/useStaffPortal';
 import { ScanDigitalKeyModal } from '@/components/housekeeping/modals/ScanDigitalKeyModal';
 
@@ -80,14 +80,14 @@ const HousekeepingDashboard = () => {
   const navigate = useNavigate();
   const [scanModalOpen, setScanModalOpen] = useState(false);
   const { data: profile, refetch: refetchProfile } = useStaffProfile();
-  const { profile: contextProfile } = useProfile();
+  const { profile: contextProfile, clockIn: contextClockIn, clockOut: contextClockOut } = useProfile();
   const { data: dirtyRooms, loading: dirtyLoading, refetch: refetchDirty } = useHousekeepingRooms('dirty');
   const { data: inProgressRooms, loading: inProgressRoomLoading, refetch: refetchInProgressRooms } = useHousekeepingRooms('in_progress');
   const { data: cleanRooms } = useHousekeepingRooms('clean');
   const { data: tasks, loading: tasksLoading, refetch: refetchTasks } = useMyHousekeepingTasks();
   const { data: notifications } = useNotifications();
   const { updateRoomStatus, startTask } = useHousekeepingActions();
-  const { clockIn, clockOut, loading: clockLoading } = useClockInOut();
+  const [clockLoading, setClockLoading] = useState(false);
 
   // Combine all rooms
   const rooms = useMemo(() => {
@@ -236,12 +236,21 @@ const HousekeepingDashboard = () => {
     return notificationsList.filter((n: any) => !n.is_read).slice(0, 3);
   }, [notifications]);
 
+  // BUG-006 FIX: Use context clockIn/clockOut which updates both context state AND calls API,
+  // ensuring isClockedIn (derived from contextProfile || profile) stays in sync.
   const handleClockToggle = async () => {
+    setClockLoading(true);
     try {
-      const success = isClockedIn ? await clockOut() : await clockIn();
-      if (success) refetchAll();
+      if (isClockedIn) {
+        await contextClockOut();
+      } else {
+        await contextClockIn();
+      }
+      await refetchAll();
     } catch (err) {
       console.error('Clock toggle failed:', err);
+    } finally {
+      setClockLoading(false);
     }
   };
 

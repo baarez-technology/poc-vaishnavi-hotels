@@ -46,6 +46,7 @@ export interface TaskCompleteData {
   notes?: string;
   quality_score?: number;
   issues_found?: string[];
+  checklist?: Array<{ id: string; task: string; completed: boolean }>;
 }
 
 export interface RoomInspectionData {

@@ -57,8 +57,10 @@ const RoomDetails = () => {
         const foundRoom = rooms.find((r: any) => r.id === Number(id));
         if (foundRoom) {
           setRoom(foundRoom);
-          // BUG-003/BUG-022 FIX: Set checklist based on room status
-          if (foundRoom.status === 'clean' || foundRoom.status === 'inspected') {
+          // BUG-003 FIX: Load persisted checklist from backend if available
+          if (Array.isArray(foundRoom.checklist) && foundRoom.checklist.length > 0) {
+            setChecklist(foundRoom.checklist);
+          } else if (foundRoom.status === 'clean' || foundRoom.status === 'inspected') {
             setChecklist(defaultChecklist.map(c => ({ ...c, completed: true })));
           }
           // BUG-018 FIX: Pre-fill notes from task if available
@@ -105,9 +107,16 @@ const RoomDetails = () => {
   };
 
   const handleChecklistToggle = (checklistId: string) => {
-    setChecklist(prev => prev.map(item =>
-      item.id === checklistId ? { ...item, completed: !item.completed } : item
-    ));
+    setChecklist(prev => {
+      const updated = prev.map(item =>
+        item.id === checklistId ? { ...item, completed: !item.completed } : item
+      );
+      // BUG-003 FIX: Persist checklist to backend via task update
+      if (room?.task_id) {
+        housekeepingService.updateTask(room.task_id, { checklist: updated } as any).catch(() => {});
+      }
+      return updated;
+    });
   };
 
   const handleStatusChange = async (status: string) => {
@@ -124,7 +133,16 @@ const RoomDetails = () => {
     } else if (status === 'clean' && room.task_id) {
       // Use completeTask API which also updates room status
       try {
-        await housekeepingService.completeTask(room.task_id);
+        // BUG-003 FIX: Send checklist data when completing task
+        await housekeepingService.completeTask(room.task_id, { checklist, notes: note || undefined });
+        success = true;
+      } catch {
+        success = await updateRoomStatus(room.id, status);
+      }
+    } else if (status === 'inspected') {
+      // BUG-034 FIX: Use dedicated inspect endpoint for proper inspection logic
+      try {
+        await housekeepingService.inspectRoom(room.id, { passed: true });
         success = true;
       } catch {
         success = await updateRoomStatus(room.id, status);
@@ -144,14 +162,26 @@ const RoomDetails = () => {
     }
   };
 
-  const handleSaveNote = () => {
+  const handleSaveNote = async () => {
+    if (!room?.task_id) return;
     setIsSavingNote(true);
-    // In a real app, this would save to the API
-    setTimeout(() => setIsSavingNote(false), 500);
+    try {
+      // BUG-003 FIX: Actually persist notes to the backend
+      await housekeepingService.updateTask(room.task_id, { notes: note });
+    } catch (err) {
+      console.error('Failed to save note:', err);
+    } finally {
+      setIsSavingNote(false);
+    }
   };
 
   const handleCompleteAll = () => {
-    setChecklist(prev => prev.map(item => ({ ...item, completed: true })));
+    const allCompleted = defaultChecklist.map(item => ({ ...item, completed: true }));
+    setChecklist(allCompleted);
+    // BUG-003 FIX: Persist "complete all" state to backend
+    if (room?.task_id) {
+      housekeepingService.updateTask(room.task_id, { checklist: allCompleted } as any).catch(() => {});
+    }
   };
 
   return (

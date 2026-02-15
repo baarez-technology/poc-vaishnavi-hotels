@@ -58,8 +58,18 @@ function transformBooking(apiBooking: any): AdminBooking {
     if (typeof apiBooking.room === 'object' && apiBooking.room !== null) {
       // Room is an object with properties like {id, name, number, slug, ...}
       roomNumber = apiBooking.room.number || apiBooking.room.name || 'Unassigned';
-      roomType = apiBooking.room.name || apiBooking.room_type_name || 'Standard';
       roomId = roomId || apiBooking.room.id;
+      // BUG-008 FIX: Extract room TYPE (not room name which includes number).
+      // Prefer slug-based name, then strip room number from name as fallback.
+      if (apiBooking.room.slug) {
+        // Convert slug to title case: "wellness-suite" -> "Wellness Suite"
+        roomType = apiBooking.room.slug.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      } else if (apiBooking.room.name && apiBooking.room.number) {
+        // Strip room number from name: "Wellness Suite 201" -> "Wellness Suite"
+        roomType = apiBooking.room.name.replace(new RegExp(`\\s*${apiBooking.room.number}\\s*$`), '').trim() || apiBooking.room.name;
+      } else {
+        roomType = apiBooking.room.name || apiBooking.room_type_name || 'Standard';
+      }
     } else {
       // Room is a string or number
       roomNumber = String(apiBooking.room);

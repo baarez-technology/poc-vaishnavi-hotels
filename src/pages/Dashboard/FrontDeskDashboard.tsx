@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Calendar, Users, LogIn, LogOut, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { dashboardsService } from '@/api/services/dashboards.service';
@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 
 export function FrontDeskDashboard() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Fetch dashboard data
@@ -20,12 +21,12 @@ export function FrontDeskDashboard() {
   });
 
   // Fetch arrivals and departures
-  const { data: arrivals } = useQuery({
+  const { data: arrivals, refetch: refetchArrivals } = useQuery({
     queryKey: ['arrivals', selectedDate],
     queryFn: () => frontdeskService.getArrivals(selectedDate),
   });
 
-  const { data: departures } = useQuery({
+  const { data: departures, refetch: refetchDepartures } = useQuery({
     queryKey: ['departures', selectedDate],
     queryFn: () => frontdeskService.getDepartures(selectedDate),
   });
@@ -33,9 +34,10 @@ export function FrontDeskDashboard() {
   const handleCheckIn = async (reservationId: number) => {
     try {
       await frontdeskService.checkIn(reservationId, { id_verified: true });
-      toast.success('Guest checked in successfully');
-      // Refetch data
-      window.location.reload();
+      toast.success('Guest checked in successfully — status updated to In-House');
+      // Refetch arrivals and dashboard data without full page reload
+      refetchArrivals();
+      queryClient.invalidateQueries({ queryKey: ['frontdesk-dashboard'] });
     } catch (error: any) {
       toast.error(error.response?.data?.detail || 'Failed to check in guest');
     }
@@ -45,8 +47,9 @@ export function FrontDeskDashboard() {
     try {
       await frontdeskService.checkOut(reservationId, {});
       toast.success('Guest checked out successfully');
-      // Refetch data
-      window.location.reload();
+      // Refetch departures and dashboard data without full page reload
+      refetchDepartures();
+      queryClient.invalidateQueries({ queryKey: ['frontdesk-dashboard'] });
     } catch (error: any) {
       toast.error(error.response?.data?.detail || 'Failed to check out guest');
     }
@@ -172,26 +175,47 @@ export function FrontDeskDashboard() {
             </h2>
             <div className="space-y-3">
               {arrivals && arrivals.length > 0 ? (
-                arrivals.map((arrival: any) => (
-                  <div
-                    key={arrival.id}
-                    className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors"
-                  >
-                    <div>
-                      <p className="font-semibold text-neutral-900">{arrival.guest_name}</p>
-                      <p className="text-sm text-neutral-600">
-                        {arrival.room_number ? `Room ${arrival.room_number}` : 'Room TBD'}
-                      </p>
-                      <p className="text-xs text-neutral-500">{arrival.confirmation_code}</p>
-                    </div>
-                    <button
-                      onClick={() => handleCheckIn(arrival.id)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                arrivals.map((arrival: any) => {
+                  const isCheckedIn = arrival.status === 'checked_in';
+                  return (
+                    <div
+                      key={arrival.id}
+                      className={`flex items-center justify-between p-4 rounded-lg transition-colors ${
+                        isCheckedIn
+                          ? 'bg-green-50 border border-green-200'
+                          : 'bg-neutral-50 hover:bg-neutral-100'
+                      }`}
                     >
-                      Check In
-                    </button>
-                  </div>
-                ))
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-neutral-900">{arrival.guest_name}</p>
+                          {isCheckedIn && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                              <CheckCircle className="w-3 h-3" />
+                              In-House
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-neutral-600">
+                          {arrival.room_number ? `Room ${arrival.room_number}` : 'Room TBD'}
+                        </p>
+                        <p className="text-xs text-neutral-500">{arrival.confirmation_code}</p>
+                      </div>
+                      {isCheckedIn ? (
+                        <span className="px-4 py-2 text-green-600 text-sm font-medium">
+                          Checked In
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleCheckIn(arrival.id)}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                        >
+                          Check In
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
               ) : (
                 <p className="text-neutral-500 text-center py-8">No arrivals scheduled</p>
               )}

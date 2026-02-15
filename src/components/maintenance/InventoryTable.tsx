@@ -16,7 +16,8 @@ export default function InventoryTable({
   onUpdateStock,
   onEditItem,
   onDeleteItem,
-  onAddItem
+  onAddItem,
+  onUpdateMinStock
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -233,7 +234,11 @@ export default function InventoryTable({
                         onBlur={(e) => {
                           const newVal = parseInt(e.target.value) || 0;
                           if (newVal !== item.minStock) {
-                            onEditItem({ ...item, minStock: newVal });
+                            if (onUpdateMinStock) {
+                              onUpdateMinStock(item.id, newVal);
+                            } else {
+                              onEditItem({ ...item, minStock: newVal });
+                            }
                           }
                           setMinStockInput(prev => { const next = { ...prev }; delete next[item.id]; return next; });
                         }}

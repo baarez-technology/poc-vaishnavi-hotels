@@ -240,7 +240,9 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
     });
   }, [rooms, booking, bookings, recommendations]);
 
-  // Filter AI recommendations by search/filter (BUG-008 FIX)
+  // Filter AI recommendations by search query only (BUG-008 FIX)
+  // Type/floor filters are NOT applied since AI recommendations are already
+  // curated by the scoring algorithm and may include beneficial upgrades.
   const filteredRecommendations = useMemo(() => {
     let filtered = [...recommendations];
 
@@ -252,18 +254,8 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
       );
     }
 
-    if (filterType !== 'all') {
-      filtered = filtered.filter(rec =>
-        rec.room_type?.toLowerCase() === filterType.toLowerCase()
-      );
-    }
-
-    if (filterFloor !== 'all') {
-      filtered = filtered.filter(rec => rec.floor === parseInt(filterFloor));
-    }
-
     return filtered.slice(0, 5);
-  }, [recommendations, searchQuery, filterType, filterFloor]);
+  }, [recommendations, searchQuery]);
 
   // Filter and search rooms
   const filteredRooms = useMemo(() => {

@@ -25,7 +25,7 @@ function transformApiMaintenanceToWorkOrder(apiMaint: any) {
     status: apiMaint.status || 'open',
     issue: apiMaint.issue || 'Maintenance Required',
     description: apiMaint.description || '',
-    assignedTo: apiMaint.assigned_to,
+    assignedTo: apiMaint.assigned_to ? String(apiMaint.assigned_to) : null,
     technicianName: apiMaint.assigned_to_name || null,
     estimatedCost: apiMaint.estimated_cost,
     actualCost: apiMaint.actual_cost,
@@ -90,7 +90,7 @@ export function useMaintenance() {
             status: wo.status || 'pending',
             issue: wo.title || 'Maintenance Required',
             description: wo.description || '',
-            assignedTo: wo.assigned_to,
+            assignedTo: wo.assigned_to ? String(wo.assigned_to) : null,
             technicianName: wo.assigned_to_name || null,
             estimatedCost: wo.estimated_cost,
             actualCost: wo.actual_cost,
@@ -245,7 +245,7 @@ export function useMaintenance() {
         priority: data.priority || 'medium',
         notes: data.notes,
         scheduled_date: data.estimatedCompletion || null,
-        assigned_to: data.assignedTo || null
+        assigned_to: data.assignedTo ? Number(data.assignedTo) : null
       });
 
       // Transform API response to local format
@@ -260,7 +260,7 @@ export function useMaintenance() {
         status: apiResponse.status || 'pending',
         issue: apiResponse.title,
         description: apiResponse.description || '',
-        assignedTo: apiResponse.assigned_to || data.assignedTo || null,
+        assignedTo: (apiResponse.assigned_to || data.assignedTo) ? String(apiResponse.assigned_to || data.assignedTo) : null,
         technicianName: apiResponse.assigned_to_name || data.technicianName || null,
         estimatedCost: null,
         actualCost: null,
@@ -298,7 +298,7 @@ export function useMaintenance() {
       if (updates.description !== undefined) apiPayload.description = updates.description;
       if (updates.status) apiPayload.status = updates.status;
       if (updates.priority) apiPayload.priority = updates.priority;
-      if (updates.assignedTo !== undefined) apiPayload.assigned_to = updates.assignedTo;
+      if (updates.assignedTo !== undefined) apiPayload.assigned_to = updates.assignedTo ? Number(updates.assignedTo) : null;
       if (updates.notes) apiPayload.notes = updates.notes;
       if (updates.resolutionNotes) apiPayload.resolution_notes = updates.resolutionNotes;
       if (updates.estimatedCompletion !== undefined) apiPayload.scheduled_date = updates.estimatedCompletion || null;
@@ -321,14 +321,17 @@ export function useMaintenance() {
             ? updates.estimatedCompletion
             : wo.estimatedCompletion;
 
+          // Normalize assignedTo to string for consistency with technician option values
+          const normalizedAssignedTo = updates.assignedTo !== undefined
+            ? (updates.assignedTo ? String(updates.assignedTo) : null)
+            : wo.assignedTo;
+
           // Resolve technician name from local state when assignedTo changes
           let techName = updates.technicianName !== undefined ? updates.technicianName : wo.technicianName;
-          if (updates.assignedTo !== undefined && updates.assignedTo !== wo.assignedTo) {
+          if (updates.assignedTo !== undefined && String(updates.assignedTo) !== String(wo.assignedTo)) {
             if (updates.assignedTo) {
               const tech = technicians.find(t =>
-                t.id === updates.assignedTo ||
-                t.id === updates.assignedTo?.toString() ||
-                parseInt(t.id) === updates.assignedTo
+                String(t.id) === String(updates.assignedTo)
               );
               techName = tech?.name || updates.technicianName || wo.technicianName;
             } else {
@@ -339,6 +342,7 @@ export function useMaintenance() {
           return {
             ...wo,
             ...updates,
+            assignedTo: normalizedAssignedTo,
             technicianName: techName,
             scheduledDate: dateValue,
             estimatedCompletion: dateValue,
@@ -546,7 +550,7 @@ export function useMaintenance() {
 
           return {
             ...wo,
-            assignedTo: numericTechId,
+            assignedTo: String(numericTechId),
             technicianName: techName,
             activityLog: addActivityLog(wo.activityLog, action, user),
             updatedAt: now
@@ -765,11 +769,9 @@ export function useMaintenance() {
       return newPM;
     } catch (err: any) {
       console.error('Error creating PM task:', err);
-      // Fallback to local-only creation
-      const newPM = createPreventiveTask(data);
-      setPMTasks(prev => [newPM, ...prev]);
-      toast.success('PM Task created (local)');
-      return newPM;
+      // BUG-027 FIX: Don't create local-only tasks — they disappear on refresh
+      toast.error('Failed to create PM task. Please try again.');
+      throw err;
     }
   }, []);
 
@@ -805,13 +807,7 @@ export function useMaintenance() {
       toast.success('PM Task updated');
     } catch (err: any) {
       console.error('Error updating PM task:', err);
-      // Still update local state
-      setPMTasks(prev => prev.map(pm => {
-        if (pm.id === pmId) {
-          return { ...pm, ...updates, updatedAt: new Date().toISOString() };
-        }
-        return pm;
-      }));
+      // BUG-027 FIX: Don't update local state on failure — causes data inconsistency on refresh
       toast.error(err.response?.data?.detail || 'Failed to save PM task to server');
     }
   }, []);
@@ -828,7 +824,7 @@ export function useMaintenance() {
       toast.success('PM Task deleted');
     } catch (err: any) {
       console.error('Error deleting PM task:', err);
-      setPMTasks(prev => prev.filter(pm => pm.id !== pmId));
+      // BUG-027 FIX: Don't remove from local state on failure — task still exists in backend
       toast.error(err.response?.data?.detail || 'Failed to delete PM task from server');
     }
   }, []);
@@ -965,19 +961,8 @@ export function useMaintenance() {
       return newItem;
     } catch (err: any) {
       console.error('Error creating inventory item:', err);
-      // Fallback to local-only
-      const newItem = {
-        id: generateInventoryId(),
-        name: data.name,
-        category: data.category,
-        stockLevel: data.stockLevel || 0,
-        minStock: data.minStock || 0,
-        unitCost: data.unitCost || 0,
-        location: data.location || '',
-        lastRestocked: new Date().toISOString().split('T')[0]
-      };
-      setInventory(prev => [newItem, ...prev]);
-      return newItem;
+      toast.error(err?.response?.data?.detail || 'Failed to create inventory item');
+      throw err;
     }
   }, []);
 
@@ -986,8 +971,17 @@ export function useMaintenance() {
    */
   const updateInventoryItem = useCallback(async (itemId, updates) => {
     try {
+      // Extract numeric ID for API call
+      let numericId: number | null = null;
       if (typeof itemId === 'number') {
-        await maintenanceService.updateInventoryItem(itemId, {
+        numericId = itemId;
+      } else if (typeof itemId === 'string') {
+        const match = itemId.match(/\d+/);
+        if (match) numericId = parseInt(match[0], 10);
+      }
+
+      if (numericId !== null) {
+        await maintenanceService.updateInventoryItem(numericId, {
           name: updates.name,
           category: updates.category,
           stock_level: updates.stockLevel,
@@ -995,7 +989,12 @@ export function useMaintenance() {
           unit_cost: updates.unitCost,
           location: updates.location,
         });
+      } else {
+        toast.error('Cannot update: invalid item ID');
+        return;
       }
+
+      // Only update local state after successful API call
       setInventory(prev => prev.map(item => {
         if (item.id === itemId) {
           return { ...item, ...updates };
@@ -1005,12 +1004,7 @@ export function useMaintenance() {
       toast.success('Inventory item updated');
     } catch (err: any) {
       console.error('Error updating inventory item:', err);
-      setInventory(prev => prev.map(item => {
-        if (item.id === itemId) {
-          return { ...item, ...updates };
-        }
-        return item;
-      }));
+      toast.error(err?.response?.data?.detail || 'Failed to update inventory item');
     }
   }, []);
 
@@ -1019,14 +1013,27 @@ export function useMaintenance() {
    */
   const deleteInventoryItem = useCallback(async (itemId) => {
     try {
+      let numericId: number | null = null;
       if (typeof itemId === 'number') {
-        await maintenanceService.deleteInventoryItem(itemId);
+        numericId = itemId;
+      } else if (typeof itemId === 'string') {
+        const match = itemId.match(/\d+/);
+        if (match) numericId = parseInt(match[0], 10);
       }
+
+      if (numericId !== null) {
+        await maintenanceService.deleteInventoryItem(numericId);
+      } else {
+        toast.error('Cannot delete: invalid item ID');
+        return;
+      }
+
+      // Only remove from local state after successful API call
       setInventory(prev => prev.filter(item => item.id !== itemId));
       toast.success('Inventory item deleted');
     } catch (err: any) {
       console.error('Error deleting inventory item:', err);
-      setInventory(prev => prev.filter(item => item.id !== itemId));
+      toast.error(err?.response?.data?.detail || 'Failed to delete inventory item');
     }
   }, []);
 
@@ -1035,9 +1042,25 @@ export function useMaintenance() {
    */
   const updateStock = useCallback(async (itemId, quantity, isAddition = true) => {
     try {
+      // BUG-029 FIX: Extract numeric ID from string IDs like "INV-5"
+      let numericId: number | null = null;
       if (typeof itemId === 'number') {
-        await maintenanceService.adjustInventoryStock(itemId, quantity, isAddition);
+        numericId = itemId;
+      } else if (typeof itemId === 'string') {
+        const match = itemId.match(/\d+/);
+        if (match) {
+          numericId = parseInt(match[0], 10);
+        }
       }
+
+      if (numericId === null) {
+        toast.error('Cannot adjust stock: invalid item ID');
+        return;
+      }
+
+      await maintenanceService.adjustInventoryStock(numericId, quantity, isAddition);
+
+      // Only update local state after successful API call
       setInventory(prev => prev.map(item => {
         if (item.id === itemId) {
           const newLevel = isAddition
@@ -1051,18 +1074,10 @@ export function useMaintenance() {
         }
         return item;
       }));
+      toast.success(`Stock ${isAddition ? 'added' : 'removed'}: ${quantity}`);
     } catch (err: any) {
       console.error('Error adjusting stock:', err);
-      // Still update local state
-      setInventory(prev => prev.map(item => {
-        if (item.id === itemId) {
-          const newLevel = isAddition
-            ? item.stockLevel + quantity
-            : Math.max(0, item.stockLevel - quantity);
-          return { ...item, stockLevel: newLevel };
-        }
-        return item;
-      }));
+      toast.error(err?.response?.data?.detail || err?.message || 'Failed to adjust stock');
     }
   }, []);
 
@@ -1153,7 +1168,7 @@ export function useMaintenance() {
           status: wo.status || 'pending',
           issue: wo.title || 'Maintenance Required',
           description: wo.description || '',
-          assignedTo: wo.assigned_to,
+          assignedTo: wo.assigned_to ? String(wo.assigned_to) : null,
           technicianName: wo.assigned_to_name || null,
           estimatedCost: wo.estimated_cost,
           actualCost: wo.actual_cost,
@@ -1170,6 +1185,52 @@ export function useMaintenance() {
           activityLog: []
         }));
         setWorkOrders(transformedWO);
+      }
+
+      // BUG-027 FIX: Also refresh PM tasks (previously only work orders were refreshed)
+      try {
+        const pmData = await maintenanceService.getPreventiveSchedules();
+        if (Array.isArray(pmData) && pmData.length > 0) {
+          const transformedPM = pmData.map((pm: any) => ({
+            id: pm.id,
+            equipment: pm.name || '',
+            roomNumber: pm.location?.replace('Room ', '') || null,
+            roomId: null,
+            category: pm.maintenance_type || 'general',
+            frequency: pm.frequency || 'monthly',
+            nextDueDate: pm.next_due_date || null,
+            lastCompleted: pm.last_performed || null,
+            assignedTo: pm.assigned_to || null,
+            technicianName: pm.assigned_to_name || null,
+            notes: pm.description || '',
+            isActive: pm.active !== false,
+            createdAt: pm.created_at || new Date().toISOString(),
+            updatedAt: pm.updated_at || new Date().toISOString()
+          }));
+          setPMTasks(transformedPM);
+        }
+      } catch (pmErr) {
+        console.error('Failed to refresh PM schedules:', pmErr);
+      }
+
+      // Also refresh inventory
+      try {
+        const invData = await maintenanceService.getInventory();
+        if (Array.isArray(invData) && invData.length > 0) {
+          const transformedInv = invData.map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            category: item.category || 'general',
+            stockLevel: item.stock_level || 0,
+            minStock: item.min_stock || 10,
+            unitCost: item.unit_cost || 0,
+            location: item.location || '',
+            lastRestocked: item.last_restocked || null
+          }));
+          setInventory(transformedInv);
+        }
+      } catch (invErr) {
+        console.error('Failed to refresh inventory:', invErr);
       }
     } catch (err) {
       console.error('Failed to refresh maintenance data:', err);

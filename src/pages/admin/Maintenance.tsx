@@ -304,35 +304,34 @@ export default function Maintenance() {
     setShowInventoryModal(true);
   };
 
-  const handleInventorySubmit = (data) => {
-    if (editingInventoryItem) {
-      // Edit mode
-      updateInventoryItem(data.id, data);
-      showToast('Item updated', 'success');
-    } else {
-      // Add mode
-      addInventoryItem(data);
-      showToast('Item added', 'success');
+  const handleInventorySubmit = async (data) => {
+    try {
+      if (editingInventoryItem) {
+        await updateInventoryItem(data.id, data);
+      } else {
+        await addInventoryItem(data);
+      }
+      setShowInventoryModal(false);
+      setEditingInventoryItem(null);
+    } catch {
+      // Error toast already shown by useMaintenance hook
     }
-    setShowInventoryModal(false);
-    setEditingInventoryItem(null);
   };
 
   const handleDeleteInventoryItem = (itemId) => {
     setDeleteInventoryConfirm({ isOpen: true, itemId });
   };
 
-  const confirmDeleteInventory = () => {
+  const confirmDeleteInventory = async () => {
     if (deleteInventoryConfirm.itemId) {
-      deleteInventoryItem(deleteInventoryConfirm.itemId);
-      showToast('Item deleted', 'success');
+      await deleteInventoryItem(deleteInventoryConfirm.itemId);
     }
     setDeleteInventoryConfirm({ isOpen: false, itemId: null });
   };
 
-  const handleUpdateStock = (itemId, quantity, isAddition) => {
-    updateStock(itemId, quantity, isAddition);
-    showToast(`Stock ${isAddition ? 'added' : 'removed'}`, 'success');
+  const handleUpdateStock = async (itemId, quantity, isAddition) => {
+    await updateStock(itemId, quantity, isAddition);
+    // Success/error toasts are shown by updateStock itself
   };
 
   const tabs = [
@@ -676,6 +675,9 @@ export default function Maintenance() {
               onEditItem={handleEditInventoryItem}
               onDeleteItem={handleDeleteInventoryItem}
               onAddItem={handleAddInventoryItem}
+              onUpdateMinStock={async (itemId, minStock) => {
+                await updateInventoryItem(itemId, { minStock });
+              }}
             />
           </div>
         )}

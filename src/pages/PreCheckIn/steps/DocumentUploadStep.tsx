@@ -120,19 +120,16 @@ export function DocumentUploadStep({ onNext, onPrevious }: DocumentUploadStepPro
         return;
       }
 
-      // Fetch fresh booking data to get the latest guest name (in case profile was updated)
-      const { bookingService } = await import('@/api/services/booking.service');
-      const freshBooking = await bookingService.getBooking(String(preCheckInData.reservationId));
-      const expectedName = `${freshBooking.guestInfo?.firstName || ''} ${freshBooking.guestInfo?.lastName || ''}`.trim();
+      // BUG-031 FIX: Use guest name already stored in context from booking verification step.
+      // Previously called bookingService.getBooking() which requires authentication,
+      // causing 401 errors for unauthenticated guests in the pre-check-in flow.
+      const expectedName = preCheckInData.guestName?.trim();
 
       if (!expectedName) {
         toast.error('Guest name not found. Please go back and verify your booking.');
         setIsVerifying(false);
         return;
       }
-
-      // Update context with fresh guest name
-      updatePreCheckInData({ guestName: expectedName });
 
       // Convert file to base64
       const imageBase64 = await fileToBase64(frontFile);

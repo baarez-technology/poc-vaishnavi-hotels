@@ -240,6 +240,31 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
     });
   }, [rooms, booking, bookings, recommendations]);
 
+  // Filter AI recommendations by search/filter (BUG-008 FIX)
+  const filteredRecommendations = useMemo(() => {
+    let filtered = [...recommendations];
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(rec =>
+        rec.room_number?.toLowerCase().includes(query) ||
+        rec.room_type?.toLowerCase().includes(query)
+      );
+    }
+
+    if (filterType !== 'all') {
+      filtered = filtered.filter(rec =>
+        rec.room_type?.toLowerCase() === filterType.toLowerCase()
+      );
+    }
+
+    if (filterFloor !== 'all') {
+      filtered = filtered.filter(rec => rec.floor === parseInt(filterFloor));
+    }
+
+    return filtered.slice(0, 5);
+  }, [recommendations, searchQuery, filterType, filterFloor]);
+
   // Filter and search rooms
   const filteredRooms = useMemo(() => {
     let filtered = [...availableRooms];
@@ -433,21 +458,40 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
         )}
 
         {/* AI Recommendations */}
-        {recommendations.length > 0 && (
+        {filteredRecommendations.length > 0 && (
           <section>
             <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3">
               <Sparkles className="w-3 h-3 inline mr-1 text-amber-500" />
-              AI Recommended ({recommendations.length})
+              AI Recommended ({filteredRecommendations.length})
             </h3>
             <div className="grid grid-cols-5 gap-2">
-              {recommendations.slice(0, 5).map((rec, idx) => {
+              {filteredRecommendations.map((rec, idx) => {
                 const isSelected = String(selectedRoom?.id) === String(rec.room_id);
                 return (
                   <button
                     key={rec.room_id}
                     onClick={() => {
+                      // BUG-008 FIX: Try to find in fetched rooms first, otherwise
+                      // construct a room object from recommendation data so the
+                      // click always works (even for upgrades/different room types)
                       const room = rooms.find(r => String(r.id) === String(rec.room_id));
-                      if (room) setSelectedRoom(room);
+                      if (room) {
+                        setSelectedRoom({ ...room, match_score: rec.match_score, is_recommended: true });
+                      } else {
+                        setSelectedRoom({
+                          id: rec.room_id,
+                          number: rec.room_number,
+                          roomNumber: rec.room_number,
+                          room_type: { name: rec.room_type },
+                          type: rec.room_type,
+                          floor: rec.floor,
+                          status: rec.status,
+                          capacity: null,
+                          max_occupancy: null,
+                          match_score: rec.match_score,
+                          is_recommended: true,
+                        });
+                      }
                     }}
                     className={`p-2 rounded-lg border-2 text-center transition-all ${
                       isSelected

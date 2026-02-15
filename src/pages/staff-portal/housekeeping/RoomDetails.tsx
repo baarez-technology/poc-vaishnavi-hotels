@@ -321,8 +321,9 @@ const RoomDetails = () => {
             {/* Checklist Items */}
             <div className="space-y-2">
               {checklist.map((item) => (
-                <label
+                <div
                   key={item.id}
+                  onClick={() => handleChecklistToggle(item.id)}
                   className={`
                     flex items-center gap-3 p-3 rounded-[10px] cursor-pointer transition-all
                     ${item.completed
@@ -330,8 +331,7 @@ const RoomDetails = () => {
                       : 'bg-neutral hover:bg-neutral-dark'}
                   `}
                 >
-                  <button
-                    onClick={() => handleChecklistToggle(item.id)}
+                  <div
                     className={`
                       w-5 h-5 rounded flex items-center justify-center flex-shrink-0
                       ${item.completed
@@ -340,11 +340,11 @@ const RoomDetails = () => {
                     `}
                   >
                     {item.completed && <CheckCircle className="w-4 h-4" />}
-                  </button>
+                  </div>
                   <span className={`flex-1 ${item.completed ? 'line-through text-text-light' : 'text-text'}`}>
                     {item.task}
                   </span>
-                </label>
+                </div>
               ))}
             </div>
           </Card>

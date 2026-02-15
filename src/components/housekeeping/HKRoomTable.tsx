@@ -298,7 +298,8 @@ export default function HKRoomTable({
                         >
                           View Details
                         </button>
-                        {room.status !== 'out_of_service' && (
+                        {/* BUG-021 FIX: Only allow assigning staff to dirty/in_progress rooms */}
+                        {(room.status === 'dirty' || room.status === 'in_progress') && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();

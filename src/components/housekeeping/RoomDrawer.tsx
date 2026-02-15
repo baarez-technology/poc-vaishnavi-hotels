@@ -135,12 +135,15 @@ export default function RoomDrawer({
             <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900">
               Assigned Housekeeper
             </h4>
-            <button
-              onClick={onAssignHousekeeper}
-              className="text-[12px] text-terra-600 hover:text-terra-700 font-semibold transition-colors"
-            >
-              {housekeeper ? 'Reassign' : 'Assign'}
-            </button>
+            {/* BUG-021 FIX: Only allow assigning staff to dirty/in_progress rooms */}
+            {(room.status === 'dirty' || room.status === 'in_progress') && (
+              <button
+                onClick={onAssignHousekeeper}
+                className="text-[12px] text-terra-600 hover:text-terra-700 font-semibold transition-colors"
+              >
+                {housekeeper ? 'Reassign' : 'Assign'}
+              </button>
+            )}
           </div>
           {housekeeper ? (
             <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100">

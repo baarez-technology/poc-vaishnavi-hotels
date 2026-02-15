@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import {
   Target,
   Plus,
@@ -45,7 +46,7 @@ interface GoalFormData {
 interface GoalDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: GoalFormData) => void;
+  onSubmit: (data: GoalFormData) => Promise<void>;
   initialData?: Goal | null;
   mode: 'create' | 'edit';
 }
@@ -55,19 +56,35 @@ function GoalDrawer({ isOpen, onClose, onSubmit, initialData, mode }: GoalDrawer
   const [targetValue, setTargetValue] = useState(initialData?.target_value || 4.5);
   const [startDate, setStartDate] = useState(initialData?.start_date || '');
   const [endDate, setEndDate] = useState(initialData?.end_date || '');
+  const [saving, setSaving] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Reset form state when initialData changes (opening drawer with different goal)
+  useEffect(() => {
+    setMetricType(initialData?.metric_type || 'rating');
+    setTargetValue(initialData?.target_value || 4.5);
+    setStartDate(initialData?.start_date || '');
+    setEndDate(initialData?.end_date || '');
+  }, [initialData]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ metricType, targetValue, startDate, endDate });
-    onClose();
+    setSaving(true);
+    try {
+      await onSubmit({ metricType, targetValue, startDate, endDate });
+      onClose();
+    } catch (error) {
+      // Error toast handled by caller
+    } finally {
+      setSaving(false);
+    }
   };
 
   const footer = (
     <div className="flex items-center justify-end gap-3 w-full">
-      <Button variant="outline" onClick={onClose}>
+      <Button variant="outline" onClick={onClose} disabled={saving}>
         Cancel
       </Button>
-      <Button variant="primary" type="submit" form="goal-form">
+      <Button variant="primary" type="submit" form="goal-form" loading={saving}>
         {mode === 'create' ? 'Create Goal' : 'Save Changes'}
       </Button>
     </div>
@@ -196,7 +213,7 @@ function getDaysRemaining(endDate: string): number {
 }
 
 export default function GoalsPanel() {
-  const { goals, createGoal, updateGoalProgress, isLoading } = useReputation();
+  const { goals, createGoal, updateGoal, deleteGoal, updateGoalProgress, isLoading } = useReputation();
   const [showDrawer, setShowDrawer] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [deletingGoal, setDeletingGoal] = useState<Goal | null>(null);
@@ -250,21 +267,38 @@ export default function GoalsPanel() {
   const handleCreateGoal = async (data: GoalFormData) => {
     try {
       await createGoal(data.metricType, data.targetValue, data.startDate, data.endDate);
+      toast.success('Goal created successfully');
     } catch (error) {
-      console.error('Failed to create goal:', error);
+      toast.error('Failed to create goal');
+      throw error;
     }
   };
 
   const handleEditGoal = async (data: GoalFormData) => {
-    // In a real implementation, this would call an API to update the goal
-    console.log('Editing goal:', editingGoal?.id, data);
-    setEditingGoal(null);
+    if (!editingGoal) return;
+    try {
+      await updateGoal(editingGoal.id, {
+        target_value: data.targetValue,
+        start_date: data.startDate,
+        end_date: data.endDate,
+      });
+      toast.success('Goal updated successfully');
+      setEditingGoal(null);
+    } catch (error) {
+      toast.error('Failed to update goal');
+      throw error;
+    }
   };
 
   const handleDeleteGoal = async () => {
-    // In a real implementation, this would call an API to delete the goal
-    console.log('Deleting goal:', deletingGoal?.id);
-    setDeletingGoal(null);
+    if (!deletingGoal) return;
+    try {
+      await deleteGoal(deletingGoal.id);
+      toast.success('Goal deleted successfully');
+      setDeletingGoal(null);
+    } catch (error) {
+      toast.error('Failed to delete goal');
+    }
   };
 
   const openCreateDrawer = () => {
@@ -461,6 +495,7 @@ export default function GoalsPanel() {
         variant="danger"
         icon={Trash2}
       />
+
     </div>
   );
 }

@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Bell,
   Check,
@@ -20,7 +21,8 @@ import {
   Clock,
   Trash2,
   Settings,
-  Loader2
+  Loader2,
+  ChevronRight
 } from 'lucide-react';
 import { Drawer } from '@/components/ui2/Drawer';
 import { cn } from '@/lib/utils';
@@ -34,6 +36,36 @@ interface Notification {
   time: string;
   read: boolean;
   priority?: 'high' | 'medium' | 'low';
+  link?: string;
+}
+
+// Resolve notification type from any backend value (handles variations like
+// 'booking', 'new_booking', 'booking_created', 'booking.created', etc.)
+function resolveNotificationType(raw: string): Notification['type'] {
+  const t = (raw || '').toLowerCase();
+  if (t.includes('booking') || t.includes('reservation')) return 'booking';
+  if (t.includes('guest') || t.includes('customer') || t.includes('check')) return 'guest';
+  if (t.includes('housekeeping') || t.includes('cleaning') || t.includes('room_ready')) return 'housekeeping';
+  if (t.includes('maintenance') || t.includes('repair') || t.includes('work_order')) return 'maintenance';
+  if (t.includes('payment') || t.includes('invoice') || t.includes('charge')) return 'payment';
+  if (t.includes('review') || t.includes('reputation') || t.includes('feedback')) return 'review';
+  if (t.includes('message') || t.includes('chat')) return 'message';
+  return 'system';
+}
+
+// Resolve the admin route for a notification type
+function resolveNotificationRoute(raw: string): string {
+  const routeMap: Record<Notification['type'], string> = {
+    booking: '/admin/bookings',
+    guest: '/admin/guests',
+    housekeeping: '/admin/housekeeping',
+    maintenance: '/admin/maintenance',
+    payment: '/admin/bookings',
+    review: '/admin/ai/reputation',
+    message: '/admin/guests',
+    system: '/admin/dashboard',
+  };
+  return routeMap[resolveNotificationType(raw)] || '/admin/dashboard';
 }
 
 interface NotificationsDrawerProps {
@@ -42,48 +74,35 @@ interface NotificationsDrawerProps {
   onUnreadCountChange?: (count: number) => void;
 }
 
+// Format time ago
+const formatTimeAgo = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays === 1) return 'Yesterday';
+  return `${diffDays} days ago`;
+};
+
 // Transform API notification to local format
 const transformNotification = (apiNotification: StaffNotification): Notification => {
-  // Map notification_type to our local types
-  const typeMap: Record<string, Notification['type']> = {
-    'booking': 'booking',
-    'guest': 'guest',
-    'housekeeping': 'housekeeping',
-    'maintenance': 'maintenance',
-    'payment': 'payment',
-    'review': 'review',
-    'system': 'system',
-    'message': 'message',
-    'task': 'system',
-    'alert': 'system'
-  };
-
-  // Format time ago
-  const formatTimeAgo = (dateStr: string): string => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} min ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    if (diffDays === 1) return 'Yesterday';
-    return `${diffDays} days ago`;
-  };
-
   return {
     id: String(apiNotification.id),
-    type: typeMap[apiNotification.notification_type] || 'system',
+    type: resolveNotificationType(apiNotification.notification_type),
     title: apiNotification.title,
     description: apiNotification.message,
     time: formatTimeAgo(apiNotification.created_at),
     read: apiNotification.is_read,
     priority: apiNotification.task?.priority === 'urgent' ? 'high' :
               apiNotification.task?.priority === 'high' ? 'high' :
-              apiNotification.task?.priority === 'medium' ? 'medium' : 'low'
+              apiNotification.task?.priority === 'medium' ? 'medium' : 'low',
+    link: resolveNotificationRoute(apiNotification.notification_type),
   };
 };
 
@@ -99,6 +118,7 @@ const typeConfig = {
 };
 
 export function NotificationsDrawer({ isOpen, onClose, onUnreadCountChange }: NotificationsDrawerProps) {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [isLoading, setIsLoading] = useState(false);
@@ -147,6 +167,16 @@ export function NotificationsDrawer({ isOpen, onClose, onUnreadCountChange }: No
       onUnreadCountChange?.(newUnread);
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
+    }
+  };
+
+  const handleNotificationClick = (notification: Notification) => {
+    // Mark as read in background — don't block navigation
+    markAsRead(notification.id);
+    // Close drawer first, then navigate
+    onClose();
+    if (notification.link) {
+      navigate(notification.link);
     }
   };
 
@@ -315,7 +345,7 @@ export function NotificationsDrawer({ isOpen, onClose, onUnreadCountChange }: No
                   'px-6 py-4 hover:bg-neutral-50/80 transition-colors cursor-pointer group',
                   !notification.read && 'bg-terra-50/40'
                 )}
-                onClick={() => markAsRead(notification.id)}
+                onClick={() => handleNotificationClick(notification)}
               >
                 <div className="flex gap-3">
                   {/* Icon */}
@@ -377,10 +407,17 @@ export function NotificationsDrawer({ isOpen, onClose, onUnreadCountChange }: No
                       </div>
                     </div>
 
-                    {/* Time */}
-                    <div className="flex items-center gap-1 mt-2">
-                      <Clock className="w-3 h-3 text-neutral-400" />
-                      <span className="text-[10px] text-neutral-400 font-medium">{notification.time}</span>
+                    {/* Time & View link */}
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-neutral-400" />
+                        <span className="text-[10px] text-neutral-400 font-medium">{notification.time}</span>
+                      </div>
+                      {notification.link && (
+                        <span className="text-[10px] font-semibold text-terra-500 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                          View <ChevronRight className="w-3 h-3" />
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

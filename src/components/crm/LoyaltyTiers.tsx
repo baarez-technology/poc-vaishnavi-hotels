@@ -87,52 +87,59 @@ function TierModal({ isOpen, onClose, onSave, tier, mode }) {
     <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Right-side Drawer */}
       <div
-        className="fixed right-0 top-0 bottom-0 w-full sm:max-w-md flex flex-col bg-white border-l border-neutral-200 shadow-2xl h-screen"
+        className="fixed right-0 top-0 bottom-0 w-full sm:max-w-[480px] flex flex-col bg-white border-l border-neutral-200 shadow-2xl h-screen"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative px-4 sm:px-6 py-4 sm:py-5 pr-12 sm:pr-14 border-b border-neutral-100 bg-white flex-shrink-0 z-10">
-          <div>
-            <h2 className="text-base sm:text-lg font-semibold text-neutral-900">
-              {mode === 'create' ? 'Create Tier' : 'Edit Tier'}
-            </h2>
-            <p className="text-xs sm:text-sm text-neutral-500">Configure loyalty tier settings</p>
+        <div className="px-5 py-4 border-b border-neutral-100 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-[8px] bg-[#CDB261]/10 flex items-center justify-center">
+                <Award className="w-[18px] h-[18px] text-[#CDB261]" />
+              </div>
+              <div>
+                <h2 className="text-[15px] font-semibold text-neutral-900">
+                  {mode === 'create' ? 'Create Tier' : 'Edit Tier'}
+                </h2>
+                <p className="text-[12px] text-neutral-400 mt-0.5">Configure loyalty tier settings</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-[8px] transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 bg-white space-y-4">
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
           <div>
-            <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Tier Name *</label>
+            <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2 block">Tier Name *</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="e.g., Gold"
-              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
+              className="w-full px-3.5 py-2.5 bg-white border border-neutral-200 rounded-[8px] text-[13px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865] transition-colors"
             />
           </div>
 
           <div>
-            <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Tier Color</label>
+            <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2 block">Tier Color</label>
             <div className="flex flex-wrap gap-2">
               {TIER_COLORS.map((color) => (
                 <button
                   key={color}
                   onClick={() => setFormData(prev => ({ ...prev, color }))}
-                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg transition-transform ${
+                  className={`w-8 h-8 rounded-[8px] transition-transform ${
                     formData.color === color ? 'ring-2 ring-offset-2 ring-[#A57865] scale-110' : ''
                   }`}
                   style={{ backgroundColor: color }}
@@ -142,13 +149,13 @@ function TierModal({ isOpen, onClose, onSave, tier, mode }) {
           </div>
 
           <div>
-            <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">Tier Icon</label>
+            <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2 block">Tier Icon</label>
             <div className="flex flex-wrap gap-2">
               {TIER_ICONS.map((icon) => (
                 <button
                   key={icon}
                   onClick={() => setFormData(prev => ({ ...prev, icon }))}
-                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg text-lg sm:text-xl flex items-center justify-center transition-transform ${
+                  className={`w-10 h-10 rounded-[8px] text-xl flex items-center justify-center transition-transform ${
                     formData.icon === icon
                       ? 'bg-[#A57865]/10 ring-2 ring-[#A57865] scale-110'
                       : 'bg-neutral-100 hover:bg-neutral-200'
@@ -160,9 +167,9 @@ function TierModal({ isOpen, onClose, onSave, tier, mode }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">
+              <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2 block">
                 Minimum Nights
               </label>
               <input
@@ -170,11 +177,11 @@ function TierModal({ isOpen, onClose, onSave, tier, mode }) {
                 min="0"
                 value={formData.minNights}
                 onChange={(e) => setFormData(prev => ({ ...prev, minNights: e.target.value }))}
-                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
+                className="w-full px-3.5 py-2.5 bg-white border border-neutral-200 rounded-[8px] text-[13px] text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865] transition-colors"
               />
             </div>
             <div>
-              <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">
+              <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2 block">
                 Minimum Revenue
               </label>
               <input
@@ -182,13 +189,13 @@ function TierModal({ isOpen, onClose, onSave, tier, mode }) {
                 min="0"
                 value={formData.minRevenue}
                 onChange={(e) => setFormData(prev => ({ ...prev, minRevenue: e.target.value }))}
-                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
+                className="w-full px-3.5 py-2.5 bg-white border border-neutral-200 rounded-[8px] text-[13px] text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865] transition-colors"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2 block">
+            <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2 block">
               Benefits
             </label>
             <div className="space-y-2">
@@ -199,12 +206,12 @@ function TierModal({ isOpen, onClose, onSave, tier, mode }) {
                     value={benefit}
                     onChange={(e) => handleBenefitChange(index, e.target.value)}
                     placeholder="e.g., 10% room discount"
-                    className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865]"
+                    className="flex-1 px-3.5 py-2.5 bg-white border border-neutral-200 rounded-[8px] text-[13px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865] transition-colors"
                   />
                   {formData.benefits.length > 1 && (
                     <button
                       onClick={() => handleRemoveBenefit(index)}
-                      className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors"
+                      className="p-2 text-rose-500 hover:bg-rose-50 rounded-[8px] transition-colors"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -213,9 +220,9 @@ function TierModal({ isOpen, onClose, onSave, tier, mode }) {
               ))}
               <button
                 onClick={handleAddBenefit}
-                className="flex items-center gap-1 text-xs sm:text-sm text-[#A57865] hover:text-[#8E6554]"
+                className="flex items-center gap-1 text-[12px] font-medium text-[#A57865] hover:text-[#8E6554]"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5" />
                 Add benefit
               </button>
             </div>
@@ -223,20 +230,20 @@ function TierModal({ isOpen, onClose, onSave, tier, mode }) {
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-t border-neutral-100 px-4 sm:px-6 py-4 sm:py-5 bg-neutral-50/50">
-          <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex-shrink-0 border-t border-neutral-100 px-5 py-4">
+          <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 border border-neutral-200 text-neutral-700 rounded-xl text-xs sm:text-sm font-medium hover:bg-neutral-50 transition-colors"
+              className="flex-1 px-4 py-2.5 border border-neutral-200 text-neutral-700 rounded-[8px] text-[13px] font-medium hover:bg-neutral-50 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={!formData.name.trim()}
-              className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
+              className={`flex-1 px-4 py-2.5 rounded-[8px] text-[13px] font-semibold transition-colors ${
                 formData.name.trim()
-                  ? 'bg-[#4E5840] text-white hover:bg-[#3d4632]'
+                  ? 'bg-[#A57865] text-white hover:bg-[#8E6554]'
                   : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
               }`}
             >
@@ -281,46 +288,50 @@ export default function LoyaltyTiers({ tiers, guests, onSave, onDelete }) {
   const sortedTiers = [...tiers].sort((a, b) => a.minNights - b.minNights);
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-3 sm:p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-[#CDB261]/10 flex items-center justify-center flex-shrink-0">
-            <Award className="w-4 h-4 sm:w-5 sm:h-5 text-[#CDB261]" />
+    <div className="bg-white rounded-[10px] border border-neutral-200">
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-neutral-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-[8px] bg-[#CDB261]/10 flex items-center justify-center flex-shrink-0">
+              <Award className="w-[18px] h-[18px] text-[#CDB261]" />
+            </div>
+            <div>
+              <h3 className="text-[15px] font-semibold text-neutral-900">Loyalty Tiers</h3>
+              <p className="text-[12px] text-neutral-400 mt-0.5">{tiers.length} tiers configured</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-base sm:text-lg font-bold text-neutral-900">Loyalty Tiers</h3>
-            <p className="text-xs sm:text-sm text-neutral-500">{tiers.length} tiers configured</p>
-          </div>
+          <button
+            onClick={handleCreateTier}
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-[#A57865] text-white rounded-[8px] text-[12px] sm:text-[13px] font-semibold hover:bg-[#8E6554] transition-colors whitespace-nowrap"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Add Tier</span>
+            <span className="sm:hidden">Add</span>
+          </button>
         </div>
-        <button
-          onClick={handleCreateTier}
-          className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-[#A57865] text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-[#A57865]/90 transition-colors whitespace-nowrap"
-        >
-          <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline">Add Tier</span>
-          <span className="sm:hidden">Add</span>
-        </button>
       </div>
 
-      <div className="space-y-3">
+      {/* Content */}
+      <div className="p-4 space-y-3">
         {sortedTiers.map((tier) => (
           <div
             key={tier.id}
-            className="border border-neutral-200 rounded-xl p-4 hover:border-[#A57865]/30 transition-colors"
+            className="border border-neutral-100 rounded-[8px] p-4 bg-neutral-50 hover:border-neutral-200 transition-colors"
           >
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                  className="w-10 h-10 rounded-[8px] flex items-center justify-center text-xl"
                   style={{ backgroundColor: `${tier.color}20` }}
                 >
                   {tier.icon}
                 </div>
                 <div>
-                  <h4 className="font-bold text-neutral-900" style={{ color: tier.color }}>
+                  <h4 className="text-[13px] font-semibold" style={{ color: tier.color }}>
                     {tier.name}
                   </h4>
-                  <div className="flex items-center gap-3 text-xs text-neutral-500 mt-0.5">
+                  <div className="flex items-center gap-3 text-[11px] text-neutral-500 mt-0.5">
                     <span className="flex items-center gap-1">
                       <Moon className="w-3 h-3" />
                       {tier.minNights}+ nights
@@ -333,33 +344,33 @@ export default function LoyaltyTiers({ tiers, guests, onSave, onDelete }) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-neutral-900">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[12px] font-semibold text-neutral-900 mr-1">
                   {tierCounts[tier.id] || 0} guests
                 </span>
                 <button
                   onClick={() => handleEditTier(tier)}
-                  className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+                  className="p-1.5 hover:bg-neutral-200 rounded-[6px] transition-colors"
                 >
-                  <Edit2 className="w-4 h-4 text-neutral-500" />
+                  <Edit2 className="w-3.5 h-3.5 text-neutral-500" />
                 </button>
                 <button
                   onClick={() => setDeleteConfirm(tier.id)}
-                  className="p-2 hover:bg-rose-50 rounded-lg transition-colors"
+                  className="p-1.5 hover:bg-rose-50 rounded-[6px] transition-colors"
                 >
-                  <Trash2 className="w-4 h-4 text-rose-500" />
+                  <Trash2 className="w-3.5 h-3.5 text-rose-500" />
                 </button>
               </div>
             </div>
 
             {tier.benefits && tier.benefits.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-neutral-100">
-                <p className="text-xs font-medium text-neutral-500 mb-2">Benefits:</p>
-                <div className="flex flex-wrap gap-2">
+              <div className="mt-3 pt-3 border-t border-neutral-200">
+                <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest mb-2">Benefits</p>
+                <div className="flex flex-wrap gap-1.5">
                   {tier.benefits.map((benefit, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium"
                       style={{ backgroundColor: `${tier.color}15`, color: tier.color }}
                     >
                       <Check className="w-3 h-3" />
@@ -371,18 +382,18 @@ export default function LoyaltyTiers({ tiers, guests, onSave, onDelete }) {
             )}
 
             {deleteConfirm === tier.id && (
-              <div className="mt-3 pt-3 border-t border-neutral-100 bg-rose-50 -mx-4 -mb-4 p-4 rounded-b-xl">
-                <p className="text-sm text-rose-800 mb-2">Delete this tier?</p>
+              <div className="mt-3 pt-3 border-t border-neutral-200 bg-rose-50 -mx-4 -mb-4 p-4 rounded-b-[8px]">
+                <p className="text-[13px] text-rose-800 font-medium mb-2">Delete this tier?</p>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleDeleteTier(tier.id)}
-                    className="px-3 py-1.5 bg-rose-600 text-white text-xs font-medium rounded-lg hover:bg-rose-700 transition-colors"
+                    className="px-3 py-1.5 bg-rose-600 text-white text-[11px] font-semibold rounded-[6px] hover:bg-rose-700 transition-colors"
                   >
                     Delete
                   </button>
                   <button
                     onClick={() => setDeleteConfirm(null)}
-                    className="px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-200 rounded-lg transition-colors"
+                    className="px-3 py-1.5 text-[11px] font-medium text-neutral-700 hover:bg-neutral-200 rounded-[6px] transition-colors"
                   >
                     Cancel
                   </button>

@@ -174,6 +174,7 @@ function ReviewDraftDrawer({ isOpen, review, onClose, onApprove }: ReviewDraftDr
 export default function PendingReviewsPanel() {
   const { pendingReviews, fetchPendingReviews, approveDraft, isLoading } = useReputation();
   const [selectedReview, setSelectedReview] = useState<any>(null);
+  const [showAll, setShowAll] = useState(false);
 
   const handleApprove = async (text: string) => {
     if (!selectedReview) return;
@@ -213,7 +214,7 @@ export default function PendingReviewsPanel() {
 
       {pendingReviews.length > 0 ? (
         <div className="space-y-3">
-          {pendingReviews.slice(0, 5).map((review: any) => (
+          {(showAll ? pendingReviews : pendingReviews.slice(0, 5)).map((review: any) => (
             <div
               key={review.id}
               className="bg-neutral-50 rounded-[8px] p-4 hover:bg-neutral-100/80 transition-colors"
@@ -261,8 +262,8 @@ export default function PendingReviewsPanel() {
           ))}
 
           {pendingReviews.length > 5 && (
-            <Button variant="ghost" size="sm" fullWidth>
-              View all {pendingReviews.length} pending reviews
+            <Button variant="ghost" size="sm" fullWidth onClick={() => setShowAll(!showAll)}>
+              {showAll ? 'Show less' : `View all ${pendingReviews.length} pending reviews`}
             </Button>
           )}
         </div>

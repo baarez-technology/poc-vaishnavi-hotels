@@ -715,6 +715,14 @@ export function StaffPortalProvider({ children }: StaffPortalProviderProps) {
     try {
       const apiNotifications = await notificationsService.getNotifications({ limit: 50 });
       // Transform API notifications to local format
+      // Fallback routes for notifications without a task
+      const staffRouteMap: Record<string, string> = {
+        housekeeping: '/staff/housekeeping',
+        maintenance: '/staff/maintenance',
+        task: '/staff/tasks',
+        system: '/staff/dashboard',
+        alert: '/staff/dashboard',
+      };
       const transformedNotifications = apiNotifications.map((n: APINotification) => ({
         id: n.id.toString(),
         type: n.notification_type,
@@ -724,7 +732,9 @@ export function StaffPortalProvider({ children }: StaffPortalProviderProps) {
         read: n.is_read,
         readAt: n.read_at,
         priority: n.task?.priority || 'normal',
-        actionUrl: n.task ? `/staff/${n.task.task_type}/tasks/${n.task.id}` : null,
+        actionUrl: n.task
+          ? `/staff/${n.task.task_type}/tasks/${n.task.id}`
+          : (staffRouteMap[n.notification_type] || '/staff/dashboard'),
         taskId: n.task_id
       }));
       dispatch({ type: actionTypes.SET_NOTIFICATIONS, payload: transformedNotifications });

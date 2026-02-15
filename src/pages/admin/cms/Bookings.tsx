@@ -777,10 +777,10 @@ function BookingDetailDrawer({ booking, isOpen, onClose, onStatusChange }) {
                 <span className="text-[10px] sm:text-[11px] font-medium text-neutral-400">Guests</span>
               </div>
               <p className="text-base sm:text-lg font-semibold text-neutral-900">
-                {booking.guests}
+                {booking.adults || booking.guests} Adult{(booking.adults || booking.guests) !== 1 ? 's' : ''}
               </p>
               <p className="text-[10px] sm:text-[11px] text-neutral-500">
-                {booking.guests === 1 ? 'Adult' : 'Adults'}
+                {(booking.children || 0) > 0 ? `${booking.children} Child${booking.children !== 1 ? 'ren' : ''}` : 'No children'}
               </p>
             </div>
           </div>
@@ -1021,6 +1021,8 @@ function transformApiBooking(apiBooking: any) {
     amountPaid: amountPaid,
     balance: balanceDue !== null && balanceDue !== undefined ? balanceDue : (totalPrice - amountPaid),
     paymentStatus: apiBooking.payment_status || 'pending',
+    adults: apiBooking.guests?.adults || apiBooking.adults || 1,
+    children: apiBooking.guests?.children || apiBooking.children || 0,
     guests: (apiBooking.guests?.adults || apiBooking.adults || 1) + (apiBooking.guests?.children || apiBooking.children || 0),
     specialRequests: guest?.specialRequests || apiBooking.special_requests || '',
     createdAt: apiBooking.createdAt || apiBooking.created_at,

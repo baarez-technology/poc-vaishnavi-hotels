@@ -76,6 +76,7 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
     phone: '',
     country: '',
     status: 'Active',
+    vipStatus: false,
     emotion: 'neutral',
     tags: [],
     preferences: [],
@@ -83,6 +84,17 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
   const [newTag, setNewTag] = useState('');
   const [showTagDropdown, setShowTagDropdown] = useState(false);
   const [newPreference, setNewPreference] = useState('');
+
+  // BUG-011 FIX: Map lowercase display status back to GUEST_STATUS_CONFIG keys
+  const mapStatusToConfigKey = (status: string) => {
+    const map: Record<string, string> = {
+      'vip': 'VIP',
+      'normal': 'Active',
+      'blacklisted': 'Blacklisted',
+      'review': 'Review',
+    };
+    return map[status?.toLowerCase()] || status || 'Active';
+  };
 
   useEffect(() => {
     if (guest) {
@@ -92,7 +104,8 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
         email: guest.email || '',
         phone: guest.phone || '',
         country: guest.country || 'United States',
-        status: guest.status || 'Active',
+        status: mapStatusToConfigKey(guest.status),
+        vipStatus: guest.vipStatus || false,
         emotion: guest.emotion || 'neutral',
         tags: guest.tags || [],
         preferences: Array.isArray(guest.preferences) ? guest.preferences : [],
@@ -163,6 +176,7 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
       phone: formData.phone,
       country: formData.country,
       status: formData.status,
+      vipStatus: formData.status.toUpperCase() === 'VIP',
       emotion: formData.emotion,
       tags: formData.tags,
       preferences: formData.preferences,

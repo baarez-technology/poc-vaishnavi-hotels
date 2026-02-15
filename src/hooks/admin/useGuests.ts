@@ -181,8 +181,8 @@ export function useGuests() {
       // Handle status updates (e.g., for blacklisting)
       if (updates.status) {
         apiUpdates.status = updates.status;
-        // Auto-sync vip_status when status is set to "VIP" or changed away from "VIP"
-        if (updates.status === 'VIP') {
+        // BUG-011 FIX: Case-insensitive VIP check (transform uses lowercase 'vip', config uses 'VIP')
+        if (updates.status.toUpperCase() === 'VIP') {
           apiUpdates.vip_status = true;
         } else if (updates.vipStatus === undefined && updates.vip_status === undefined) {
           // If status is changed to something other than VIP and vip_status isn't explicitly set, clear it

@@ -104,8 +104,9 @@ const MaintenanceDashboard = () => {
     pendingIssues: equipmentIssues?.filter(i => i.status === 'pending').length || 0
   }), [pendingWorkOrders, inProgressWorkOrders, completedWorkOrders, workOrders, equipmentIssues]);
 
-  // Use context clockedIn (updated instantly from sidebar) + API shift times
-  const isClockedIn = contextProfile?.clockedIn || profile?.clocked_in;
+  // Prefer context clockedIn (updated instantly on clock actions) over stale API data.
+  // Use ?? (not ||) so that an explicit `false` from context is respected.
+  const isClockedIn = contextProfile?.clockedIn ?? profile?.clocked_in ?? false;
   const shiftStart = profile?.shift_start || contextProfile?.shiftStart;
   const shiftEnd = profile?.shift_end || contextProfile?.shiftEnd;
 

@@ -93,7 +93,8 @@ const Profile = () => {
     }
   }, [showSaveSuccess]);
 
-  const isClockedIn = contextProfile?.clockedIn || profile?.clocked_in;
+  // Prefer context clockedIn (updated instantly on clock actions) over stale API data.
+  const isClockedIn = contextProfile?.clockedIn ?? profile?.clocked_in ?? false;
 
   // Calculate cumulative hours worked today from clock history
   const hoursWorkedToday = useMemo(() => {

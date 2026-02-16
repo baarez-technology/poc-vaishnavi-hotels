@@ -53,8 +53,14 @@ export default function RoomCard({ room, onClick, onMarkClean }) {
   };
 
   // Calculate progress percentage
+  // BUG-022 FIX: Handle both array format [{completed: true},...] and object format {total, completed}
   const getProgress = () => {
     if (!room.checklist) return 0;
+    if (Array.isArray(room.checklist)) {
+      const total = room.checklist.length;
+      const completed = room.checklist.filter((item: any) => item.completed).length;
+      return total > 0 ? Math.round((completed / total) * 100) : 0;
+    }
     const total = room.checklist.total || 0;
     const completed = room.checklist.completed || 0;
     return total > 0 ? Math.round((completed / total) * 100) : 0;

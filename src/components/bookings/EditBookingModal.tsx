@@ -279,24 +279,25 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
         </section>
 
         {/* Additional Notes */}
-        <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">
-            Additional Notes
-          </h3>
-          <div className="space-y-2">
-            <label className="block text-[13px] font-medium text-neutral-700">
-              Special Requests
-            </label>
-            <textarea
-              name="notes"
-              value={formState.notes}
-              onChange={handleChange}
-              rows={3}
-              placeholder="Any special requirements..."
-              className="w-full px-3.5 py-2.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150 resize-none"
-            />
-          </div>
-        </section>
+        {formState.notes && (
+          <section>
+            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">
+              Guest Special Requests
+            </h3>
+            <div className="space-y-2">
+              <label className="block text-[13px] font-medium text-neutral-700">
+                Special Requests <span className="text-neutral-400 font-normal">(read-only, set by guest)</span>
+              </label>
+              <textarea
+                name="notes"
+                value={formState.notes}
+                readOnly
+                rows={3}
+                className="w-full px-3.5 py-2.5 rounded-lg text-[13px] bg-neutral-50 border border-neutral-200 text-neutral-600 cursor-not-allowed resize-none"
+              />
+            </div>
+          </section>
+        )}
       </form>
     </Drawer>
   );

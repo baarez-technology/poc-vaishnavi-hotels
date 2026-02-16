@@ -110,7 +110,7 @@ const RunnerDashboard = () => {
     pendingDeliveries: dashboardData?.active_deliveries || 0,
     inTransitDeliveries: inTransitDeliveries?.length || 0,
     completedPickups: dashboardData?.completed_today || 0,
-    deliveredDeliveries: 0,
+    deliveredDeliveries: dashboardData?.completed_deliveries_today || 0,
     totalPickups: allPickups.length,
     totalDeliveries: allDeliveries.length
   }), [dashboardData, allPickups, allDeliveries, inProgressPickups, inTransitDeliveries]);
@@ -122,8 +122,9 @@ const RunnerDashboard = () => {
     return '0m';
   }, [dashboardData]);
 
-  // Use context clockedIn (updated instantly from sidebar) + API shift times
-  const isClockedIn = contextProfile?.clockedIn || profile?.clocked_in;
+  // Prefer context clockedIn (updated instantly on clock actions) over stale API data.
+  // Use ?? (not ||) so that an explicit `false` from context is respected.
+  const isClockedIn = contextProfile?.clockedIn ?? profile?.clocked_in ?? false;
   const shiftStartTime = profile?.shift_start || contextProfile?.shiftStart;
   const shiftEndTime = profile?.shift_end || contextProfile?.shiftEnd;
 
@@ -271,28 +272,59 @@ const RunnerDashboard = () => {
     });
   };
 
+  // Track which specific item is loading
+  const [loadingItemId, setLoadingItemId] = useState<number | null>(null);
+
   const handleAcceptPickup = async (pickup: any, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const success = await acceptPickup(pickup.id);
-    if (success) refetchAll();
+    setLoadingItemId(pickup.id);
+    try {
+      const success = await acceptPickup(pickup.id);
+      if (success) refetchAll();
+    } catch (err) {
+      console.error('Failed to accept pickup:', err);
+    } finally {
+      setLoadingItemId(null);
+    }
   };
 
   const handleCompletePickup = async (pickup: any, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const success = await completePickup(pickup.id);
-    if (success) refetchAll();
+    setLoadingItemId(pickup.id);
+    try {
+      const success = await completePickup(pickup.id);
+      if (success) refetchAll();
+    } catch (err) {
+      console.error('Failed to complete pickup:', err);
+    } finally {
+      setLoadingItemId(null);
+    }
   };
 
   const handleAcceptDelivery = async (delivery: any, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const success = await acceptDelivery(delivery.id);
-    if (success) refetchAll();
+    setLoadingItemId(delivery.id);
+    try {
+      const success = await acceptDelivery(delivery.id);
+      if (success) refetchAll();
+    } catch (err) {
+      console.error('Failed to accept delivery:', err);
+    } finally {
+      setLoadingItemId(null);
+    }
   };
 
   const handleCompleteDelivery = async (delivery: any, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const success = await completeDelivery(delivery.id);
-    if (success) refetchAll();
+    setLoadingItemId(delivery.id);
+    try {
+      const success = await completeDelivery(delivery.id);
+      if (success) refetchAll();
+    } catch (err) {
+      console.error('Failed to complete delivery:', err);
+    } finally {
+      setLoadingItemId(null);
+    }
   };
 
   // Show loading state
@@ -407,6 +439,7 @@ const RunnerDashboard = () => {
                 {activePickups.map((pickup) => (
                   <div
                     key={pickup.id}
+                    onClick={() => navigate('/staff/runner/pickups')}
                     className={`
                       flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg transition-colors cursor-pointer
                       ${pickup.priority === 'urgent' ? 'bg-rose-50/50 border-l-4 border-l-rose-500' :
@@ -446,7 +479,8 @@ const RunnerDashboard = () => {
                         <Button
                           size="sm"
                           onClick={(e) => handleAcceptPickup(pickup, e)}
-                          disabled={actionLoading}
+                          disabled={loadingItemId === pickup.id}
+                          isLoading={loadingItemId === pickup.id}
                         >
                           Accept
                         </Button>
@@ -456,7 +490,8 @@ const RunnerDashboard = () => {
                           size="sm"
                           variant="success"
                           onClick={(e) => handleCompletePickup(pickup, e)}
-                          disabled={actionLoading}
+                          disabled={loadingItemId === pickup.id}
+                          isLoading={loadingItemId === pickup.id}
                         >
                           Complete
                         </Button>
@@ -546,6 +581,7 @@ const RunnerDashboard = () => {
                 {activeDeliveries.map((delivery) => (
                   <div
                     key={delivery.id}
+                    onClick={() => navigate('/staff/runner/deliveries')}
                     className={`
                       flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg transition-colors cursor-pointer
                       ${delivery.status === 'in_transit' ? 'bg-ocean-50/50 border-l-4 border-l-ocean-500' :
@@ -584,7 +620,8 @@ const RunnerDashboard = () => {
                         <Button
                           size="sm"
                           onClick={(e) => handleAcceptDelivery(delivery, e)}
-                          disabled={actionLoading}
+                          disabled={loadingItemId === delivery.id}
+                          isLoading={loadingItemId === delivery.id}
                         >
                           Accept
                         </Button>
@@ -594,7 +631,8 @@ const RunnerDashboard = () => {
                           size="sm"
                           variant="success"
                           onClick={(e) => handleCompleteDelivery(delivery, e)}
-                          disabled={actionLoading}
+                          disabled={loadingItemId === delivery.id}
+                          isLoading={loadingItemId === delivery.id}
                         >
                           Delivered
                         </Button>

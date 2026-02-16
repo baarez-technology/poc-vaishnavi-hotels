@@ -18,6 +18,7 @@ import { StatusBadge, SeverityBadge } from '../../../components/staff-portal/ui/
 import Button from '../../../components/staff-portal/ui/Button';
 import { useStaffProfile, useMyMaintenanceDashboard, useWorkOrders, useEquipmentIssues, useNotifications, useMaintenanceActions } from '@/hooks/staff-portal/useStaffApi';
 import { useProfile } from '@/hooks/staff-portal/useStaffPortal';
+import { normalizeUTCDate } from '@/utils/maintenance';
 
 // Section Card matching admin LuxurySectionCard
 function SectionCard({
@@ -97,14 +98,15 @@ const MaintenanceDashboard = () => {
     inProgressWorkOrders: inProgressWorkOrders?.length || 0,
     completedWorkOrders: completedWorkOrders?.length || 0,
     criticalWorkOrders: workOrders.filter(wo => wo.priority === 'critical' && wo.status !== 'completed').length,
-    pendingTasks: 0,
-    inProgressTasks: 0,
-    completedTasks: 0,
+    pendingTasks: workOrders.filter(wo => wo.status === 'pending').length,
+    inProgressTasks: workOrders.filter(wo => wo.status === 'in_progress').length,
+    completedTasks: completedWorkOrders?.length || 0,
     pendingIssues: equipmentIssues?.filter(i => i.status === 'pending').length || 0
   }), [pendingWorkOrders, inProgressWorkOrders, completedWorkOrders, workOrders, equipmentIssues]);
 
-  // Use context clockedIn (updated instantly from sidebar) + API shift times
-  const isClockedIn = contextProfile?.clockedIn || profile?.clocked_in;
+  // Prefer context clockedIn (updated instantly on clock actions) over stale API data.
+  // Use ?? (not ||) so that an explicit `false` from context is respected.
+  const isClockedIn = contextProfile?.clockedIn ?? profile?.clocked_in ?? false;
   const shiftStart = profile?.shift_start || contextProfile?.shiftStart;
   const shiftEnd = profile?.shift_end || contextProfile?.shiftEnd;
 
@@ -228,19 +230,21 @@ const MaintenanceDashboard = () => {
     }));
 
     return activities
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .sort((a, b) => (normalizeUTCDate(b.timestamp)?.getTime() || 0) - (normalizeUTCDate(a.timestamp)?.getTime() || 0))
       .slice(0, 5);
   }, [workOrders]);
 
   const urgentNotifications = useMemo(() => {
     const notificationsList = notifications || [];
     return notificationsList
-      .filter((n: any) => !n.is_read && (n.task?.priority === 'urgent' || n.task?.priority === 'high'))
+      .filter((n: any) => !n.is_read && (n.priority === 'urgent' || n.priority === 'high' || n.task?.priority === 'urgent' || n.task?.priority === 'high'))
       .slice(0, 3);
   }, [notifications]);
 
   const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
+    if (!timestamp) return 'N/A';
+    const date = normalizeUTCDate(timestamp);
+    if (!date || isNaN(date.getTime())) return 'N/A';
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffHours = Math.floor(diffMs / 3600000);
@@ -251,8 +255,12 @@ const MaintenanceDashboard = () => {
   };
 
   const handleStartWorkOrder = async (workOrder: any) => {
-    const success = await acceptWorkOrder(workOrder.id);
-    if (success) refetchAll();
+    try {
+      const success = await acceptWorkOrder(workOrder.id);
+      if (success) refetchAll();
+    } catch (err) {
+      console.error('Failed to start work order:', err);
+    }
   };
 
   if (isLoading) {
@@ -394,7 +402,11 @@ const MaintenanceDashboard = () => {
               <button
                 onClick={() => {
                   const nextOrder = workOrders.find((wo: any) => wo.status === 'pending');
-                  if (nextOrder) handleStartWorkOrder(nextOrder);
+                  if (nextOrder) {
+                    handleStartWorkOrder(nextOrder);
+                  } else {
+                    navigate('/staff/maintenance/work-orders');
+                  }
                 }}
                 className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-terra-50 text-left hover:bg-terra-100 transition-all group"
               >

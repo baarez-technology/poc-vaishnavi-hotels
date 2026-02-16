@@ -25,6 +25,7 @@ import { StatCard } from '../../../components/staff-portal/ui/Card';
 import { StatusBadge, SeverityBadge } from '../../../components/staff-portal/ui/Badge';
 import Button from '../../../components/staff-portal/ui/Button';
 import { useWorkOrders, useMaintenanceActions, useStaffProfile } from '@/hooks/staff-portal/useStaffApi';
+import { normalizeUTCDate } from '@/utils/maintenance';
 
 // Custom Select Dropdown Component - matching admin PromotionDrawer style
 function SelectDropdown({
@@ -293,9 +294,8 @@ const WorkOrders = () => {
 
   const isLoading = pendingLoading || inProgressLoading || completedLoading;
 
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState<'active' | 'completed' | 'all'>('active');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<any>(null);
@@ -310,6 +310,9 @@ const WorkOrders = () => {
     estimatedHours: 1
   });
 
+  // Derived counts for tabs
+  const activeCount = (pendingWorkOrders?.length || 0) + (inProgressWorkOrders?.length || 0);
+
   const filteredWorkOrders = useMemo(() => {
     return workOrders.filter(wo => {
       const matchesSearch =
@@ -317,23 +320,28 @@ const WorkOrders = () => {
         wo.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         wo.location?.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesStatus = statusFilter === 'all' || wo.status === statusFilter;
+      const matchesTab =
+        activeTab === 'all' ||
+        (activeTab === 'active' && wo.status !== 'completed' && wo.status !== 'inspected') ||
+        (activeTab === 'completed' && (wo.status === 'completed' || wo.status === 'inspected'));
 
-      return matchesSearch && matchesStatus;
+      return matchesSearch && matchesTab;
     }).sort((a, b) => {
       const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-      const statusOrder: Record<string, number> = { in_progress: 0, pending: 1, completed: 2 };
+      const statusOrder: Record<string, number> = { in_progress: 0, pending: 1, completed: 2, inspected: 2 };
 
-      if (statusOrder[a.status] !== statusOrder[b.status]) {
-        return statusOrder[a.status] - statusOrder[b.status];
+      if ((statusOrder[a.status] ?? 2) !== (statusOrder[b.status] ?? 2)) {
+        return (statusOrder[a.status] ?? 2) - (statusOrder[b.status] ?? 2);
       }
       return (severityOrder[a.priority] || 2) - (severityOrder[b.priority] || 2);
     });
-  }, [workOrders, searchQuery, statusFilter]);
+  }, [workOrders, searchQuery, activeTab]);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
+    const date = normalizeUTCDate(dateString);
+    if (!date || isNaN(date.getTime())) return 'N/A';
+    return date.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: 'numeric',
@@ -425,10 +433,35 @@ const WorkOrders = () => {
         </div>
       </div>
 
-      {/* Search & Filters - matching housekeeping Rooms style */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
-        {/* Search */}
-        <div className="flex-1 relative">
+      {/* Status Tabs - matching admin maintenance tab pattern */}
+      <div className="flex items-center gap-2 mb-4 sm:mb-5">
+        {[
+          { key: 'active' as const, label: 'Active', count: activeCount },
+          { key: 'completed' as const, label: 'Completed', count: stats.completedWorkOrders },
+          { key: 'all' as const, label: 'All', count: workOrders.length }
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-4 py-2 rounded-lg text-[13px] font-medium transition-all ${
+              activeTab === tab.key
+                ? 'bg-terra-600 text-white shadow-sm'
+                : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300'
+            }`}
+          >
+            {tab.label}
+            <span className={`ml-1.5 text-[11px] tabular-nums ${
+              activeTab === tab.key ? 'text-white/80' : 'text-neutral-400'
+            }`}>
+              {tab.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div className="mb-4 sm:mb-6">
+        <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
           <input
             type="text"
@@ -447,63 +480,6 @@ const WorkOrders = () => {
             </button>
           )}
         </div>
-
-        {/* Filter Dropdown */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className="h-11 w-full sm:w-[180px] px-4 pr-10 rounded-lg text-[13px] bg-white border border-neutral-200 text-neutral-600 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all flex items-center justify-between"
-          >
-            <span>
-              {statusFilter === 'all' && `All (${workOrders.length})`}
-              {statusFilter === 'pending' && `Pending (${stats.pendingWorkOrders})`}
-              {statusFilter === 'in_progress' && `In Progress (${stats.inProgressWorkOrders})`}
-              {statusFilter === 'completed' && `Completed (${stats.completedWorkOrders})`}
-            </span>
-            <ChevronDown className={`w-4 h-4 text-neutral-400 absolute right-3 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
-          </button>
-
-          {isFilterOpen && (
-            <>
-              {/* Backdrop to close dropdown */}
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setIsFilterOpen(false)}
-              />
-              {/* Dropdown menu */}
-              <div className="absolute right-0 mt-2 w-full sm:w-[180px] bg-white rounded-lg border border-neutral-200 shadow-lg z-20 py-1 overflow-hidden">
-                {[
-                  { value: 'all', label: 'All', count: workOrders.length },
-                  { value: 'pending', label: 'Pending', count: stats.pendingWorkOrders },
-                  { value: 'in_progress', label: 'In Progress', count: stats.inProgressWorkOrders },
-                  { value: 'completed', label: 'Completed', count: stats.completedWorkOrders }
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => {
-                      setStatusFilter(option.value);
-                      setIsFilterOpen(false);
-                    }}
-                    className={`w-full px-4 py-2.5 text-[13px] text-left transition-colors flex items-center justify-between ${
-                      statusFilter === option.value
-                        ? 'bg-terra-50 text-terra-600 font-medium'
-                        : 'text-neutral-600 hover:bg-neutral-50'
-                    }`}
-                  >
-                    <span>{option.label}</span>
-                    <span className={`text-[11px] tabular-nums ${
-                      statusFilter === option.value ? 'text-terra-500' : 'text-neutral-400'
-                    }`}>
-                      {option.count}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
       </div>
 
       {/* Main Content Card */}
@@ -511,7 +487,9 @@ const WorkOrders = () => {
         {/* Card Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-neutral-100">
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-neutral-800">Work Orders</h3>
+            <h3 className="text-sm font-semibold text-neutral-800">
+              {activeTab === 'active' ? 'Active Work Orders' : activeTab === 'completed' ? 'Completed Work Orders' : 'All Work Orders'}
+            </h3>
             <p className="text-[11px] text-neutral-400 font-medium mt-0.5">{filteredWorkOrders.length} orders</p>
           </div>
         </div>

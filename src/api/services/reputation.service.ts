@@ -21,6 +21,7 @@ export interface SourceBreakdown {
   source: string;
   count: number;
   average_rating: number;
+  avg_rating?: number;   // Backend may send this field name
   response_rate: number;
 }
 
@@ -32,16 +33,21 @@ export interface Review {
   rating: number;
   title?: string;
   content: string;
-  comment?: string;  // Legacy field
-  review_date?: string;  // Legacy field
-  date?: string;  // Legacy field
-  sentiment_score: number;
-  sentiment_label: string;
+  comment?: string;
+  review_date?: string;
+  date?: string;
+  sentiment_score?: number;
+  sentiment_label?: string;
+  sentiment?: string | number;  // Backend sends string, context converts to number for UI
   keywords: string[];
   created_at: string;
   responded: boolean;
+  has_response?: boolean;
+  response?: string;           // Backend sends this field
   response_text?: string;
   response_date?: string;
+  responded_at?: string;       // Backend sends this field
+  responded_by?: number;
 }
 
 export interface ResponseTemplate {
@@ -62,8 +68,17 @@ export interface ReputationDashboard {
   source_breakdown: SourceBreakdown[];
   recent_reviews: Review[];
   rating_trend: Array<{ date: string; rating: number; count: number }>;
-  sentiment_trend: Array<{ date: string; positive: number; neutral: number; negative: number }>;
+  sentiment_trend: Array<{ date: string; positive: number; neutral: number; negative: number; score?: number }>;
+  sentiment_trends?: Array<{ date: string; positive: number; neutral: number; negative: number; score?: number }>;  // Backend may send this field name
   pending_responses: number;
+  active_goals?: Array<{
+    id: number;
+    metric_type: string;
+    target_value: number;
+    current_value: number;
+    progress: number;
+    status: string;
+  }>;
   goals: Array<{
     id: number;
     metric_type: string;
@@ -304,14 +319,39 @@ class ReputationService {
     page?: number;
     page_size?: number;
     source?: string;
-    rating?: number;
+    min_rating?: number;
+    max_rating?: number;
     sentiment?: string;
     start_date?: string;
     end_date?: string;
     keyword?: string;
-    responded?: boolean;
+    has_response?: boolean;
   }): Promise<{ reviews: Review[]; total: number; page: number }> {
     const response = await api.get(`${this.baseUrl}/reviews`, { params });
+    return response.data.data || response.data;
+  }
+
+  // Get a single review with full details
+  async getReview(reviewId: number): Promise<Review & {
+    published_response?: {
+      id: number;
+      response_text: string;
+      published_at: string;
+      quality_score?: number;
+      likes?: number;
+      helpful_votes?: number;
+    };
+    draft?: {
+      id: number;
+      draft_text: string;
+      status: string;
+      current_stage: string;
+      tone: string;
+      confidence_score?: number;
+      created_at: string;
+    };
+  }> {
+    const response = await api.get(`${this.baseUrl}/reviews/${reviewId}`);
     return response.data.data || response.data;
   }
 
@@ -335,6 +375,17 @@ class ReputationService {
   ): Promise<{ success: boolean; review_id: number }> {
     const response = await api.post(`${this.baseUrl}/drafts/${draftId}/approve`, {
       final_text: finalText
+    });
+    return response.data.data || response.data;
+  }
+
+  // Directly respond to a review (without draft workflow)
+  async respondToReview(
+    reviewId: number,
+    responseText: string
+  ): Promise<{ success: boolean; review_id: number; response: string; responded_at: string }> {
+    const response = await api.post(`${this.baseUrl}/reviews/${reviewId}/respond`, {
+      final_text: responseText
     });
     return response.data.data || response.data;
   }
@@ -376,6 +427,11 @@ class ReputationService {
 
   async updateGoalProgress(goalId: number): Promise<Goal> {
     const response = await api.patch(`${this.baseUrl}/goals/${goalId}/progress`);
+    return response.data.data || response.data;
+  }
+
+  async toggleGoalStatus(goalId: number): Promise<{ id: number; status: string; message: string }> {
+    const response = await api.patch(`${this.baseUrl}/goals/${goalId}/toggle`);
     return response.data.data || response.data;
   }
 
@@ -547,7 +603,7 @@ class ReputationService {
   // ========================
 
   async getEngineStats(): Promise<EngineStats> {
-    const response = await api.get(`${this.baseUrl}/engine/stats`);
+    const response = await api.get(`${this.baseUrl}/stats/engine`);
     return response.data.data || response.data;
   }
 
@@ -665,7 +721,7 @@ class ReputationService {
     if (tone) params.tone = tone;
     if (sentiment) params.sentiment = sentiment;
 
-    const response = await api.get(`${this.baseUrl}/templates`, { params });
+    const response = await api.get(`${this.baseUrl}/templates/`, { params });
     return response.data.data || response.data;
   }
 
@@ -674,9 +730,10 @@ class ReputationService {
     content: string;
     sentiment: string;
     tone?: string;
+    language?: string;
     is_default?: boolean;
   }): Promise<ResponseTemplate> {
-    const response = await api.post(`${this.baseUrl}/templates`, data);
+    const response = await api.post(`${this.baseUrl}/templates/`, data);
     return response.data.data || response.data;
   }
 
@@ -685,6 +742,7 @@ class ReputationService {
     content?: string;
     sentiment?: string;
     tone?: string;
+    language?: string;
     is_active?: boolean;
     is_default?: boolean;
   }): Promise<ResponseTemplate> {

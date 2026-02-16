@@ -21,6 +21,7 @@ import { useMaintenance, useProfile } from '@/hooks/staff-portal/useStaffPortal'
 import { StatCard } from '../../../components/staff-portal/ui/Card';
 import { StatusBadge, PriorityBadge } from '../../../components/staff-portal/ui/Badge';
 import Button from '../../../components/staff-portal/ui/Button';
+import { normalizeUTCDate } from '@/utils/maintenance';
 
 // Custom Select Dropdown Component - matching admin PromotionDrawer style
 function SelectDropdown({
@@ -307,7 +308,9 @@ const MaintenanceTasks = () => {
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
+    const date = normalizeUTCDate(dateString);
+    if (!date || isNaN(date.getTime())) return 'N/A';
+    return date.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: 'numeric',
@@ -315,8 +318,8 @@ const MaintenanceTasks = () => {
     });
   };
 
-  const getChecklistProgress = (checklist: any[]) => {
-    if (!checklist || checklist.length === 0) return { completed: 0, total: 0, percentage: 0 };
+  const getChecklistProgress = (checklist: any) => {
+    if (!Array.isArray(checklist) || checklist.length === 0) return { completed: 0, total: 0, percentage: 0 };
     const completed = checklist.filter(c => c.completed).length;
     return {
       completed,

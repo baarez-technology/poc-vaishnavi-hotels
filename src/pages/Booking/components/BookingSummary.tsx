@@ -99,7 +99,8 @@ export function BookingSummary() {
                   <div>
                     <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Guests</p>
                     <p className="font-bold text-neutral-900 text-sm">
-                      {totalGuests} {totalGuests === 1 ? 'Guest' : 'Guests'}
+                      {bookingData.guests.adults} Adult{bookingData.guests.adults !== 1 ? 's' : ''}
+                      {bookingData.guests.children > 0 && ` | ${bookingData.guests.children} Child${bookingData.guests.children !== 1 ? 'ren' : ''}`}
                     </p>
                   </div>
                 </div>

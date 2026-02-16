@@ -105,6 +105,7 @@ export default function NotificationDrawer({ isOpen, onClose }) {
                 key={notification.id}
                 notification={notification}
                 onDelete={deleteNotification}
+                onNavigate={onClose}
               />
             ))
           )}

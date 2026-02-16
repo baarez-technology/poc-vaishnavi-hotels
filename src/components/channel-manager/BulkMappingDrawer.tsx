@@ -4,7 +4,7 @@
  * Uses GET /room-mappings/bulk-view and POST /room-mappings/bulk.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Loader2, Layers, ArrowRight, Check } from 'lucide-react';
 import { channelManagerService } from '../../api/services/channel-manager.service';
 import { useToast } from '../../contexts/ToastContext';
@@ -23,33 +23,49 @@ export default function BulkMappingDrawer({
   const [saving, setSaving] = useState(false);
   const [data, setData] = useState(null);
   const [localMappings, setLocalMappings] = useState<Record<number, string>>({});
-
-  const fetchBulkView = async () => {
-    if (!otaCode || !isOpen) return;
-    setLoading(true);
-    try {
-      const res = await channelManagerService.getRoomMappingsBulkView(otaCode);
-      setData(res);
-      const init = (res.items || []).reduce(
-        (acc, it) => ({ ...acc, [it.pmsRoomTypeId]: it.otaRoomType ?? '' }),
-        {}
-      );
-      setLocalMappings(init);
-    } catch (err) {
-      console.error('Bulk view fetch error:', err);
-      showError(err?.response?.data?.error || 'Failed to load bulk mapping data');
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchIdRef = useRef(0);
 
   useEffect(() => {
     if (isOpen && otaCode) {
-      fetchBulkView();
+      setData(null);
+      setLocalMappings({});
+      setLoading(true);
+      const currentFetchId = (fetchIdRef.current += 1);
+      const openWhenStarted = isOpen;
+      const otaWhenStarted = otaCode;
+      channelManagerService
+        .getRoomMappingsBulkView(otaCode)
+        .then((res) => {
+          if (currentFetchId !== fetchIdRef.current) return;
+          if (!openWhenStarted || otaCode !== otaWhenStarted) return;
+          setData(res);
+          const init = (res.items || []).reduce(
+            (acc, it) => ({
+              ...acc,
+              [it.pmsRoomTypeId]: it.mappingId != null
+                ? (it.otaRoomType ?? '').trim()
+                : ''
+            }),
+            {}
+          );
+          setLocalMappings(init);
+        })
+        .catch((err) => {
+          if (currentFetchId !== fetchIdRef.current) return;
+          if (!openWhenStarted || otaCode !== otaWhenStarted) return;
+          console.error('Bulk view fetch error:', err);
+          showError(err?.response?.data?.error || 'Failed to load bulk mapping data');
+          setData(null);
+        })
+        .finally(() => {
+          if (currentFetchId === fetchIdRef.current && openWhenStarted && otaCode === otaWhenStarted) {
+            setLoading(false);
+          }
+        });
     } else if (!isOpen) {
       setData(null);
       setLocalMappings({});
+      setLoading(false);
     }
   }, [isOpen, otaCode]);
 
@@ -73,25 +89,61 @@ export default function BulkMappingDrawer({
       }));
   }, [items, localMappings]);
 
+  /** Items that had a mapping but user cleared the OTA field — need to delete on save */
+  const mappingsToDelete = useMemo(() => {
+    return items.filter((it) => {
+      const v = (localMappings[it.pmsRoomTypeId] ?? '').trim();
+      return it.mappingId != null && it.mappingId !== '' && v.length === 0;
+    });
+  }, [items, localMappings]);
+
+  const hasChanges = mappingsToSave.length > 0 || mappingsToDelete.length > 0;
+
   const handleSave = async () => {
-    if (mappingsToSave.length === 0) {
-      showError('Add at least one OTA room type to save.');
+    if (!hasChanges) {
+      showError('Add at least one OTA room type to save, or no changes to apply.');
       return;
     }
     setSaving(true);
     try {
-      const result = await channelManagerService.bulkRoomMappings({
-        otaCode,
-        mappings: mappingsToSave,
-      });
-      const created = result?.created ?? 0;
-      const updated = result?.updated ?? 0;
-      const errs = result?.errors ?? [];
+      const deleteErrs: string[] = [];
+      for (const it of mappingsToDelete) {
+        if (it.mappingId) {
+          try {
+            await channelManagerService.deleteRoomMapping(String(it.mappingId));
+          } catch (err) {
+            console.error('Delete mapping error:', err);
+            deleteErrs.push(
+              err?.response?.data?.error || `Failed to remove mapping for ${it.pmsRoomType}`
+            );
+          }
+        }
+      }
+      if (deleteErrs.length > 0) {
+        showError(deleteErrs.slice(0, 3).join('; ') + (deleteErrs.length > 3 ? '…' : ''));
+      }
+
+      let created = 0;
+      let updated = 0;
+      const errs: string[] = [...deleteErrs];
+      if (mappingsToSave.length > 0) {
+        const result = await channelManagerService.bulkRoomMappings({
+          otaCode,
+          mappings: mappingsToSave,
+        });
+        created = result?.created ?? 0;
+        updated = result?.updated ?? 0;
+        if (result?.errors?.length) errs.push(...result.errors);
+      }
+
       if (errs.length > 0) {
         showError(errs.slice(0, 3).join('; ') + (errs.length > 3 ? '…' : ''));
       }
-      if (created > 0 || updated > 0) {
-        success(`Mappings saved: ${created} created, ${updated} updated.`);
+      if (created > 0 || updated > 0 || mappingsToDelete.length > 0) {
+        const parts = [];
+        if (created > 0 || updated > 0) parts.push(`${created} created, ${updated} updated`);
+        if (mappingsToDelete.length > 0) parts.push(`${mappingsToDelete.length} removed`);
+        success(`Mappings saved: ${parts.join('; ')}.`);
         onSuccess?.();
         onClose();
       } else if (errs.length === 0) {
@@ -130,7 +182,7 @@ export default function BulkMappingDrawer({
             <Button
               variant="primary"
               onClick={handleSave}
-              disabled={mappingsToSave.length === 0 || saving}
+              disabled={!hasChanges || saving}
               loading={saving}
               className="px-5 py-2 text-[13px] font-semibold"
             >

@@ -357,7 +357,7 @@ function ViewToggle({ view, onViewChange }) {
 // ============================================
 // PREMIUM BOOKING CARD
 // ============================================
-function BookingCard({ booking, onClick, index = 0 }) {
+function BookingCard({ booking, onClick, index = 0, onCheckIn }: { booking: any; onClick: (b: any) => void; index?: number; onCheckIn?: (id: string) => void }) {
   const status = statusConfig[booking.status];
   const source = sourceConfig[booking.source] || {
     color: 'bg-[#7B68EE]/10 text-[#7B68EE]',
@@ -488,10 +488,21 @@ function BookingCard({ booking, onClick, index = 0 }) {
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-[13px] font-semibold transition-all bg-neutral-100 text-neutral-600 group-hover:bg-terra-500 group-hover:text-white">
-            <span className="hidden sm:inline">View Details</span>
-            <span className="sm:hidden">View</span>
-            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <div className="flex items-center gap-2">
+            {onCheckIn && (booking.status === 'CONFIRMED' || booking.status === 'PENDING') && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onCheckIn(booking.id); }}
+                className="flex items-center gap-1 px-3 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-[13px] font-semibold bg-sage-50 text-sage-600 hover:bg-sage-100 transition-colors"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                Check In
+              </button>
+            )}
+            <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-[13px] font-semibold transition-all bg-neutral-100 text-neutral-600 group-hover:bg-terra-500 group-hover:text-white">
+              <span className="hidden sm:inline">View Details</span>
+              <span className="sm:hidden">View</span>
+              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </div>
           </div>
         </div>
       </div>
@@ -502,7 +513,7 @@ function BookingCard({ booking, onClick, index = 0 }) {
 // ============================================
 // PREMIUM TABLE ROW
 // ============================================
-function BookingTableRow({ booking, onClick, index }) {
+function BookingTableRow({ booking, onClick, index, onCheckIn }: { booking: any; onClick: (b: any) => void; index: number; onCheckIn?: (id: string) => void }) {
   const status = statusConfig[booking.status];
   const source = sourceConfig[booking.source] || {
     color: 'bg-[#7B68EE]/10 text-[#7B68EE]',
@@ -572,11 +583,17 @@ function BookingTableRow({ booking, onClick, index }) {
       </td>
       <td className="py-4 px-6">
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {onCheckIn && (booking.status === 'CONFIRMED' || booking.status === 'PENDING') && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onCheckIn(booking.id); }}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-sage-50 text-sage-600 hover:bg-sage-100 transition-colors flex items-center gap-1.5"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              Check In
+            </button>
+          )}
           <button className="p-2 rounded-lg hover:bg-neutral-100 transition-colors">
             <Eye className="w-4 h-4 text-neutral-400" />
-          </button>
-          <button className="p-2 rounded-lg hover:bg-neutral-100 transition-colors">
-            <MoreHorizontal className="w-4 h-4 text-neutral-400" />
           </button>
         </div>
       </td>
@@ -760,10 +777,10 @@ function BookingDetailDrawer({ booking, isOpen, onClose, onStatusChange }) {
                 <span className="text-[10px] sm:text-[11px] font-medium text-neutral-400">Guests</span>
               </div>
               <p className="text-base sm:text-lg font-semibold text-neutral-900">
-                {booking.guests}
+                {booking.adults || booking.guests} Adult{(booking.adults || booking.guests) !== 1 ? 's' : ''}
               </p>
               <p className="text-[10px] sm:text-[11px] text-neutral-500">
-                {booking.guests === 1 ? 'Adult' : 'Adults'}
+                {(booking.children || 0) > 0 ? `${booking.children} Child${booking.children !== 1 ? 'ren' : ''}` : 'No children'}
               </p>
             </div>
           </div>
@@ -1004,6 +1021,8 @@ function transformApiBooking(apiBooking: any) {
     amountPaid: amountPaid,
     balance: balanceDue !== null && balanceDue !== undefined ? balanceDue : (totalPrice - amountPaid),
     paymentStatus: apiBooking.payment_status || 'pending',
+    adults: apiBooking.guests?.adults || apiBooking.adults || 1,
+    children: apiBooking.guests?.children || apiBooking.children || 0,
     guests: (apiBooking.guests?.adults || apiBooking.adults || 1) + (apiBooking.guests?.children || apiBooking.children || 0),
     specialRequests: guest?.specialRequests || apiBooking.special_requests || '',
     createdAt: apiBooking.createdAt || apiBooking.created_at,
@@ -1340,6 +1359,7 @@ export default function CMSBookings() {
                     booking={booking}
                     onClick={handleBookingClick}
                     index={index}
+                    onCheckIn={(id) => handleStatusChange(id, 'CHECKED-IN')}
                   />
                 ))}
               </div>
@@ -1383,6 +1403,7 @@ export default function CMSBookings() {
                           booking={booking}
                           onClick={handleBookingClick}
                           index={index}
+                          onCheckIn={(id) => handleStatusChange(id, 'CHECKED-IN')}
                         />
                       ))}
                     </tbody>

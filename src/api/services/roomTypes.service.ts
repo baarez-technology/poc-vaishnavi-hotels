@@ -3,6 +3,21 @@ import { API_ENDPOINTS } from '@/config/constants';
 import type { Room, RoomFilters } from '../types/room.types';
 import type { ApiResponse, PaginatedResponse } from '../types/common.types';
 
+export interface RoomTypeCreate {
+  name: string;
+  description?: string;
+  short_description?: string;
+  base_price: number;
+  max_guests: number;
+  amenities?: string[];
+  features?: string[];
+  bed_type?: string;
+  size_sqft?: number;
+  view_type?: string;
+  category?: string;
+  images?: string[];
+}
+
 export interface RoomTypeUpdate {
   name?: string;
   description?: string;
@@ -40,6 +55,16 @@ export const roomTypesService = {
       return (data as any).items;
     }
     return Array.isArray(data) ? data : [];
+  },
+
+  createRoomType: async (data: RoomTypeCreate): Promise<Room> => {
+    const response = await apiClient.post<ApiResponse<Room>>(
+      API_ENDPOINTS.ROOM_TYPES.CREATE,
+      data
+    );
+    // Clear the room-types cache so all pages reflect the new room type
+    clearApiCache('room-types');
+    return response.data.data || response.data;
   },
 
   getRoomTypeBySlug: async (slug: string, filters?: { checkIn?: string; checkOut?: string; guests?: number }) => {

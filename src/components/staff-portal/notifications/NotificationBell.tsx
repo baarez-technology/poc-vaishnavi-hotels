@@ -1,11 +1,13 @@
 import { Bell } from 'lucide-react';
-import { useNotifications, useUI } from '@/hooks/staff-portal/useStaffPortal';
+import { useUnreadNotificationCount, useNotifications } from '@/hooks/staff-portal/useStaffApi';
+import { useUI } from '@/hooks/staff-portal/useStaffPortal';
 
 export default function NotificationBell({ className = '' }: { className?: string }) {
-  const { unreadCount, urgentNotifications } = useNotifications();
+  const { count: unreadCount } = useUnreadNotificationCount();
+  const { data: notifications } = useNotifications();
   const { toggleNotificationDrawer } = useUI();
 
-  const hasUrgent = urgentNotifications.length > 0;
+  const hasUrgent = (notifications || []).some((n: any) => n.priority === 'urgent' && !n.is_read);
 
   return (
     <button

@@ -945,7 +945,7 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
                     value={field.value}
                     onChange={field.onChange}
                     placeholder="Select Country"
-                    icon={<Globe className="w-5 h-5" />}
+                    icon={Globe}
                     error={!!errors.country}
                     searchable
                   />

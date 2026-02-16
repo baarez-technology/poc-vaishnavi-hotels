@@ -107,11 +107,17 @@ export default function Rooms() {
     assignGuestModal.openModal(room);
   };
 
-  const handleAssign = (roomId, guest) => {
-    assignGuestToRoom(roomId, guest);
-    // Close drawer and show success
-    drawer.closeDrawer();
-    toast.success(`Guest ${guest.name} assigned to room successfully!`);
+  // BUG-013 / BUG-016: Pass full guest data (including checkIn/checkOut) to assignGuestToRoom
+  const handleAssign = async (roomId, guest) => {
+    try {
+      await assignGuestToRoom(roomId, guest);
+      // Close drawer and show success
+      drawer.closeDrawer();
+      toast.success(`Guest ${guest.name} assigned to room successfully!`);
+    } catch (err) {
+      console.error('[Rooms] handleAssign error:', err);
+      toast.error('Failed to assign guest to room');
+    }
   };
 
   const handleUnassignGuest = (room) => {

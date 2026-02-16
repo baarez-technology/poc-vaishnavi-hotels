@@ -103,7 +103,7 @@ export default function GuestsTable({ guests, sortField, sortDirection, onSort, 
 
   const statusConfig = {
     vip: { color: 'bg-terra-50 text-terra-700 border-terra-200', label: '⭐ VIP' },
-    normal: { color: 'bg-neutral-100 text-neutral-700 border-neutral-200', label: 'Normal' },
+    normal: { color: 'bg-[#4E5840]/10 text-[#4E5840] border-[#4E5840]/20', label: 'Active' },
     review: { color: 'bg-amber-50 text-amber-700 border-amber-200', label: '⚠️ Review' },
     blacklisted: { color: 'bg-rose-50 text-rose-700 border-rose-200', label: '🚫 Blocked' }
   };
@@ -127,7 +127,7 @@ export default function GuestsTable({ guests, sortField, sortDirection, onSort, 
               <th
                 key={column.key}
                 onClick={() => column.sortable && onSort(column.key)}
-                className={`text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap ${
+                className={`text-left px-4 sm:px-6 py-3 sm:py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap ${
                   column.sortable ? 'cursor-pointer hover:text-neutral-600' : ''
                 }`}
               >

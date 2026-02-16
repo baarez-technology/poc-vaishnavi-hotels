@@ -21,6 +21,7 @@ export default function InventoryTable({
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'ok'
   const [stockInput, setStockInput] = useState({});
+  const [minStockInput, setMinStockInput] = useState({});
 
   const filteredInventory = inventory.filter(item => {
     // Search filter
@@ -198,9 +199,28 @@ export default function InventoryTable({
                       </span>
                     </td>
 
-                    {/* Min Stock */}
+                    {/* Min Stock - Editable */}
                     <td className="px-4 py-3 text-center">
-                      <span className="text-sm text-neutral-600">{item.minStock}</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={minStockInput[item.id] !== undefined ? minStockInput[item.id] : item.minStock}
+                        onChange={(e) => setMinStockInput(prev => ({ ...prev, [item.id]: parseInt(e.target.value) || 0 }))}
+                        onBlur={(e) => {
+                          const newVal = parseInt(e.target.value) || 0;
+                          if (newVal !== item.minStock) {
+                            onEditItem({ ...item, minStock: newVal });
+                          }
+                          setMinStockInput(prev => { const next = { ...prev }; delete next[item.id]; return next; });
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            (e.target as HTMLInputElement).blur();
+                          }
+                        }}
+                        className="w-16 px-2 py-1 border border-neutral-200 rounded text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865] bg-white hover:border-neutral-300 transition-colors"
+                        title="Edit minimum stock threshold"
+                      />
                     </td>
 
                     {/* Status */}

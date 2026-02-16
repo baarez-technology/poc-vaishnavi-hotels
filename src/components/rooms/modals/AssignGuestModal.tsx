@@ -2,14 +2,20 @@
  * AssignGuestModal Component
  * Assign guest to room - Glimmora Design System v5.0
  * Side Drawer pattern using ui2/Drawer
+ *
+ * Fixes applied:
+ * - BUG-012: Validates if guest already has a room assigned (shows warning popup)
+ * - BUG-013: Persists assignment to backend via booking update
+ * - BUG-016: Requires check-in/check-out dates for proper date-based assignment
  */
 
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Bed, UsersRound, DollarSign, ChevronDown, Check, Search } from 'lucide-react';
+import { Bed, UsersRound, DollarSign, ChevronDown, Check, Search, Calendar, AlertTriangle } from 'lucide-react';
 import { Drawer } from '../../ui2/Drawer';
 import { Button } from '../../ui2/Button';
 import { guestsService } from '../../../api/services/guests.service';
+import { bookingService } from '../../../api/services/booking.service';
 import { useToast } from '../../../contexts/ToastContext';
 
 // Custom Select Dropdown Component with React Portal and Search
@@ -200,16 +206,151 @@ function GuestSelectDropdown({ value, onChange, options, placeholder, isLoading 
 
 export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
   const [selectedGuest, setSelectedGuest] = useState('');
+  const [checkInDate, setCheckInDate] = useState('');
+  const [checkOutDate, setCheckOutDate] = useState('');
   const [availableGuests, setAvailableGuests] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [existingAssignment, setExistingAssignment] = useState<any>(null);
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+  const [reassignConfirmed, setReassignConfirmed] = useState(false);
+  const [isCheckingGuest, setIsCheckingGuest] = useState(false);
+  const [roomTypeMismatch, setRoomTypeMismatch] = useState<{ bookedType: string; roomType: string } | null>(null);
   const toast = useToast();
 
   useEffect(() => {
     if (isOpen) {
       setSelectedGuest('');
+      // Default check-in to today, check-out to tomorrow
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      setCheckInDate(today.toISOString().split('T')[0]);
+      setCheckOutDate(tomorrow.toISOString().split('T')[0]);
+      setExistingAssignment(null);
+      setShowDuplicateWarning(false);
+      setReassignConfirmed(false);
+      setRoomTypeMismatch(null);
       fetchGuests();
     }
   }, [isOpen]);
+
+  // BUG-012: Check if the selected guest already has an active room assignment
+  useEffect(() => {
+    if (!selectedGuest || !checkInDate || !checkOutDate) {
+      setExistingAssignment(null);
+      setShowDuplicateWarning(false);
+      setReassignConfirmed(false);
+      setRoomTypeMismatch(null);
+      return;
+    }
+    checkGuestExistingAssignment();
+  }, [selectedGuest, checkInDate, checkOutDate]);
+
+  const checkGuestExistingAssignment = async () => {
+    if (!selectedGuest) return;
+
+    setIsCheckingGuest(true);
+    setReassignConfirmed(false);
+    try {
+      // Fetch all bookings and check if this guest already has an active room for the date range
+      const response = await bookingService.getBookings(1, 100);
+      const bookings = response.items || (Array.isArray(response) ? response : []);
+
+      const guest = availableGuests.find(g => String(g.id) === String(selectedGuest));
+      if (!guest) return;
+
+      const guestId = guest.id;
+      const guestName = `${guest.first_name} ${guest.last_name}`.toLowerCase().trim();
+      const guestEmail = (guest.email || '').toLowerCase().trim();
+
+      // Find active bookings for this guest that overlap with selected dates
+      const conflicting = bookings.find((b: any) => {
+        // Primary match: use guestId if available in booking response
+        const matchById = b.guestId && Number(b.guestId) === Number(guestId);
+
+        // Fallback match: name or email
+        const bookingGuestName = ((b.guestInfo?.firstName || '') + ' ' + (b.guestInfo?.lastName || '')).toLowerCase().trim();
+        const bookingEmail = (b.guestInfo?.email || '').toLowerCase().trim();
+        const matchByName = bookingGuestName && bookingGuestName === guestName;
+        const matchByEmail = guestEmail && bookingEmail && bookingEmail === guestEmail;
+
+        const isMatchingGuest = matchById || matchByName || matchByEmail;
+
+        // Handle both hyphen and underscore status formats from API
+        const status = (b.status || '').toLowerCase().replace('-', '_');
+        const isActive = status !== 'cancelled' && status !== 'checked_out';
+        const hasRoom = b.room && b.room.number;
+
+        // Check date overlap
+        const bCheckIn = new Date(b.checkIn);
+        const bCheckOut = new Date(b.checkOut);
+        const selCheckIn = new Date(checkInDate);
+        const selCheckOut = new Date(checkOutDate);
+        const datesOverlap = bCheckIn < selCheckOut && bCheckOut > selCheckIn;
+
+        return isMatchingGuest && isActive && hasRoom && datesOverlap;
+      });
+
+      if (conflicting) {
+        setExistingAssignment(conflicting);
+        setShowDuplicateWarning(true);
+      } else {
+        setExistingAssignment(null);
+        setShowDuplicateWarning(false);
+      }
+
+      // Room type mismatch check: find any active/upcoming booking for this guest
+      // and compare the booked room type with the room being assigned
+      const guestBooking = bookings.find((b: any) => {
+        const matchById = b.guestId && Number(b.guestId) === Number(guestId);
+        const bookingGuestName = ((b.guestInfo?.firstName || '') + ' ' + (b.guestInfo?.lastName || '')).toLowerCase().trim();
+        const bookingEmail = (b.guestInfo?.email || '').toLowerCase().trim();
+        const matchByName = bookingGuestName && bookingGuestName === guestName;
+        const matchByEmail = guestEmail && bookingEmail && bookingEmail === guestEmail;
+        const isMatchingGuest = matchById || matchByName || matchByEmail;
+
+        const status = (b.status || '').toLowerCase().replace('-', '_');
+        const isActive = status !== 'cancelled' && status !== 'checked_out' && status !== 'no_show';
+
+        // Check date overlap
+        const bCheckIn = new Date(b.checkIn);
+        const bCheckOut = new Date(b.checkOut);
+        const selCheckIn = new Date(checkInDate);
+        const selCheckOut = new Date(checkOutDate);
+        const datesOverlap = bCheckIn < selCheckOut && bCheckOut > selCheckIn;
+
+        return isMatchingGuest && isActive && datesOverlap;
+      });
+
+      if (guestBooking && room) {
+        // Extract booked room type from booking
+        const bookedType = (
+          guestBooking.roomType ||
+          guestBooking.room_type_name ||
+          (typeof guestBooking.room_type === 'object' ? guestBooking.room_type?.name : guestBooking.room_type) ||
+          ''
+        ).toLowerCase().trim();
+
+        const assignedRoomType = (room.type || '').toLowerCase().trim();
+
+        // Compare: check both strict and partial match (e.g. "standard" vs "standard room")
+        if (bookedType && assignedRoomType && bookedType !== assignedRoomType && !assignedRoomType.includes(bookedType) && !bookedType.includes(assignedRoomType)) {
+          setRoomTypeMismatch({
+            bookedType: guestBooking.roomType || guestBooking.room_type_name || guestBooking.room_type || 'Unknown',
+            roomType: room.type || 'Unknown',
+          });
+        } else {
+          setRoomTypeMismatch(null);
+        }
+      } else {
+        setRoomTypeMismatch(null);
+      }
+    } catch (error) {
+      console.error('[AssignGuestModal] Error checking guest assignment:', error);
+    } finally {
+      setIsCheckingGuest(false);
+    }
+  };
 
   const fetchGuests = async () => {
     try {
@@ -234,26 +375,56 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
       return;
     }
 
+    // BUG-016: Validate dates
+    if (!checkInDate || !checkOutDate) {
+      toast.warning('Please select check-in and check-out dates');
+      return;
+    }
+
+    if (new Date(checkOutDate) <= new Date(checkInDate)) {
+      toast.warning('Check-out date must be after check-in date');
+      return;
+    }
+
+    // BUG-012: If duplicate warning shown and user hasn't confirmed reassign, block
+    if (showDuplicateWarning && existingAssignment && !reassignConfirmed) {
+      toast.warning('Please confirm reassignment or select a different guest.');
+      return;
+    }
+
     const guest = availableGuests.find(g => String(g.id) === String(selectedGuest));
     if (guest) {
       onAssign(room.id, {
         id: guest.id,
         name: `${guest.first_name} ${guest.last_name}`,
         email: guest.email,
-        phone: guest.phone
+        phone: guest.phone,
+        checkIn: checkInDate,
+        checkOut: checkOutDate,
       });
       onClose();
       setSelectedGuest('');
     }
   };
 
+  // Calculate nights
+  const nights = checkInDate && checkOutDate
+    ? Math.max(0, Math.floor((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
   const renderFooter = () => (
     <div className="flex items-center justify-end gap-3">
       <Button type="button" variant="ghost" onClick={onClose} className="px-5 py-2 text-[13px] font-semibold">
         Cancel
       </Button>
-      <Button type="submit" variant="primary" form="assign-guest-form" className="px-5 py-2 text-[13px] font-semibold">
-        Assign Guest
+      <Button
+        type="submit"
+        variant="primary"
+        form="assign-guest-form"
+        disabled={(showDuplicateWarning && !reassignConfirmed) || !checkInDate || !checkOutDate || nights <= 0}
+        className="px-5 py-2 text-[13px] font-semibold"
+      >
+        {showDuplicateWarning && reassignConfirmed ? 'Reassign Guest' : 'Assign Guest'}
       </Button>
     </div>
   );
@@ -289,6 +460,107 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
               isLoading={isLoading}
             />
           </div>
+        </div>
+
+        {/* BUG-012: Duplicate Assignment Warning with Reassign Option */}
+        {showDuplicateWarning && existingAssignment && (
+          <div className={`p-4 rounded-lg border ${reassignConfirmed ? 'bg-amber-50 border-amber-200' : 'bg-rose-50 border-rose-200'}`}>
+            <div className="flex items-start gap-2">
+              <AlertTriangle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${reassignConfirmed ? 'text-amber-600' : 'text-rose-600'}`} />
+              <div className="flex-1">
+                <p className={`text-[13px] font-semibold ${reassignConfirmed ? 'text-amber-800' : 'text-rose-800'}`}>
+                  This guest already has a room assigned
+                </p>
+                <p className={`text-[12px] mt-1 ${reassignConfirmed ? 'text-amber-700' : 'text-rose-700'}`}>
+                  Currently assigned to <span className="font-semibold">Room {existingAssignment.room?.number || existingAssignment.room?.name || 'N/A'}</span>
+                  {' '}(Booking: {existingAssignment.bookingNumber || existingAssignment.id})
+                  {' '}from {existingAssignment.checkIn} to {existingAssignment.checkOut}.
+                </p>
+                {!reassignConfirmed ? (
+                  <div className="mt-3 flex items-center gap-2">
+                    <p className="text-[12px] text-rose-600">Do you want to reassign this guest?</p>
+                    <button
+                      type="button"
+                      onClick={() => setReassignConfirmed(true)}
+                      className="px-3 py-1 text-[12px] font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-md transition-colors"
+                    >
+                      Yes, Reassign
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-[12px] text-amber-600 mt-1 font-medium">
+                    Reassignment confirmed. Click "Reassign Guest" to proceed.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Room Type Mismatch Warning */}
+        {roomTypeMismatch && (
+          <div className="p-4 rounded-lg border bg-amber-50 border-amber-300">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-600" />
+              <div className="flex-1">
+                <p className="text-[13px] font-semibold text-amber-800">
+                  Room Type Mismatch
+                </p>
+                <p className="text-[12px] mt-1 text-amber-700">
+                  Selected room type does not match the booked room type.
+                  Guest booked <span className="font-semibold">{roomTypeMismatch.bookedType}</span> but
+                  this room is <span className="font-semibold">{roomTypeMismatch.roomType}</span>.
+                  Proceed only if upgrading or with guest consent.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* BUG-016: Check-in / Check-out Dates */}
+        <div>
+          <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
+            Stay Dates
+          </h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
+                <Calendar className="w-3 h-3 inline mr-1" />
+                Check-in Date
+              </label>
+              <input
+                type="date"
+                value={checkInDate}
+                onChange={(e) => setCheckInDate(e.target.value)}
+                className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-neutral-500 mb-1.5">
+                <Calendar className="w-3 h-3 inline mr-1" />
+                Check-out Date
+              </label>
+              <input
+                type="date"
+                value={checkOutDate}
+                onChange={(e) => setCheckOutDate(e.target.value)}
+                min={checkInDate}
+                className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all"
+                required
+              />
+            </div>
+          </div>
+          {nights > 0 && (
+            <p className="text-[11px] text-neutral-500 mt-2">
+              {nights} night{nights !== 1 ? 's' : ''}
+            </p>
+          )}
+          {checkInDate && checkOutDate && nights <= 0 && (
+            <p className="text-[11px] text-rose-500 mt-2">
+              Check-out date must be after check-in date
+            </p>
+          )}
         </div>
 
         {/* Room Details */}

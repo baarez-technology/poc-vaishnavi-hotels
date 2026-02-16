@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useToast } from '../../../contexts/ToastContext';
 import { DEFAULT_LOYALTY_TIERS } from '../../../utils/crm';
+import { getSegmentOverrides, setSegmentOverride, clearSegmentOverride, getDeletedSegmentIds, addDeletedSegmentId } from '../../../utils/crmSegmentOverrides';
 import { crmAIService, CRMSegment, CRMGuest, SegmentAnalysis } from '../../../api/services/crm-ai.service';
 import SegmentDetails from './SegmentDetails';
 import { RefreshCw, AlertCircle, Search, Brain, TrendingUp, Users, AlertTriangle } from 'lucide-react';
@@ -164,6 +165,17 @@ export default function SegmentDetailsWrapper() {
         createdAt: new Date().toISOString()
       }));
 
+      // Filter out segments the user has deleted locally (so they stay hidden after refresh)
+      const deletedIds = getDeletedSegmentIds();
+      const visibleSegments = transformedSegments.filter(seg => !deletedIds.includes(seg.id));
+      // Apply locally persisted edits (so changes survive refresh when server doesn't support update)
+      const overrides = getSegmentOverrides();
+      const mergedSegments = visibleSegments.map(seg => {
+        const o = overrides[seg.id];
+        if (!o) return seg;
+        return { ...seg, ...o } as SegmentWithFilters;
+      });
+
       // Transform API guests to match local format
       const transformedGuests: LocalGuest[] = guestsData.guests.map(g => ({
         id: g.id,
@@ -182,7 +194,7 @@ export default function SegmentDetailsWrapper() {
         createdAt: g.createdAt
       }));
 
-      setSegments(transformedSegments);
+      setSegments(mergedSegments);
       setGuests(transformedGuests);
 
       // Fetch AI insights after main data loads
@@ -206,15 +218,57 @@ export default function SegmentDetailsWrapper() {
     fetchData();
   };
 
-  const handleUpdateSegment = (updatedSegment: any) => {
-    setSegments(prev => prev.map(s => s.id === updatedSegment.id ? updatedSegment : s));
-    showToast('Segment updated', 'success');
+  const handleUpdateSegment = async (updatedSegment: any) => {
+    try {
+      const saved = await crmAIService.updateCRMSegment(updatedSegment.id, {
+        name: updatedSegment.name,
+        description: updatedSegment.description,
+        filters: updatedSegment.filters,
+        guestCount: updatedSegment.guestCount,
+        avgRevenue: updatedSegment.avgRevenue,
+        repeatRate: updatedSegment.repeatRate,
+        color: updatedSegment.color,
+        icon: updatedSegment.icon,
+      });
+      const withFilters: SegmentWithFilters = {
+        ...saved,
+        filters: saved.conditions ? transformConditionsToFilters(saved.conditions) : (updatedSegment.filters || {}),
+        createdAt: (updatedSegment as any).createdAt || new Date().toISOString(),
+      };
+      setSegments(prev => prev.map(s => s.id === updatedSegment.id ? withFilters : s));
+      clearSegmentOverride(updatedSegment.id);
+      showToast('Segment updated', 'success');
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 404 || status === 405 || status === 400) {
+        setSegments(prev => prev.map(s => s.id === updatedSegment.id ? updatedSegment : s));
+        setSegmentOverride(updatedSegment.id, updatedSegment);
+        showToast('Segment updated. Changes saved locally and will persist after refresh.', 'success');
+      } else {
+        console.error('[SegmentDetailsWrapper] Failed to update segment:', err);
+        const message = err?.response?.data?.detail ?? err?.message ?? 'Failed to update segment';
+        showToast(message, 'error');
+      }
+    }
   };
 
-  const handleDeleteSegment = (deletedSegmentId: string) => {
-    setSegments(prev => prev.filter(s => s.id !== deletedSegmentId));
-    showToast('Segment deleted', 'success');
-    navigate('/admin/crm');
+  const handleDeleteSegment = async (deletedSegmentId: string) => {
+    try {
+      const deletedOnServer = await crmAIService.deleteCRMSegment(deletedSegmentId);
+      setSegments(prev => prev.filter(s => s.id !== deletedSegmentId));
+      clearSegmentOverride(deletedSegmentId);
+      addDeletedSegmentId(deletedSegmentId);
+      if (deletedOnServer) {
+        showToast('Segment deleted', 'success');
+      } else {
+        showToast('Segment removed from list. It will stay hidden unless you sync from server again.', 'info');
+      }
+      navigate('/admin/crm');
+    } catch (err: any) {
+      console.error('[SegmentDetailsWrapper] Failed to delete segment:', err);
+      const message = err?.response?.data?.detail ?? err?.message ?? 'Failed to delete segment';
+      showToast(message, 'error');
+    }
   };
 
   if (loading) {

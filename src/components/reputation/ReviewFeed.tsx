@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Star, Calendar, CheckCircle, AlertCircle, ExternalLink, ArrowRight } from 'lucide-react';
+import { MessageSquare, Star, Calendar, CheckCircle, AlertCircle, ExternalLink, Loader2, ArrowRight } from 'lucide-react';
 import { Button } from '../ui2/Button';
 
 const SOURCE_COLORS = {
@@ -52,18 +52,30 @@ const StarRating = ({ rating }) => {
   );
 };
 
-export default function ReviewFeed({ reviews, onReviewClick }) {
+export default function ReviewFeed({ reviews, onReviewClick, isLoading = false }: { reviews: any; onReviewClick: any; isLoading?: boolean }) {
+  const [showAll, setShowAll] = useState(false);
+
   const navigate = useNavigate();
   const stats = useMemo(() => {
-    const responded = reviews.filter(r => r.responded).length;
+    const responded = reviews.filter((r: any) => r.responded).length;
     const pending = reviews.length - responded;
-    const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+    const avgRating = reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length;
 
     return { responded, pending, avgRating };
   }, [reviews]);
 
   return (
-    <div className="bg-white rounded-[10px] p-6">
+    <div className="bg-white rounded-[10px] p-6 relative">
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 bg-white/70 rounded-[10px] flex items-center justify-center z-10">
+          <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-neutral-200">
+            <Loader2 className="w-4 h-4 text-terra-500 animate-spin" />
+            <span className="text-[13px] text-neutral-600 font-medium">Applying filters...</span>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -83,7 +95,7 @@ export default function ReviewFeed({ reviews, onReviewClick }) {
       </div>
 
       {/* Reviews List */}
-      <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+      <div className={`space-y-4 pr-2 ${showAll ? '' : 'max-h-[500px] overflow-y-auto'}`}>
         {reviews.map((review) => {
           const sentimentStyle = getSentimentBadge(
             review.sentiment ?? review.sentiment_score,
@@ -169,7 +181,7 @@ export default function ReviewFeed({ reviews, onReviewClick }) {
                   </div>
 
                   <Button
-                    variant="primary"
+                    variant={review.responded ? 'outline' : 'primary'}
                     size="xs"
                     iconRight={ExternalLink}
                     onClick={(e) => {
@@ -177,7 +189,7 @@ export default function ReviewFeed({ reviews, onReviewClick }) {
                       onReviewClick(review);
                     }}
                   >
-                    {review.responded ? 'View' : 'Respond'}
+                    {review.responded ? 'View Response' : 'Respond'}
                   </Button>
                 </div>
               </div>
@@ -189,13 +201,9 @@ export default function ReviewFeed({ reviews, onReviewClick }) {
       {/* View All */}
       {reviews.length > 5 && (
         <div className="mt-5 pt-4 border-t border-neutral-100 text-center">
-          <button
-            onClick={() => navigate('/admin/reputation/reviews')}
-            className="inline-flex items-center gap-2 px-4 py-2 text-[13px] font-semibold text-[#A57865] hover:bg-[#A57865]/5 rounded-[8px] transition-colors"
-          >
-            View All Reviews
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <Button variant="ghost" size="sm" onClick={() => setShowAll(!showAll)}>
+            {showAll ? 'Show Less' : 'View All Reviews'}
+          </Button>
         </div>
       )}
     </div>

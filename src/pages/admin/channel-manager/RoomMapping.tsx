@@ -6,13 +6,14 @@
 
 import { useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Link2, Sparkles, Check, AlertTriangle, Layers, Search, ChevronDown, Loader2, ArrowRight } from 'lucide-react';
+import { Link2, Sparkles, Check, AlertTriangle, Layers, Search, ChevronDown, Loader2, ArrowRight, X } from 'lucide-react';
 import { useChannelManager } from '../../../context/ChannelManagerContext';
 import { useChannelManagerSSEEvents } from '../../../hooks/useChannelManagerSSEEvents';
 import RoomMappingTable from '../../../components/channel-manager/RoomMappingTable';
 import { Button, IconButton } from '../../../components/ui2/Button';
 import { DropdownMenu, DropdownMenuItem } from '../../../components/ui2/DropdownMenu';
 import { Drawer } from '../../../components/ui2/Drawer';
+import { useToast } from '../../../contexts/ToastContext';
 
 export default function RoomMapping() {
   const {
@@ -23,6 +24,7 @@ export default function RoomMapping() {
     autoMapRoomMappings,
     fetchRoomMappings,
   } = useChannelManager();
+  const toast = useToast();
   const [selectedOTA, setSelectedOTA] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAutoMapping, setIsAutoMapping] = useState(false);
@@ -106,17 +108,20 @@ export default function RoomMapping() {
         } else if (mappingsCreated > 0) {
           // Mappings were created automatically, no suggestions
           await refetchData();
+          toast.success(`Successfully auto-mapped ${mappingsCreated} room type${mappingsCreated === 1 ? '' : 's'}`);
         } else {
           // No suggestions and no mappings created
           await refetchData();
+          toast.warning('No mapping suggestions could be generated. Please map rooms manually using "Bulk Map" or "Map Room" buttons.');
         }
       } else {
         // No result returned - might be an error or empty response
         await refetchData();
+        toast.warning('Auto-map completed but no mappings were created. Try mapping rooms manually.');
       }
     } catch (err) {
       console.error('Auto-map error:', err);
-      // Error already handled in context via toast
+      toast.error('Auto-map failed. Please try again or map rooms manually.');
       // Still refresh data in case some mappings were created before error
       await refetchData();
     } finally {
@@ -417,9 +422,21 @@ export default function RoomMapping() {
                   </p>
                   <p className="font-semibold text-terra-600">{suggestion.suggestedOTARoomType}</p>
                 </div>
+                <button
+                  onClick={() => setSuggestions(prev => prev.filter((_, i) => i !== idx))}
+                  className="flex-shrink-0 p-1.5 rounded-lg hover:bg-rose-50 text-neutral-400 hover:text-rose-500 transition-colors"
+                  title="Remove this suggestion"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             ))}
           </div>
+          {suggestions.length === 0 && (
+            <div className="text-center py-6 text-neutral-500 text-[13px]">
+              All suggestions have been removed.
+            </div>
+          )}
         </div>
       </Drawer>
     </div>

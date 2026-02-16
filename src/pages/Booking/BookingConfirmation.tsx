@@ -198,7 +198,9 @@ export const BookingConfirmation = () => {
               <div>
                 <span className="text-neutral-600">Guests:</span>{' '}
                 <span className="text-neutral-900 font-medium">
-                  {totalGuests} {totalGuests === 1 ? 'Guest' : 'Guests'}
+                  {booking.guests.adults} Adult{booking.guests.adults !== 1 ? 's' : ''}
+                  {booking.guests.children > 0 && ` | ${booking.guests.children} Child${booking.guests.children !== 1 ? 'ren' : ''}`}
+                  {booking.guests.infants > 0 && ` | ${booking.guests.infants} Infant${booking.guests.infants !== 1 ? 's' : ''}`}
                 </span>
               </div>
             </div>

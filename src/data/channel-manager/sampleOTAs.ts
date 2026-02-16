@@ -211,17 +211,26 @@ export const otaStatusConfig = {
 };
 
 export const availableOTAs = [
-  { name: 'Dummy Channel Manager', code: 'DUMMY', color: '#7B68EE' },
-  { name: 'Booking.com', code: 'BOOKING', color: '#003580' },
-  { name: 'Expedia', code: 'EXPEDIA', color: '#FFD700' },
-  { name: 'Agoda', code: 'AGODA', color: '#E51937' },
-  { name: 'Airbnb', code: 'AIRBNB', color: '#FF5A5F' },
-  { name: 'MakeMyTrip', code: 'MMT', color: '#F97316' },
-  { name: 'Trip.com', code: 'TRIP', color: '#06B6D4' },
-  { name: 'Google Hotel Ads', code: 'GOOGLE', color: '#10B981' },
-  { name: 'Hotels.com', code: 'HOTELS', color: '#8B5CF6' },
-  { name: 'Trivago', code: 'TRIVAGO', color: '#EC4899' },
-  { name: 'Kayak', code: 'KAYAK', color: '#F59E0B' }
+  { name: 'Dummy Channel Manager', code: 'DUMMY', color: '#7B68EE', description: 'Test channel for development' },
+  { name: 'Booking.com', code: 'BOOKING', color: '#003580', description: 'World\'s largest online travel agency' },
+  { name: 'Expedia', code: 'EXPEDIA', color: '#FFD700', description: 'Global travel platform with wide reach' },
+  { name: 'Agoda', code: 'AGODA', color: '#E51937', description: 'Asia-focused travel platform' },
+  { name: 'Airbnb', code: 'AIRBNB', color: '#FF5A5F', description: 'Vacation rental & hotel marketplace' },
+  { name: 'MakeMyTrip', code: 'MMT', color: '#F97316', description: 'India\'s leading travel company' },
+  { name: 'Trip.com', code: 'TRIP', color: '#06B6D4', description: 'Global travel service provider' },
+  { name: 'Google Hotel Ads', code: 'GOOGLE', color: '#10B981', description: 'Google\'s hotel metasearch' },
+  { name: 'Hotels.com', code: 'HOTELS', color: '#8B5CF6', description: 'Hotel booking with rewards program' },
+  { name: 'Trivago', code: 'TRIVAGO', color: '#EC4899', description: 'Hotel price comparison platform' },
+  { name: 'Kayak', code: 'KAYAK', color: '#F59E0B', description: 'Travel search engine & comparator' },
+  { name: 'Vrbo', code: 'VRBO', color: '#3B82F6', description: 'Vacation rental marketplace by Expedia' },
+  { name: 'TripAdvisor', code: 'TRIPADVISOR', color: '#34D399', description: 'Travel reviews & booking platform' },
+  { name: 'OYO', code: 'OYO', color: '#EF4444', description: 'Hospitality chain & booking platform' },
+  { name: 'HRS', code: 'HRS', color: '#6366F1', description: 'Corporate hotel solutions provider' },
+  { name: 'Hostelworld', code: 'HOSTELWORLD', color: '#F472B6', description: 'Hostel & budget accommodation platform' },
+  { name: 'Despegar', code: 'DESPEGAR', color: '#A855F7', description: 'Latin America\'s travel agency' },
+  { name: 'Goibibo', code: 'GOIBIBO', color: '#F97316', description: 'Indian online travel booking' },
+  { name: 'Cleartrip', code: 'CLEARTRIP', color: '#0EA5E9', description: 'Travel booking for India & Middle East' },
+  { name: 'Traveloka', code: 'TRAVELOKA', color: '#2563EB', description: 'Southeast Asia travel platform' },
 ];
 
 export default sampleOTAs;

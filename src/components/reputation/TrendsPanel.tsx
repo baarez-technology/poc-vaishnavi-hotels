@@ -1,14 +1,9 @@
-import { useEffect } from 'react';
 import { TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react';
-// Icons used in content, not headers
 import { useReputation } from '@/context/ReputationContext';
 
 export default function TrendsPanel() {
-  const { trends: trendsData, refreshTrends, isLoading } = useReputation();
-
-  useEffect(() => {
-    refreshTrends(14);
-  }, [refreshTrends]);
+  // Trends are loaded by ReputationContext on mount - no need to fetch again
+  const { trends: trendsData, isLoading } = useReputation();
 
   if (isLoading) {
     return (

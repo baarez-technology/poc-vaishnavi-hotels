@@ -33,6 +33,7 @@ import {
   generateStayFrequencyData,
   DEFAULT_LOYALTY_TIERS
 } from '../../utils/crm';
+import { getSegmentOverrides, getDeletedSegmentIds } from '../../utils/crmSegmentOverrides';
 import {
   sampleCampaigns,
   sampleTemplates
@@ -106,7 +107,15 @@ export default function CRM() {
         crmAIService.getCRMStats()
       ]);
       setGuests(guestsData.guests);
-      setSegments(segmentsData.segments);
+      const deletedIds = getDeletedSegmentIds();
+      const visibleSegments = (segmentsData.segments || []).filter((seg: CRMSegment) => !deletedIds.includes(seg.id));
+      const overrides = getSegmentOverrides();
+      const mergedSegments = visibleSegments.map((seg: CRMSegment) => {
+        const o = overrides[seg.id];
+        if (!o) return seg;
+        return { ...seg, ...o } as CRMSegment;
+      });
+      setSegments(mergedSegments);
       setStats(statsData);
     } catch (error) {
       console.error('Failed to fetch CRM data:', error);
@@ -179,9 +188,25 @@ export default function CRM() {
     }
   };
 
-  const handleCreateSegment = (segment) => {
-    setSegments(prev => [...prev, segment]);
-    showToast('Segment created successfully', 'success');
+  const handleCreateSegment = async (segment) => {
+    try {
+      const created = await crmAIService.createCRMSegment({
+        name: segment.name,
+        description: segment.description,
+        filters: segment.filters,
+        guestCount: segment.guestCount,
+        avgRevenue: segment.avgRevenue,
+        repeatRate: segment.repeatRate,
+        color: segment.color,
+        icon: segment.icon,
+      });
+      setSegments(prev => [...prev, created]);
+      showToast('Segment created successfully', 'success');
+    } catch (err) {
+      console.error('Failed to create segment:', err);
+      const message = err?.response?.data?.detail ?? err?.message ?? 'Failed to create segment';
+      showToast(typeof message === 'string' ? message : 'Failed to create segment', 'error');
+    }
   };
 
   const handleViewSegment = (segment) => {

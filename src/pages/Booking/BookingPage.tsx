@@ -58,7 +58,7 @@ export function BookingPage() {
     // Check if this is a new room (different from current booking)
     const isNewRoom = !hasInitialized.current || bookingData.room?.slug !== roomSlug;
 
-    if (!roomSlug) {
+    if (!roomSlug && !(modify && bookingId)) {
       navigate('/rooms');
       return;
     }
@@ -66,7 +66,28 @@ export function BookingPage() {
     // Fetch room and original booking if in modify mode
     const fetchRoomAndBooking = async () => {
       try {
-        const room = await roomTypesService.getRoomTypeBySlug(roomSlug);
+        // If no room slug but in modify mode, fetch booking first to get the room
+        let effectiveRoomSlug = roomSlug;
+        if (!effectiveRoomSlug && modify && bookingId) {
+          try {
+            const existingBooking = await bookingService.getBookingById(bookingId);
+            if (existingBooking?.room?.slug) {
+              effectiveRoomSlug = existingBooking.room.slug;
+            } else if (existingBooking?.roomType) {
+              // Try to find room type by name
+              effectiveRoomSlug = existingBooking.roomType.toLowerCase().replace(/\s+/g, '-');
+            }
+          } catch (err) {
+            console.error('[BookingPage] Failed to fetch booking for modify mode:', err);
+            navigate('/rooms');
+            return;
+          }
+        }
+        if (!effectiveRoomSlug) {
+          navigate('/rooms');
+          return;
+        }
+        const room = await roomTypesService.getRoomTypeBySlug(effectiveRoomSlug);
         if (room) {
           // Fetch modification data first if in modify mode
           let modificationData: {

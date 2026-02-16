@@ -196,9 +196,9 @@ export default function Housekeeping() {
     }
   };
 
-  // Bulk assign
-  const handleBulkAssign = (roomIds, staffId) => {
-    bulkAssignRooms(roomIds, staffId);
+  // Bulk assign (BUG-023 FIX: pass priority and notes)
+  const handleBulkAssign = (roomIds: number[], staffId: number, priority?: string, notes?: string) => {
+    bulkAssignRooms(roomIds, staffId, priority, notes);
     showToast(`${roomIds.length} rooms assigned successfully`, 'success');
   };
 
@@ -511,6 +511,7 @@ export default function Housekeeping() {
         onBlockRoom={handleBlockRoom}
         onUnblockRoom={handleUnblockRoom}
         onToggleChecklistItem={handleToggleChecklistItem}
+        onAddNote={addNote}
       />
 
       {/* Assign Housekeeper Modal */}

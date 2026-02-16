@@ -6,30 +6,76 @@ import { staffService } from '@/api/services/staff.service';
 /**
  * Transform API staff into attendance entries for the table.
  * Uses real staff data + clock status to build attendance rows.
+ * When actual clock_in_time is available, uses it for real late detection.
  */
 function buildAttendanceFromStaff(staffList: any[], selectedDate: string): AttendanceEntry[] {
   const today = new Date().toISOString().split('T')[0];
   const isToday = selectedDate === today;
 
+  // Default shift times (used when staff has no shift_start/shift_end)
+  const defaultShiftTimes: Record<string, { start: string; end: string }> = {
+    morning: { start: '08:00', end: '16:00' },
+    evening: { start: '16:00', end: '00:00' },
+    night: { start: '00:00', end: '08:00' },
+  };
+
   return staffList.map((s) => {
     const staffName = s.name || s.full_name || 'Unknown';
     const clockedIn = s.clocked_in || false;
-
-    // Determine status
-    let status: AttendanceEntry['status'] = 'absent';
-    if (s.status === 'sick') status = 'sick';
-    else if (s.status === 'leave') status = 'on_leave';
-    else if (clockedIn) status = 'present';
-    else if (isToday) status = 'absent';
-
-    // Mock clock times based on shift for display purposes
-    const shiftTimes: Record<string, { start: string; end: string }> = {
-      morning: { start: '08:00', end: '16:00' },
-      evening: { start: '16:00', end: '00:00' },
-      night: { start: '00:00', end: '08:00' },
-    };
     const shift = s.shift || 'morning';
-    const times = shiftTimes[shift] || shiftTimes.morning;
+    const defaults = defaultShiftTimes[shift] || defaultShiftTimes.morning;
+
+    // Use real shift times if available, else defaults
+    const shiftStart = s.shift_start || defaults.start;
+    const shiftEnd = s.shift_end || defaults.end;
+
+    // Determine real clock_in time from staff data
+    let clockInDisplay: string | null = null;
+    let clockOutDisplay: string | null = null;
+    let totalHours: number | null = null;
+
+    if (clockedIn && s.clock_in_time) {
+      // Staff is currently clocked in - show real clock_in_time
+      const clockInDate = new Date(s.clock_in_time);
+      clockInDisplay = `${String(clockInDate.getHours()).padStart(2, '0')}:${String(clockInDate.getMinutes()).padStart(2, '0')}`;
+      // Calculate hours worked so far
+      const hoursWorked = (Date.now() - clockInDate.getTime()) / 3600000;
+      totalHours = Math.round(hoursWorked * 100) / 100;
+    } else if (clockedIn) {
+      // Clocked in but no clock_in_time available - use shift start
+      clockInDisplay = shiftStart;
+    }
+
+    // Determine status with late detection
+    let status: AttendanceEntry['status'] = 'absent';
+    if (s.status === 'sick') {
+      status = 'sick';
+    } else if (s.status === 'leave' || s.status === 'on_leave') {
+      status = 'on_leave';
+    } else if (clockedIn) {
+      status = 'present';
+
+      // Check for late arrival using real clock_in_time vs shift_start
+      if (s.clock_in_time && shiftStart) {
+        const clockInDate = new Date(s.clock_in_time);
+        const [sh, sm] = shiftStart.split(':').map(Number);
+        const scheduledStart = new Date(clockInDate);
+        scheduledStart.setHours(sh, sm, 0, 0);
+
+        // If clocked in more than 1 minute after shift start, mark as late
+        const diffMs = clockInDate.getTime() - scheduledStart.getTime();
+        if (diffMs > 60000) {
+          status = 'late';
+        }
+      }
+
+      // Check for overtime (worked > 8 hours)
+      if (totalHours && totalHours > 8) {
+        status = 'overtime';
+      }
+    } else if (isToday) {
+      status = 'absent';
+    }
 
     return {
       id: s.id,
@@ -39,10 +85,10 @@ function buildAttendanceFromStaff(staffList: any[], selectedDate: string): Atten
       department: s.department || 'general',
       shift_type: shift as AttendanceEntry['shift_type'],
       date: selectedDate,
-      clock_in: clockedIn ? times.start : null,
-      clock_out: clockedIn ? null : (status === 'present' ? times.end : null),
+      clock_in: clockInDisplay,
+      clock_out: clockOutDisplay,
       status,
-      total_hours: clockedIn ? null : (status === 'present' ? 8 : 0),
+      total_hours: totalHours,
     };
   });
 }

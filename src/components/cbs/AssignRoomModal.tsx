@@ -8,7 +8,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X, Bed, Check, AlertTriangle, ArrowRight,
-  Search, Users, Layers, Crown
+  Search, Users, Layers, Crown, DollarSign
 } from 'lucide-react';
 import { useCurrency } from '@/hooks/useCurrency';
 import { ConfirmModal } from '../ui2/Modal';
@@ -73,11 +73,12 @@ export default function AssignRoomModal({
     if (isOpen) {
       setSelectedRoom(null);
       setSearchQuery('');
-      setFilterType('all');
+      // BUG-015 FIX: Default filter to booking's room type
+      setFilterType(booking?.roomType || 'all');
       setShowUpgradeFee(false);
       setUpgradeFee(0);
     }
-  }, [isOpen]);
+  }, [isOpen, booking?.roomType]);
 
   useEffect(() => {
     if (selectedRoom && booking) {
@@ -402,6 +403,28 @@ export default function AssignRoomModal({
               })
             )}
           </div>
+
+          {/* BUG-015 FIX: Room Type Mismatch Warning */}
+          {selectedRoom && booking?.roomType &&
+            selectedRoom.type.toLowerCase() !== booking.roomType.toLowerCase() && (
+            <div className="rounded-[10px] border border-amber-300 bg-amber-50 p-3 sm:p-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-[13px] font-semibold text-amber-800">
+                    Room Type Mismatch
+                  </p>
+                  <p className="text-[10px] sm:text-[11px] text-amber-700 mt-0.5">
+                    Guest booked <span className="font-semibold">{booking.roomType}</span> but selected room is{' '}
+                    <span className="font-semibold">{selectedRoom.type}</span>.
+                    Proceed only if upgrading or with guest consent.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Upgrade Fee Section */}
           {showUpgradeFee && selectedRoom && (

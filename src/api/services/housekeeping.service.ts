@@ -46,6 +46,7 @@ export interface TaskCompleteData {
   notes?: string;
   quality_score?: number;
   issues_found?: string[];
+  checklist?: Array<{ id: string; task: string; completed: boolean }>;
 }
 
 export interface RoomInspectionData {
@@ -63,12 +64,14 @@ export interface HousekeepingTask {
   priority: string;
   assigned_to?: number;
   assigned_staff_name?: string;
+  assigned_to_name?: string;
   scheduled_for?: string;
   started_at?: string;
   completed_at?: string;
   estimated_duration?: number;
   actual_duration?: number;
   notes?: string;
+  created_at?: string;
 }
 
 export interface HousekeepingDashboard {
@@ -209,6 +212,15 @@ export const housekeepingService = {
 
   updateLinenInventory: async (data: any) => {
     const response = await apiClient.post('/api/v1/housekeeping/linen-inventory', data);
+    return response.data.data || response.data;
+  },
+
+  // Cancel (soft-delete) a task by setting status to cancelled
+  cancelTask: async (taskId: number) => {
+    const response = await apiClient.patch(
+      `/api/v1/housekeeping/tasks/${taskId}`,
+      { status: 'cancelled' }
+    );
     return response.data.data || response.data;
   },
 

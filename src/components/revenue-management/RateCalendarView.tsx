@@ -716,7 +716,7 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
                   style={{ cursor: bulkEditMode && !isPast ? 'pointer' : 'default' }}
                 >
                   {/* Date Header */}
-                  <div 
+                  <div
                     className={`flex items-center justify-between px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-t-lg ${isToday ? 'bg-terra-500 text-white' : 'bg-white border-b border-neutral-100'}`}
                     onClick={(e) => {
                       // Prevent date header clicks from bubbling to parent cell

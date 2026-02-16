@@ -10,7 +10,9 @@ import {
   ChevronRight,
   Sparkles,
   Loader2,
-  QrCode
+  QrCode,
+  LogIn,
+  LogOut
 } from 'lucide-react';
 import { DashboardHeader } from '../../../layouts/staff-portal/PageHeader';
 import { StatCard } from '../../../components/staff-portal/ui/Card';
@@ -77,14 +79,15 @@ function SectionCard({
 const HousekeepingDashboard = () => {
   const navigate = useNavigate();
   const [scanModalOpen, setScanModalOpen] = useState(false);
-  const { data: profile } = useStaffProfile();
-  const { profile: contextProfile } = useProfile();
+  const { data: profile, refetch: refetchProfile } = useStaffProfile();
+  const { profile: contextProfile, clockIn: contextClockIn, clockOut: contextClockOut } = useProfile();
   const { data: dirtyRooms, loading: dirtyLoading, refetch: refetchDirty } = useHousekeepingRooms('dirty');
   const { data: inProgressRooms, loading: inProgressRoomLoading, refetch: refetchInProgressRooms } = useHousekeepingRooms('in_progress');
   const { data: cleanRooms } = useHousekeepingRooms('clean');
   const { data: tasks, loading: tasksLoading, refetch: refetchTasks } = useMyHousekeepingTasks();
   const { data: notifications } = useNotifications();
   const { updateRoomStatus, startTask } = useHousekeepingActions();
+  const [clockLoading, setClockLoading] = useState(false);
 
   // Combine all rooms
   const rooms = useMemo(() => {
@@ -92,7 +95,7 @@ const HousekeepingDashboard = () => {
   }, [dirtyRooms, inProgressRooms, cleanRooms]);
 
   const refetchAll = async () => {
-    await Promise.all([refetchDirty(), refetchInProgressRooms(), refetchTasks()]);
+    await Promise.all([refetchProfile(), refetchDirty(), refetchInProgressRooms(), refetchTasks()]);
   };
 
   const isLoading = dirtyLoading || inProgressRoomLoading || tasksLoading;
@@ -101,13 +104,14 @@ const HousekeepingDashboard = () => {
   const stats = useMemo(() => ({
     cleanRooms: cleanRooms?.length || 0,
     totalRooms: rooms.length,
-    pendingTasks: tasks?.filter(t => t.status === 'pending' || t.status === 'todo').length || 0,
+    pendingTasks: tasks?.filter(t => t.status === 'pending' || t.status === 'assigned' || t.status === 'todo').length || 0,
     inProgressTasks: tasks?.filter(t => t.status === 'in_progress').length || 0,
     urgentRooms: rooms.filter(r => r.priority === 'urgent' && r.status !== 'clean').length
   }), [cleanRooms, rooms, tasks]);
 
-  // Use context clockedIn (updated instantly from sidebar) + API shift times
-  const isClockedIn = contextProfile?.clockedIn || profile?.clocked_in;
+  // Prefer context clockedIn (updated instantly on clock actions) over stale API data.
+  // Use ?? (not ||) so that an explicit `false` from context is respected.
+  const isClockedIn = contextProfile?.clockedIn ?? profile?.clocked_in ?? false;
   const shiftStart = profile?.shift_start || contextProfile?.shiftStart;
   const shiftEnd = profile?.shift_end || contextProfile?.shiftEnd;
 
@@ -233,16 +237,53 @@ const HousekeepingDashboard = () => {
     return notificationsList.filter((n: any) => !n.is_read).slice(0, 3);
   }, [notifications]);
 
+  // BUG-006 FIX: Use context clockIn/clockOut which updates both context state AND calls API,
+  // ensuring isClockedIn (derived from contextProfile || profile) stays in sync.
+  const handleClockToggle = async () => {
+    setClockLoading(true);
+    try {
+      if (isClockedIn) {
+        await contextClockOut();
+      } else {
+        await contextClockIn();
+      }
+      await refetchAll();
+    } catch (err) {
+      console.error('Clock toggle failed:', err);
+    } finally {
+      setClockLoading(false);
+    }
+  };
+
   const handleStartTask = async (task: any) => {
-    const success = await startTask(task.id);
-    if (success) refetchAll();
+    try {
+      const success = await startTask(task.id);
+      if (success) refetchAll();
+    } catch (err) {
+      console.error('Failed to start task:', err);
+    }
   };
 
   const handleStartRoom = async (room: any) => {
-    const success = await updateRoomStatus(room.id, 'in_progress');
-    if (success) {
-      refetchAll();
-      navigate(`/staff/housekeeping/rooms/${room.id}`);
+    try {
+      const roomTasks = tasks?.filter((t: any) =>
+        t.room_id === room.id && (t.status === 'pending' || t.status === 'assigned')
+      );
+      const taskToStart = roomTasks?.[0];
+
+      if (taskToStart) {
+        const success = await startTask(taskToStart.id);
+        if (success) {
+          refetchAll();
+        }
+      } else {
+        const success = await updateRoomStatus(room.id, 'in_progress');
+        if (success) {
+          refetchAll();
+        }
+      }
+    } catch (err) {
+      console.error('Failed to start room:', err);
     }
   };
 
@@ -349,9 +390,9 @@ const HousekeepingDashboard = () => {
                           <span className="text-neutral-300 hidden sm:inline">•</span>
                           <span className="hidden sm:inline">Check-in: {room.next_checkin || 'TBD'}</span>
                         </div>
-                        {room.special_requests && (
+                        {(room.special_requests || room.notes) && (
                           <p className="text-[10px] text-gold-600 mt-1 truncate font-medium">
-                            Note: {room.special_requests}
+                            Note: {room.special_requests || room.notes}
                           </p>
                         )}
                       </div>
@@ -389,6 +430,39 @@ const HousekeepingDashboard = () => {
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-3 pt-4">
               <button
+                onClick={handleClockToggle}
+                disabled={clockLoading}
+                className={`w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg text-left transition-all group ${
+                  isClockedIn
+                    ? 'bg-rose-50 hover:bg-rose-100'
+                    : 'bg-sage-50 hover:bg-sage-100'
+                } ${clockLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+              >
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                  isClockedIn ? 'bg-rose-100' : 'bg-sage-100'
+                }`}>
+                  {clockLoading ? (
+                    <Loader2 className="w-4.5 h-4.5 animate-spin text-neutral-500" />
+                  ) : isClockedIn ? (
+                    <LogOut className="w-4.5 h-4.5 text-rose-600" />
+                  ) : (
+                    <LogIn className="w-4.5 h-4.5 text-sage-600" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-neutral-800 mb-0.5">
+                    {clockLoading ? 'Processing...' : isClockedIn ? 'Clock Out' : 'Clock In'}
+                  </p>
+                  <p className="text-[11px] text-neutral-400 font-medium">
+                    {isClockedIn ? 'End your shift' : 'Start your shift'}
+                  </p>
+                </div>
+                <ChevronRight className={`w-3.5 h-3.5 text-neutral-300 group-hover:translate-x-0.5 transition-all flex-shrink-0 ${
+                  isClockedIn ? 'group-hover:text-rose-600' : 'group-hover:text-sage-600'
+                }`} />
+              </button>
+
+              <button
                 onClick={() => setScanModalOpen(true)}
                 className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-terra-50 text-left hover:bg-terra-100 transition-all group"
               >
@@ -405,7 +479,11 @@ const HousekeepingDashboard = () => {
               <button
                 onClick={() => {
                   const nextRoom = rooms.find((r: any) => r.status === 'dirty');
-                  if (nextRoom) handleStartRoom(nextRoom);
+                  if (nextRoom) {
+                    handleStartRoom(nextRoom);
+                  } else {
+                    navigate('/staff/housekeeping/rooms');
+                  }
                 }}
                 className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-sage-50/50 text-left hover:bg-sage-50 transition-all group"
               >
@@ -489,19 +567,26 @@ const HousekeepingDashboard = () => {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-0.5">
-                          <span className="text-[13px] font-semibold text-neutral-800 truncate">{task.title}</span>
+                          <span className="text-[13px] font-semibold text-neutral-800 truncate">
+                            {task.title || `${(task.task_type || 'cleaning').charAt(0).toUpperCase() + (task.task_type || 'cleaning').slice(1)} Task`}
+                          </span>
                           <PriorityBadge priority={task.priority} />
                         </div>
                         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] text-neutral-500">
                           <span className="font-medium">Room {task.room_number || task.room}</span>
                           <StatusBadge status={task.status} />
                         </div>
+                        {task.notes && (
+                          <p className="text-[11px] text-gold-700 bg-gold-50 rounded px-2 py-1 mt-1.5 line-clamp-2 leading-relaxed">
+                            <span className="font-semibold">Notes:</span> {task.notes}
+                          </p>
+                        )}
                       </div>
                     </div>
 
                     {/* Bottom row on mobile: Actions */}
                     <div className="flex items-center justify-end gap-2 sm:flex-shrink-0 pl-13 sm:pl-0">
-                      {task.status === 'todo' && (
+                      {(task.status === 'todo' || task.status === 'pending' || task.status === 'assigned') && (
                         <Button
                           size="sm"
                           variant="ghost"

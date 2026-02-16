@@ -287,14 +287,72 @@ export const channelManagerService = {
   // ==================== ROOM MAPPINGS ====================
 
   /**
-   * Get all room mappings
+   * Normalize API response to UI shape: list of room mappings with otaMappings[].
+   * Handles both grouped (otaMappings present) and flat (otaCode at top level) responses.
+   */
+  normalizeRoomMappingList(raw: { items?: any[]; total?: number } | any[]): { items: RoomMapping[]; total: number } {
+    const rawData = Array.isArray(raw) ? { items: raw, total: raw.length } : raw;
+    const items = rawData?.items ?? [];
+    const total = rawData?.total ?? items.length;
+    if (items.length === 0) return { items: [], total: 0 };
+
+    const byPmsId = new Map<string, RoomMapping>();
+    for (const row of items) {
+      const pmsId = String(row.pmsRoomTypeId ?? row.id ?? '');
+      const pmsName = String(row.pmsRoomType ?? '');
+      const otaEntries: OTARoomMapping[] = row.otaMappings?.length
+        ? row.otaMappings.map((om: any) => ({
+            otaCode: om.otaCode ?? '',
+            otaRoomType: om.otaRoomType ?? '',
+            otaRoomId: om.otaRoomId ?? '',
+            otaRoomCode: om.otaRoomCode,
+            maxGuests: om.maxGuests,
+            defaultRatePlan: om.defaultRatePlan,
+            status: (om.status ?? 'active') as 'active' | 'inactive' | 'pending',
+            lastSync: om.lastSync ?? new Date().toISOString(),
+          }))
+        : [{
+            otaCode: row.otaCode ?? '',
+            otaRoomType: row.otaRoomType ?? '',
+            otaRoomId: row.otaRoomId ?? '',
+            otaRoomCode: row.otaRoomCode,
+            maxGuests: row.maxGuests,
+            defaultRatePlan: row.defaultRatePlan,
+            status: (row.status ?? 'active') as 'active' | 'inactive' | 'pending',
+            lastSync: row.lastSync ?? new Date().toISOString(),
+          }];
+
+      const existing = byPmsId.get(pmsId);
+      if (existing) {
+        for (const otaEntry of otaEntries) {
+          const hasOta = existing.otaMappings?.some((om: OTARoomMapping) => om.otaCode === otaEntry.otaCode);
+          if (!hasOta) existing.otaMappings = [...(existing.otaMappings || []), otaEntry];
+        }
+      } else {
+        byPmsId.set(pmsId, {
+          id: row.id ?? pmsId,
+          pmsRoomTypeId: pmsId,
+          pmsRoomType: pmsName,
+          pmsRoomCode: row.pmsRoomCode,
+          basePrice: row.basePrice ?? 0,
+          inventory: row.inventory ?? 0,
+          otaMappings: otaEntries,
+        });
+      }
+    }
+    return { items: Array.from(byPmsId.values()), total };
+  },
+
+  /**
+   * Get all room mappings (normalized to grouped shape for UI).
    */
   async getRoomMappings(filters?: {
     otaCode?: string;
     pmsRoomTypeId?: string;
   }): Promise<{ items: RoomMapping[]; total: number }> {
     const response = await apiClient.get(`${BASE_URL}/room-mappings`, { params: filters });
-    return response.data?.data || response.data || { items: [], total: 0 };
+    const raw = response.data?.data || response.data || { items: [], total: 0 };
+    return this.normalizeRoomMappingList(raw);
   },
 
   /**
@@ -307,10 +365,11 @@ export const channelManagerService = {
 
   /**
    * Create new room mapping.
-   * Backend expects pmsRoomTypeId as integer (422 if string/slug sent).
+   * Sends only API-allowed fields to avoid 422 when backend forbids extra properties.
+   * Uses string | number pmsRoomTypeId for compatibility with backends that expect string (e.g. "rt-001").
    */
   async createRoomMapping(data: {
-    pmsRoomTypeId: number | string;
+    pmsRoomTypeId: string | number;
     pmsRoomType: string;
     otaCode: string;
     otaRoomType: string;
@@ -318,21 +377,23 @@ export const channelManagerService = {
     maxGuests?: number;
     defaultRatePlan?: string;
   }): Promise<RoomMapping> {
-    const id = data.pmsRoomTypeId;
-    const pmsRoomTypeId = /^\d+$/.test(String(id)) ? parseInt(String(id), 10) : id;
-    if (typeof pmsRoomTypeId !== 'number') {
-      throw new Error('pmsRoomTypeId must be a numeric ID (integer). The channel manager backend does not accept slug.');
-    }
-    const body = {
+    const rawId = data.pmsRoomTypeId;
+    const pmsRoomTypeId =
+      rawId === null || rawId === undefined
+        ? ''
+        : typeof rawId === 'string'
+          ? rawId
+          : String(rawId);
+    const payload = {
       pmsRoomTypeId,
-      pmsRoomType: data.pmsRoomType,
-      otaCode: data.otaCode,
-      otaRoomType: data.otaRoomType,
-      otaRoomId: data.otaRoomId,
+      pmsRoomType: String(data.pmsRoomType ?? ''),
+      otaCode: String(data.otaCode ?? ''),
+      otaRoomType: String(data.otaRoomType ?? ''),
+      otaRoomId: String(data.otaRoomId ?? ''),
       ...(data.maxGuests != null && { maxGuests: data.maxGuests }),
-      ...(data.defaultRatePlan != null && { defaultRatePlan: data.defaultRatePlan }),
+      ...(data.defaultRatePlan != null && data.defaultRatePlan !== '' && { defaultRatePlan: data.defaultRatePlan }),
     };
-    const response = await apiClient.post(`${BASE_URL}/room-mappings`, body);
+    const response = await apiClient.post(`${BASE_URL}/room-mappings`, payload);
     return response.data?.data || response.data;
   },
 
@@ -385,7 +446,7 @@ export const channelManagerService = {
     total: number;
   }> {
     const response = await apiClient.get(`${BASE_URL}/room-mappings/bulk-view`, {
-      params: { otaCode },
+      params: { otaCode, _t: Date.now() },
     });
     const data = response.data?.data ?? response.data;
     return {

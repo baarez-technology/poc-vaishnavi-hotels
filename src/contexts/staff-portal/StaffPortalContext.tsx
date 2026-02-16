@@ -2,9 +2,10 @@ import { createContext, useContext, useReducer, useEffect, useCallback, ReactNod
 import { seedDemoData, generateId } from '../../data/staff-portal/seedDemo';
 import { useAuth } from '../../hooks/useAuth';
 import { notificationsService, StaffNotification as APINotification } from '../../api/services/notifications.service';
-import { staffService } from '../../api/services/staff.service';
 
 const STORAGE_KEY = 'glimmora_staff_portal';
+
+export const StaffPortalContext = createContext<any>(null);
 
 interface StaffPortalState {
   profile: any;
@@ -48,7 +49,7 @@ const initialState: StaffPortalState = {
     deliveries: []
   },
   ui: {
-    sidebarOpen: true,
+    sidebarOpen: false,
     notificationDrawerOpen: false,
     activeModal: null,
     modalData: null,
@@ -260,7 +261,7 @@ function reducer(state: StaffPortalState, action: Action): StaffPortalState {
             r.id === action.payload.roomId
               ? {
                   ...r,
-                  checklist: r.checklist.map((c: any) =>
+                  checklist: (Array.isArray(r.checklist) ? r.checklist : []).map((c: any) =>
                     c.id === action.payload.checklistId
                       ? { ...c, completed: action.payload.completed }
                       : c
@@ -1052,32 +1053,35 @@ export function StaffPortalProvider({ children }: StaffPortalProviderProps) {
   }, []);
 
   const clockIn = useCallback(async () => {
-    dispatch({ type: actionTypes.CLOCK_IN });
-    // Sync with backend
     try {
       const { staffService } = await import('../../api/services/staff.service');
-      if (user?.id) {
-        await staffService.clockInOut(user.id, { action: 'clock_in' });
+      const staffId = state.profile?.id || user?.id;
+      if (staffId) {
+        await staffService.clockInOut(staffId, { action: 'clock_in' });
       }
-    } catch (error) {
-      console.error('Failed to sync clock in with backend:', error);
+      dispatch({ type: actionTypes.CLOCK_IN });
+      // Refresh profile from backend to sync state
+      fetchStaffProfile();
+    } catch (err) {
+      console.error('Clock in API call failed:', err);
     }
-  }, [user?.id]);
+  }, [state.profile?.id, user?.id, fetchStaffProfile]);
 
   const clockOut = useCallback(async () => {
-    // Store the clock out time before dispatching
     const clockOutTime = new Date().toISOString();
-    dispatch({ type: actionTypes.CLOCK_OUT, payload: { clockOutTime } });
-    // Sync with backend
     try {
       const { staffService } = await import('../../api/services/staff.service');
-      if (user?.id) {
-        await staffService.clockInOut(user.id, { action: 'clock_out' });
+      const staffId = state.profile?.id || user?.id;
+      if (staffId) {
+        await staffService.clockInOut(staffId, { action: 'clock_out' });
       }
-    } catch (error) {
-      console.error('Failed to sync clock out with backend:', error);
+      dispatch({ type: actionTypes.CLOCK_OUT, payload: { clockOutTime } });
+      // Refresh profile from backend to sync state
+      fetchStaffProfile();
+    } catch (err) {
+      console.error('Clock out API call failed:', err);
     }
-  }, [user?.id]);
+  }, [state.profile?.id, user?.id, fetchStaffProfile]);
 
   const updateProfile = useCallback((updates: any) => {
     dispatch({ type: actionTypes.UPDATE_PROFILE, payload: updates });
@@ -1457,7 +1461,6 @@ export function useStaffPortalContext() {
   return context;
 }
 
-export const StaffPortalContext = createContext<any>(null);
 export default StaffPortalProvider;
 
 

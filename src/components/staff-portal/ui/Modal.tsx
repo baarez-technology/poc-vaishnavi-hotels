@@ -133,7 +133,7 @@ export function Modal({
 interface ConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   title?: string;
   message: string;
   confirmText?: string;
@@ -183,7 +183,7 @@ export function ConfirmModal({
         <Button variant="outline-neutral" onClick={onClose} className="flex-1">
           {cancelText}
         </Button>
-        <Button variant={variant} onClick={() => { onConfirm(); onClose(); }} className="flex-1">
+        <Button variant={variant} onClick={async () => { await onConfirm(); onClose(); }} className="flex-1">
           {confirmText}
         </Button>
       </div>

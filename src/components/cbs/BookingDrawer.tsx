@@ -80,7 +80,6 @@ export default function BookingDrawer({
       name: 'guestName',
       email: 'guestEmail',
       phone: 'guestPhone',
-      requests: 'specialRequests'
     };
     onUpdateBooking(booking.id, { [fieldMap[field]]: editValue });
     setEditingField(null);
@@ -541,59 +540,19 @@ export default function BookingDrawer({
                 </div>
               </div>
 
-              {/* Special Requests */}
+              {/* Special Requests - BUG-009 FIX: Read-only, set by guest */}
               <div className="space-y-2 sm:space-y-3">
                 <h3 className="text-xs sm:text-[13px] font-semibold text-neutral-800">
-                  Special Requests
+                  Special Requests <span className="text-neutral-400 font-normal">(read-only, set by guest)</span>
                 </h3>
-                {editingField === 'requests' ? (
-                  <div className="space-y-2 sm:space-y-3">
-                    <textarea
-                      ref={inputRef}
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(e, 'requests')}
-                      className="w-full p-2.5 sm:p-3 rounded-[10px] text-xs sm:text-[13px] border border-neutral-200 bg-white text-neutral-900 placeholder:text-neutral-400 outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all resize-none"
-                      rows={3}
-                      placeholder="Enter special requests..."
-                    />
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={cancelEditing}
-                        className="text-xs sm:text-sm"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => saveField('requests')}
-                        className="text-xs sm:text-sm"
-                      >
-                        Save
-                      </Button>
-                    </div>
+                <div className="p-2.5 sm:p-3 rounded-[10px] bg-gold-50 border border-gold-200">
+                  <div className="flex items-start gap-2 sm:gap-2.5">
+                    <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gold-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs sm:text-[13px] text-gold-700">
+                      {booking.specialRequests || 'No special requests'}
+                    </p>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => startEditing('requests', booking.specialRequests || '')}
-                    className="w-full text-left group"
-                  >
-                    <div className="p-2.5 sm:p-3 rounded-[10px] bg-gold-50 border border-gold-200">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-start gap-2 sm:gap-2.5 flex-1">
-                          <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gold-500 mt-0.5 flex-shrink-0" />
-                          <p className="text-xs sm:text-[13px] text-gold-700">
-                            {booking.specialRequests || 'No special requests - click to add'}
-                          </p>
-                        </div>
-                        <PenLine className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gold-400 group-hover:text-gold-600 flex-shrink-0 transition-colors" />
-                      </div>
-                    </div>
-                  </button>
-                )}
+                </div>
               </div>
 
               {/* Total Amount */}

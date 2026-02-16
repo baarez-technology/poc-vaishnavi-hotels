@@ -18,6 +18,7 @@ import Button from '../../../components/staff-portal/ui/Button';
 import { Drawer, ConfirmModal } from '../../../components/staff-portal/ui/Modal';
 import { SearchInput } from '../../../components/staff-portal/ui/Input';
 import { useMyHousekeepingTasks, useHousekeepingRooms, useHousekeepingActions } from '@/hooks/staff-portal/useStaffApi';
+import { housekeepingService } from '@/api/services/housekeeping.service';
 
 // Custom Select Dropdown Component - matching admin PromotionDrawer
 function SelectDropdown({
@@ -212,7 +213,7 @@ const HousekeepingTasks = () => {
   const { data: inProgressTasks, loading: inProgressLoading, refetch: refetchInProgress } = useMyHousekeepingTasks('in_progress');
   const { data: completedTasks, loading: completedLoading, refetch: refetchCompleted } = useMyHousekeepingTasks('completed');
   const { data: rooms } = useHousekeepingRooms();
-  const { startTask, completeTask } = useHousekeepingActions();
+  const { startTask, completeTask, cancelTask } = useHousekeepingActions();
 
   // Combine all tasks
   const tasks = useMemo(() => {
@@ -241,11 +242,16 @@ const HousekeepingTasks = () => {
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task: any) => {
-      const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.room?.toLowerCase().includes(searchQuery.toLowerCase());
+      const taskTitle = task.title || task.task_type || '';
+      const taskDescription = task.description || task.notes || '';
+      const taskRoom = task.room || task.room_number || '';
+      const matchesSearch = taskTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        taskDescription.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        taskRoom.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
+      // Map backend statuses to frontend filter categories
+      const effectiveStatus = (task.status === 'pending' || task.status === 'assigned') ? 'todo' : task.status;
+      const matchesStatus = statusFilter === 'all' || effectiveStatus === statusFilter;
 
       return matchesSearch && matchesStatus;
     }).sort((a: any, b: any) => {
@@ -260,7 +266,7 @@ const HousekeepingTasks = () => {
   }, [tasks, searchQuery, statusFilter]);
 
   const taskStats = useMemo(() => ({
-    todo: tasks.filter((t: any) => t.status === 'todo').length,
+    todo: tasks.filter((t: any) => t.status === 'todo' || t.status === 'pending' || t.status === 'assigned').length,
     in_progress: tasks.filter((t: any) => t.status === 'in_progress').length,
     completed: tasks.filter((t: any) => t.status === 'completed').length
   }), [tasks]);
@@ -271,17 +277,35 @@ const HousekeepingTasks = () => {
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
-  const handleAddTask = () => {
-    // Note: Create task API not implemented yet, just close modal
-    setNewTask({
-      title: '',
-      description: '',
-      room: '',
-      priority: 'normal',
-      category: 'cleaning',
-      estimatedMinutes: 30
-    });
-    setShowAddModal(false);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const handleAddTask = async () => {
+    if (!newTask.title.trim() || !newTask.room) return;
+    setIsCreating(true);
+    try {
+      const room = roomsList.find((r: any) => (r.room_number || r.number) === newTask.room);
+      await housekeepingService.createTask({
+        room_id: room?.id,
+        task_type: newTask.category,
+        priority: newTask.priority,
+        notes: newTask.description || undefined,
+        estimated_duration: newTask.estimatedMinutes,
+      });
+      setNewTask({
+        title: '',
+        description: '',
+        room: '',
+        priority: 'normal',
+        category: 'cleaning',
+        estimatedMinutes: 30
+      });
+      setShowAddModal(false);
+      refetchAll();
+    } catch (err) {
+      console.error('Failed to create task:', err);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleStartTask = async (task: any) => {
@@ -294,8 +318,12 @@ const HousekeepingTasks = () => {
     if (success) refetchAll();
   };
 
-  const handleDeleteConfirm = () => {
-    // Note: Delete task API not implemented yet
+  const handleDeleteConfirm = async () => {
+    if (!selectedTask) return;
+    const success = await cancelTask(selectedTask.id);
+    if (success) {
+      refetchAll();
+    }
     setSelectedTask(null);
     setShowDeleteModal(false);
   };
@@ -464,11 +492,11 @@ const HousekeepingTasks = () => {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <h3 className={`text-[13px] font-semibold text-neutral-800 ${task.status === 'completed' ? 'line-through opacity-60' : ''}`}>
-                            {task.title}
+                            {task.title || `${(task.task_type || 'cleaning').charAt(0).toUpperCase() + (task.task_type || 'cleaning').slice(1)} Task`}
                           </h3>
                           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
                             <span className="text-[11px] text-neutral-500 font-medium">Room {task.room_number || task.room}</span>
-                            <StatusBadge status={task.status} />
+                            <StatusBadge status={task.status === 'pending' || task.status === 'assigned' ? 'todo' : task.status} />
                             <PriorityBadge priority={task.priority} />
                           </div>
                         </div>
@@ -485,8 +513,10 @@ const HousekeepingTasks = () => {
                         </button>
                       </div>
 
-                      {task.description && (
-                        <p className="text-[11px] text-neutral-500 mt-2 line-clamp-2 leading-relaxed">{task.description}</p>
+                      {(task.description || task.notes) && (
+                        <div className="text-[11px] text-gold-700 bg-gold-50 rounded px-2 py-1.5 mt-2 leading-relaxed">
+                          <span className="font-semibold">Notes:</span> {task.description || task.notes}
+                        </div>
                       )}
 
                       <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 sm:mt-3 text-[10px] text-neutral-400 font-medium">
@@ -510,7 +540,7 @@ const HousekeepingTasks = () => {
                   {/* Bottom row on mobile: Actions */}
                   <div className="flex items-center justify-between sm:justify-end gap-2 sm:flex-shrink-0 pl-13 sm:pl-0">
                     <div className="flex items-center gap-2">
-                      {task.status === 'todo' && (
+                      {(task.status === 'todo' || task.status === 'pending' || task.status === 'assigned') && (
                         <Button
                           size="sm"
                           icon={Play}
@@ -580,6 +610,8 @@ const HousekeepingTasks = () => {
               form="task-form"
               variant="primary"
               className="w-full sm:w-auto"
+              isLoading={isCreating}
+              disabled={isCreating}
             >
               Create Task
             </Button>

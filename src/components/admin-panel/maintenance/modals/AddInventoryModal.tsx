@@ -82,7 +82,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSubmit, editItem 
     name: '',
     category: 'general',
     stockLevel: 0,
-    minStock: 10,
+    minStock: 0,
     unitCost: 0,
     location: ''
   });
@@ -98,7 +98,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSubmit, editItem 
           name: editItem.name || '',
           category: editItem.category || 'general',
           stockLevel: editItem.stockLevel || 0,
-          minStock: editItem.minStock || 10,
+          minStock: editItem.minStock ?? 0,
           unitCost: editItem.unitCost || 0,
           location: editItem.location || ''
         });
@@ -108,7 +108,7 @@ export default function AddInventoryModal({ isOpen, onClose, onSubmit, editItem 
           name: '',
           category: 'general',
           stockLevel: 0,
-          minStock: 10,
+          minStock: 0,
           unitCost: 0,
           location: ''
         });

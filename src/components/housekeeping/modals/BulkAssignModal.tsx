@@ -4,7 +4,7 @@
  * Pattern matching Staff/Channel Manager drawers
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Users, Check, MapPin, ChevronDown, AlertTriangle } from 'lucide-react';
 import { Drawer } from '../../ui2/Drawer';
 import { Button } from '../../ui2/Button';
@@ -72,13 +72,23 @@ export default function BulkAssignModal({
 }) {
   const [selectedRooms, setSelectedRooms] = useState<number[]>([]);
   const [selectedHousekeeper, setSelectedHousekeeper] = useState('');
+  const [selectedPriority, setSelectedPriority] = useState('medium');
+  const [bulkNotes, setBulkNotes] = useState('');
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [duplicateRooms, setDuplicateRooms] = useState<string[]>([]);
+
+  // BUG-021 FIX: Only show rooms that need assignment (dirty or in_progress)
+  const assignableRooms = useMemo(() =>
+    rooms.filter((room: any) => room.status === 'dirty' || room.status === 'in_progress'),
+    [rooms]
+  );
 
   useEffect(() => {
     if (isOpen) {
       setSelectedRooms([]);
       setSelectedHousekeeper('');
+      setSelectedPriority('medium');
+      setBulkNotes('');
       setShowDuplicateWarning(false);
       setDuplicateRooms([]);
     }
@@ -91,7 +101,7 @@ export default function BulkAssignModal({
   };
 
   const handleSelectAll = () => {
-    setSelectedRooms(selectedRooms.length === rooms.length ? [] : rooms.map((room: any) => room.id));
+    setSelectedRooms(selectedRooms.length === assignableRooms.length ? [] : assignableRooms.map((room: any) => room.id));
   };
 
   // Check for rooms already assigned to the selected housekeeper
@@ -104,7 +114,7 @@ export default function BulkAssignModal({
     const newRooms: number[] = [];
 
     selectedRooms.forEach(roomId => {
-      const room = rooms.find((r: any) => r.id === roomId);
+      const room = assignableRooms.find((r: any) => r.id === roomId);
       if (room) {
         // Check if room is already assigned to the selected housekeeper
         if (room.assignedTo?.toString() === selectedHousekeeper?.toString()) {
@@ -131,8 +141,8 @@ export default function BulkAssignModal({
         }
       }
 
-      // Proceed with assignment
-      onBulkAssign(selectedRooms, selectedHousekeeper);
+      // Proceed with assignment (pass priority and notes)
+      onBulkAssign(selectedRooms, selectedHousekeeper, selectedPriority, bulkNotes);
       onClose();
     }
   };
@@ -146,7 +156,7 @@ export default function BulkAssignModal({
     // Only assign rooms that aren't already assigned to this housekeeper
     const { newRooms } = checkForDuplicates();
     if (newRooms.length > 0 && onBulkAssign) {
-      onBulkAssign(newRooms, selectedHousekeeper);
+      onBulkAssign(newRooms, selectedHousekeeper, selectedPriority, bulkNotes);
     }
     onClose();
   };
@@ -279,22 +289,64 @@ export default function BulkAssignModal({
           }))}
         />
 
+        {/* Priority Selection (BUG-023 FIX) */}
+        <div>
+          <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
+            Priority
+          </h4>
+          <div className="flex gap-2">
+            {[
+              { value: 'low', label: 'Low', activeClass: 'bg-neutral-200 text-neutral-700' },
+              { value: 'medium', label: 'Medium', activeClass: 'bg-terra-500 text-white' },
+              { value: 'high', label: 'High', activeClass: 'bg-gold-500 text-white' },
+              { value: 'urgent', label: 'Urgent', activeClass: 'bg-rose-500 text-white' },
+            ].map(p => (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => setSelectedPriority(p.value)}
+                className={`flex-1 h-9 px-3 rounded-lg text-[12px] font-semibold transition-all ${
+                  selectedPriority === p.value
+                    ? p.activeClass
+                    : 'bg-white border border-neutral-200 text-neutral-600 hover:border-neutral-300'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Notes (BUG-023 FIX) */}
+        <div>
+          <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
+            Notes / Instructions
+          </h4>
+          <textarea
+            value={bulkNotes}
+            onChange={(e) => setBulkNotes(e.target.value)}
+            placeholder="Add instructions or notes for all selected rooms..."
+            rows={3}
+            className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-lg text-[13px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-terra-500/10 focus:border-terra-400 transition-all resize-none hover:border-neutral-300"
+          />
+        </div>
+
         {/* Room Selection */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900">
-              Select Rooms ({selectedRooms.length}/{rooms.length})
+              Select Rooms ({selectedRooms.length}/{assignableRooms.length})
             </h4>
             <button
               onClick={handleSelectAll}
               className="text-[12px] text-terra-600 hover:text-terra-700 font-semibold transition-colors"
             >
-              {selectedRooms.length === rooms.length ? 'Deselect All' : 'Select All'}
+              {selectedRooms.length === assignableRooms.length ? 'Deselect All' : 'Select All'}
             </button>
           </div>
 
           <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-            {rooms.map(room => {
+            {assignableRooms.map(room => {
               const isSelected = selectedRooms.includes(room.id);
               return (
                 <div
@@ -334,7 +386,7 @@ export default function BulkAssignModal({
             })}
           </div>
 
-          {rooms.length === 0 && (
+          {assignableRooms.length === 0 && (
             <div className="p-6 sm:p-8 rounded-lg bg-neutral-50 border border-neutral-100 text-center">
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white border border-neutral-200 rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Users className="w-5 h-5 sm:w-6 sm:h-6 text-neutral-400" />

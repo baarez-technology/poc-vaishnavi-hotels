@@ -42,6 +42,7 @@ lerna-debug.log*
 test-results/
 playwright-report/
 playwright/.cache/
+.playwright-mcp/
 
 # Moat task system
 .moat/

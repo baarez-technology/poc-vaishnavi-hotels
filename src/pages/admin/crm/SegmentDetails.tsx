@@ -196,14 +196,12 @@ export default function SegmentDetails({
   };
 
   const handleDelete = () => {
+    setShowDeleteConfirm(false);
     onDeleteSegment(segment.id);
-    showToast('Segment deleted', 'success');
-    navigate('/admin/crm');
   };
 
   const handleUpdateSegment = (updatedSegment) => {
     onUpdateSegment(updatedSegment);
-    showToast('Segment updated', 'success');
   };
 
   const SortIcon = ({ field }) => {

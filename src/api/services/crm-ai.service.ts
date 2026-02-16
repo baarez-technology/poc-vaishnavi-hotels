@@ -2,7 +2,7 @@
  * CRM AI Service - ReConnect AI Integration
  * Provides access to guest intelligence, churn prediction, LTV, sentiment analysis, and campaign optimization
  */
-import { apiClient as api, cachedGet } from '../client';
+import { apiClient as api, cachedGet, clearApiCache } from '../client';
 
 // Types
 export interface GuestIntelligence {
@@ -354,6 +354,162 @@ class CRMAIService {
       console.error('[CRMAIService.getCRMSegments] Error:', error);
       throw error;
     }
+  }
+
+  /**
+   * Create a custom CRM segment (persisted). Segment will appear in the list after refresh.
+   */
+  async createCRMSegment(segment: {
+    name: string;
+    description?: string;
+    filters?: Record<string, unknown>;
+    guestCount: number;
+    avgRevenue: number;
+    repeatRate: number;
+    color?: string;
+    icon?: string;
+  }): Promise<CRMSegment> {
+    const conditions = this.filtersToConditions(segment.filters || {});
+    const response = await api.post(`${this.baseUrl}/crm-segments`, {
+      name: segment.name,
+      description: segment.description ?? '',
+      conditions,
+      guestCount: segment.guestCount,
+      avgRevenue: segment.avgRevenue,
+      repeatRate: segment.repeatRate,
+      color: segment.color ?? '#6B7280',
+      icon: segment.icon ?? 'users',
+    });
+    clearApiCache('crm-segments');
+    const data = response.data?.data ?? response.data;
+    return data as CRMSegment;
+  }
+
+  /**
+   * Update an existing CRM segment. Persists color, filters (loyalty tier, booking source, room types, tags, etc.) to the server.
+   * Encodes segmentId for URL (e.g. seg-vip:1 → seg-vip%3A1). Tries PUT then PATCH on 405. On 400, retries with minimal body (no computed stats).
+   */
+  async updateCRMSegment(
+    segmentId: string,
+    segment: {
+      name: string;
+      description?: string;
+      filters?: Record<string, unknown>;
+      guestCount: number;
+      avgRevenue: number;
+      repeatRate: number;
+      color?: string;
+      icon?: string;
+    }
+  ): Promise<CRMSegment> {
+    const conditions = this.filtersToConditions(segment.filters || {});
+    const encodedId = encodeURIComponent(segmentId);
+    const url = `${this.baseUrl}/crm-segments/${encodedId}`;
+    const fullBody = {
+      name: segment.name,
+      description: segment.description ?? '',
+      conditions,
+      guestCount: segment.guestCount,
+      avgRevenue: segment.avgRevenue,
+      repeatRate: segment.repeatRate,
+      color: segment.color ?? '#6B7280',
+      icon: segment.icon ?? 'users',
+    };
+    const minimalBody = {
+      name: segment.name,
+      description: segment.description ?? '',
+      conditions,
+      color: segment.color ?? '#6B7280',
+      icon: segment.icon ?? 'users',
+    };
+
+    const doRequest = async (body: object, method: 'put' | 'patch' = 'put'): Promise<any> => {
+      if (method === 'put') return await api.put(url, body);
+      return await api.patch(url, body);
+    };
+
+    let response: any;
+    try {
+      response = await doRequest(fullBody, 'put');
+    } catch (err: any) {
+      if (err?.response?.status === 405) {
+        response = await doRequest(fullBody, 'patch');
+      } else if (err?.response?.status === 400) {
+        try {
+          response = await doRequest(minimalBody, 'put');
+        } catch (e2: any) {
+          if (e2?.response?.status === 405) {
+            response = await doRequest(minimalBody, 'patch');
+          } else {
+            throw e2;
+          }
+        }
+      } else {
+        throw err;
+      }
+    }
+    clearApiCache('crm-segments');
+    const data = response.data?.data ?? response.data;
+    return data as CRMSegment;
+  }
+
+  /**
+   * Delete a CRM segment by id. Tries crm-segments first; on 404, tries segmentation/segments (numeric id).
+   * @returns true if the server deleted the segment, false if the server does not support delete (404 on both attempts).
+   * @throws for non-404 errors (e.g. 500, network error).
+   */
+  async deleteCRMSegment(segmentId: string): Promise<boolean> {
+    const tryDelete = async (url: string): Promise<boolean> => {
+      try {
+        await api.delete(url);
+        return true;
+      } catch (e: any) {
+        if (e?.response?.status === 404) return false;
+        throw e;
+      }
+    };
+    const numId = parseInt(segmentId, 10);
+    const deleted =
+      (await tryDelete(`${this.baseUrl}/crm-segments/${segmentId}`)) ||
+      (!Number.isNaN(numId) ? await tryDelete(`${this.baseUrl}/segmentation/segments/${numId}`) : false);
+    if (deleted) clearApiCache('crm-segments');
+    return deleted;
+  }
+
+  /** Convert filter object from CreateSegmentModal to API conditions array */
+  private filtersToConditions(filters: Record<string, unknown>): Array<{ field: string; operator: string; value: unknown }> {
+    const conditions: Array<{ field: string; operator: string; value: unknown }> = [];
+    if (filters.loyaltyTier && filters.loyaltyTier !== 'all') {
+      conditions.push({ field: 'loyaltyTier', operator: '==', value: filters.loyaltyTier });
+    }
+    if (filters.minStays !== undefined && filters.minStays !== '') {
+      conditions.push({ field: 'totalStays', operator: '>=', value: Number(filters.minStays) });
+    }
+    if (filters.maxStays !== undefined && filters.maxStays !== '') {
+      conditions.push({ field: 'totalStays', operator: '<=', value: Number(filters.maxStays) });
+    }
+    if (filters.bookingSource && filters.bookingSource !== 'all') {
+      conditions.push({ field: 'bookingSource', operator: '==', value: filters.bookingSource });
+    }
+    if (filters.minSpend !== undefined && filters.minSpend !== '') {
+      conditions.push({ field: 'totalRevenue', operator: '>=', value: Number(filters.minSpend) });
+    }
+    if (filters.maxSpend !== undefined && filters.maxSpend !== '') {
+      conditions.push({ field: 'totalRevenue', operator: '<=', value: Number(filters.maxSpend) });
+    }
+    if (filters.lastStayDays !== undefined && filters.lastStayDays !== '') {
+      conditions.push({ field: 'lastStay', operator: 'within', value: `${filters.lastStayDays}d` });
+    }
+    if (filters.country && String(filters.country).trim()) {
+      conditions.push({ field: 'country', operator: '==', value: filters.country });
+    }
+    if (filters.roomType && filters.roomType !== 'all') {
+      conditions.push({ field: 'roomType', operator: '==', value: filters.roomType });
+    }
+    if (Array.isArray(filters.tags) && filters.tags.length > 0) {
+      conditions.push({ field: 'tags', operator: 'in', value: filters.tags });
+    }
+    return conditions;
   }
 
   async getCRMStats(): Promise<CRMStats> {

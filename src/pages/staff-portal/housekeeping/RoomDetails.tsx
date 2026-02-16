@@ -47,19 +47,25 @@ const RoomDetails = () => {
   const [checklist, setChecklist] = useState(defaultChecklist);
   const [scanModalOpen, setScanModalOpen] = useState(false);
 
-  // Fetch room data
+  // Fetch room data including task details
   useEffect(() => {
     const fetchRoom = async () => {
       try {
         setLoading(true);
-        // Fetch all rooms and find the one we need
+        // Fetch all rooms (now includes task details from backend)
         const rooms = await housekeepingService.getRooms();
         const foundRoom = rooms.find((r: any) => r.id === Number(id));
         if (foundRoom) {
           setRoom(foundRoom);
-          // Reset checklist based on room status
-          if (foundRoom.status === 'clean' || foundRoom.status === 'inspected') {
+          // BUG-003 FIX: Load persisted checklist from backend if available
+          if (Array.isArray(foundRoom.checklist) && foundRoom.checklist.length > 0) {
+            setChecklist(foundRoom.checklist);
+          } else if (foundRoom.status === 'clean' || foundRoom.status === 'inspected') {
             setChecklist(defaultChecklist.map(c => ({ ...c, completed: true })));
+          }
+          // BUG-018 FIX: Pre-fill notes from task if available
+          if (foundRoom.notes) {
+            setNote(foundRoom.notes);
           }
         }
       } catch (err) {
@@ -93,20 +99,58 @@ const RoomDetails = () => {
     );
   }
 
+  const safeChecklist = Array.isArray(checklist) ? checklist : [];
   const checklistProgress = {
-    completed: checklist.filter(c => c.completed).length,
-    total: checklist.length,
-    percentage: Math.round((checklist.filter(c => c.completed).length / checklist.length) * 100)
+    completed: safeChecklist.filter(c => c.completed).length,
+    total: safeChecklist.length,
+    percentage: safeChecklist.length > 0 ? Math.round((safeChecklist.filter(c => c.completed).length / safeChecklist.length) * 100) : 0
   };
 
   const handleChecklistToggle = (checklistId: string) => {
-    setChecklist(prev => prev.map(item =>
-      item.id === checklistId ? { ...item, completed: !item.completed } : item
-    ));
+    setChecklist(prev => {
+      const updated = prev.map(item =>
+        item.id === checklistId ? { ...item, completed: !item.completed } : item
+      );
+      // BUG-003 FIX: Persist checklist to backend via task update
+      if (room?.task_id) {
+        housekeepingService.updateTask(room.task_id, { checklist: updated } as any).catch(() => {});
+      }
+      return updated;
+    });
   };
 
   const handleStatusChange = async (status: string) => {
-    const success = await updateRoomStatus(room.id, status);
+    let success = false;
+
+    if (status === 'in_progress' && room.task_id) {
+      // Use startTask API which also updates room status
+      try {
+        await housekeepingService.startTask(room.task_id);
+        success = true;
+      } catch {
+        success = await updateRoomStatus(room.id, status);
+      }
+    } else if (status === 'clean' && room.task_id) {
+      // Use completeTask API which also updates room status
+      try {
+        // BUG-003 FIX: Send checklist data when completing task
+        await housekeepingService.completeTask(room.task_id, { checklist, notes: note || undefined });
+        success = true;
+      } catch {
+        success = await updateRoomStatus(room.id, status);
+      }
+    } else if (status === 'inspected') {
+      // BUG-034 FIX: Use dedicated inspect endpoint for proper inspection logic
+      try {
+        await housekeepingService.inspectRoom(room.id, { passed: true });
+        success = true;
+      } catch {
+        success = await updateRoomStatus(room.id, status);
+      }
+    } else {
+      success = await updateRoomStatus(room.id, status);
+    }
+
     if (success) {
       setRoom((prev: any) => ({ ...prev, status }));
       // Update checklist based on new status
@@ -118,14 +162,26 @@ const RoomDetails = () => {
     }
   };
 
-  const handleSaveNote = () => {
+  const handleSaveNote = async () => {
+    if (!room?.task_id) return;
     setIsSavingNote(true);
-    // In a real app, this would save to the API
-    setTimeout(() => setIsSavingNote(false), 500);
+    try {
+      // BUG-003 FIX: Actually persist notes to the backend
+      await housekeepingService.updateTask(room.task_id, { notes: note });
+    } catch (err) {
+      console.error('Failed to save note:', err);
+    } finally {
+      setIsSavingNote(false);
+    }
   };
 
   const handleCompleteAll = () => {
-    setChecklist(prev => prev.map(item => ({ ...item, completed: true })));
+    const allCompleted = defaultChecklist.map(item => ({ ...item, completed: true }));
+    setChecklist(allCompleted);
+    // BUG-003 FIX: Persist "complete all" state to backend
+    if (room?.task_id) {
+      housekeepingService.updateTask(room.task_id, { checklist: allCompleted } as any).catch(() => {});
+    }
   };
 
   return (
@@ -265,8 +321,9 @@ const RoomDetails = () => {
             {/* Checklist Items */}
             <div className="space-y-2">
               {checklist.map((item) => (
-                <label
+                <div
                   key={item.id}
+                  onClick={() => handleChecklistToggle(item.id)}
                   className={`
                     flex items-center gap-3 p-3 rounded-[10px] cursor-pointer transition-all
                     ${item.completed
@@ -274,8 +331,7 @@ const RoomDetails = () => {
                       : 'bg-neutral hover:bg-neutral-dark'}
                   `}
                 >
-                  <button
-                    onClick={() => handleChecklistToggle(item.id)}
+                  <div
                     className={`
                       w-5 h-5 rounded flex items-center justify-center flex-shrink-0
                       ${item.completed
@@ -284,11 +340,11 @@ const RoomDetails = () => {
                     `}
                   >
                     {item.completed && <CheckCircle className="w-4 h-4" />}
-                  </button>
+                  </div>
                   <span className={`flex-1 ${item.completed ? 'line-through text-text-light' : 'text-text'}`}>
                     {item.task}
                   </span>
-                </label>
+                </div>
               ))}
             </div>
           </Card>

@@ -22,13 +22,27 @@ const TIER_ICONS = ['🥉', '🥈', '🥇', '💎', '👑', '⭐', '🏆', '💫
 
 function TierModal({ isOpen, onClose, onSave, tier, mode }) {
   const [formData, setFormData] = useState({
-    name: tier?.name || '',
-    color: tier?.color || TIER_COLORS[0],
-    icon: tier?.icon || TIER_ICONS[0],
-    minNights: tier?.minNights || 0,
-    minRevenue: tier?.minRevenue || 0,
-    benefits: tier?.benefits || ['']
+    name: '',
+    color: TIER_COLORS[0],
+    icon: TIER_ICONS[0],
+    minNights: 0,
+    minRevenue: 0,
+    benefits: ['']
   });
+
+  // When modal opens or a different tier is selected for edit, pre-fill form (fixes edit mode not showing tier name)
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        name: tier?.name ?? '',
+        color: tier?.color ?? TIER_COLORS[0],
+        icon: tier?.icon ?? TIER_ICONS[0],
+        minNights: Math.max(0, Number(tier?.minNights) || 0),
+        minRevenue: Math.max(0, Number(tier?.minRevenue) || 0),
+        benefits: Array.isArray(tier?.benefits) && tier.benefits.length > 0 ? [...tier.benefits] : ['']
+      });
+    }
+  }, [isOpen, tier?.id]);
 
   // ESC key handler and body scroll lock
   useEffect(() => {
@@ -72,8 +86,8 @@ function TierModal({ isOpen, onClose, onSave, tier, mode }) {
       name: formData.name.trim(),
       color: formData.color,
       icon: formData.icon,
-      minNights: parseInt(formData.minNights) || 0,
-      minRevenue: parseInt(formData.minRevenue) || 0,
+      minNights: Math.max(0, parseInt(formData.minNights, 10) || 0),
+      minRevenue: Math.max(0, parseFloat(formData.minRevenue) || 0),
       benefits: formData.benefits.filter(b => b.trim())
     };
 
@@ -176,7 +190,12 @@ function TierModal({ isOpen, onClose, onSave, tier, mode }) {
                 type="number"
                 min="0"
                 value={formData.minNights}
-                onChange={(e) => setFormData(prev => ({ ...prev, minNights: e.target.value }))}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  const num = parseInt(v, 10);
+                  if (v !== '' && !Number.isNaN(num) && num < 0) return;
+                  setFormData(prev => ({ ...prev, minNights: v }));
+                }}
                 className="w-full px-3.5 py-2.5 bg-white border border-neutral-200 rounded-[8px] text-[13px] text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865] transition-colors"
               />
             </div>
@@ -188,7 +207,12 @@ function TierModal({ isOpen, onClose, onSave, tier, mode }) {
                 type="number"
                 min="0"
                 value={formData.minRevenue}
-                onChange={(e) => setFormData(prev => ({ ...prev, minRevenue: e.target.value }))}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  const num = parseFloat(v);
+                  if (v !== '' && !Number.isNaN(num) && num < 0) return;
+                  setFormData(prev => ({ ...prev, minRevenue: v }));
+                }}
                 className="w-full px-3.5 py-2.5 bg-white border border-neutral-200 rounded-[8px] text-[13px] text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865]/20 focus:border-[#A57865] transition-colors"
               />
             </div>

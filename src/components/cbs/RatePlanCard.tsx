@@ -51,6 +51,12 @@ export default function RatePlanCard({
     if (disableEdit) return;
 
     setEditData({
+      name: ratePlan.name ?? '',
+      description: ratePlan.description ?? '',
+      basePrice: { ...(ratePlan.basePrice || {}) },
+      mealPlan: ratePlan.mealPlan ?? 'Room Only',
+      commission: ratePlan.commission ?? 0,
+      cancellationPolicy: ratePlan.cancellationPolicy ?? '',
       minStay: ratePlan.minStay ?? 1,
       maxStay: ratePlan.maxStay ?? 30,
       ctaEnabled: ratePlan.ctaEnabled ?? false,
@@ -63,6 +69,32 @@ export default function RatePlanCard({
 
   const validateData = () => {
     const errors = [];
+
+    if (!editData.name?.trim()) {
+      errors.push({
+        field: 'name',
+        message: 'Rate plan name is required'
+      });
+    }
+
+    if (editData.basePrice) {
+      const invalidPrices = Object.entries(editData.basePrice).filter(
+        ([, price]) => typeof price !== 'number' || price <= 0
+      );
+      if (invalidPrices.length > 0) {
+        errors.push({
+          field: 'basePrice',
+          message: 'All base prices must be greater than 0'
+        });
+      }
+    }
+
+    if (editData.commission !== undefined && (editData.commission < 0 || editData.commission > 100)) {
+      errors.push({
+        field: 'commission',
+        message: 'Commission must be between 0% and 100%'
+      });
+    }
 
     if (editData.minStay < 1) {
       errors.push({
@@ -371,7 +403,7 @@ export default function RatePlanCard({
           {isEditing && (
             <div className="px-6 py-5 border-t border-neutral-100 bg-terra-50/30">
               <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-4">
-                Edit Restrictions
+                Edit Rate Plan
               </h4>
 
               {/* Validation Errors */}
@@ -382,12 +414,127 @@ export default function RatePlanCard({
                     <div>
                       <p className="text-[11px] font-semibold text-rose-700 mb-1">Please fix:</p>
                       {validationErrors.map((error, idx) => (
-                        <p key={idx} className="text-[11px] text-rose-600">• {error.message}</p>
+                        <p key={idx} className="text-[11px] text-rose-600">{error.message}</p>
                       ))}
                     </div>
                   </div>
                 </div>
               )}
+
+              {/* Name & Description */}
+              <div className="space-y-4 mb-6">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-500">
+                  General Info
+                </p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[13px] font-medium text-neutral-600 block mb-1">Name</label>
+                    <input
+                      type="text"
+                      value={editData.name || ''}
+                      onChange={(e) => setEditData(prev => ({ ...prev, name: e.target.value }))}
+                      className={`w-full h-9 px-3 rounded-lg text-sm bg-white border font-medium focus:outline-none transition-all duration-150 ${
+                        hasFieldError('name')
+                          ? 'border-rose-300 focus:ring-2 focus:ring-rose-500/10'
+                          : 'border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10'
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[13px] font-medium text-neutral-600 block mb-1">Description</label>
+                    <textarea
+                      value={editData.description || ''}
+                      onChange={(e) => setEditData(prev => ({ ...prev, description: e.target.value }))}
+                      rows={2}
+                      className="w-full px-3 py-2 rounded-lg text-sm bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150 resize-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Base Prices */}
+              {editData.basePrice && Object.keys(editData.basePrice).length > 0 && (
+                <div className="space-y-3 mb-6">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-500">
+                    Base Prices
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {Object.entries(editData.basePrice).map(([roomType, price]) => (
+                      <div key={roomType}>
+                        <label className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 block mb-1">
+                          {roomType}
+                        </label>
+                        <input
+                          type="number"
+                          value={price}
+                          onChange={(e) => setEditData(prev => ({
+                            ...prev,
+                            basePrice: { ...prev.basePrice, [roomType]: parseFloat(e.target.value) || 0 }
+                          }))}
+                          className={`w-full h-9 px-3 rounded-lg text-sm bg-white border text-center font-semibold focus:outline-none transition-all duration-150 ${
+                            hasFieldError('basePrice')
+                              ? 'border-rose-300 focus:ring-2 focus:ring-rose-500/10'
+                              : 'border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10'
+                          }`}
+                          min={0}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Meal Plan & Commission */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-500">
+                    Meal & Commission
+                  </p>
+                  <div>
+                    <label className="text-[13px] font-medium text-neutral-600 block mb-1">Meal Plan</label>
+                    <select
+                      value={editData.mealPlan || 'Room Only'}
+                      onChange={(e) => setEditData(prev => ({ ...prev, mealPlan: e.target.value }))}
+                      className="w-full h-9 px-3 rounded-lg text-sm bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
+                    >
+                      <option value="Room Only">Room Only</option>
+                      <option value="Breakfast">Breakfast</option>
+                      <option value="Half Board">Half Board</option>
+                      <option value="Full Board">Full Board</option>
+                      <option value="All Inclusive">All Inclusive</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[13px] font-medium text-neutral-600 block mb-1">Commission (%)</label>
+                    <input
+                      type="number"
+                      value={editData.commission ?? 0}
+                      onChange={(e) => setEditData(prev => ({ ...prev, commission: parseFloat(e.target.value) || 0 }))}
+                      className={`w-24 h-9 px-3 rounded-lg text-sm bg-white border text-center font-semibold focus:outline-none transition-all duration-150 ${
+                        hasFieldError('commission')
+                          ? 'border-rose-300 focus:ring-2 focus:ring-rose-500/10'
+                          : 'border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10'
+                      }`}
+                      min={0}
+                      max={100}
+                    />
+                  </div>
+                </div>
+
+                {/* Cancellation Policy */}
+                <div className="space-y-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-500">
+                    Cancellation Policy
+                  </p>
+                  <textarea
+                    value={editData.cancellationPolicy || ''}
+                    onChange={(e) => setEditData(prev => ({ ...prev, cancellationPolicy: e.target.value }))}
+                    rows={3}
+                    className="w-full px-3 py-2 rounded-lg text-sm bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150 resize-none"
+                    placeholder="Enter cancellation policy..."
+                  />
+                </div>
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Stay Restrictions */}

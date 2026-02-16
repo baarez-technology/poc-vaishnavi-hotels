@@ -4,7 +4,8 @@
  * Side drawer pattern matching Staff/Channel Manager
  */
 
-import { User, Clock, CheckCircle2, AlertCircle, Play, CheckCircle, Ban, RotateCcw, Edit } from 'lucide-react';
+import { useState } from 'react';
+import { User, Clock, CheckCircle2, AlertCircle, Play, CheckCircle, Ban, RotateCcw, Edit, Send } from 'lucide-react';
 import { Button } from '../ui2/Button';
 import { Drawer } from '../ui2/Drawer';
 
@@ -19,8 +20,12 @@ export default function RoomDrawer({
   onMarkDirty,
   onBlockRoom,
   onUnblockRoom,
-  onToggleChecklistItem
+  onToggleChecklistItem,
+  onAddNote
 }) {
+  const [newNote, setNewNote] = useState('');
+  const [isSavingNote, setIsSavingNote] = useState(false);
+
   if (!room) return null;
 
   // Get housekeeper from room data (comes from API)
@@ -130,12 +135,15 @@ export default function RoomDrawer({
             <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900">
               Assigned Housekeeper
             </h4>
-            <button
-              onClick={onAssignHousekeeper}
-              className="text-[12px] text-terra-600 hover:text-terra-700 font-semibold transition-colors"
-            >
-              {housekeeper ? 'Reassign' : 'Assign'}
-            </button>
+            {/* BUG-021 FIX: Only allow assigning staff to dirty/in_progress rooms */}
+            {(room.status === 'dirty' || room.status === 'in_progress') && (
+              <button
+                onClick={onAssignHousekeeper}
+                className="text-[12px] text-terra-600 hover:text-terra-700 font-semibold transition-colors"
+              >
+                {housekeeper ? 'Reassign' : 'Assign'}
+              </button>
+            )}
           </div>
           {housekeeper ? (
             <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100">
@@ -226,7 +234,7 @@ export default function RoomDrawer({
           </div>
         )}
 
-        {/* Cleaning Progress */}
+        {/* Cleaning Progress - Show for all rooms with checklist including clean/inspected */}
         {totalTasks > 0 && room.status !== 'out_of_service' && (
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -286,17 +294,50 @@ export default function RoomDrawer({
           </div>
         )}
 
-        {/* Notes */}
-        {room.notes && (
-          <div>
-            <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
-              Notes
-            </h4>
-            <div className="p-3 sm:p-4 rounded-lg bg-gold-50 border border-gold-100">
-              <p className="text-[13px] text-neutral-700 leading-relaxed">{room.notes}</p>
+        {/* Notes - BUG-005 FIX: Added input form for adding notes */}
+        <div>
+          <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
+            Notes
+          </h4>
+          {room.notes && (
+            <div className="p-3 sm:p-4 rounded-lg bg-gold-50 border border-gold-100 mb-3">
+              <p className="text-[13px] text-neutral-700 leading-relaxed whitespace-pre-line">{room.notes}</p>
             </div>
-          </div>
-        )}
+          )}
+          {onAddNote && (
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <textarea
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  placeholder="Add a note (e.g., 'Washroom tap not working')..."
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-lg text-sm bg-white border border-neutral-200 text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150 resize-none"
+                />
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={Send}
+                disabled={!newNote.trim() || isSavingNote}
+                loading={isSavingNote}
+                onClick={async () => {
+                  if (!newNote.trim()) return;
+                  setIsSavingNote(true);
+                  try {
+                    await onAddNote(room.id, newNote.trim());
+                    setNewNote('');
+                  } finally {
+                    setIsSavingNote(false);
+                  }
+                }}
+                className="flex-shrink-0"
+              >
+                Save
+              </Button>
+            </div>
+          )}
+        </div>
 
         {/* Quick Actions */}
         <div>

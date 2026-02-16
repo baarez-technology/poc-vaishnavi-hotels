@@ -141,7 +141,12 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
   const fetchRooms = async () => {
     setIsLoading(true);
     try {
-      const fetchedRooms = await roomsService.getRooms();
+      // Pass booking dates to filter rooms available for the stay period
+      const searchParams: any = {};
+      if (booking?.checkIn) searchParams.checkIn = booking.checkIn;
+      if (booking?.checkOut) searchParams.checkOut = booking.checkOut;
+      if (booking?.roomType) searchParams.type = booking.roomType;
+      const fetchedRooms = await roomsService.getRooms(searchParams);
       setRooms(fetchedRooms);
     } catch (err: any) {
       console.error('[AssignRoomModal] Error fetching rooms:', err);
@@ -205,7 +210,7 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
     if (!rooms || rooms.length === 0) return [];
 
     const recommendationMap = new Map(
-      recommendations.map(r => [r.room_id, r])
+      recommendations.map(r => [String(r.room_id), r])
     );
 
     return rooms.filter(room => {
@@ -226,7 +231,7 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
       return true;
     }).map(room => {
       // Merge recommendation data if available
-      const rec = recommendationMap.get(room.id);
+      const rec = recommendationMap.get(String(room.id));
       return {
         ...room,
         match_score: rec?.match_score || null,
@@ -234,6 +239,23 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
       };
     });
   }, [rooms, booking, bookings, recommendations]);
+
+  // Filter AI recommendations by search query only (BUG-008 FIX)
+  // Type/floor filters are NOT applied since AI recommendations are already
+  // curated by the scoring algorithm and may include beneficial upgrades.
+  const filteredRecommendations = useMemo(() => {
+    let filtered = [...recommendations];
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(rec =>
+        rec.room_number?.toLowerCase().includes(query) ||
+        rec.room_type?.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered.slice(0, 5);
+  }, [recommendations, searchQuery]);
 
   // Filter and search rooms
   const filteredRooms = useMemo(() => {
@@ -271,11 +293,14 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
         return b.match_score - a.match_score;
       }
 
-      // Then matching type
-      const aType = a.room_type?.name || a.type || '';
-      const bType = b.room_type?.name || b.type || '';
-      if (aType === bookingType && bType !== bookingType) return -1;
-      if (bType === bookingType && aType !== bookingType) return 1;
+      // Then matching type (fuzzy: includes match)
+      const aType = (a.room_type?.name || a.type || '').toLowerCase().trim();
+      const bType = (b.room_type?.name || b.type || '').toLowerCase().trim();
+      const btLower = bookingType.toLowerCase().trim();
+      const aMatches = btLower && (aType === btLower || aType.includes(btLower) || btLower.includes(aType));
+      const bMatches = btLower && (bType === btLower || bType.includes(btLower) || btLower.includes(bType));
+      if (aMatches && !bMatches) return -1;
+      if (bMatches && !aMatches) return 1;
 
       // Then by room number
       const aNum = a.number || a.roomNumber || '';
@@ -428,21 +453,40 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
         )}
 
         {/* AI Recommendations */}
-        {recommendations.length > 0 && (
+        {filteredRecommendations.length > 0 && (
           <section>
             <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-3">
               <Sparkles className="w-3 h-3 inline mr-1 text-amber-500" />
-              AI Recommended ({recommendations.length})
+              AI Recommended ({filteredRecommendations.length})
             </h3>
             <div className="grid grid-cols-5 gap-2">
-              {recommendations.slice(0, 5).map((rec, idx) => {
-                const isSelected = selectedRoom?.id === rec.room_id;
+              {filteredRecommendations.map((rec, idx) => {
+                const isSelected = String(selectedRoom?.id) === String(rec.room_id);
                 return (
                   <button
                     key={rec.room_id}
                     onClick={() => {
-                      const room = rooms.find(r => r.id === rec.room_id);
-                      if (room) setSelectedRoom(room);
+                      // BUG-008 FIX: Try to find in fetched rooms first, otherwise
+                      // construct a room object from recommendation data so the
+                      // click always works (even for upgrades/different room types)
+                      const room = rooms.find(r => String(r.id) === String(rec.room_id));
+                      if (room) {
+                        setSelectedRoom({ ...room, match_score: rec.match_score, is_recommended: true });
+                      } else {
+                        setSelectedRoom({
+                          id: rec.room_id,
+                          number: rec.room_number,
+                          roomNumber: rec.room_number,
+                          room_type: { name: rec.room_type },
+                          type: rec.room_type,
+                          floor: rec.floor,
+                          status: rec.status,
+                          capacity: null,
+                          max_occupancy: null,
+                          match_score: rec.match_score,
+                          is_recommended: true,
+                        });
+                      }
                     }}
                     className={`p-2 rounded-lg border-2 text-center transition-all ${
                       isSelected
@@ -580,7 +624,9 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
                 const roomFloor = room.floor || Math.floor(parseInt(roomNumber) / 100);
                 const roomPrice = room.room_type?.base_price || room.price || 0;
                 const isSelected = selectedRoom?.id === room.id;
-                const isMatchingType = roomType === booking?.roomType;
+                const roomTypeLower = roomType.toLowerCase().trim();
+                const bookedTypeLower = (booking?.roomType || '').toLowerCase().trim();
+                const isMatchingType = bookedTypeLower && (roomTypeLower === bookedTypeLower || roomTypeLower.includes(bookedTypeLower) || bookedTypeLower.includes(roomTypeLower));
                 const isRecommended = room.is_recommended;
 
                 return (
@@ -659,6 +705,27 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
             </div>
           )}
         </section>
+
+        {/* Room Type Mismatch Warning */}
+        {selectedRoom && (() => {
+          const selectedType = (selectedRoom.room_type?.name || selectedRoom.type || '').toLowerCase().trim();
+          const bookedType = (booking?.roomType || '').toLowerCase().trim();
+          // Use fuzzy match: types match if one contains the other (handles "Standard" vs "Standard Room")
+          const typesMatch = !bookedType || !selectedType || selectedType === bookedType || selectedType.includes(bookedType) || bookedType.includes(selectedType);
+          return !typesMatch ? (
+            <div className="p-3 bg-amber-50 border border-amber-300 rounded-lg">
+              <p className="text-[13px] font-semibold text-amber-800">
+                Room Type Mismatch
+              </p>
+              <p className="text-[12px] text-amber-700 mt-1">
+                Selected room type does not match the booked room type.
+                Guest booked <span className="font-semibold">{booking.roomType}</span> but selected room is{' '}
+                <span className="font-semibold">{selectedRoom.room_type?.name || selectedRoom.type}</span>.
+                Proceed only if upgrading or with guest consent.
+              </p>
+            </div>
+          ) : null;
+        })()}
 
         {/* Selected Room Summary */}
         {selectedRoom && (

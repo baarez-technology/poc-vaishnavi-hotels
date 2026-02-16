@@ -258,7 +258,7 @@ function RevenueAIContent() {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <Button
                 variant="outline"
                 size="sm"

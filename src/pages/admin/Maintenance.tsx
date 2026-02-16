@@ -70,6 +70,7 @@ export default function Maintenance() {
 
   // View state
   const [activeTab, setActiveTab] = useState('workorders'); // 'workorders', 'preventive', 'calendar', 'inventory'
+  const [woSubTab, setWoSubTab] = useState('active'); // 'active', 'completed', 'all'
 
   // Filters
   const [filters, setFilters] = useState({
@@ -106,6 +107,17 @@ export default function Maintenance() {
   const [openPMMenuId, setOpenPMMenuId] = useState(null);
   const pmMenuRef = useRef(null);
 
+  // BUG-025 FIX: Sync selectedWO with latest workOrders state
+  // When workOrders updates (e.g., after assign, start, complete), keep the drawer in sync
+  useEffect(() => {
+    if (selectedWO) {
+      const updated = workOrders.find(wo => wo.id === selectedWO.id);
+      if (updated && updated !== selectedWO) {
+        setSelectedWO(updated);
+      }
+    }
+  }, [workOrders]);
+
   // Close PM menu on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -121,6 +133,14 @@ export default function Maintenance() {
   const processedWorkOrders = useMemo(() => {
     let result = [...workOrders];
 
+    // Apply sub-tab filter (active vs completed vs all)
+    if (woSubTab === 'active') {
+      result = result.filter(wo => wo.status !== 'completed' && wo.status !== 'cancelled');
+    } else if (woSubTab === 'completed') {
+      result = result.filter(wo => wo.status === 'completed' || wo.status === 'cancelled');
+    }
+    // 'all' shows everything
+
     // Apply technician filter (special handling for unassigned)
     if (filters.technician === 'unassigned') {
       result = result.filter(wo => !wo.assignedTo);
@@ -135,7 +155,7 @@ export default function Maintenance() {
     result = sortWorkOrders(result, sortField, sortDirection);
 
     return result;
-  }, [workOrders, filters, searchQuery, sortField, sortDirection]);
+  }, [workOrders, filters, searchQuery, sortField, sortDirection, woSubTab]);
 
   // PM Tasks processed
   const overduePM = useMemo(() => getOverduePMTasks(), [getOverduePMTasks]);
@@ -160,9 +180,12 @@ export default function Maintenance() {
     setSearchQuery('');
   };
 
-  const handleCreateWO = (data) => {
-    const newWO = addWorkOrder(data);
-    showToast(`Work Order ${newWO.id} created successfully`, 'success');
+  const handleCreateWO = async (data) => {
+    try {
+      await addWorkOrder(data);
+    } catch (err) {
+      // Error already handled by hook toast
+    }
   };
 
   const handleUpdateWO = (woId, data) => {
@@ -226,30 +249,42 @@ export default function Maintenance() {
   };
 
   // PM Handlers
-  const handleCreatePM = (data) => {
-    const newPM = addPMTask(data);
-    showToast(`PM Task ${newPM.id} created`, 'success');
+  const handleCreatePM = async (data) => {
+    try {
+      await addPMTask(data);
+    } catch (err) {
+      // Error handled by hook
+    }
   };
 
-  const handleUpdatePM = (pmId, data) => {
-    updatePMTask(pmId, data);
-    showToast('PM Task updated', 'success');
-    setSelectedPM(null);
+  const handleUpdatePM = async (pmId, data) => {
+    try {
+      await updatePMTask(pmId, data);
+      setSelectedPM(null);
+    } catch (err) {
+      // Error handled by hook
+    }
   };
 
-  const handleCompletePM = (pmId) => {
-    completePMTask(pmId);
-    showToast('PM Task completed, next scheduled', 'success');
+  const handleCompletePM = async (pmId) => {
+    try {
+      await completePMTask(pmId);
+    } catch (err) {
+      // Error handled by hook
+    }
   };
 
   const handleDeletePM = (pmId) => {
     setDeletePMConfirm({ isOpen: true, pmId });
   };
 
-  const confirmDeletePM = () => {
+  const confirmDeletePM = async () => {
     if (deletePMConfirm.pmId) {
-      deletePMTask(deletePMConfirm.pmId);
-      showToast('PM Task deleted', 'success');
+      try {
+        await deletePMTask(deletePMConfirm.pmId);
+      } catch (err) {
+        // Error handled by hook
+      }
     }
     setDeletePMConfirm({ isOpen: false, pmId: null });
   };
@@ -280,35 +315,34 @@ export default function Maintenance() {
     setShowInventoryModal(true);
   };
 
-  const handleInventorySubmit = (data) => {
-    if (editingInventoryItem) {
-      // Edit mode
-      updateInventoryItem(data.id, data);
-      showToast('Item updated', 'success');
-    } else {
-      // Add mode
-      addInventoryItem(data);
-      showToast('Item added', 'success');
+  const handleInventorySubmit = async (data) => {
+    try {
+      if (editingInventoryItem) {
+        await updateInventoryItem(data.id, data);
+      } else {
+        await addInventoryItem(data);
+      }
+      setShowInventoryModal(false);
+      setEditingInventoryItem(null);
+    } catch {
+      // Error toast already shown by useMaintenance hook
     }
-    setShowInventoryModal(false);
-    setEditingInventoryItem(null);
   };
 
   const handleDeleteInventoryItem = (itemId) => {
     setDeleteInventoryConfirm({ isOpen: true, itemId });
   };
 
-  const confirmDeleteInventory = () => {
+  const confirmDeleteInventory = async () => {
     if (deleteInventoryConfirm.itemId) {
-      deleteInventoryItem(deleteInventoryConfirm.itemId);
-      showToast('Item deleted', 'success');
+      await deleteInventoryItem(deleteInventoryConfirm.itemId);
     }
     setDeleteInventoryConfirm({ isOpen: false, itemId: null });
   };
 
-  const handleUpdateStock = (itemId, quantity, isAddition) => {
-    updateStock(itemId, quantity, isAddition);
-    showToast(`Stock ${isAddition ? 'added' : 'removed'}`, 'success');
+  const handleUpdateStock = async (itemId, quantity, isAddition) => {
+    await updateStock(itemId, quantity, isAddition);
+    // Success/error toasts are shown by updateStock itself
   };
 
   const tabs = [
@@ -421,6 +455,34 @@ export default function Maintenance() {
         {/* Tab Content */}
         {activeTab === 'workorders' && (
           <>
+            {/* Work Order Sub-Tabs: Active / Completed / All */}
+            <div className="px-4 sm:px-6 pt-3 sm:pt-4 border-b border-neutral-100 bg-neutral-50/30">
+              <div className="flex items-center gap-1">
+                {[
+                  { id: 'active', label: 'Active', count: workOrders.filter(wo => wo.status !== 'completed' && wo.status !== 'cancelled').length },
+                  { id: 'completed', label: 'Completed', count: workOrders.filter(wo => wo.status === 'completed' || wo.status === 'cancelled').length },
+                  { id: 'all', label: 'All', count: workOrders.length }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setWoSubTab(tab.id)}
+                    className={`px-3 sm:px-4 py-2 text-[12px] sm:text-[13px] font-semibold rounded-t-lg transition-all ${
+                      woSubTab === tab.id
+                        ? 'bg-white text-neutral-900 border border-b-0 border-neutral-200 -mb-px'
+                        : 'text-neutral-500 hover:text-neutral-700'
+                    }`}
+                  >
+                    {tab.label}
+                    <span className={`ml-1.5 text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded-full ${
+                      woSubTab === tab.id ? 'bg-terra-100 text-terra-700' : 'bg-neutral-200 text-neutral-600'
+                    }`}>
+                      {tab.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Filters */}
             <div className="px-4 sm:px-6 py-3 sm:py-4 bg-neutral-50/30 border-b border-neutral-100">
               <WOFilters
@@ -624,6 +686,9 @@ export default function Maintenance() {
               onEditItem={handleEditInventoryItem}
               onDeleteItem={handleDeleteInventoryItem}
               onAddItem={handleAddInventoryItem}
+              onUpdateMinStock={async (itemId, minStock) => {
+                await updateInventoryItem(itemId, { minStock });
+              }}
             />
           </div>
         )}

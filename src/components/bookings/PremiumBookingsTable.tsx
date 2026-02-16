@@ -309,7 +309,10 @@ export default function PremiumBookingsTable({
                         </span>
                         <div className="flex items-center gap-1.5 mt-1.5 text-xs text-neutral-500">
                           <User className="w-3 h-3" />
-                          <span>{booking.guests} guest{booking.guests > 1 ? 's' : ''}</span>
+                          <span>
+                            {booking.adults || booking.guests} adult{(booking.adults || booking.guests) !== 1 ? 's' : ''}
+                            {(booking.children || 0) > 0 && `, ${booking.children} child${booking.children !== 1 ? 'ren' : ''}`}
+                          </span>
                         </div>
                       </div>
                     </td>

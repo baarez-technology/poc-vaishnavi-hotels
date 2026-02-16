@@ -4,6 +4,7 @@ import { Button, IconButton } from '../../components/ui2/Button';
 
 // Import context
 import { ReputationProvider, useReputation } from '../../contexts/ReputationContext';
+import { useToast } from '../../contexts/ToastContext';
 
 // Import components
 import SentimentSummary from '../../components/reputation/SentimentSummary';
@@ -30,14 +31,19 @@ function ReputationAIContent() {
     settings,
     metrics,
     isLoading,
+    isFilterLoading,
+    updateFilters,
     updateSettings,
     addReviewResponse,
     generateAutoReply,
     influenceChurnProbability,
     influenceLTVCurve,
-    affectRateRecommendations
+    affectRateRecommendations,
+    loadReputation,
+    engineStats
   } = useReputation();
 
+  const { showToast } = useToast();
   const [selectedReview, setSelectedReview] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date());
@@ -50,18 +56,31 @@ function ReputationAIContent() {
     setSelectedReview(null);
   }, []);
 
-  const handleRespondToReview = useCallback((reviewId, responseText) => {
-    addReviewResponse(reviewId, responseText);
-    setSelectedReview(null);
-  }, [addReviewResponse]);
+  const handleRespondToReview = useCallback(async (reviewId, responseText) => {
+    try {
+      await addReviewResponse(reviewId, responseText);
+      showToast('Response published successfully', 'success');
+      setSelectedReview(null);
+    } catch (error) {
+      console.error('Failed to respond to review:', error);
+      showToast('Failed to publish response', 'error');
+    }
+  }, [addReviewResponse, showToast]);
 
-  const handleRefresh = useCallback(() => {
+  const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    setTimeout(() => {
+    showToast('Syncing reputation data...', 'info');
+    try {
+      await loadReputation();
       setLastUpdated(new Date());
+      showToast('Reputation data synced successfully', 'success');
+    } catch (err) {
+      console.error('Failed to refresh:', err);
+      showToast('Failed to sync reputation data', 'error');
+    } finally {
       setIsRefreshing(false);
-    }, 1500);
-  }, []);
+    }
+  }, [loadReputation, showToast]);
 
   const handleExportCSV = useCallback(() => {
     const csvRows = [
@@ -81,9 +100,9 @@ function ReputationAIContent() {
         r.guest,
         r.source,
         r.rating,
-        r.sentiment,
+        r.sentimentLabel,
         r.date,
-        `"${r.title}"`,
+        `"${r.title || ''}"`,
         r.responded ? 'Yes' : 'No'
       ]),
       [],
@@ -94,11 +113,16 @@ function ReputationAIContent() {
 
     const csvContent = csvRows.map(row => row.join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
+    link.href = url;
     link.download = `reputation-report-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
     link.click();
-  }, [filteredReviews, keywords, metrics]);
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast('Report exported successfully', 'success');
+  }, [filteredReviews, keywords, metrics, showToast]);
 
   if (isLoading) {
     return (
@@ -169,7 +193,7 @@ function ReputationAIContent() {
         {/* Keywords & Reviews - Stacked */}
         <div className="space-y-4 sm:space-y-6">
           <KeywordFrequency data={keywords} />
-          <ReviewFeed reviews={filteredReviews} onReviewClick={handleReviewClick} />
+          <ReviewFeed reviews={filteredReviews} onReviewClick={handleReviewClick} isLoading={isFilterLoading} />
         </div>
 
         {/* AI Integration - Stacked */}
@@ -188,25 +212,33 @@ function ReputationAIContent() {
         {/* Auto-Reply Engine */}
         <AutoReplies settings={settings} onSettingsChange={updateSettings} />
 
-        {/* Footer Stats */}
+        {/* Footer Stats - Data from engineStats API */}
         <div className="bg-white rounded-[10px] p-4 sm:p-5">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 lg:gap-6">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
               <div>
                 <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Reputation Engine</p>
-                <p className="text-[13px] sm:text-[15px] font-semibold text-sage-600 mt-0.5">Active</p>
+                <p className={`text-[13px] sm:text-[15px] font-semibold mt-0.5 ${engineStats?.status === 'active' ? 'text-sage-600' : 'text-neutral-500'}`}>
+                  {engineStats?.status ? engineStats.status.charAt(0).toUpperCase() + engineStats.status.slice(1) : 'Loading...'}
+                </p>
               </div>
               <div>
                 <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">NLP Model</p>
-                <p className="text-[13px] sm:text-[15px] font-semibold text-neutral-900 mt-0.5">v3.2.0</p>
+                <p className="text-[13px] sm:text-[15px] font-semibold text-neutral-900 mt-0.5">
+                  {engineStats?.nlp_model_version || '—'}
+                </p>
               </div>
               <div>
                 <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Accuracy</p>
-                <p className="text-[13px] sm:text-[15px] font-semibold text-ocean-600 mt-0.5">92.7%</p>
+                <p className="text-[13px] sm:text-[15px] font-semibold text-ocean-600 mt-0.5">
+                  {engineStats?.sentiment_accuracy ? `${(engineStats.sentiment_accuracy * 100).toFixed(1)}%` : '—'}
+                </p>
               </div>
               <div>
                 <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Auto-Replies</p>
-                <p className="text-[13px] sm:text-[15px] font-semibold text-terra-500 mt-0.5">24 this week</p>
+                <p className="text-[13px] sm:text-[15px] font-semibold text-terra-500 mt-0.5">
+                  {engineStats?.auto_replies_sent_week ?? 0} this week
+                </p>
               </div>
             </div>
             <div className="text-left lg:text-right pt-3 lg:pt-0 border-t lg:border-t-0 border-neutral-100">
@@ -224,11 +256,6 @@ function ReputationAIContent() {
           onClose={handleCloseDrawer}
           onRespond={handleRespondToReview}
           generateAutoReply={generateAutoReply}
-          guestCRMData={{
-            totalStays: Math.floor(Math.random() * 10) + 1,
-            ltv: Math.floor(Math.random() * 200000) + 50000,
-            segment: ['Leisure', 'Business', 'VIP', 'Corporate'][Math.floor(Math.random() * 4)]
-          }}
         />
       )}
     </div>

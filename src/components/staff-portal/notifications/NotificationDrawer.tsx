@@ -10,19 +10,37 @@ import {
   Check,
   ChevronRight
 } from 'lucide-react';
-import { useNotifications, useUI } from '@/hooks/staff-portal/useStaffPortal';
+import { useNotifications, useUnreadNotificationCount, useNotificationActions } from '@/hooks/staff-portal/useStaffApi';
+import { useUI } from '@/hooks/staff-portal/useStaffPortal';
 import { Button } from '../ui/Button';
 
 export default function NotificationDrawer() {
   const navigate = useNavigate();
-  const {
-    notifications,
-    unreadCount,
-    markNotificationRead,
-    markAllNotificationsRead,
-    deleteNotification
-  } = useNotifications();
+  const { data: apiNotifications, refetch: refetchNotifications } = useNotifications();
+  const { count: unreadCount, refetch: refetchUnreadCount } = useUnreadNotificationCount();
+  const { markAsRead, markAllAsRead, deleteNotification: apiDeleteNotification } = useNotificationActions();
   const { notificationDrawerOpen, toggleNotificationDrawer } = useUI();
+
+  const notifications = apiNotifications || [];
+
+  const refetchAll = async () => {
+    await Promise.all([refetchNotifications(), refetchUnreadCount()]);
+  };
+
+  const markNotificationRead = async (id: any) => {
+    await markAsRead(id);
+    refetchAll();
+  };
+
+  const markAllNotificationsRead = async () => {
+    await markAllAsRead();
+    refetchAll();
+  };
+
+  const deleteNotification = async (id: any) => {
+    await apiDeleteNotification(id);
+    refetchAll();
+  };
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -125,22 +143,22 @@ export default function NotificationDrawer() {
                   className={`
                     relative p-4 cursor-pointer transition-colors
                     hover:bg-neutral-100/50
-                    ${!notification.read ? 'bg-primary-500/5' : ''}
+                    ${!notification.is_read ? 'bg-primary-500/5' : ''}
                   `}
                   onClick={() => handleNotificationClick(notification)}
                 >
-                  {!notification.read && (
+                  {!notification.is_read && (
                     <div className="absolute left-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary-500" />
                   )}
 
                   <div className="flex gap-3 pl-3">
                     <div className="flex-shrink-0 mt-0.5">
-                      {getNotificationIcon(notification.type, notification.priority)}
+                      {getNotificationIcon(notification.notification_type || notification.type, notification.priority)}
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <h4 className={`text-sm ${notification.read ? 'text-neutral-900' : 'font-semibold text-neutral-900'}`}>
+                        <h4 className={`text-sm ${notification.is_read ? 'text-neutral-900' : 'font-semibold text-neutral-900'}`}>
                           {notification.title}
                         </h4>
                         <button
@@ -160,7 +178,7 @@ export default function NotificationDrawer() {
 
                       <div className="flex items-center justify-between mt-2">
                         <span className="text-xs text-neutral-500">
-                          {formatTimestamp(notification.timestamp)}
+                          {formatTimestamp(notification.created_at || notification.timestamp)}
                         </span>
 
                         {notification.actionUrl && (

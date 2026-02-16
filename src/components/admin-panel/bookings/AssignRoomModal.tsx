@@ -35,12 +35,19 @@ export default function AssignRoomModal({
   const fetchRooms = async () => {
     setIsLoadingRooms(true);
     try {
-      const rooms = await roomsService.getRooms();
+      // Pass booking dates to filter rooms available for the stay period
+      const searchParams: any = {};
+      if (booking?.checkIn) searchParams.checkIn = booking.checkIn;
+      if (booking?.checkOut) searchParams.checkOut = booking.checkOut;
+      if (booking?.roomType) searchParams.type = booking.roomType;
+
+      const rooms = await roomsService.getRooms(searchParams);
       // Handle both array and items wrapper
       const roomsArray = Array.isArray(rooms) ? rooms : (rooms?.items || []);
 
       // Transform and filter available rooms
       const assignableStatuses = ['available', 'clean', 'inspected', 'dirty'];
+      const bookingRoomType = (booking?.roomType || '').toLowerCase();
       const transformedRooms = roomsArray
         .map((room: any) => ({
           id: room.id,
@@ -51,7 +58,8 @@ export default function AssignRoomModal({
           price: room.price || 0,
           maxOccupancy: room.maxGuests || 2,
         }))
-        .filter(room => assignableStatuses.includes(room.status));
+        .filter(room => assignableStatuses.includes(room.status))
+        .filter(room => !bookingRoomType || room.type.toLowerCase().includes(bookingRoomType) || bookingRoomType.includes(room.type.toLowerCase()));
 
       setRoomsData(transformedRooms);
     } catch (error) {

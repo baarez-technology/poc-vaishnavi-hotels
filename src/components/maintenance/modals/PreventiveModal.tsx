@@ -162,14 +162,26 @@ export default function PreventiveModal({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
-    if (validate()) {
+  // BUG-027 FIX: Await async onSubmit before closing the modal.
+  // Previously, onClose() fired immediately (before the API call completed).
+  // If the API failed, the modal was already closed and the user believed
+  // the task was created — but it was never persisted, so it vanished on refresh.
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!validate()) return;
+    setIsSubmitting(true);
+    try {
       if (mode === 'edit' && pmTask) {
-        onSubmit(pmTask.id, formData);
+        await onSubmit(pmTask.id, formData);
       } else {
-        onSubmit(formData);
+        await onSubmit(formData);
       }
       onClose();
+    } catch {
+      // Error toast is shown by the hook — keep modal open so user can retry
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -227,9 +239,10 @@ export default function PreventiveModal({
       <button
         type="button"
         onClick={handleSubmit}
-        className="px-4 py-2.5 bg-terra-500 hover:bg-terra-600 text-white rounded-lg text-[13px] font-semibold transition-colors"
+        disabled={isSubmitting}
+        className="px-4 py-2.5 bg-terra-500 hover:bg-terra-600 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-lg text-[13px] font-semibold transition-colors"
       >
-        {mode === 'edit' ? 'Save Changes' : 'Create PM Task'}
+        {isSubmitting ? 'Saving...' : (mode === 'edit' ? 'Save Changes' : 'Create PM Task')}
       </button>
     </div>
   );

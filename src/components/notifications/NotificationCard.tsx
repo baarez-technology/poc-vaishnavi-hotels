@@ -33,7 +33,7 @@ function formatTimestamp(timestamp) {
   return time.toLocaleDateString();
 }
 
-export default function NotificationCard({ notification, onDelete }) {
+export default function NotificationCard({ notification, onDelete, onNavigate }) {
   const navigate = useNavigate();
   const { markNotificationRead } = useAdmin();
 
@@ -43,6 +43,8 @@ export default function NotificationCard({ notification, onDelete }) {
   const handleClick = () => {
     markNotificationRead(notification.id);
     if (notification.link) {
+      // Close the drawer before navigating so the page is visible
+      if (onNavigate) onNavigate();
       navigate(notification.link);
     }
   };

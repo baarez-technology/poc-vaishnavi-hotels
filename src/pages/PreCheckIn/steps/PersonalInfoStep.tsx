@@ -343,7 +343,7 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
                         value={field.value}
                         onChange={field.onChange}
                         placeholder="Select Country"
-                        icon={<Globe className="w-4 h-4" />}
+                        icon={Globe}
                         error={!!errors.country}
                         searchable
                       />
@@ -365,7 +365,7 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
                           value={field.value}
                           onChange={field.onChange}
                           placeholder="Select State"
-                          icon={<Landmark className="w-4 h-4" />}
+                          icon={Landmark}
                           error={!!errors.state}
                           disabled={!watchedCountry}
                           searchable
@@ -403,7 +403,7 @@ export function PersonalInfoStep({ onNext, onPrevious }: PersonalInfoStepProps) 
                           value={field.value}
                           onChange={field.onChange}
                           placeholder="Select City"
-                          icon={<Building2 className="w-4 h-4" />}
+                          icon={Building2}
                           error={!!errors.city}
                           disabled={!watchedState}
                           searchable

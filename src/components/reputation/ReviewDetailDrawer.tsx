@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Star,
   Calendar,
@@ -6,13 +6,16 @@ import {
   Copy,
   Check,
   Sparkles,
-  Send,
   Edit3,
   User,
-  ExternalLink
+  ExternalLink,
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
+import { useReputation } from '@/context/ReputationContext';
+import { useToast } from '@/contexts/ToastContext';
 
 const SOURCE_COLORS: Record<string, string> = {
   'Booking.com': '#003580',
@@ -51,18 +54,24 @@ const StarRating = ({ rating }: { rating: number }) => {
 };
 
 interface Review {
-  id: string;
+  id: string | number;
   guest: string;
   email?: string;
   source: string;
   rating: number;
   sentiment: number;
-  date: string;
+  date?: string;
+  created_at?: string;
   title: string;
   review: string;
   keywords?: string[];
   responded?: boolean;
   responseText?: string;
+  response_text?: string;  // Backend field name
+  response?: string;       // Backend sends this field
+  responseDate?: string;
+  response_date?: string;  // Backend field name
+  responded_at?: string;   // Backend sends this field
 }
 
 interface GuestCRMData {
@@ -74,8 +83,7 @@ interface GuestCRMData {
 interface ReviewDetailDrawerProps {
   review: Review | null;
   onClose: () => void;
-  onRespond?: (reviewId: string, responseText: string) => void;
-  generateAutoReply?: (review: Review) => string;
+  onRespond?: (reviewId: string | number, responseText: string) => void;
   guestCRMData?: GuestCRMData;
 }
 
@@ -83,17 +91,52 @@ export default function ReviewDetailDrawer({
   review,
   onClose,
   onRespond,
-  generateAutoReply,
   guestCRMData
 }: ReviewDetailDrawerProps) {
+  const { generateDraft } = useReputation();
+  const { showToast } = useToast();
   const [responseText, setResponseText] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [suggestedReply, setSuggestedReply] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
-  const suggestedReply = useMemo(() => {
-    if (!review || !generateAutoReply) return '';
-    return generateAutoReply(review);
-  }, [review, generateAutoReply]);
+  // Check if review already has a response (backend sends 'response' field)
+  const reviewHasResponse = review?.responded || !!review?.responseText || !!review?.response_text || !!review?.response;
+
+  // Generate AI response when drawer opens with a review that has no response
+  useEffect(() => {
+    if (review && !reviewHasResponse) {
+      generateAIResponse();
+    }
+    // Reset state when review changes
+    return () => {
+      setSuggestedReply('');
+      setResponseText('');
+      setIsEditing(false);
+      setGenerateError(null);
+    };
+  }, [review?.id, reviewHasResponse]);
+
+  const generateAIResponse = async () => {
+    if (!review) return;
+
+    setIsGenerating(true);
+    setGenerateError(null);
+
+    try {
+      const reviewId = typeof review.id === 'string' ? parseInt(review.id, 10) : review.id;
+      const result = await generateDraft(reviewId, 'professional', true);
+      setSuggestedReply(result.draft_text || '');
+    } catch (error: any) {
+      console.error('Failed to generate AI response:', error);
+      setGenerateError('Failed to generate response. Click regenerate to try again.');
+      showToast('Failed to generate AI response', 'error');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   if (!review) return null;
 
@@ -108,12 +151,21 @@ export default function ReviewDetailDrawer({
   const handleCopy = () => {
     navigator.clipboard.writeText(suggestedReply);
     setCopied(true);
+    showToast('Response copied to clipboard', 'success');
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleSend = () => {
     if (responseText.trim() && onRespond) {
       onRespond(review.id, responseText);
+      onClose();
+    }
+  };
+
+  // Send the AI-generated response directly without editing
+  const handleSendSuggested = () => {
+    if (suggestedReply.trim() && onRespond) {
+      onRespond(review.id, suggestedReply);
       onClose();
     }
   };
@@ -146,7 +198,10 @@ export default function ReviewDetailDrawer({
     </div>
   );
 
-  const footer = !review.responded ? (
+  // Check if review already has a response (backend sends 'response' field)
+  const hasExistingResponse = review.responded || review.responseText || review.response_text || review.response;
+
+  const footer = !hasExistingResponse ? (
     <div className="flex items-center justify-end gap-2 sm:gap-3 w-full">
       <Button variant="outline" onClick={onClose} className="text-[12px] sm:text-[13px] px-3 sm:px-4 py-2">
         Cancel
@@ -172,9 +227,12 @@ export default function ReviewDetailDrawer({
     <Drawer
       isOpen={!!review}
       onClose={onClose}
+      title=""
+      subtitle=""
       header={header}
       maxWidth="max-w-xl"
       footer={footer}
+      className=""
     >
       <div className="space-y-4 sm:space-y-5">
         {/* Rating & Sentiment */}
@@ -206,12 +264,17 @@ export default function ReviewDetailDrawer({
         <div className="flex items-center gap-2 text-[12px] sm:text-[13px] text-neutral-500">
           <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
           <span className="truncate">
-            {new Date(review.date).toLocaleDateString('en-US', {
-              weekday: 'short',
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric'
-            })}
+            {(() => {
+              const dateStr = review.date || review.created_at;
+              if (!dateStr) return 'No date';
+              const d = new Date(dateStr);
+              return isNaN(d.getTime()) ? 'No date' : d.toLocaleDateString('en-US', {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              });
+            })()}
           </span>
         </div>
 
@@ -277,22 +340,50 @@ export default function ReviewDetailDrawer({
         )}
 
         {/* Existing Response */}
-        {review.responded && review.responseText && (
-          <div>
-            <p className="text-[10px] sm:text-[11px] font-semibold text-sage-700 uppercase tracking-widest mb-1.5 sm:mb-2 flex items-center gap-1">
-              <Check className="w-3 h-3" />
-              Your Response
-            </p>
-            <div className="bg-sage-50 rounded-[10px] p-3 sm:p-4 border border-sage-100">
-              <p className="text-[12px] sm:text-[13px] text-neutral-700 whitespace-pre-wrap">
-                {review.responseText}
+        {hasExistingResponse && (review.responseText || review.response_text || review.response) && (
+          <div className="bg-sage-50/50 rounded-[12px] p-4 sm:p-5 border border-sage-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-sage-500 flex items-center justify-center">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-[12px] sm:text-[13px] font-semibold text-sage-700">Response Published</p>
+                  {(review.responseDate || review.response_date || review.responded_at) && (
+                    <p className="text-[10px] sm:text-[11px] text-neutral-500">
+                      {new Date(review.responseDate || review.response_date || review.responded_at || '').toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="xs"
+                icon={Copy}
+                onClick={() => {
+                  navigator.clipboard.writeText(review.responseText || review.response_text || review.response || '');
+                  showToast('Response copied to clipboard', 'success');
+                }}
+              >
+                Copy
+              </Button>
+            </div>
+            <div className="bg-white rounded-[10px] p-3 sm:p-4 border border-sage-100">
+              <p className="text-[12px] sm:text-[13px] text-neutral-700 whitespace-pre-wrap leading-relaxed">
+                {review.responseText || review.response_text || review.response}
               </p>
             </div>
           </div>
         )}
 
         {/* AI Response Generator */}
-        {!review.responded && (
+        {!hasExistingResponse && (
           <div>
             <p className="text-[10px] sm:text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-1.5 sm:mb-2 flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-terra-600" />
@@ -300,29 +391,73 @@ export default function ReviewDetailDrawer({
             </p>
 
             <div className="bg-terra-50 rounded-[10px] p-3 sm:p-4 border border-terra-100 mb-2 sm:mb-3">
-              <p className="text-[12px] sm:text-[13px] text-neutral-700 whitespace-pre-wrap leading-relaxed">
-                {suggestedReply}
-              </p>
-              <div className="flex items-center gap-2 mt-2 sm:mt-3">
-                <Button
-                  variant="outline"
-                  size="xs"
-                  icon={copied ? Check : Copy}
-                  onClick={handleCopy}
-                  className="text-[10px] sm:text-[11px]"
-                >
-                  {copied ? 'Copied' : 'Copy'}
-                </Button>
-                <Button
-                  variant="primary"
-                  size="xs"
-                  icon={Edit3}
-                  onClick={handleUseSuggested}
-                  className="text-[10px] sm:text-[11px]"
-                >
-                  Use & Edit
-                </Button>
-              </div>
+              {isGenerating ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="w-5 h-5 text-terra-600 animate-spin" />
+                  <span className="ml-2 text-[12px] text-neutral-600">Generating AI response...</span>
+                </div>
+              ) : generateError ? (
+                <div className="text-center py-4">
+                  <p className="text-[12px] text-neutral-500 mb-2">{generateError}</p>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    icon={RefreshCw}
+                    onClick={generateAIResponse}
+                    className="text-[10px] sm:text-[11px]"
+                  >
+                    Regenerate
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-[12px] sm:text-[13px] text-neutral-700 whitespace-pre-wrap leading-relaxed">
+                    {suggestedReply || 'Click regenerate to generate an AI response.'}
+                  </p>
+                  <div className="flex items-center gap-2 mt-2 sm:mt-3">
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      icon={RefreshCw}
+                      onClick={generateAIResponse}
+                      className="text-[10px] sm:text-[11px]"
+                    >
+                      Regenerate
+                    </Button>
+                    {suggestedReply && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          icon={copied ? Check : Copy}
+                          onClick={handleCopy}
+                          className="text-[10px] sm:text-[11px]"
+                        >
+                          {copied ? 'Copied' : 'Copy'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          icon={Edit3}
+                          onClick={handleUseSuggested}
+                          className="text-[10px] sm:text-[11px]"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="primary"
+                          size="xs"
+                          icon={Check}
+                          onClick={handleSendSuggested}
+                          className="text-[10px] sm:text-[11px]"
+                        >
+                          Approve & Send
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
 
             {isEditing && (

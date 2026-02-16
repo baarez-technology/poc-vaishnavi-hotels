@@ -371,7 +371,7 @@ export function useHousekeeping() {
       if (room.id === roomId) {
         return {
           ...room,
-          checklist: room.checklist.filter(item => item.id !== taskId)
+          checklist: (Array.isArray(room.checklist) ? room.checklist : []).filter(item => item.id !== taskId)
         };
       }
       return room;

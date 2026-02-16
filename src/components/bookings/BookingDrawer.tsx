@@ -276,8 +276,14 @@ export default function BookingDrawer({
                     <Users className="w-4 h-4" />
                     <span className="text-[10px] sm:text-[11px] font-medium">Guests</span>
                   </div>
-                  <p className="text-sm sm:text-base font-semibold text-neutral-900">{booking.guests}</p>
-                  <p className="text-xs sm:text-[13px] text-neutral-500">{booking.guests === 1 ? 'Guest' : 'Guests'}</p>
+                  <p className="text-sm sm:text-base font-semibold text-neutral-900">
+                    {booking.adults || 1} Adult{(booking.adults || 1) !== 1 ? 's' : ''}
+                  </p>
+                  <p className="text-xs sm:text-[13px] text-neutral-500">
+                    {booking.children > 0
+                      ? `${booking.children} Child${booking.children !== 1 ? 'ren' : ''}`
+                      : 'No children'}
+                  </p>
                 </div>
               </div>
 

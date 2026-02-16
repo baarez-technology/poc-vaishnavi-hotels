@@ -290,7 +290,7 @@ export default function HotelInfoTab() {
                   handleAddressChange('city', '');
                 }}
                 placeholder="Select Country"
-                icon={<Globe className="w-4 h-4" />}
+                icon={Globe}
                 searchable
               />
             </div>
@@ -308,7 +308,7 @@ export default function HotelInfoTab() {
                     handleAddressChange('city', '');
                   }}
                   placeholder="Select State"
-                  icon={<Landmark className="w-4 h-4" />}
+                  icon={Landmark}
                   disabled={!form.address.country}
                   searchable
                 />
@@ -334,7 +334,7 @@ export default function HotelInfoTab() {
                   value={form.address.city}
                   onChange={(val) => handleAddressChange('city', val)}
                   placeholder="Select City"
-                  icon={<Building2 className="w-4 h-4" />}
+                  icon={Building2}
                   disabled={!form.address.state}
                   searchable
                 />

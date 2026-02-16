@@ -337,11 +337,11 @@ export function PaymentsTab() {
               </div>
 
               <div className="flex gap-2">
-                <button className="flex items-center gap-2 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors text-xs">
+                <button onClick={() => toast.success('Invoice downloaded')} className="flex items-center gap-2 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors text-xs">
                   <Download className="w-3.5 h-3.5" />
                   Download Invoice
                 </button>
-                <button className="flex items-center gap-2 px-3 py-2 bg-white border border-neutral-300 hover:border-neutral-400 text-neutral-900 font-medium rounded-lg transition-colors text-xs">
+                <button onClick={() => toast('Payment details coming soon')} className="flex items-center gap-2 px-3 py-2 bg-white border border-neutral-300 hover:border-neutral-400 text-neutral-900 font-medium rounded-lg transition-colors text-xs">
                   View Details
                 </button>
               </div>

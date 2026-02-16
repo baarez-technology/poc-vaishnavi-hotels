@@ -323,11 +323,22 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // Handle network errors
+    // Handle network errors (no response: connection refused, timeout, CORS, etc.)
     if (!error.response) {
-      return Promise.reject(
-        new Error('Network error. Please check your connection.')
-      );
+      const code = (error as any).code;
+      const msg = (error as any).message || '';
+      let userMessage = 'Network error. Please check your connection.';
+      if (code === 'ECONNABORTED' || msg.toLowerCase().includes('timeout')) {
+        userMessage = 'Request timed out. The server may be slow or unavailable.';
+      } else if (code === 'ECONNREFUSED') {
+        userMessage = 'Cannot reach the server. Ensure the API is running (e.g. backend at ' + (ENV.API_URL || 'API_URL') + ').';
+      } else if (code === 'ERR_NETWORK' && msg) {
+        userMessage = msg.includes('CORS') ? 'Network error: request blocked (CORS or server unreachable).' : msg;
+      }
+      const networkError = new Error(userMessage);
+      (networkError as any).cause = error;
+      (networkError as any).isNetworkError = true;
+      return Promise.reject(networkError);
     }
 
     // Clean up inflight request on error

@@ -14,7 +14,7 @@ import PageHeader from '../../../layouts/staff-portal/PageHeader';
 import { StatCard } from '../../../components/staff-portal/ui/Card';
 import { StatusBadge, PriorityBadge } from '../../../components/staff-portal/ui/Badge';
 import Button from '../../../components/staff-portal/ui/Button';
-import { useHousekeepingRooms, useHousekeepingActions } from '@/hooks/staff-portal/useStaffApi';
+import { useMyHousekeepingRooms, useMyHousekeepingTasks, useHousekeepingActions } from '@/hooks/staff-portal/useStaffApi';
 
 // Section Card matching admin LuxurySectionCard
 function SectionCard({
@@ -69,30 +69,33 @@ const HousekeepingRooms = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // API hooks
-  const { data: dirtyRooms, loading: dirtyLoading, refetch: refetchDirty } = useHousekeepingRooms('dirty');
-  const { data: inProgressRooms, loading: inProgressLoading, refetch: refetchInProgress } = useHousekeepingRooms('in_progress');
-  const { data: cleanRooms, loading: cleanLoading, refetch: refetchClean } = useHousekeepingRooms('clean');
-  const { updateRoomStatus } = useHousekeepingActions();
+  // API hooks - BUG-002 FIX: Use useMyHousekeepingRooms to only show rooms assigned to current user
+  const { data: dirtyRooms, loading: dirtyLoading, refetch: refetchDirty } = useMyHousekeepingRooms('dirty');
+  const { data: inProgressRooms, loading: inProgressLoading, refetch: refetchInProgress } = useMyHousekeepingRooms('in_progress');
+  const { data: cleanRooms, loading: cleanLoading, refetch: refetchClean } = useMyHousekeepingRooms('clean');
+  const { data: inspectedRooms, loading: inspectedLoading, refetch: refetchInspected } = useMyHousekeepingRooms('inspected');
+  const { data: myTasks, refetch: refetchTasks } = useMyHousekeepingTasks();
+  const { updateRoomStatus, startTask, completeTask } = useHousekeepingActions();
 
-  // Combine all rooms
+  // Combine all rooms (BUG-034 FIX: include inspected rooms so they don't disappear after inspection)
   const rooms = useMemo(() => {
-    return [...(dirtyRooms || []), ...(inProgressRooms || []), ...(cleanRooms || [])];
-  }, [dirtyRooms, inProgressRooms, cleanRooms]);
+    return [...(dirtyRooms || []), ...(inProgressRooms || []), ...(cleanRooms || []), ...(inspectedRooms || [])];
+  }, [dirtyRooms, inProgressRooms, cleanRooms, inspectedRooms]);
 
   const refetchAll = async () => {
-    await Promise.all([refetchDirty(), refetchInProgress(), refetchClean()]);
+    await Promise.all([refetchDirty(), refetchInProgress(), refetchClean(), refetchInspected(), refetchTasks()]);
   };
 
-  const isLoading = dirtyLoading || inProgressLoading || cleanLoading;
+  const isLoading = dirtyLoading || inProgressLoading || cleanLoading || inspectedLoading;
 
   // Calculate stats from data
   const stats = useMemo(() => ({
     dirtyRooms: dirtyRooms?.length || 0,
     inProgressRooms: inProgressRooms?.length || 0,
     cleanRooms: cleanRooms?.length || 0,
-    urgentRooms: rooms.filter(r => r.priority === 'urgent' && r.status !== 'clean').length
-  }), [dirtyRooms, inProgressRooms, cleanRooms, rooms]);
+    inspectedRooms: inspectedRooms?.length || 0,
+    urgentRooms: rooms.filter(r => r.priority === 'urgent' && r.status !== 'clean' && r.status !== 'inspected').length
+  }), [dirtyRooms, inProgressRooms, cleanRooms, inspectedRooms, rooms]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all');
@@ -116,8 +119,15 @@ const HousekeepingRooms = () => {
     });
   }, [rooms, searchQuery, statusFilter, priorityFilter]);
 
-  const getChecklistProgress = (checklist: any[]) => {
-    if (!checklist || checklist.length === 0) return { completed: 0, total: 0, percentage: 0 };
+  const getChecklistProgress = (checklist: any, roomStatus?: string) => {
+    // BUG-022 FIX: Clean/inspected rooms should ALWAYS show 100% regardless of stale checklist data
+    if (roomStatus === 'clean' || roomStatus === 'inspected') {
+      const total = Array.isArray(checklist) && checklist.length > 0 ? checklist.length : 8;
+      return { completed: total, total, percentage: 100 };
+    }
+    if (!Array.isArray(checklist) || checklist.length === 0) {
+      return { completed: 0, total: 8, percentage: 0 };
+    }
     const completed = checklist.filter(c => c.completed).length;
     return {
       completed,
@@ -128,14 +138,33 @@ const HousekeepingRooms = () => {
 
   const handleStartCleaning = async (room: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    const success = await updateRoomStatus(room.id, 'in_progress');
-    if (success) refetchAll();
+    // BUG-002 FIX: Find task for this room and start it (backend updates room status too)
+    const roomTask = myTasks?.find((t: any) =>
+      t.room_id === room.id && (t.status === 'pending' || t.status === 'assigned')
+    );
+    if (roomTask) {
+      const success = await startTask(roomTask.id);
+      if (success) refetchAll();
+    } else {
+      // Fallback if no task found
+      const success = await updateRoomStatus(room.id, 'in_progress');
+      if (success) refetchAll();
+    }
   };
 
   const handleMarkClean = async (room: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    const success = await updateRoomStatus(room.id, 'clean');
-    if (success) refetchAll();
+    // Find in-progress task for this room and complete it (backend updates room status too)
+    const roomTask = myTasks?.find((t: any) =>
+      t.room_id === room.id && t.status === 'in_progress'
+    );
+    if (roomTask) {
+      const success = await completeTask(roomTask.id);
+      if (success) refetchAll();
+    } else {
+      const success = await updateRoomStatus(room.id, 'clean');
+      if (success) refetchAll();
+    }
   };
 
   if (isLoading) {
@@ -176,8 +205,8 @@ const HousekeepingRooms = () => {
         </div>
         <div className="col-span-12 sm:col-span-6 xl:col-span-3">
           <StatCard
-            title="Clean Rooms"
-            value={stats.cleanRooms}
+            title="Clean / Inspected"
+            value={stats.cleanRooms + stats.inspectedRooms}
             subtitle="Ready for guests"
             icon={Sparkles}
             color="sage"
@@ -231,6 +260,7 @@ const HousekeepingRooms = () => {
               {statusFilter === 'dirty' && `Dirty (${stats.dirtyRooms})`}
               {statusFilter === 'in_progress' && `In Progress (${stats.inProgressRooms})`}
               {statusFilter === 'clean' && `Clean (${stats.cleanRooms})`}
+              {statusFilter === 'inspected' && `Inspected (${stats.inspectedRooms})`}
             </span>
             <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
           </button>
@@ -248,7 +278,8 @@ const HousekeepingRooms = () => {
                   { value: 'all', label: 'All', count: rooms.length },
                   { value: 'dirty', label: 'Dirty', count: stats.dirtyRooms },
                   { value: 'in_progress', label: 'In Progress', count: stats.inProgressRooms },
-                  { value: 'clean', label: 'Clean', count: stats.cleanRooms }
+                  { value: 'clean', label: 'Clean', count: stats.cleanRooms },
+                  { value: 'inspected', label: 'Inspected', count: stats.inspectedRooms }
                 ].map((option) => (
                   <button
                     key={option.value}
@@ -293,7 +324,7 @@ const HousekeepingRooms = () => {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 pt-4">
                 {filteredRooms.map((room: any) => {
-                  const progress = getChecklistProgress(room.checklist);
+                  const progress = getChecklistProgress(room.checklist, room.status);
 
                   return (
                     <div
@@ -368,11 +399,13 @@ const HousekeepingRooms = () => {
                         </div>
                       </div>
 
-                      {/* Special Requests */}
-                      {(room.special_requests || room.specialRequests) && (
+                      {/* Special Requests / Task Notes (BUG-018 FIX) */}
+                      {(room.special_requests || room.specialRequests || room.notes) && (
                         <div className="p-2.5 rounded-lg bg-gold-50/50 border border-gold-100 mb-3">
-                          <p className="text-[10px] text-gold-700 font-semibold uppercase tracking-wide">Special Request</p>
-                          <p className="text-[11px] text-neutral-600 mt-0.5 line-clamp-2">{room.special_requests || room.specialRequests}</p>
+                          <p className="text-[10px] text-gold-700 font-semibold uppercase tracking-wide">
+                            {room.special_requests || room.specialRequests ? 'Special Request' : 'Task Notes'}
+                          </p>
+                          <p className="text-[11px] text-neutral-600 mt-0.5 line-clamp-2">{room.special_requests || room.specialRequests || room.notes}</p>
                         </div>
                       )}
 

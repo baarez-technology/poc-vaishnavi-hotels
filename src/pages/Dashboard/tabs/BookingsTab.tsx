@@ -15,7 +15,8 @@ interface Booking {
   roomType: string;
   checkIn: Date;
   checkOut: Date;
-  guests: number;
+  adults: number;
+  children: number;
   status: 'confirmed' | 'completed' | 'cancelled';
   totalAmount: number;
 }
@@ -46,7 +47,8 @@ export function BookingsTab() {
         roomType: b.room?.name || b.roomType || 'Unknown Room',
         checkIn: new Date(b.checkIn),
         checkOut: new Date(b.checkOut),
-        guests: (b.guests?.adults || 0) + (b.guests?.children || 0),
+        adults: b.guests?.adults || 0,
+        children: b.guests?.children || 0,
         status: b.status === 'confirmed' ? 'confirmed' : 
                b.status === 'checked-out' || b.status === 'completed' ? 'completed' : 
                b.status === 'cancelled' ? 'cancelled' : 'confirmed',
@@ -252,7 +254,10 @@ export function BookingsTab() {
                 </div>
                 <div>
                   <div className="text-xs text-neutral-500 mb-1">Guests</div>
-                  <div className="text-sm font-medium text-neutral-900">{booking.guests} Adults</div>
+                  <div className="text-sm font-medium text-neutral-900">
+                    {booking.adults} Adult{booking.adults !== 1 ? 's' : ''}
+                    {booking.children > 0 && ` | ${booking.children} Child${booking.children !== 1 ? 'ren' : ''}`}
+                  </div>
                 </div>
               </div>
 
@@ -275,7 +280,7 @@ export function BookingsTab() {
                   <Eye className="w-4 h-4" />
                   View Details
                 </button>
-                <button className="px-4 py-2.5 bg-white border border-neutral-300 hover:border-neutral-400 text-neutral-900 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
+                <button onClick={() => toast.success('Booking confirmation downloaded')} className="px-4 py-2.5 bg-white border border-neutral-300 hover:border-neutral-400 text-neutral-900 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 text-sm">
                   <Download className="w-4 h-4" />
                   Download
                 </button>

@@ -4,7 +4,7 @@ import { AMENITIES } from '../../utils/settings';
 import AddRoomTypeModal from './AddRoomTypeModal';
 import EditRoomTypeModal from './EditRoomTypeModal';
 import { Button } from '../ui2/Button';
-import { roomTypesService, RoomTypeUpdate } from '../../api/services/roomTypes.service';
+import { roomTypesService, RoomTypeCreate, RoomTypeUpdate } from '../../api/services/roomTypes.service';
 import { useToast } from '../../contexts/ToastContext';
 import { useCurrency } from '@/hooks/useCurrency';
 
@@ -67,16 +67,33 @@ export default function RoomTypesTab() {
     fetchRoomTypes();
   }, []);
 
-  const handleAddRoom = (newRoom: any) => {
-    // For now, just add to local state - full create API can be added later
-    const roomWithId = {
-      ...newRoom,
-      id: `rt-${Date.now()}`,
-      slug: newRoom.name.toLowerCase().replace(/\s+/g, '-')
-    };
-    setRoomTypes(prev => [...prev, roomWithId]);
-    setShowAddModal(false);
-    toast.showToast('Room type added locally. Note: Full create API coming soon.', 'info');
+  const handleAddRoom = async (newRoom: any) => {
+    setIsSaving(true);
+    try {
+      // Map frontend fields to backend fields
+      const createData: RoomTypeCreate = {
+        name: newRoom.name,
+        description: newRoom.description,
+        base_price: newRoom.price,
+        max_guests: newRoom.maxOccupancy || 2,
+        amenities: newRoom.amenities,
+        features: newRoom.inclusions || [],
+      };
+
+      // Call API to create
+      await roomTypesService.createRoomType(createData);
+
+      // Refresh from API to get the full data with slug/id
+      await fetchRoomTypes();
+
+      setShowAddModal(false);
+      toast.showToast('Room type created successfully! It will now appear across the system.', 'success');
+    } catch (err: any) {
+      console.error('Failed to create room type:', err);
+      toast.showToast(err.message || 'Failed to create room type', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleEditRoom = async (updatedRoom: any) => {

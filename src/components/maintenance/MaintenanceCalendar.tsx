@@ -142,7 +142,8 @@ export default function MaintenanceCalendar({ workOrders, pmTasks, onEventClick 
         {/* Days Grid */}
         <div className="grid grid-cols-7 gap-1">
           {calendarDays.map((date, index) => {
-            const dateStr = date.toISOString().split('T')[0];
+            // Use local date components to avoid timezone shift (toISOString converts to UTC which shifts the day)
+            const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
             const dayEvents = eventsByDate[dateStr] || [];
             const isCurrentMonthDay = isCurrentMonth(date);
             const isTodayDate = isToday(date);

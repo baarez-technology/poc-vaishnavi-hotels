@@ -38,6 +38,23 @@ import { BookingPage } from './pages/Booking/BookingPage';
 import { BookingReview } from './pages/Booking/BookingReview';
 // Lazy load components to avoid blocking initial load
 import { lazy, Suspense } from 'react';
+
+// Retry wrapper for lazy imports — handles stale chunk hashes after deploys
+function lazyWithRetry(importFn: () => Promise<any>) {
+  return lazy(() =>
+    importFn().catch((err: any) => {
+      // Only reload once per session to avoid infinite loops
+      const key = 'chunk_reload_' + importFn.toString().slice(0, 80);
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1');
+        window.location.reload();
+        return new Promise(() => {}); // Never resolves — page is reloading
+      }
+      throw err; // Already retried once, surface the real error
+    })
+  );
+}
+
 const BookingPayment = lazy(() => import('./pages/Booking/BookingPayment').then(module => ({ default: module.BookingPayment })));
 import { BookingConfirmation } from './pages/Booking/BookingConfirmation';
 import { BookingFailed } from './pages/Booking/BookingFailed';
@@ -61,36 +78,36 @@ import AdminLayout from './layouts/AdminLayout';
 import { StaffPortalProvider } from './contexts/staff-portal/StaffPortalContext';
 import StaffLayout from './layouts/staff-portal/StaffLayout';
 import ProtectedRouteStaff from './components/staff-portal/ProtectedRoute';
-// Lazy load admin pages to avoid blocking initial load
-const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
-const Bookings = lazy(() => import('./pages/admin/Bookings'));
-const Guests = lazy(() => import('./pages/admin/Guests'));
-const GuestProfile = lazy(() => import('./pages/admin/guest/GuestProfile'));
-const Rooms = lazy(() => import('./pages/admin/Rooms'));
-const Staff = lazy(() => import('./pages/admin/Staff'));
-const StaffProfile = lazy(() => import('./pages/admin/staff/StaffProfile'));
-const Housekeeping = lazy(() => import('./pages/admin/Housekeeping'));
-const Maintenance = lazy(() => import('./pages/admin/Maintenance'));
-const Runner = lazy(() => import('./pages/admin/Runner'));
-const RevenueAI = lazy(() => import('./pages/admin/RevenueAI'));
-const ReputationAI = lazy(() => import('./pages/admin/ReputationAI'));
-const CRM = lazy(() => import('./pages/admin/CRM'));
-const CRMAI = lazy(() => import('./pages/admin/ai/CRMAI'));
-const CRMAIDashboard = lazy(() => import('./pages/admin/ai/CRMAIDashboard'));
-const ABTestingDashboard = lazy(() => import('./pages/admin/ai/ABTestingDashboard'));
-const OTAConversionCenter = lazy(() => import('./pages/admin/ai/OTAConversionCenter'));
-const MemberTierManagement = lazy(() => import('./pages/admin/ai/MemberTierManagement'));
-const AISegmentationStudio = lazy(() => import('./pages/admin/ai/AISegmentationStudio'));
-const RecoveryActionCenter = lazy(() => import('./pages/admin/ai/RecoveryActionCenter'));
-const SegmentDetailsWrapper = lazy(() => import('./pages/admin/crm/SegmentDetailsWrapper'));
-const SettingsLayout = lazy(() => import('./pages/admin/settings/SettingsLayout'));
-const ReportsHome = lazy(() => import('./pages/admin/ReportsHome'));
-const BookingsOccupancyReport = lazy(() => import('./pages/admin/BookingsOccupancyReport'));
-const HousekeepingRoomsReport = lazy(() => import('./pages/admin/HousekeepingRoomsReport'));
-const RevenueSnapshotReport = lazy(() => import('./pages/admin/RevenueSnapshotReport'));
-const GuestExperienceReport = lazy(() => import('./pages/admin/GuestExperienceReport'));
-const AdvancedAnalytics = lazy(() => import('./pages/admin/AdvancedAnalytics'));
-const Profile = lazy(() => import('./pages/admin/Profile'));
+// Lazy load admin pages with retry to handle stale chunk hashes after deploy
+const Dashboard = lazyWithRetry(() => import('./pages/admin/Dashboard'));
+const Bookings = lazyWithRetry(() => import('./pages/admin/Bookings'));
+const Guests = lazyWithRetry(() => import('./pages/admin/Guests'));
+const GuestProfile = lazyWithRetry(() => import('./pages/admin/guest/GuestProfile'));
+const Rooms = lazyWithRetry(() => import('./pages/admin/Rooms'));
+const Staff = lazyWithRetry(() => import('./pages/admin/Staff'));
+const StaffProfile = lazyWithRetry(() => import('./pages/admin/staff/StaffProfile'));
+const Housekeeping = lazyWithRetry(() => import('./pages/admin/Housekeeping'));
+const Maintenance = lazyWithRetry(() => import('./pages/admin/Maintenance'));
+const Runner = lazyWithRetry(() => import('./pages/admin/Runner'));
+const RevenueAI = lazyWithRetry(() => import('./pages/admin/RevenueAI'));
+const ReputationAI = lazyWithRetry(() => import('./pages/admin/ReputationAI'));
+const CRM = lazyWithRetry(() => import('./pages/admin/CRM'));
+const CRMAI = lazyWithRetry(() => import('./pages/admin/ai/CRMAI'));
+const CRMAIDashboard = lazyWithRetry(() => import('./pages/admin/ai/CRMAIDashboard'));
+const ABTestingDashboard = lazyWithRetry(() => import('./pages/admin/ai/ABTestingDashboard'));
+const OTAConversionCenter = lazyWithRetry(() => import('./pages/admin/ai/OTAConversionCenter'));
+const MemberTierManagement = lazyWithRetry(() => import('./pages/admin/ai/MemberTierManagement'));
+const AISegmentationStudio = lazyWithRetry(() => import('./pages/admin/ai/AISegmentationStudio'));
+const RecoveryActionCenter = lazyWithRetry(() => import('./pages/admin/ai/RecoveryActionCenter'));
+const SegmentDetailsWrapper = lazyWithRetry(() => import('./pages/admin/crm/SegmentDetailsWrapper'));
+const SettingsLayout = lazyWithRetry(() => import('./pages/admin/settings/SettingsLayout'));
+const ReportsHome = lazyWithRetry(() => import('./pages/admin/ReportsHome'));
+const BookingsOccupancyReport = lazyWithRetry(() => import('./pages/admin/BookingsOccupancyReport'));
+const HousekeepingRoomsReport = lazyWithRetry(() => import('./pages/admin/HousekeepingRoomsReport'));
+const RevenueSnapshotReport = lazyWithRetry(() => import('./pages/admin/RevenueSnapshotReport'));
+const GuestExperienceReport = lazyWithRetry(() => import('./pages/admin/GuestExperienceReport'));
+const AdvancedAnalytics = lazyWithRetry(() => import('./pages/admin/AdvancedAnalytics'));
+const Profile = lazyWithRetry(() => import('./pages/admin/Profile'));
 
 
 // CMS Pages
@@ -101,49 +118,49 @@ const Profile = lazy(() => import('./pages/admin/Profile'));
 
 
 //Modified CMS pages as its in UI codebase
-const CMSBookings = lazy(() => import('./pages/admin/cbs/Bookings'));
-const CMSAvailability = lazy(() => import('./pages/admin/cbs/Calendar'));
-const CMSRatePlans = lazy(() => import('./pages/admin/cbs/RatePlans'));
-const CMSPromotions = lazy(() => import('./pages/admin/cbs/Promotions'));
-const PromationAnalytics = lazy(() => import('./pages/cms/promotions/Analytics'));
+const CMSBookings = lazyWithRetry(() => import('./pages/admin/cbs/Bookings'));
+const CMSAvailability = lazyWithRetry(() => import('./pages/admin/cbs/Calendar'));
+const CMSRatePlans = lazyWithRetry(() => import('./pages/admin/cbs/RatePlans'));
+const CMSPromotions = lazyWithRetry(() => import('./pages/admin/cbs/Promotions'));
+const PromationAnalytics = lazyWithRetry(() => import('./pages/cms/promotions/Analytics'));
 
 // Channel Manager Pages
-const ChannelDashboard = lazy(() => import('./pages/admin/channel-manager/ChannelDashboard'));
-const OTAConnections = lazy(() => import('./pages/admin/channel-manager/OTAConnections'));
-const RoomMapping = lazy(() => import('./pages/admin/channel-manager/RoomMapping'));
-const RateSync = lazy(() => import('./pages/admin/channel-manager/RateSync'));
-const Restrictions = lazy(() => import('./pages/admin/channel-manager/Restrictions'));
-const ChannelPromotions = lazy(() => import('./pages/admin/channel-manager/Promotions'));
-const SyncLogs = lazy(() => import('./pages/admin/channel-manager/SyncLogs'));
+const ChannelDashboard = lazyWithRetry(() => import('./pages/admin/channel-manager/ChannelDashboard'));
+const OTAConnections = lazyWithRetry(() => import('./pages/admin/channel-manager/OTAConnections'));
+const RoomMapping = lazyWithRetry(() => import('./pages/admin/channel-manager/RoomMapping'));
+const RateSync = lazyWithRetry(() => import('./pages/admin/channel-manager/RateSync'));
+const Restrictions = lazyWithRetry(() => import('./pages/admin/channel-manager/Restrictions'));
+const ChannelPromotions = lazyWithRetry(() => import('./pages/admin/channel-manager/Promotions'));
+const SyncLogs = lazyWithRetry(() => import('./pages/admin/channel-manager/SyncLogs'));
 // RMS Pages
-const RMSDashboard = lazy(() => import('./pages/admin/rms/RMSDashboard'));
+const RMSDashboard = lazyWithRetry(() => import('./pages/admin/rms/RMSDashboard'));
 // Revenue Management Pages
-const RevenueDashboard = lazy(() => import('./pages/admin/revenue-management/RevenueDashboard'));
-const RateCalendar = lazy(() => import('./pages/admin/revenue-management/RateCalendar'));
-const DemandForecast = lazy(() => import('./pages/admin/revenue-management/DemandForecast'));
-const PickupAnalysis = lazy(() => import('./pages/admin/revenue-management/PickupAnalysis'));
-const CompetitorRates = lazy(() => import('./pages/admin/revenue-management/CompetitorRates'));
-const Segmentation = lazy(() => import('./pages/admin/revenue-management/Segmentation'));
-const PricingRules = lazy(() => import('./pages/admin/revenue-management/PricingRules'));
+const RevenueDashboard = lazyWithRetry(() => import('./pages/admin/revenue-management/RevenueDashboard'));
+const RateCalendar = lazyWithRetry(() => import('./pages/admin/revenue-management/RateCalendar'));
+const DemandForecast = lazyWithRetry(() => import('./pages/admin/revenue-management/DemandForecast'));
+const PickupAnalysis = lazyWithRetry(() => import('./pages/admin/revenue-management/PickupAnalysis'));
+const CompetitorRates = lazyWithRetry(() => import('./pages/admin/revenue-management/CompetitorRates'));
+const Segmentation = lazyWithRetry(() => import('./pages/admin/revenue-management/Segmentation'));
+const PricingRules = lazyWithRetry(() => import('./pages/admin/revenue-management/PricingRules'));
 // Placeholder for pages under construction
-const PlaceholderPage = lazy(() => import('./pages/admin/PlaceholderPage'));
+const PlaceholderPage = lazyWithRetry(() => import('./pages/admin/PlaceholderPage'));
 // Lazy load staff portal pages
-const StaffLogin = lazy(() => import('./pages/staff-portal/Login'));
-const StaffHousekeepingDashboard = lazy(() => import('./pages/staff-portal/housekeeping/Dashboard'));
-const StaffHousekeepingRooms = lazy(() => import('./pages/staff-portal/housekeeping/Rooms'));
-const StaffHousekeepingRoomDetails = lazy(() => import('./pages/staff-portal/housekeeping/RoomDetails'));
-const StaffHousekeepingTasks = lazy(() => import('./pages/staff-portal/housekeeping/Tasks'));
-const StaffMaintenanceDashboard = lazy(() => import('./pages/staff-portal/maintenance/Dashboard'));
-const StaffMaintenanceWorkOrders = lazy(() => import('./pages/staff-portal/maintenance/WorkOrders'));
-const StaffMaintenanceTasks = lazy(() => import('./pages/staff-portal/maintenance/MaintenanceTasks'));
-const StaffMaintenanceEquipmentIssues = lazy(() => import('./pages/staff-portal/maintenance/EquipmentIssues'));
-const StaffRunnerDashboard = lazy(() => import('./pages/staff-portal/runner/Dashboard'));
-const StaffRunnerPickupRequests = lazy(() => import('./pages/staff-portal/runner/PickupRequests'));
-const StaffRunnerDeliveries = lazy(() => import('./pages/staff-portal/runner/Deliveries'));
-const StaffPortalProfile = lazy(() => import('./pages/staff-portal/profile/Profile'));
-const StaffNotifications = lazy(() => import('./pages/staff-portal/notifications/Notifications'));
-const TechnicianSpecializations = lazy(() => import('./pages/admin/TechnicianSpecializations'));
-const StaffTaskAcceptance = lazy(() => import('./pages/staff/TaskAcceptance'));
+const StaffLogin = lazyWithRetry(() => import('./pages/staff-portal/Login'));
+const StaffHousekeepingDashboard = lazyWithRetry(() => import('./pages/staff-portal/housekeeping/Dashboard'));
+const StaffHousekeepingRooms = lazyWithRetry(() => import('./pages/staff-portal/housekeeping/Rooms'));
+const StaffHousekeepingRoomDetails = lazyWithRetry(() => import('./pages/staff-portal/housekeeping/RoomDetails'));
+const StaffHousekeepingTasks = lazyWithRetry(() => import('./pages/staff-portal/housekeeping/Tasks'));
+const StaffMaintenanceDashboard = lazyWithRetry(() => import('./pages/staff-portal/maintenance/Dashboard'));
+const StaffMaintenanceWorkOrders = lazyWithRetry(() => import('./pages/staff-portal/maintenance/WorkOrders'));
+const StaffMaintenanceTasks = lazyWithRetry(() => import('./pages/staff-portal/maintenance/MaintenanceTasks'));
+const StaffMaintenanceEquipmentIssues = lazyWithRetry(() => import('./pages/staff-portal/maintenance/EquipmentIssues'));
+const StaffRunnerDashboard = lazyWithRetry(() => import('./pages/staff-portal/runner/Dashboard'));
+const StaffRunnerPickupRequests = lazyWithRetry(() => import('./pages/staff-portal/runner/PickupRequests'));
+const StaffRunnerDeliveries = lazyWithRetry(() => import('./pages/staff-portal/runner/Deliveries'));
+const StaffPortalProfile = lazyWithRetry(() => import('./pages/staff-portal/profile/Profile'));
+const StaffNotifications = lazyWithRetry(() => import('./pages/staff-portal/notifications/Notifications'));
+const TechnicianSpecializations = lazyWithRetry(() => import('./pages/admin/TechnicianSpecializations'));
+const StaffTaskAcceptance = lazyWithRetry(() => import('./pages/staff/TaskAcceptance'));
 
 function App() {
   return (

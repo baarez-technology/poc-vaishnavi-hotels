@@ -531,17 +531,12 @@ export function useBookings() {
       const result = await bookingService.updateBooking(bookingId, { roomId: String(roomId) });
       console.log('[useBookings.assignRoom] API response:', result);
 
-      // Also update room status to occupied if check-in date is today or earlier
-      if (checkIn) {
-        const today = new Date().toISOString().split('T')[0];
-        if (checkIn <= today) {
-          try {
-            await roomsService.updateRoomStatus(roomId, 'occupied');
-            console.log('[useBookings.assignRoom] Room status synced to occupied');
-          } catch (roomErr) {
-            console.warn('[useBookings.assignRoom] Could not sync room status:', roomErr);
-          }
-        }
+      // Always sync room status to occupied so the Rooms section reflects the assignment
+      try {
+        await roomsService.updateRoomStatus(roomId, 'occupied');
+        console.log('[useBookings.assignRoom] Room status synced to occupied');
+      } catch (roomErr) {
+        console.warn('[useBookings.assignRoom] Could not sync room status:', roomErr);
       }
 
       setBookings(prev => prev.map(b =>

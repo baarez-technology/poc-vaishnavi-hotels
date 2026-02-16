@@ -214,6 +214,7 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [reassignConfirmed, setReassignConfirmed] = useState(false);
   const [isCheckingGuest, setIsCheckingGuest] = useState(false);
+  const [roomTypeMismatch, setRoomTypeMismatch] = useState<{ bookedType: string; roomType: string } | null>(null);
   const toast = useToast();
 
   useEffect(() => {
@@ -228,6 +229,7 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
       setExistingAssignment(null);
       setShowDuplicateWarning(false);
       setReassignConfirmed(false);
+      setRoomTypeMismatch(null);
       fetchGuests();
     }
   }, [isOpen]);
@@ -238,6 +240,7 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
       setExistingAssignment(null);
       setShowDuplicateWarning(false);
       setReassignConfirmed(false);
+      setRoomTypeMismatch(null);
       return;
     }
     checkGuestExistingAssignment();
@@ -294,6 +297,53 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
       } else {
         setExistingAssignment(null);
         setShowDuplicateWarning(false);
+      }
+
+      // Room type mismatch check: find any active/upcoming booking for this guest
+      // and compare the booked room type with the room being assigned
+      const guestBooking = bookings.find((b: any) => {
+        const matchById = b.guestId && Number(b.guestId) === Number(guestId);
+        const bookingGuestName = ((b.guestInfo?.firstName || '') + ' ' + (b.guestInfo?.lastName || '')).toLowerCase().trim();
+        const bookingEmail = (b.guestInfo?.email || '').toLowerCase().trim();
+        const matchByName = bookingGuestName && bookingGuestName === guestName;
+        const matchByEmail = guestEmail && bookingEmail && bookingEmail === guestEmail;
+        const isMatchingGuest = matchById || matchByName || matchByEmail;
+
+        const status = (b.status || '').toLowerCase().replace('-', '_');
+        const isActive = status !== 'cancelled' && status !== 'checked_out' && status !== 'no_show';
+
+        // Check date overlap
+        const bCheckIn = new Date(b.checkIn);
+        const bCheckOut = new Date(b.checkOut);
+        const selCheckIn = new Date(checkInDate);
+        const selCheckOut = new Date(checkOutDate);
+        const datesOverlap = bCheckIn < selCheckOut && bCheckOut > selCheckIn;
+
+        return isMatchingGuest && isActive && datesOverlap;
+      });
+
+      if (guestBooking && room) {
+        // Extract booked room type from booking
+        const bookedType = (
+          guestBooking.roomType ||
+          guestBooking.room_type_name ||
+          (typeof guestBooking.room_type === 'object' ? guestBooking.room_type?.name : guestBooking.room_type) ||
+          ''
+        ).toLowerCase().trim();
+
+        const assignedRoomType = (room.type || '').toLowerCase().trim();
+
+        // Compare: check both strict and partial match (e.g. "standard" vs "standard room")
+        if (bookedType && assignedRoomType && bookedType !== assignedRoomType && !assignedRoomType.includes(bookedType) && !bookedType.includes(assignedRoomType)) {
+          setRoomTypeMismatch({
+            bookedType: guestBooking.roomType || guestBooking.room_type_name || guestBooking.room_type || 'Unknown',
+            roomType: room.type || 'Unknown',
+          });
+        } else {
+          setRoomTypeMismatch(null);
+        }
+      } else {
+        setRoomTypeMismatch(null);
       }
     } catch (error) {
       console.error('[AssignGuestModal] Error checking guest assignment:', error);
@@ -442,6 +492,26 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
                     Reassignment confirmed. Click "Reassign Guest" to proceed.
                   </p>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Room Type Mismatch Warning */}
+        {roomTypeMismatch && (
+          <div className="p-4 rounded-lg border bg-amber-50 border-amber-300">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-600" />
+              <div className="flex-1">
+                <p className="text-[13px] font-semibold text-amber-800">
+                  Room Type Mismatch
+                </p>
+                <p className="text-[12px] mt-1 text-amber-700">
+                  Selected room type does not match the booked room type.
+                  Guest booked <span className="font-semibold">{roomTypeMismatch.bookedType}</span> but
+                  this room is <span className="font-semibold">{roomTypeMismatch.roomType}</span>.
+                  Proceed only if upgrading or with guest consent.
+                </p>
               </div>
             </div>
           </div>

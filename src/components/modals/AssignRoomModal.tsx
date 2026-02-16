@@ -293,11 +293,14 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
         return b.match_score - a.match_score;
       }
 
-      // Then matching type
-      const aType = a.room_type?.name || a.type || '';
-      const bType = b.room_type?.name || b.type || '';
-      if (aType === bookingType && bType !== bookingType) return -1;
-      if (bType === bookingType && aType !== bookingType) return 1;
+      // Then matching type (fuzzy: includes match)
+      const aType = (a.room_type?.name || a.type || '').toLowerCase().trim();
+      const bType = (b.room_type?.name || b.type || '').toLowerCase().trim();
+      const btLower = bookingType.toLowerCase().trim();
+      const aMatches = btLower && (aType === btLower || aType.includes(btLower) || btLower.includes(aType));
+      const bMatches = btLower && (bType === btLower || bType.includes(btLower) || btLower.includes(bType));
+      if (aMatches && !bMatches) return -1;
+      if (bMatches && !aMatches) return 1;
 
       // Then by room number
       const aNum = a.number || a.roomNumber || '';
@@ -621,7 +624,9 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
                 const roomFloor = room.floor || Math.floor(parseInt(roomNumber) / 100);
                 const roomPrice = room.room_type?.base_price || room.price || 0;
                 const isSelected = selectedRoom?.id === room.id;
-                const isMatchingType = roomType.toLowerCase() === (booking?.roomType || '').toLowerCase();
+                const roomTypeLower = roomType.toLowerCase().trim();
+                const bookedTypeLower = (booking?.roomType || '').toLowerCase().trim();
+                const isMatchingType = bookedTypeLower && (roomTypeLower === bookedTypeLower || roomTypeLower.includes(bookedTypeLower) || bookedTypeLower.includes(roomTypeLower));
                 const isRecommended = room.is_recommended;
 
                 return (
@@ -703,18 +708,20 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
 
         {/* Room Type Mismatch Warning */}
         {selectedRoom && (() => {
-          const selectedType = (selectedRoom.room_type?.name || selectedRoom.type || '').toLowerCase();
-          const bookedType = (booking?.roomType || '').toLowerCase();
-          const isMismatch = bookedType && selectedType && selectedType !== bookedType;
-          return isMismatch ? (
+          const selectedType = (selectedRoom.room_type?.name || selectedRoom.type || '').toLowerCase().trim();
+          const bookedType = (booking?.roomType || '').toLowerCase().trim();
+          // Use fuzzy match: types match if one contains the other (handles "Standard" vs "Standard Room")
+          const typesMatch = !bookedType || !selectedType || selectedType === bookedType || selectedType.includes(bookedType) || bookedType.includes(selectedType);
+          return !typesMatch ? (
             <div className="p-3 bg-amber-50 border border-amber-300 rounded-lg">
               <p className="text-[13px] font-semibold text-amber-800">
                 Room Type Mismatch
               </p>
               <p className="text-[12px] text-amber-700 mt-1">
+                Selected room type does not match the booked room type.
                 Guest booked <span className="font-semibold">{booking.roomType}</span> but selected room is{' '}
                 <span className="font-semibold">{selectedRoom.room_type?.name || selectedRoom.type}</span>.
-                This may result in a price difference. Proceed only if upgrading or with guest consent.
+                Proceed only if upgrading or with guest consent.
               </p>
             </div>
           ) : null;

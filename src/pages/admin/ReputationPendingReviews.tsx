@@ -1,5 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
+import toast from 'react-hot-toast';
 import {
   MessageSquare,
   Wand2,
@@ -28,10 +30,11 @@ interface ReviewDraftDrawerProps {
   isOpen: boolean;
   review: any;
   onClose: () => void;
-  onApprove: (text: string) => void;
+  onApprove: (text: string) => Promise<void>;
+  isPublishing?: boolean;
 }
 
-function ReviewDraftDrawer({ isOpen, review, onClose, onApprove }: ReviewDraftDrawerProps) {
+function ReviewDraftDrawer({ isOpen, review, onClose, onApprove, isPublishing }: ReviewDraftDrawerProps) {
   const { generateDraft } = useReputation();
   const [draft, setDraft] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -49,6 +52,7 @@ function ReviewDraftDrawer({ isOpen, review, onClose, onApprove }: ReviewDraftDr
       setEditedText(text);
     } catch (error) {
       console.error('Failed to generate draft:', error);
+      toast.error('Failed to generate AI response');
     } finally {
       setIsGenerating(false);
     }
@@ -61,6 +65,14 @@ function ReviewDraftDrawer({ isOpen, review, onClose, onApprove }: ReviewDraftDr
     onClose();
   };
 
+  const handlePublish = async () => {
+    if (!editedText.trim()) return;
+    await onApprove(editedText);
+    setDraft('');
+    setEditedText('');
+    setTone('professional');
+  };
+
   const toneOptions = [
     { value: 'professional', label: 'Professional' },
     { value: 'empathetic', label: 'Empathetic' },
@@ -70,17 +82,31 @@ function ReviewDraftDrawer({ isOpen, review, onClose, onApprove }: ReviewDraftDr
 
   const footer = (
     <div className="flex items-center justify-end gap-3 w-full">
-      <Button variant="outline" onClick={handleClose}>Cancel</Button>
+      <Button variant="outline" onClick={handleClose} disabled={isPublishing}>Cancel</Button>
       {draft && (
-        <Button variant="primary" icon={Send} onClick={() => { onApprove(editedText); handleClose(); }}>
-          Approve & Publish
+        <Button variant="primary" icon={Send} onClick={handlePublish} loading={isPublishing} disabled={!editedText.trim() || isPublishing}>
+          Publish Response
         </Button>
       )}
     </div>
   );
 
+  const isResponded = review._responded || review.responded;
+  const existingResponse = review.responseText || review.response_text || '';
+
   return (
-    <Drawer isOpen={isOpen} onClose={handleClose} title="Generate Response" subtitle={`AI-powered response for ${review.guest_name || review.guest || 'Guest'}`} maxWidth="max-w-xl" footer={footer}>
+    <Drawer
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={isResponded ? 'View Response' : 'Generate Response'}
+      subtitle={isResponded ? `Response for ${review._guest || review.guest_name || 'Guest'}` : `AI-powered response for ${review._guest || review.guest_name || 'Guest'}`}
+      maxWidth="max-w-xl"
+      footer={isResponded ? (
+        <div className="flex items-center justify-end w-full">
+          <Button variant="outline" onClick={handleClose}>Close</Button>
+        </div>
+      ) : footer}
+    >
       <div className="space-y-6">
         {/* Original Review */}
         <div>
@@ -93,13 +119,13 @@ function ReviewDraftDrawer({ isOpen, review, onClose, onApprove }: ReviewDraftDr
                 ))}
               </div>
               <span className="text-[11px] text-neutral-500 px-2 py-0.5 bg-neutral-200 rounded-full font-medium">
-                {review.source || 'Direct'}
+                {review._source || review.source || 'Direct'}
               </span>
             </div>
-            <p className="text-[13px] text-neutral-700 leading-relaxed">{review.content || review.comment || review.review || review.text}</p>
+            <p className="text-[13px] text-neutral-700 leading-relaxed">{review._content || review.content || review.comment || review.review || review.text}</p>
             <p className="text-[11px] text-neutral-500 mt-3 font-medium">
-              {review.guest_name || review.guest || `Guest ${review.id}`} • {(() => {
-                const dateStr = review.review_date || review.created_at || review.date;
+              {review._guest || review.guest_name || review.guest || `Guest ${review.id}`} • {(() => {
+                const dateStr = review._date || review.review_date || review.created_at || review.date;
                 if (!dateStr) return 'No date';
                 const d = new Date(dateStr);
                 return isNaN(d.getTime()) ? 'No date' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -108,44 +134,65 @@ function ReviewDraftDrawer({ isOpen, review, onClose, onApprove }: ReviewDraftDr
           </div>
         </div>
 
-        {/* Tone Selector */}
-        <div>
-          <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2">Response Tone</p>
-          <div className="flex flex-wrap gap-2">
-            {toneOptions.map((t) => (
-              <button
-                key={t.value}
-                onClick={() => setTone(t.value)}
-                className={`px-3 py-1.5 rounded-[8px] text-[12px] font-medium transition-colors ${
-                  tone === t.value
-                    ? 'bg-terra-500 text-white'
-                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+        {/* Already Responded — show existing response */}
+        {isResponded && existingResponse && (
+          <div>
+            <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2">Published Response</p>
+            <div className="bg-[#4E5840]/5 rounded-[10px] p-4 border border-[#4E5840]/10">
+              <p className="text-[13px] text-neutral-700 leading-relaxed">{existingResponse}</p>
+              {review.responseDate || review.response_date ? (
+                <p className="text-[11px] text-neutral-400 mt-3 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3 text-[#4E5840]" />
+                  Responded on {new Date(review.responseDate || review.response_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </p>
+              ) : null}
+            </div>
           </div>
-        </div>
-
-        {/* Generate Button */}
-        {!draft && (
-          <Button variant="primary" icon={isGenerating ? Loader2 : Wand2} onClick={handleGenerate} disabled={isGenerating} fullWidth className={isGenerating ? '[&>svg]:animate-spin' : ''}>
-            {isGenerating ? 'Generating...' : 'Generate AI Response'}
-          </Button>
         )}
 
-        {/* Generated Draft */}
-        {draft && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest">Generated Response</p>
-              <Button variant="ghost" size="xs" icon={isGenerating ? Loader2 : Wand2} onClick={handleGenerate} disabled={isGenerating} className={isGenerating ? '[&>svg]:animate-spin' : ''}>
-                Regenerate
-              </Button>
+        {/* Pending — show generate workflow */}
+        {!isResponded && (
+          <>
+            {/* Tone Selector */}
+            <div>
+              <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-2">Response Tone</p>
+              <div className="flex flex-wrap gap-2">
+                {toneOptions.map((t) => (
+                  <button
+                    key={t.value}
+                    onClick={() => setTone(t.value)}
+                    className={`px-3 py-1.5 rounded-[8px] text-[12px] font-medium transition-colors ${
+                      tone === t.value
+                        ? 'bg-terra-500 text-white'
+                        : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <Textarea value={editedText} onChange={(e) => setEditedText(e.target.value)} rows={6} className="w-full" />
-          </div>
+
+            {/* Generate Button */}
+            {!draft && (
+              <Button variant="primary" icon={isGenerating ? Loader2 : Wand2} onClick={handleGenerate} disabled={isGenerating} fullWidth className={isGenerating ? '[&>svg]:animate-spin' : ''}>
+                {isGenerating ? 'Generating...' : 'Generate AI Response'}
+              </Button>
+            )}
+
+            {/* Generated Draft */}
+            {draft && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest">Generated Response</p>
+                  <Button variant="ghost" size="xs" icon={isGenerating ? Loader2 : Wand2} onClick={handleGenerate} disabled={isGenerating} className={isGenerating ? '[&>svg]:animate-spin' : ''}>
+                    Regenerate
+                  </Button>
+                </div>
+                <Textarea value={editedText} onChange={(e) => setEditedText(e.target.value)} rows={6} className="w-full" />
+              </div>
+            )}
+          </>
         )}
       </div>
     </Drawer>
@@ -194,54 +241,98 @@ function DrawerFilterSelect({ label, value, onChange, options }: {
   options: Array<{ value: string; label: string }>;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [position, setPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const selectedOption = options.find(opt => opt.value === value);
   const displayLabel = value === 'all' ? 'All' : selectedOption?.label;
 
+  const handleToggle = () => {
+    if (isOpen) {
+      setIsOpen(false);
+      setPosition(null);
+    } else if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setPosition({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+      setIsOpen(true);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        triggerRef.current && !triggerRef.current.contains(e.target as Node) &&
+        menuRef.current && !menuRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+        setPosition(null);
+      }
+    };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setIsOpen(false); setPosition(null); }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [isOpen]);
+
   return (
     <div className="space-y-2">
-      <label className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wide">
+      <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest">
         {label}
       </label>
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className={`w-full h-10 px-4 rounded-[8px] text-[13px] bg-white border transition-all flex items-center justify-between ${
-            isOpen
-              ? 'border-terra-400 ring-2 ring-terra-500/10'
-              : 'border-neutral-200 hover:border-neutral-300'
-          }`}
-        >
-          <span className="text-neutral-900">{displayLabel}</span>
-          <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-        </button>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={handleToggle}
+        className={`w-full h-10 px-4 rounded-[8px] text-[13px] bg-white border transition-all flex items-center justify-between ${
+          isOpen
+            ? 'border-terra-400 ring-2 ring-terra-500/10'
+            : 'border-neutral-200 hover:border-neutral-300'
+        }`}
+      >
+        <span className={value === 'all' ? 'text-neutral-400' : 'text-neutral-900'}>{displayLabel}</span>
+        <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
 
-        {isOpen && (
-          <>
-            <div className="fixed inset-0 z-[60]" onClick={() => setIsOpen(false)} />
-            <div className="absolute z-[70] w-full mt-1.5 bg-white rounded-[8px] border border-neutral-200 shadow-lg overflow-hidden max-h-48 overflow-y-auto">
-              {options.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    onChange(option.value);
-                    setIsOpen(false);
-                  }}
-                  className={`w-full px-4 py-2.5 text-[13px] text-left hover:bg-neutral-50 transition-colors flex items-center justify-between ${
-                    value === option.value ? 'bg-terra-50 text-terra-700' : 'text-neutral-700'
-                  }`}
-                >
-                  {option.label}
-                  {value === option.value && (
-                    <Check className="w-4 h-4 text-terra-500" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+      {isOpen && position && createPortal(
+        <div
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: `${position.top}px`,
+            left: `${position.left}px`,
+            width: `${position.width}px`,
+            zIndex: 9999,
+          }}
+          className="bg-white rounded-[8px] border border-neutral-200 shadow-lg shadow-neutral-900/10 overflow-hidden max-h-48 overflow-y-auto"
+        >
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+                setPosition(null);
+              }}
+              className={`w-full px-4 py-2.5 text-[13px] text-left hover:bg-neutral-50 transition-colors flex items-center justify-between ${
+                value === option.value ? 'bg-terra-50 text-terra-700' : 'text-neutral-700'
+              }`}
+            >
+              {option.label}
+              {value === option.value && (
+                <Check className="w-4 h-4 text-terra-500" />
+              )}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
@@ -271,6 +362,7 @@ function ReputationReviewsContent() {
     reviews,
     pendingReviews,
     fetchPendingReviews,
+    addReviewResponse,
     isLoading
   } = useReputation();
 
@@ -439,13 +531,20 @@ function ReputationReviewsContent() {
     setSearchKeyword(value);
   };
 
+  const [isPublishing, setIsPublishing] = useState(false);
+
   const handleApprove = async (text: string) => {
-    if (!selectedReview) return;
+    if (!selectedReview || !text.trim()) return;
+    setIsPublishing(true);
     try {
+      await addReviewResponse(selectedReview.id, text.trim());
+      toast.success('Response published successfully');
       setSelectedReview(null);
-      await fetchPendingReviews();
     } catch (error) {
-      console.error('Failed to approve response:', error);
+      console.error('Failed to publish response:', error);
+      toast.error('Failed to publish response');
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -797,6 +896,7 @@ function ReputationReviewsContent() {
         review={selectedReview}
         onClose={() => setSelectedReview(null)}
         onApprove={handleApprove}
+        isPublishing={isPublishing}
       />
     </div>
   );

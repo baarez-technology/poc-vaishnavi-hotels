@@ -1,13 +1,238 @@
 /**
  * EditMappingModal Component
  * Drawer for editing room mappings between PMS and OTA room types - Glimmora Design System v5.0
- * Redesigned as a slide-in drawer for consistency
+ * Uses proper combobox dropdown for OTA room type selection
  */
 
-import { useState, useEffect } from 'react';
-import { Link2, Sparkles, Users } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
+import { Link2, Sparkles, Users, ChevronDown, Check, X } from 'lucide-react';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
+
+/** Combobox dropdown for OTA room type — matches Glimmora SelectDropdown style */
+function OtaRoomTypeCombobox({
+  value,
+  onChange,
+  suggestions,
+  placeholder = 'Select or type OTA room type',
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  suggestions: string[];
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [position, setPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return suggestions;
+    const q = search.toLowerCase();
+    return suggestions.filter(s => s.toLowerCase().includes(q));
+  }, [suggestions, search]);
+
+  const calculatePosition = (triggerRect: DOMRect) => {
+    const menuHeight = 260;
+    const padding = 4;
+    const spaceBelow = window.innerHeight - triggerRect.bottom - padding;
+    const spaceAbove = triggerRect.top - padding;
+
+    let top;
+    if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+      top = triggerRect.top - Math.min(menuHeight, spaceAbove) - padding;
+    } else {
+      top = triggerRect.bottom + padding;
+    }
+
+    return { top, left: triggerRect.left, width: triggerRect.width };
+  };
+
+  const handleToggle = () => {
+    if (open) {
+      setOpen(false);
+      setPosition(null);
+      setSearch('');
+    } else if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setPosition(calculatePosition(rect));
+      setOpen(true);
+      setSearch('');
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }
+  };
+
+  const handleSelect = (val: string) => {
+    onChange(val);
+    setOpen(false);
+    setPosition(null);
+    setSearch('');
+  };
+
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onChange('');
+  };
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        triggerRef.current && !triggerRef.current.contains(e.target as Node) &&
+        menuRef.current && !menuRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+        setPosition(null);
+        setSearch('');
+      }
+    };
+
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        setPosition(null);
+        setSearch('');
+      }
+    };
+
+    const handleScroll = () => {
+      if (triggerRef.current) {
+        const rect = triggerRef.current.getBoundingClientRect();
+        setPosition(calculatePosition(rect));
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    window.addEventListener('scroll', handleScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [open]);
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={handleToggle}
+        className={`w-full h-9 px-3.5 rounded-[8px] text-[13px] bg-white border flex items-center justify-between gap-2 transition-all duration-150 focus:outline-none ${
+          open
+            ? 'border-terra-500 ring-2 ring-terra-500/10'
+            : 'border-neutral-200 hover:border-neutral-300'
+        }`}
+      >
+        <span className={`truncate ${value ? 'text-neutral-900' : 'text-neutral-400'}`}>
+          {value || placeholder}
+        </span>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {value && (
+            <span
+              onClick={handleClear}
+              className="p-0.5 rounded hover:bg-neutral-100 transition-colors"
+            >
+              <X className="w-3 h-3 text-neutral-400" />
+            </span>
+          )}
+          <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        </div>
+      </button>
+
+      {open && position && createPortal(
+        <div
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: `${position.top}px`,
+            left: `${position.left}px`,
+            width: `${position.width}px`,
+            zIndex: 9999,
+          }}
+          className="bg-white rounded-[8px] border border-neutral-200 shadow-lg shadow-neutral-900/10 overflow-hidden"
+        >
+          {/* Search input */}
+          <div className="p-2 border-b border-neutral-100">
+            <input
+              ref={inputRef}
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && search.trim()) {
+                  handleSelect(search.trim());
+                }
+              }}
+              placeholder="Search or type custom..."
+              className="w-full h-8 px-3 rounded-[6px] text-[13px] bg-neutral-50 border border-neutral-200 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-terra-400 focus:ring-1 focus:ring-terra-500/10 transition-all"
+            />
+          </div>
+
+          {/* Suggestions header */}
+          <div className="px-3 py-1.5 border-b border-neutral-100">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 flex items-center gap-1.5">
+              <Sparkles className="w-3 h-3" />
+              Suggestions
+            </p>
+          </div>
+
+          {/* Options */}
+          <div className="max-h-[200px] overflow-y-auto py-1">
+            {filtered.length > 0 ? (
+              filtered.map((suggestion, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => handleSelect(suggestion)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-left transition-colors duration-100 hover:bg-neutral-50 ${
+                    value === suggestion ? 'bg-neutral-50 text-neutral-900' : 'text-neutral-700'
+                  }`}
+                >
+                  <span className="flex-1 truncate">{suggestion}</span>
+                  {value === suggestion && (
+                    <Check className="w-4 h-4 text-terra-500 flex-shrink-0" />
+                  )}
+                </button>
+              ))
+            ) : (
+              <div className="px-3 py-3 text-center">
+                <p className="text-[12px] text-neutral-400">No matches found</p>
+                {search.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelect(search.trim())}
+                    className="mt-2 text-[12px] text-terra-600 font-medium hover:underline"
+                  >
+                    Use "{search.trim()}" as custom value
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Custom value hint */}
+          {search.trim() && filtered.length > 0 && (
+            <div className="px-3 py-2 border-t border-neutral-100">
+              <button
+                type="button"
+                onClick={() => handleSelect(search.trim())}
+                className="text-[11px] text-terra-600 font-medium hover:underline"
+              >
+                Use "{search.trim()}" as custom value
+              </button>
+            </div>
+          )}
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
 
 export default function EditMappingModal({
   isOpen,
@@ -48,7 +273,7 @@ export default function EditMappingModal({
     if (!otaRoomType.trim()) {
       return; // Don't proceed if OTA room type is empty
     }
-    
+
     setIsLoading(true);
     try {
       await onSave({
@@ -98,66 +323,41 @@ export default function EditMappingModal({
     >
       <div className="space-y-5">
         {/* PMS Room Info */}
-        <div className="p-5 rounded-xl bg-neutral-50 border border-neutral-100">
-          <p className="text-xs uppercase tracking-wide font-semibold mb-2 text-neutral-500">
+        <div className="p-5 rounded-[8px] bg-neutral-50 border border-neutral-100">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
             PMS Room Type
           </p>
-          <p className="font-semibold text-lg text-neutral-900">
+          <p className="font-semibold text-[15px] text-neutral-900">
             {room.name}
           </p>
-          <p className="text-sm flex items-center gap-1.5 mt-1 text-neutral-500">
+          <p className="text-[13px] flex items-center gap-1.5 mt-1 text-neutral-500">
             <Users className="w-4 h-4" />
             {room.baseOccupancy}-{room.maxOccupancy} guests
           </p>
         </div>
 
-        {/* OTA Room Type Input */}
+        {/* OTA Room Type Dropdown */}
         <div className="space-y-2">
-          <label className="block text-[13px] font-medium text-neutral-700">
+          <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
             OTA Room Type Name
           </label>
-          <input
-            type="text"
+          <OtaRoomTypeCombobox
             value={otaRoomType}
-            onChange={(e) => setOtaRoomType(e.target.value)}
-            placeholder="Enter the room type name as it appears on the OTA"
-            autoFocus
-            className="w-full h-9 px-3.5 rounded-lg text-sm bg-white border border-neutral-200 text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
+            onChange={setOtaRoomType}
+            suggestions={suggestions}
+            placeholder="Select or type OTA room type"
           />
         </div>
 
-        {/* Suggestions */}
-        <div>
-          <p className="text-xs font-medium mb-2 flex items-center gap-1.5 text-neutral-500">
-            <Sparkles className="w-3.5 h-3.5" />
-            Suggestions
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {suggestions.slice(0, 4).map((suggestion, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setOtaRoomType(suggestion)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${otaRoomType === suggestion
-                  ? 'bg-terra-100 text-terra-700 border border-terra-300'
-                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 border border-transparent'
-                  }`}
-              >
-                {suggestion}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Sync Options */}
-        <div className="p-5 rounded-xl space-y-4 bg-neutral-50 border border-neutral-100">
-          <p className="text-xs uppercase tracking-wide font-semibold text-neutral-500">
+        <div className="p-5 rounded-[8px] space-y-4 bg-neutral-50 border border-neutral-100">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
             Sync Settings
           </p>
 
           {/* Rate Sync Toggle */}
           <label className="flex items-center justify-between cursor-pointer">
-            <span className="text-sm font-medium text-neutral-700">
+            <span className="text-[13px] font-medium text-neutral-700">
               Sync Rates
             </span>
             <button
@@ -173,7 +373,7 @@ export default function EditMappingModal({
 
           {/* Availability Sync Toggle */}
           <label className="flex items-center justify-between cursor-pointer">
-            <span className="text-sm font-medium text-neutral-700">
+            <span className="text-[13px] font-medium text-neutral-700">
               Sync Availability
             </span>
             <button

@@ -6,17 +6,14 @@ import {
   Plus,
   TrendingUp,
   Calendar,
-  Check,
   Clock,
-  AlertCircle,
   Pencil,
   Trash2,
-  X,
   Power,
   ArrowRight
 } from 'lucide-react';
 import { useReputation } from '@/context/ReputationContext';
-import { Drawer, ConfirmDrawer } from '../ui2/Drawer';
+import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 import { SelectDropdown, Input } from '../ui2/Input';
 import DatePicker from '../ui2/DatePicker';
@@ -315,25 +312,11 @@ export default function GoalsPanel() {
   const [showDrawer, setShowDrawer] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [deletingGoal, setDeletingGoal] = useState<Goal | null>(null);
+  const [togglingGoal, setTogglingGoal] = useState<Goal | null>(null);
 
   const PREVIEW_LIMIT = 2;
   const displayedGoals = goals.slice(0, PREVIEW_LIMIT);
   const hasMore = goals.length > PREVIEW_LIMIT;
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'achieved':
-        return <Check className="w-4 h-4 text-[#4E5840]" />;
-      case 'active':
-        return <Clock className="w-4 h-4 text-[#5C9BA4]" />;
-      case 'expired':
-        return <AlertCircle className="w-4 h-4 text-rose-500" />;
-      case 'deactivated':
-        return <Power className="w-4 h-4 text-neutral-400" />;
-      default:
-        return <Target className="w-4 h-4 text-neutral-500" />;
-    }
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -341,10 +324,11 @@ export default function GoalsPanel() {
         return 'bg-[#4E5840]/10 text-[#4E5840] border border-[#4E5840]/20';
       case 'active':
         return 'bg-[#5C9BA4]/10 text-[#5C9BA4] border border-[#5C9BA4]/20';
-      case 'expired':
-        return 'bg-neutral-100 text-neutral-500 border border-neutral-200';
+      case 'inactive':
       case 'deactivated':
         return 'bg-neutral-100 text-neutral-400 border border-neutral-200';
+      case 'expired':
+        return 'bg-neutral-100 text-neutral-500 border border-neutral-200';
       default:
         return 'bg-neutral-100 text-neutral-600 border border-neutral-200';
     }
@@ -381,11 +365,13 @@ export default function GoalsPanel() {
     }
   };
 
-  const handleToggleStatus = async (goal: Goal) => {
+  const handleToggleStatus = async () => {
+    if (!togglingGoal) return;
     try {
-      await toggleGoalStatus(goal.id);
-      const newStatus = goal.status === 'deactivated' ? 'activated' : 'deactivated';
-      toast.success(`Goal ${newStatus} successfully`);
+      await toggleGoalStatus(togglingGoal.id);
+      const wasActive = togglingGoal.status === 'active';
+      toast.success(wasActive ? 'Goal deactivated' : 'Goal activated');
+      setTogglingGoal(null);
     } catch (error) {
       console.error('Failed to toggle goal status:', error);
       toast.error('Failed to update goal status');
@@ -433,11 +419,11 @@ export default function GoalsPanel() {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl border border-neutral-200 p-6 animate-pulse">
+      <div className="bg-white rounded-[10px] border border-neutral-200 p-6 animate-pulse">
         <div className="h-5 bg-neutral-200 rounded w-1/3 mb-5" />
         <div className="space-y-3">
-          <div className="h-24 bg-neutral-100 rounded-lg" />
-          <div className="h-24 bg-neutral-100 rounded-lg" />
+          <div className="h-24 bg-neutral-100 rounded-[8px]" />
+          <div className="h-24 bg-neutral-100 rounded-[8px]" />
         </div>
       </div>
     );
@@ -474,25 +460,25 @@ export default function GoalsPanel() {
                 <div
                   key={goal.id}
                   className={`bg-neutral-50 rounded-[8px] p-5 border border-neutral-100 hover:border-neutral-200 transition-colors ${
-                    goal.status === 'deactivated' ? 'opacity-60' : ''
+                    goal.status === 'inactive' || goal.status === 'deactivated' ? 'opacity-60' : ''
                   }`}
                 >
                   {/* Goal Header */}
                   <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       <CircularProgress percentage={goal.progress_percentage || 0} />
-                      <div>
-                        <p className="text-[14px] font-semibold text-neutral-900">
+                      <div className="min-w-0">
+                        <p className="text-[14px] font-semibold text-neutral-900 truncate">
                           {getMetricLabel(goal.metric_type)}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full uppercase tracking-wide ${getStatusBadge(goal.status)}`}>
-                            {goal.status}
+                          <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full uppercase tracking-wide whitespace-nowrap ${getStatusBadge(goal.status)}`}>
+                            {goal.status === 'deactivated' ? 'inactive' : goal.status}
                           </span>
                           {goal.status === 'active' && daysRemaining > 0 && (
-                            <span className="text-[11px] text-neutral-400 flex items-center gap-1">
+                            <span className="text-[11px] text-neutral-400 flex items-center gap-1 whitespace-nowrap">
                               <Clock className="w-3 h-3" />
-                              {daysRemaining} days left
+                              {daysRemaining}d left
                             </span>
                           )}
                         </div>
@@ -500,28 +486,30 @@ export default function GoalsPanel() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                      {(goal.status === 'active' || goal.status === 'inactive' || goal.status === 'deactivated') && (
+                        <button
+                          onClick={() => setTogglingGoal(goal)}
+                          className={`p-1.5 rounded-[6px] transition-colors ${
+                            goal.status === 'active'
+                              ? 'text-[#5C9BA4] hover:text-neutral-500 hover:bg-neutral-100'
+                              : 'text-neutral-400 hover:text-[#5C9BA4] hover:bg-[#5C9BA4]/10'
+                          }`}
+                          title={goal.status === 'active' ? 'Deactivate goal' : 'Activate goal'}
+                        >
+                          <Power className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => openEditDrawer(goal)}
-                        className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-colors"
+                        className="p-1.5 rounded-[6px] text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-colors"
                         title="Edit goal"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleToggleStatus(goal)}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          goal.status === 'deactivated'
-                            ? 'text-green-500 hover:text-green-600 hover:bg-green-50'
-                            : 'text-neutral-400 hover:text-amber-500 hover:bg-amber-50'
-                        }`}
-                        title={goal.status === 'deactivated' ? 'Activate goal' : 'Deactivate goal'}
-                      >
-                        <Power className="w-4 h-4" />
-                      </button>
-                      <button
                         onClick={() => setDeletingGoal(goal)}
-                        className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                        className="p-1.5 rounded-[6px] text-neutral-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
                         title="Delete goal"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -538,7 +526,7 @@ export default function GoalsPanel() {
                       </p>
                     </div>
                     <div className="text-center p-2.5 bg-white rounded-[6px] border border-neutral-100">
-                      <p className="text-[10px] text-neutral-400 uppercase tracking-wider mb-0.5">Curf</p>
+                      <p className="text-[10px] text-neutral-400 uppercase tracking-wider mb-0.5">Current</p>
                       <p className="text-[13px] font-bold text-[#5C9BA4]">
                         {formatValue(goal.metric_type, goal.current_value)}
                       </p>
@@ -603,7 +591,7 @@ export default function GoalsPanel() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <div className="w-16 h-16 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-[10px] bg-neutral-100 flex items-center justify-center mx-auto mb-4">
               <Target className="w-8 h-8 text-neutral-300" />
             </div>
             <p className="text-[15px] font-medium text-neutral-600 mb-1">No goals set yet</p>
@@ -627,18 +615,86 @@ export default function GoalsPanel() {
         mode={editingGoal ? 'edit' : 'create'}
       />
 
-      {/* Delete Confirmation */}
-      <ConfirmDrawer
-        isOpen={!!deletingGoal}
-        onClose={() => setDeletingGoal(null)}
-        onConfirm={handleDeleteGoal}
-        title="Delete Goal"
-        description={`Are you sure you want to delete the "${deletingGoal ? getMetricLabel(deletingGoal.metric_type) : ''}" goal? This action cannot be undone.`}
-        confirmText="Delete Goal"
-        cancelText="Keep Goal"
-        variant="danger"
-        icon={Trash2}
-      />
+      {/* Toggle Status Confirmation Dialog */}
+      {!!togglingGoal && (
+        <div className="fixed inset-0 z-[99998] flex items-center justify-center" onClick={() => setTogglingGoal(null)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div
+            className="relative w-full max-w-[400px] mx-4 bg-white rounded-[10px] border border-neutral-200 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 pt-6 pb-5">
+              <div className="flex items-start gap-4">
+                <div className={`w-10 h-10 rounded-[8px] flex items-center justify-center flex-shrink-0 ${
+                  togglingGoal.status === 'active' ? 'bg-neutral-100' : 'bg-[#5C9BA4]/10'
+                }`}>
+                  <Power className={`w-5 h-5 ${
+                    togglingGoal.status === 'active' ? 'text-neutral-500' : 'text-[#5C9BA4]'
+                  }`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-[15px] font-semibold text-neutral-900 mb-1">
+                    {togglingGoal.status === 'active' ? 'Deactivate Goal' : 'Activate Goal'}
+                  </h3>
+                  <p className="text-[13px] text-neutral-500 leading-relaxed">
+                    Are you sure you want to {togglingGoal.status === 'active' ? 'deactivate' : 'activate'} the "{getMetricLabel(togglingGoal.metric_type)}" goal?
+                    {togglingGoal.status === 'active'
+                      ? ' Progress tracking will be paused.'
+                      : ' Progress tracking will resume.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-neutral-100 flex items-center justify-end gap-3">
+              <Button variant="outline" onClick={() => setTogglingGoal(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant={togglingGoal.status === 'active' ? 'outline' : 'primary'}
+                onClick={handleToggleStatus}
+              >
+                {togglingGoal.status === 'active' ? 'Deactivate' : 'Activate'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {!!deletingGoal && (
+        <div className="fixed inset-0 z-[99998] flex items-center justify-center" onClick={() => setDeletingGoal(null)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div
+            className="relative w-full max-w-[400px] mx-4 bg-white rounded-[10px] border border-neutral-200 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 pt-6 pb-5">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-[8px] bg-rose-50 flex items-center justify-center flex-shrink-0">
+                  <Trash2 className="w-5 h-5 text-rose-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-[15px] font-semibold text-neutral-900 mb-1">Delete Goal</h3>
+                  <p className="text-[13px] text-neutral-500 leading-relaxed">
+                    Are you sure you want to delete the "{deletingGoal ? getMetricLabel(deletingGoal.metric_type) : ''}" goal? This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-neutral-100 flex items-center justify-end gap-3">
+              <Button variant="outline" onClick={() => setDeletingGoal(null)}>
+                Keep Goal
+              </Button>
+              <button
+                onClick={handleDeleteGoal}
+                className="h-9 px-4 text-[13px] font-semibold rounded-[8px] text-white bg-rose-500 hover:bg-rose-600 transition-colors"
+              >
+                Delete Goal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

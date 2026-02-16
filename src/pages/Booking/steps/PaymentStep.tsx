@@ -2,15 +2,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState, useEffect, useMemo } from 'react';
-import { CreditCard, Lock, MapPin, Shield, CheckCircle, Calendar, User, Building2, ArrowRight, ChevronDown, Mail, KeyRound, Globe } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { CreditCard, Lock, MapPin, Shield, CheckCircle, Calendar, User, Building2, ArrowRight, ChevronDown, Mail, KeyRound, Globe, Landmark, Hash, Search } from 'lucide-react';
 import { useBooking } from '@/contexts/BookingContext';
 import { paymentMethodsService } from '@/api/services/payment-methods.service';
 import { bookingService } from '@/api/services/booking.service';
 import { otpService } from '@/api/services/otp.service';
 import { useAuth } from '@/hooks/useAuth';
-import { Country } from 'country-state-city';
-import { SearchableSelect } from '@/components/ui2/SearchableSelect';
+import { useGeoAddress } from '@/hooks/useGeoAddress';
 import toast from 'react-hot-toast';
 
 const paymentSchema = z.object({
@@ -27,6 +26,7 @@ const paymentSchema = z.object({
   city: z.string().min(2, 'City is required'),
   zipCode: z.string().min(5, 'ZIP code is required'),
   country: z.string().min(2, 'Country is required'),
+  state: z.string().optional(),
 });
 
 interface PaymentStepProps {
@@ -41,6 +41,140 @@ interface SavedCard {
   expiryYear: number;
   isDefault: boolean;
   cardholderName?: string;
+}
+
+/* Searchable select styled to match the form's input pattern (pl-12 pr-12 py-4 rounded-lg) */
+function PaymentSearchSelect({
+  options,
+  value,
+  onChange,
+  placeholder,
+  icon: Icon,
+  isValid,
+  hasError,
+}: {
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (val: string) => void;
+  placeholder: string;
+  icon: React.ComponentType<any>;
+  isValid: boolean;
+  hasError: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const selectedLabel = useMemo(
+    () => options.find((o) => o.value === value)?.label || '',
+    [options, value]
+  );
+
+  const filtered = useMemo(() => {
+    if (!search) return options;
+    const q = search.toLowerCase();
+    return options.filter((o) => o.label.toLowerCase().includes(q));
+  }, [options, search]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setIsOpen(false);
+        setSearch('');
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen && searchRef.current) searchRef.current.focus();
+  }, [isOpen]);
+
+  return (
+    <div ref={ref} className="relative group">
+      <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+        <Icon
+          className={`w-5 h-5 transition-colors ${
+            isValid
+              ? 'text-green-500'
+              : hasError
+                ? 'text-red-500'
+                : 'text-neutral-400 group-focus-within:text-primary-600'
+          }`}
+          strokeWidth={2}
+        />
+      </div>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full pl-12 pr-12 py-4 border rounded-lg text-left font-medium transition-all ${
+          hasError
+            ? 'border-red-300 bg-red-50'
+            : isValid
+              ? 'border-green-300 bg-green-50'
+              : isOpen
+                ? 'border-primary-500 ring-2 ring-primary-500/20 bg-neutral-50'
+                : 'border-neutral-200 bg-neutral-50 hover:border-neutral-300'
+        }`}
+      >
+        <span className={value ? 'text-neutral-900' : 'text-neutral-400'}>
+          {selectedLabel || placeholder}
+        </span>
+      </button>
+      {isValid ? (
+        <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500 pointer-events-none" strokeWidth={2} />
+      ) : (
+        <ChevronDown
+          className={`absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        />
+      )}
+      {isOpen && (
+        <div className="absolute z-50 mt-1 w-full bg-white border border-neutral-200 rounded-lg shadow-lg overflow-hidden">
+          {options.length > 6 && (
+            <div className="p-2 border-b border-neutral-100">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <input
+                  ref={searchRef}
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search..."
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 bg-neutral-50"
+                />
+              </div>
+            </div>
+          )}
+          <div className="max-h-48 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <div className="px-4 py-3 text-sm text-neutral-400 text-center">No results</div>
+            ) : (
+              filtered.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                    setSearch('');
+                  }}
+                  className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                    opt.value === value
+                      ? 'bg-primary-50 text-primary-700 font-medium'
+                      : 'text-neutral-700 hover:bg-neutral-50'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function PaymentStep({ onNext }: PaymentStepProps) {
@@ -71,9 +205,29 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
     defaultValues: bookingData.payment,
   });
 
+  const countryVal = watch('country') || '';
+  const stateVal = watch('state') || '';
+  const cityVal = watch('city') || '';
+
+  const { countries, states, cities, hasStates, hasCities } = useGeoAddress({
+    countryCode: countryVal,
+    stateCode: stateVal,
+    cityName: cityVal,
+    onStateReset: () => { setValue('state', ''); setValue('city', ''); },
+    onCityReset: () => setValue('city', ''),
+  });
+
   const countryOptions = useMemo(
-    () => Country.getAllCountries().map((c) => ({ value: c.isoCode, label: c.name })),
-    []
+    () => countries.map((c) => ({ value: c.isoCode, label: c.name })),
+    [countries]
+  );
+  const stateOptions = useMemo(
+    () => states.map((s) => ({ value: s.isoCode, label: s.name })),
+    [states]
+  );
+  const cityOptions = useMemo(
+    () => cities.map((c) => ({ value: c.name, label: c.name })),
+    [cities]
   );
 
   // Load saved cards from database
@@ -848,39 +1002,130 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
             </AnimatePresence>
           </div>
 
-          {/* City, ZIP, Country */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Country & State */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            {/* Country */}
+            <div>
+              <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                Country <span className="text-red-500">*</span>
+              </label>
+              <Controller
+                name="country"
+                control={control}
+                render={({ field }) => (
+                  <PaymentSearchSelect
+                    options={countryOptions}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select Country"
+                    icon={Globe}
+                    isValid={isFieldValid('country', countryVal)}
+                    hasError={!!errors.country}
+                  />
+                )}
+              />
+              <AnimatePresence>
+                {errors.country && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="mt-2 text-sm text-red-600 font-medium"
+                  >
+                    {errors.country.message}
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* State / Province */}
+            <div>
+              <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                State / Province
+              </label>
+              {hasStates ? (
+                <Controller
+                  name="state"
+                  control={control}
+                  render={({ field }) => (
+                    <PaymentSearchSelect
+                      options={stateOptions}
+                      value={field.value || ''}
+                      onChange={field.onChange}
+                      placeholder="Select State"
+                      icon={Landmark}
+                      isValid={isFieldValid('state', stateVal)}
+                      hasError={false}
+                    />
+                  )}
+                />
+              ) : (
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <Landmark className="w-5 h-5 text-neutral-400 group-focus-within:text-primary-600 transition-colors" strokeWidth={2} />
+                  </div>
+                  <input
+                    type="text"
+                    {...register('state')}
+                    placeholder="State / Province"
+                    className="w-full pl-12 pr-12 py-4 border rounded-lg focus:outline-none focus:ring-2 transition-all font-medium border-neutral-200 focus:border-primary-500 focus:ring-primary-500/20 bg-neutral-50"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* City & ZIP Code */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* City */}
             <div>
               <label className="block text-sm font-semibold text-neutral-900 mb-2">
                 City <span className="text-red-500">*</span>
               </label>
-              <div className="relative group">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <Building2 className={`w-5 h-5 transition-colors ${
-                    isFieldValid('city', city)
-                      ? 'text-green-500'
-                      : errors.city
-                        ? 'text-red-500'
-                        : 'text-neutral-400 group-focus-within:text-primary-600'
-                  }`} strokeWidth={2} />
-                </div>
-                <input
-                  type="text"
-                  {...register('city')}
-                  placeholder="San Francisco"
-                  className={`w-full pl-12 pr-12 py-4 border rounded-lg focus:outline-none focus:ring-2 transition-all font-medium ${
-                    errors.city
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20 bg-red-50'
-                      : isFieldValid('city', city)
-                        ? 'border-green-300 focus:border-green-500 focus:ring-green-500/20 bg-green-50'
-                        : 'border-neutral-200 focus:border-primary-500 focus:ring-primary-500/20 bg-neutral-50'
-                  }`}
+              {hasCities ? (
+                <Controller
+                  name="city"
+                  control={control}
+                  render={({ field }) => (
+                    <PaymentSearchSelect
+                      options={cityOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select City"
+                      icon={Building2}
+                      isValid={isFieldValid('city', city)}
+                      hasError={!!errors.city}
+                    />
+                  )}
                 />
-                {isFieldValid('city', city) && (
-                  <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" strokeWidth={2} />
-                )}
-              </div>
+              ) : (
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <Building2 className={`w-5 h-5 transition-colors ${
+                      isFieldValid('city', city)
+                        ? 'text-green-500'
+                        : errors.city
+                          ? 'text-red-500'
+                          : 'text-neutral-400 group-focus-within:text-primary-600'
+                    }`} strokeWidth={2} />
+                  </div>
+                  <input
+                    type="text"
+                    {...register('city')}
+                    placeholder="City"
+                    className={`w-full pl-12 pr-12 py-4 border rounded-lg focus:outline-none focus:ring-2 transition-all font-medium ${
+                      errors.city
+                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20 bg-red-50'
+                        : isFieldValid('city', city)
+                          ? 'border-green-300 focus:border-green-500 focus:ring-green-500/20 bg-green-50'
+                          : 'border-neutral-200 focus:border-primary-500 focus:ring-primary-500/20 bg-neutral-50'
+                    }`}
+                  />
+                  {isFieldValid('city', city) && (
+                    <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" strokeWidth={2} />
+                  )}
+                </div>
+              )}
               <AnimatePresence>
                 {errors.city && (
                   <motion.p
@@ -901,11 +1146,20 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
                 ZIP Code <span className="text-red-500">*</span>
               </label>
               <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <Hash className={`w-5 h-5 transition-colors ${
+                    isFieldValid('zipCode', zipCode)
+                      ? 'text-green-500'
+                      : errors.zipCode
+                        ? 'text-red-500'
+                        : 'text-neutral-400 group-focus-within:text-primary-600'
+                  }`} strokeWidth={2} />
+                </div>
                 <input
                   type="text"
                   {...register('zipCode')}
                   placeholder="94102"
-                  className={`w-full px-4 py-4 border rounded-lg focus:outline-none focus:ring-2 transition-all font-medium ${
+                  className={`w-full pl-12 pr-12 py-4 border rounded-lg focus:outline-none focus:ring-2 transition-all font-medium ${
                     errors.zipCode
                       ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20 bg-red-50'
                       : isFieldValid('zipCode', zipCode)
@@ -926,40 +1180,6 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
                     className="mt-2 text-sm text-red-600 font-medium"
                   >
                     {errors.zipCode.message}
-                  </motion.p>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Country */}
-            <div>
-              <label className="block text-sm font-semibold text-neutral-900 mb-2">
-                Country <span className="text-red-500">*</span>
-              </label>
-              <Controller
-                name="country"
-                control={control}
-                render={({ field }) => (
-                  <SearchableSelect
-                    options={countryOptions}
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Select Country"
-                    icon={Globe}
-                    error={!!errors.country}
-                    searchable
-                  />
-                )}
-              />
-              <AnimatePresence>
-                {errors.country && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="mt-2 text-sm text-red-600 font-medium"
-                  >
-                    {errors.country.message}
                   </motion.p>
                 )}
               </AnimatePresence>

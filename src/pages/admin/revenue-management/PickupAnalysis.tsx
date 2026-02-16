@@ -12,6 +12,7 @@ import {
   invalidateRevenueCache,
 } from '../../../api/services/revenue-intelligence.service';
 import { useToast } from '../../../contexts/ToastContext';
+import { Drawer } from '../../../components/ui2/Drawer';
 
 const PickupAnalysis = () => {
   const { pickup, pickupMetrics, refreshPickup, compareToHistorical, predictPickup, isLoading } = useRMS();
@@ -25,6 +26,7 @@ const PickupAnalysis = () => {
   const [insightsLoading, setInsightsLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showAlertDetails, setShowAlertDetails] = useState(false);
+  const [showAlertsDrawer, setShowAlertsDrawer] = useState(false);
 
   // Fetch AI insights from API
   useEffect(() => {

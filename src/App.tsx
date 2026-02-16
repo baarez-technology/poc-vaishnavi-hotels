@@ -73,6 +73,8 @@ const Maintenance = lazy(() => import('./pages/admin/Maintenance'));
 const Runner = lazy(() => import('./pages/admin/Runner'));
 const RevenueAI = lazy(() => import('./pages/admin/RevenueAI'));
 const ReputationAI = lazy(() => import('./pages/admin/ReputationAI'));
+const ReputationGoals = lazy(() => import('./pages/admin/ReputationGoals'));
+const ReputationPendingReviews = lazy(() => import('./pages/admin/ReputationPendingReviews'));
 const CRM = lazy(() => import('./pages/admin/CRM'));
 const CRMAI = lazy(() => import('./pages/admin/ai/CRMAI'));
 const CRMAIDashboard = lazy(() => import('./pages/admin/ai/CRMAIDashboard'));
@@ -293,6 +295,8 @@ function App() {
                                                     <Route path="runner" element={<Runner />} />
                                                     <Route path="revenue" element={<RevenueDashboard />} />
                                                     <Route path="reputation" element={<ReputationAI />} />
+                                                    <Route path="reputation/goals" element={<ReputationGoals />} />
+                                                    <Route path="reputation/reviews" element={<ReputationPendingReviews />} />
                                                     <Route path="crm" element={<CRM />} />
                                                     <Route path="crm/segment/:segmentId" element={<SegmentDetailsWrapper />} />
                                                     <Route path="reports" element={<ReportsHome />} />

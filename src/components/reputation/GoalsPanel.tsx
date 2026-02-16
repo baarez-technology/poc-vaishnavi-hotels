@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Target,
@@ -10,7 +11,8 @@ import {
   AlertCircle,
   Pencil,
   Trash2,
-  X
+  X,
+  ArrowRight
 } from 'lucide-react';
 import { useReputation } from '@/context/ReputationContext';
 import { Drawer, ConfirmDrawer } from '../ui2/Drawer';
@@ -213,10 +215,15 @@ function getDaysRemaining(endDate: string): number {
 }
 
 export default function GoalsPanel() {
+  const navigate = useNavigate();
   const { goals, createGoal, updateGoal, deleteGoal, updateGoalProgress, isLoading } = useReputation();
   const [showDrawer, setShowDrawer] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [deletingGoal, setDeletingGoal] = useState<Goal | null>(null);
+
+  const PREVIEW_LIMIT = 2;
+  const displayedGoals = goals.slice(0, PREVIEW_LIMIT);
+  const hasMore = goals.length > PREVIEW_LIMIT;
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -347,7 +354,7 @@ export default function GoalsPanel() {
       <div className="p-6">
         {goals.length > 0 ? (
           <div className="space-y-4">
-            {goals.map((goal) => {
+            {displayedGoals.map((goal) => {
               const daysRemaining = getDaysRemaining(goal.end_date);
 
               return (
@@ -456,6 +463,17 @@ export default function GoalsPanel() {
                 </div>
               );
             })}
+
+            {/* View More */}
+            {hasMore && (
+              <button
+                onClick={() => navigate('/admin/reputation/goals')}
+                className="w-full flex items-center justify-center gap-2 py-2.5 text-[13px] font-semibold text-[#A57865] hover:bg-[#A57865]/5 rounded-[8px] transition-colors"
+              >
+                View all {goals.length } goals
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
           </div>
         ) : (
           <div className="text-center py-12">

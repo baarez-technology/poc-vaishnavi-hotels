@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { MessageSquare, Wand2, Star, Clock, Send, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { MessageSquare, Wand2, Star, Clock, Send, Loader2, ArrowRight } from 'lucide-react';
 import { useReputation } from '@/context/ReputationContext';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
@@ -171,10 +172,15 @@ function ReviewDraftDrawer({ isOpen, review, onClose, onApprove }: ReviewDraftDr
   );
 }
 
+const PREVIEW_LIMIT = 3;
+
 export default function PendingReviewsPanel() {
+  const navigate = useNavigate();
   const { pendingReviews, fetchPendingReviews, approveDraft, isLoading } = useReputation();
   const [selectedReview, setSelectedReview] = useState<any>(null);
-  const [showAll, setShowAll] = useState(false);
+
+  const displayedReviews = pendingReviews.slice(0, PREVIEW_LIMIT);
+  const hasMore = pendingReviews.length > PREVIEW_LIMIT;
 
   const handleApprove = async (text: string) => {
     if (!selectedReview) return;
@@ -214,7 +220,7 @@ export default function PendingReviewsPanel() {
 
       {pendingReviews.length > 0 ? (
         <div className="space-y-3">
-          {(showAll ? pendingReviews : pendingReviews.slice(0, 5)).map((review: any) => (
+          {displayedReviews.map((review: any) => (
             <div
               key={review.id}
               className="bg-neutral-50 rounded-[8px] p-4 hover:bg-neutral-100/80 transition-colors"
@@ -261,10 +267,14 @@ export default function PendingReviewsPanel() {
             </div>
           ))}
 
-          {pendingReviews.length > 5 && (
-            <Button variant="ghost" size="sm" fullWidth onClick={() => setShowAll(!showAll)}>
-              {showAll ? 'Show less' : `View all ${pendingReviews.length} pending reviews`}
-            </Button>
+          {hasMore && (
+            <button
+              onClick={() => navigate('/admin/reputation/reviews')}
+              className="w-full flex items-center justify-center gap-2 py-2.5 text-[13px] font-semibold text-[#A57865] hover:bg-[#A57865]/5 rounded-[8px] transition-colors"
+            >
+              View all {pendingReviews.length} pending reviews
+              <ArrowRight className="w-4 h-4" />
+            </button>
           )}
         </div>
       ) : (

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { MessageSquare, Star, Calendar, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { MessageSquare, Star, Calendar, CheckCircle, AlertCircle, ExternalLink, ArrowRight } from 'lucide-react';
 import { Button } from '../ui2/Button';
 
 const SOURCE_COLORS = {
@@ -52,6 +53,7 @@ const StarRating = ({ rating }) => {
 };
 
 export default function ReviewFeed({ reviews, onReviewClick }) {
+  const navigate = useNavigate();
   const stats = useMemo(() => {
     const responded = reviews.filter(r => r.responded).length;
     const pending = reviews.length - responded;
@@ -184,12 +186,16 @@ export default function ReviewFeed({ reviews, onReviewClick }) {
         })}
       </div>
 
-      {/* Load More */}
+      {/* View All */}
       {reviews.length > 5 && (
         <div className="mt-5 pt-4 border-t border-neutral-100 text-center">
-          <Button variant="ghost" size="sm">
+          <button
+            onClick={() => navigate('/admin/reputation/reviews')}
+            className="inline-flex items-center gap-2 px-4 py-2 text-[13px] font-semibold text-[#A57865] hover:bg-[#A57865]/5 rounded-[8px] transition-colors"
+          >
             View All Reviews
-          </Button>
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>

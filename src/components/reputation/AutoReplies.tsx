@@ -105,7 +105,7 @@ export default function AutoReplies({ settings, onSettingsChange }) {
   };
 
   return (
-    <div className="bg-white rounded-[10px] overflow-hidden">
+    <div className="bg-white rounded-[10px] border border-neutral-200 overflow-hidden">
       {/* Header */}
       <div className="px-6 py-5 border-b border-neutral-100">
         <div className="flex items-center justify-between">
@@ -141,11 +141,11 @@ export default function AutoReplies({ settings, onSettingsChange }) {
         <div className="flex items-center gap-4">
           {/* Delay */}
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-[8px] bg-neutral-100 flex items-center justify-center">
               <Clock className="w-4 h-4 text-neutral-500" />
             </div>
             <div>
-              <p className="text-xs text-neutral-400 mb-1">Response Delay</p>
+              <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-1">Response Delay</p>
               <div className="w-[120px]">
                 <SelectDropdown
                   value={settings.autoReply?.delay || '3h'}
@@ -162,11 +162,11 @@ export default function AutoReplies({ settings, onSettingsChange }) {
 
           {/* Language */}
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-[8px] bg-neutral-100 flex items-center justify-center">
               <Globe className="w-4 h-4 text-neutral-500" />
             </div>
             <div>
-              <p className="text-xs text-neutral-400 mb-1">Language</p>
+              <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest mb-1">Language</p>
               <div className="w-[120px]">
                 <SelectDropdown
                   value={settings.autoReply?.language || 'en'}
@@ -181,7 +181,7 @@ export default function AutoReplies({ settings, onSettingsChange }) {
         </div>
 
         {/* AI Rules */}
-        <div className="bg-neutral-50 rounded-[8px] p-4">
+        <div className="bg-neutral-50 rounded-[8px] border border-neutral-100 p-4">
           <div className="flex items-center gap-2 mb-3">
             <Zap className="w-4 h-4 text-terra-600" />
             <h4 className="text-[13px] font-semibold text-neutral-900">AI Response Rules</h4>
@@ -209,7 +209,7 @@ export default function AutoReplies({ settings, onSettingsChange }) {
             {TEMPLATE_TYPES.map((type) => (
               <div
                 key={type.id}
-                className="bg-neutral-50 rounded-[8px] overflow-hidden"
+                className="bg-neutral-50 rounded-[8px] border border-neutral-100 overflow-hidden"
               >
                 <div className="flex items-center justify-between p-4">
                   <div className="flex items-center gap-3">
@@ -266,7 +266,7 @@ export default function AutoReplies({ settings, onSettingsChange }) {
 
       {/* Status Footer */}
       {(saved || settings.autoReply?.enabled) && (
-        <div className="px-6 py-4 bg-neutral-50 border-t border-neutral-100">
+        <div className="px-6 py-4 border-t border-neutral-100">
           {saved ? (
             <div className="flex items-center gap-2 text-terra-600">
               <Check className="w-4 h-4" />

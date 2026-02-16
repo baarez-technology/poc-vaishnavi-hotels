@@ -47,7 +47,7 @@ interface GoalFormData {
 interface GoalDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: GoalFormData) => void;
+  onSubmit: (data: GoalFormData) => Promise<void>;
   initialData?: Goal | null;
   mode: 'create' | 'edit';
 }
@@ -61,6 +61,7 @@ function GoalDrawer({ isOpen, onClose, onSubmit, initialData, mode }: GoalDrawer
   const [startDate, setStartDate] = useState(initialData?.start_date || today);
   const [endDate, setEndDate] = useState(initialData?.end_date || defaultEndDate);
   const [errors, setErrors] = useState<{ targetValue?: string; dates?: string }>({});
+  const [saving, setSaving] = useState(false);
 
   // Get max target value based on metric type
   const getMaxTargetValue = (metric: string): number => {
@@ -90,7 +91,6 @@ function GoalDrawer({ isOpen, onClose, onSubmit, initialData, mode }: GoalDrawer
       setStartDate(initialData.start_date || today);
       setEndDate(initialData.end_date || defaultEndDate);
     } else {
-      // Reset to defaults for create mode
       setMetricType('rating');
       setTargetValue(4.5);
       setStartDate(today);
@@ -130,7 +130,6 @@ function GoalDrawer({ isOpen, onClose, onSubmit, initialData, mode }: GoalDrawer
   const handleTargetValueChange = (value: number) => {
     const max = getMaxTargetValue(metricType);
     const min = getMinTargetValue(metricType);
-    // Clamp value within valid range
     const clampedValue = Math.min(max, Math.max(min, value));
     setTargetValue(clampedValue);
     setErrors(prev => ({ ...prev, targetValue: undefined }));
@@ -138,7 +137,6 @@ function GoalDrawer({ isOpen, onClose, onSubmit, initialData, mode }: GoalDrawer
 
   const handleStartDateChange = (value: string) => {
     setStartDate(value);
-    // Auto-adjust end date if it's before the new start date
     if (endDate && value > endDate) {
       setEndDate(value);
     }
@@ -150,19 +148,26 @@ function GoalDrawer({ isOpen, onClose, onSubmit, initialData, mode }: GoalDrawer
     setErrors(prev => ({ ...prev, dates: undefined }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    onSubmit({ metricType, targetValue, startDate, endDate });
-    onClose();
+    setSaving(true);
+    try {
+      await onSubmit({ metricType, targetValue, startDate, endDate });
+      onClose();
+    } catch (error) {
+      // Error toast handled by caller
+    } finally {
+      setSaving(false);
+    }
   };
 
   const footer = (
     <div className="flex items-center justify-end gap-3 w-full">
-      <Button variant="outline" onClick={onClose}>
+      <Button variant="outline" onClick={onClose} disabled={saving}>
         Cancel
       </Button>
-      <Button variant="primary" type="submit" form="goal-form">
+      <Button variant="primary" type="submit" form="goal-form" loading={saving}>
         {mode === 'create' ? 'Create Goal' : 'Save Changes'}
       </Button>
     </div>
@@ -386,7 +391,7 @@ export default function GoalsPanel() {
       await updateGoal(editingGoal.id, {
         target_value: data.targetValue,
         start_date: data.startDate,
-        end_date: data.endDate
+        end_date: data.endDate,
       });
       toast.success('Goal updated successfully');
       setEditingGoal(null);
@@ -616,6 +621,7 @@ export default function GoalsPanel() {
         variant="danger"
         icon={Trash2}
       />
+
     </div>
   );
 }

@@ -849,17 +849,18 @@ export function useHousekeeping() {
   const addCleaningTask = useCallback(async (taskData: {
     roomId: number;
     staffId?: number;
+    taskType?: string;
     priority?: string;
     notes?: string;
     estimatedTime?: number;
   }) => {
     try {
-      const { roomId, staffId, priority, notes, estimatedTime } = taskData;
+      const { roomId, staffId, taskType, priority, notes, estimatedTime } = taskData;
 
-      // Create task via API
+      // Create task via API - use the selected task type, default to 'cleaning'
       const newTask = await housekeepingService.createTask({
         room_id: roomId,
-        task_type: 'cleaning',
+        task_type: taskType || 'cleaning',
         priority: priority || 'medium',
         notes,
         estimated_duration: estimatedTime,

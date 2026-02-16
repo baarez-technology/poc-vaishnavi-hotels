@@ -104,7 +104,7 @@ const HousekeepingDashboard = () => {
   const stats = useMemo(() => ({
     cleanRooms: cleanRooms?.length || 0,
     totalRooms: rooms.length,
-    pendingTasks: tasks?.filter(t => t.status === 'pending' || t.status === 'todo').length || 0,
+    pendingTasks: tasks?.filter(t => t.status === 'pending' || t.status === 'assigned' || t.status === 'todo').length || 0,
     inProgressTasks: tasks?.filter(t => t.status === 'in_progress').length || 0,
     urgentRooms: rooms.filter(r => r.priority === 'urgent' && r.status !== 'clean').length
   }), [cleanRooms, rooms, tasks]);

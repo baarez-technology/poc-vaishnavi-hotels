@@ -295,7 +295,7 @@ export default function Bookings() {
     if (!selectedBooking || !room) return;
     setIsAssigning(true);
     try {
-      const success = await assignRoom(selectedBooking.id, room.id, room.roomNumber);
+      const success = await assignRoom(selectedBooking.id, room.id, room.roomNumber, selectedBooking.checkIn);
       if (success) {
         setSelectedBooking({
           ...selectedBooking,

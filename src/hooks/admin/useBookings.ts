@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { bookingService } from '@/api/services/booking.service';
+import { roomsService } from '@/api/services/rooms.service';
 
 // Interface for frontend booking representation
 export interface AdminBooking {
@@ -522,13 +523,26 @@ export function useBookings() {
   /**
    * Assign room to booking
    */
-  const assignRoom = useCallback(async (bookingId: string, roomId: number | string, roomNumber: string) => {
+  const assignRoom = useCallback(async (bookingId: string, roomId: number | string, roomNumber: string, checkIn?: string) => {
     try {
-      console.log('[useBookings.assignRoom] Assigning room:', { bookingId, roomId, roomNumber });
+      console.log('[useBookings.assignRoom] Assigning room:', { bookingId, roomId, roomNumber, checkIn });
 
       // API expects roomId as a string
       const result = await bookingService.updateBooking(bookingId, { roomId: String(roomId) });
       console.log('[useBookings.assignRoom] API response:', result);
+
+      // Also update room status to occupied if check-in date is today or earlier
+      if (checkIn) {
+        const today = new Date().toISOString().split('T')[0];
+        if (checkIn <= today) {
+          try {
+            await roomsService.updateRoomStatus(roomId, 'occupied');
+            console.log('[useBookings.assignRoom] Room status synced to occupied');
+          } catch (roomErr) {
+            console.warn('[useBookings.assignRoom] Could not sync room status:', roomErr);
+          }
+        }
+      }
 
       setBookings(prev => prev.map(b =>
         b.id === bookingId

@@ -4,7 +4,7 @@
  * Pattern matching Staff/Channel Manager drawers
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Plus, Clock, ChevronDown, Check } from 'lucide-react';
 import { Drawer } from '../../ui2/Drawer';
 import { Button } from '../../ui2/Button';
@@ -94,9 +94,26 @@ export default function AddCleaningTaskModal({
     }
   }, [isOpen]);
 
-  // BUG-006 FIX: Allow all rooms except out_of_service - occupied (clean/inspected) rooms
-  // need tasks too (turndown, mid-stay cleaning, deep clean, etc.)
-  const availableRooms = rooms?.filter(r => r.status !== 'out_of_service') || [];
+  // Smart room filtering based on task type:
+  // - cleaning: only dirty rooms (not already assigned to an active task)
+  // - turndown/mid_stay: occupied rooms (any status except out_of_service)
+  // - deep_clean/inspection: all rooms except out_of_service
+  const availableRooms = useMemo(() => {
+    const allRooms = rooms?.filter(r => r.status !== 'out_of_service') || [];
+
+    if (formData.taskType === 'cleaning') {
+      // For regular cleaning, show dirty rooms that don't already have an active task assigned
+      return allRooms.filter(r => r.status === 'dirty' || r.status === 'in_progress');
+    }
+
+    if (formData.taskType === 'turndown' || formData.taskType === 'mid_stay') {
+      // For turndown/mid-stay, show occupied or clean rooms (guests are in the room)
+      return allRooms.filter(r => r.status !== 'dirty');
+    }
+
+    // For deep_clean and inspection, show all rooms
+    return allRooms;
+  }, [rooms, formData.taskType]);
   const selectedRoom = rooms?.find(r => r.id === formData.roomId);
   const estimatedTime = selectedRoom ? calculateCleaningTime({ type: selectedRoom.type, priority: formData.priority }) : 0;
 
@@ -112,7 +129,12 @@ export default function AddCleaningTaskModal({
   };
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const next = { ...prev, [field]: value };
+      // Reset room selection when task type changes (available rooms differ)
+      if (field === 'taskType') next.roomId = '';
+      return next;
+    });
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }));
   };
 
@@ -199,7 +221,11 @@ export default function AddCleaningTaskModal({
           />
           {errors.roomId && <p className="text-xs text-rose-500 mt-1">{errors.roomId}</p>}
           {availableRooms.length === 0 && (
-            <p className="text-[11px] text-gold-600 mt-1">No rooms available for task assignment</p>
+            <p className="text-[11px] text-gold-600 mt-1">
+              {formData.taskType === 'cleaning'
+                ? 'No dirty rooms available for cleaning assignment'
+                : 'No rooms available for this task type'}
+            </p>
           )}
         </div>
 

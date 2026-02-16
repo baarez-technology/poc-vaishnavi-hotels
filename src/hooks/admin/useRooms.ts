@@ -80,40 +80,53 @@ export function useRooms() {
         if (Array.isArray(apiRooms) && apiRooms.length > 0) {
           const transformedRooms = apiRooms.map(transformApiRoom);
 
-          // BUG-013 FIX: Fetch active bookings to populate guest data for occupied rooms
+          // BUG-013 FIX: Fetch active bookings to populate guest data for ALL rooms (not just occupied)
+          // This ensures rooms assigned from the Bookings module also show guest data
           try {
             const bookingsResponse = await bookingService.getBookings(1, 1000);
             const bookings = bookingsResponse.items || (Array.isArray(bookingsResponse) ? bookingsResponse : []);
             const today = new Date().toISOString().split('T')[0];
 
             for (const room of transformedRooms) {
-              if (room.status === 'occupied') {
-                // Find an active booking assigned to this room
-                const activeBooking = bookings.find((b: any) => {
-                  const bookingRoomId = b.room?.id || b.room?.number;
-                  const matchesRoom =
-                    String(bookingRoomId) === String(room.id) ||
-                    b.room?.number === room.roomNumber;
-                  const isActive = ['checked_in', 'checked-in', 'confirmed'].includes(b.status);
-                  return matchesRoom && isActive;
-                });
+              // Check ALL rooms against active bookings (not just occupied ones)
+              const activeBooking = bookings.find((b: any) => {
+                const bookingRoomId = b.room?.id || b.room?.number;
+                const matchesRoom =
+                  String(bookingRoomId) === String(room.id) ||
+                  b.room?.number === room.roomNumber;
+                const isActive = ['checked_in', 'checked-in', 'confirmed', 'booked'].includes(b.status);
+                // Also verify the booking overlaps with today
+                const checkIn = b.checkIn || b.arrival_date;
+                const checkOut = b.checkOut || b.departure_date;
+                const overlapsToday = checkIn && checkOut && checkIn <= today && checkOut > today;
+                return matchesRoom && isActive && overlapsToday;
+              });
 
-                if (activeBooking) {
-                  const firstName = activeBooking.guestInfo?.firstName || '';
-                  const lastName = activeBooking.guestInfo?.lastName || '';
-                  room.guests = {
-                    name: `${firstName} ${lastName}`.trim(),
-                    email: activeBooking.guestInfo?.email || '',
-                    checkIn: activeBooking.checkIn,
-                    checkOut: activeBooking.checkOut,
-                    adults: activeBooking.guests?.adults || 1,
-                    children: activeBooking.guests?.children || 0,
-                    bookingId: activeBooking.id,
-                  };
+              if (activeBooking) {
+                const firstName = activeBooking.guestInfo?.firstName || '';
+                const lastName = activeBooking.guestInfo?.lastName || '';
+                room.guests = {
+                  name: `${firstName} ${lastName}`.trim(),
+                  email: activeBooking.guestInfo?.email || '',
+                  checkIn: activeBooking.checkIn,
+                  checkOut: activeBooking.checkOut,
+                  adults: activeBooking.guests?.adults || 1,
+                  children: activeBooking.guests?.children || 0,
+                  bookingId: activeBooking.id,
+                };
+
+                // Self-heal: if booking is checked_in but room isn't marked occupied, fix it
+                const isCheckedIn = ['checked_in', 'checked-in'].includes(activeBooking.status);
+                if (room.status !== 'occupied' && isCheckedIn) {
+                  room.status = 'occupied';
+                  // Fire-and-forget API call to sync backend
+                  roomsService.updateRoomStatus(room.id, 'occupied').catch((err: any) =>
+                    console.warn('[useRooms] Self-heal: failed to sync room status:', err)
+                  );
                 }
               }
             }
-            console.log('[useRooms] Guest data populated from bookings');
+            console.log('[useRooms] Guest data populated from bookings (all rooms checked)');
           } catch (bookingErr) {
             console.warn('[useRooms] Could not fetch bookings for guest data:', bookingErr);
           }

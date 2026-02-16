@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useToast } from '../../../contexts/ToastContext';
 import { DEFAULT_LOYALTY_TIERS } from '../../../utils/crm';
-import { getSegmentOverrides, setSegmentOverride, clearSegmentOverride } from '../../../utils/crmSegmentOverrides';
+import { getSegmentOverrides, setSegmentOverride, clearSegmentOverride, getDeletedSegmentIds, addDeletedSegmentId } from '../../../utils/crmSegmentOverrides';
 import { crmAIService, CRMSegment, CRMGuest, SegmentAnalysis } from '../../../api/services/crm-ai.service';
 import SegmentDetails from './SegmentDetails';
 import { RefreshCw, AlertCircle, Search, Brain, TrendingUp, Users, AlertTriangle } from 'lucide-react';
@@ -165,9 +165,12 @@ export default function SegmentDetailsWrapper() {
         createdAt: new Date().toISOString()
       }));
 
+      // Filter out segments the user has deleted locally (so they stay hidden after refresh)
+      const deletedIds = getDeletedSegmentIds();
+      const visibleSegments = transformedSegments.filter(seg => !deletedIds.includes(seg.id));
       // Apply locally persisted edits (so changes survive refresh when server doesn't support update)
       const overrides = getSegmentOverrides();
-      const mergedSegments = transformedSegments.map(seg => {
+      const mergedSegments = visibleSegments.map(seg => {
         const o = overrides[seg.id];
         if (!o) return seg;
         return { ...seg, ...o } as SegmentWithFilters;
@@ -254,10 +257,11 @@ export default function SegmentDetailsWrapper() {
       const deletedOnServer = await crmAIService.deleteCRMSegment(deletedSegmentId);
       setSegments(prev => prev.filter(s => s.id !== deletedSegmentId));
       clearSegmentOverride(deletedSegmentId);
+      addDeletedSegmentId(deletedSegmentId);
       if (deletedOnServer) {
         showToast('Segment deleted', 'success');
       } else {
-        showToast('Segment removed from list. It may reappear after refresh if the server does not support deletion.', 'info');
+        showToast('Segment removed from list. It will stay hidden unless you sync from server again.', 'info');
       }
       navigate('/admin/crm');
     } catch (err: any) {

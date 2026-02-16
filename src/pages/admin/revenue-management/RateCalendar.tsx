@@ -19,14 +19,6 @@ function toDateStr(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-// Local date to YYYY-MM-DD without UTC conversion
-function toDateStr(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
 // KPI Card Component - Consistent with Design System
 function KPICard({ title, value, trendValue, icon: Icon, accentColor = 'terra', subtitle, children }) {
   const isPositive = trendValue >= 0;

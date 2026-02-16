@@ -33,7 +33,7 @@ import {
   generateStayFrequencyData,
   DEFAULT_LOYALTY_TIERS
 } from '../../utils/crm';
-import { getSegmentOverrides } from '../../utils/crmSegmentOverrides';
+import { getSegmentOverrides, getDeletedSegmentIds } from '../../utils/crmSegmentOverrides';
 import {
   sampleCampaigns,
   sampleTemplates
@@ -107,8 +107,10 @@ export default function CRM() {
         crmAIService.getCRMStats()
       ]);
       setGuests(guestsData.guests);
+      const deletedIds = getDeletedSegmentIds();
+      const visibleSegments = (segmentsData.segments || []).filter((seg: CRMSegment) => !deletedIds.includes(seg.id));
       const overrides = getSegmentOverrides();
-      const mergedSegments = (segmentsData.segments || []).map((seg: CRMSegment) => {
+      const mergedSegments = visibleSegments.map((seg: CRMSegment) => {
         const o = overrides[seg.id];
         if (!o) return seg;
         return { ...seg, ...o } as CRMSegment;

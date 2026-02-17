@@ -5,7 +5,8 @@
  * Connected to backend API for real data
  */
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { statusConfig, sampleBookings } from '../data/cbs/sampleBookings';
 import { sampleRatePlans } from '../data/cbs/sampleRatePlans';
 import { samplePromotions } from '../data/cbs/samplePromotions';
@@ -107,7 +108,22 @@ function saveToStorage(data) {
 }
 
 export function CBSProvider({ children }) {
+  const location = useLocation();
   const stored = loadFromStorage();
+
+  // Track if data has been loaded to prevent re-fetching
+  const isDataLoadedRef = useRef(false);
+
+  // Check if on pages that need CBS data (bookings, rates, calendar, dashboard, reservations)
+  const isCBSPage =
+    location.pathname.includes('/bookings') ||
+    location.pathname.includes('/rates') ||
+    location.pathname.includes('/calendar') ||
+    location.pathname.includes('/reservations') ||
+    location.pathname.includes('/dashboard') ||
+    location.pathname.includes('/availability') ||
+    location.pathname === '/admin' ||
+    location.pathname === '/admin/';
 
   const [bookings, setBookings] = useState(stored?.bookings || []);
   // Don't use sample availability - wait for API data from cmsAvailability hook
@@ -136,8 +152,14 @@ export function CBSProvider({ children }) {
   }, [promotionTypes]);
 
   // Fetch bookings, rate plans, and promotions from API on mount
-  // Only fetch if user has an access token (is authenticated)
+  // Only fetch if user has an access token (is authenticated) AND on CBS pages
   useEffect(() => {
+    // Skip if not on CBS page or data already loaded
+    if (!isCBSPage || isDataLoadedRef.current) {
+      if (!isCBSPage) setIsLoading(false);
+      return;
+    }
+
     const fetchFromApi = async () => {
       // Check if user is authenticated before making API calls
       const token = localStorage.getItem('glimmora_access_token');
@@ -355,11 +377,12 @@ export function CBSProvider({ children }) {
         setBookings([...sampleBookings]);
       } finally {
         setIsLoading(false);
+        isDataLoadedRef.current = true;
       }
     };
 
     fetchFromApi();
-  }, []);
+  }, [isCBSPage]); // Re-check when route changes
 
   // Refresh bookings and related data from API
   const refreshBookings = useCallback(async () => {

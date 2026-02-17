@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   revenueIntelligenceService,
   PricingRule,
@@ -149,6 +150,11 @@ export function useRMS() {
 }
 
 export function RMSProvider({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+
+  // Check if on revenue-intelligence page
+  const isRMSPage = location.pathname.includes('/revenue-intelligence');
+
   // Loading state
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -473,9 +479,10 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Load initial data from APIs
+  // Load initial data from APIs - only when on revenue-intelligence page
   useEffect(() => {
-    if (initialLoadRef.current) return;
+    // Skip if not on RMS page or data already loaded
+    if (!isRMSPage || initialLoadRef.current) return;
     initialLoadRef.current = true;
 
     const loadInitialData = async () => {
@@ -505,7 +512,7 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
     };
 
     loadInitialData();
-  }, [loadRoomTypes, loadRules, loadRecommendations, loadForecast, loadPickup, loadCompetitors, loadSegments, loadKPIs, loadEvents, loadRateCalendar]);
+  }, [isRMSPage, loadRoomTypes, loadRules, loadRecommendations, loadForecast, loadPickup, loadCompetitors, loadSegments, loadKPIs, loadEvents, loadRateCalendar]);
 
   // Refresh all data
   const refreshAll = useCallback(async () => {

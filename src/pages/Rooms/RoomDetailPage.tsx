@@ -27,7 +27,8 @@ import {
   Share2,
   Info,
   Home,
-  Loader2
+  Loader2,
+  Send
 } from 'lucide-react';
 import { roomTypesService } from '@/api/services/roomTypes.service';
 import { Button, Card } from '@/components/ui';
@@ -42,10 +43,18 @@ export const RoomDetailPage = () => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(0);
   const reviewsRef = useRef<HTMLDivElement>(null);
+  const reviewFormRef = useRef<HTMLDivElement>(null);
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [room, setRoom] = useState<Room | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewHoverRating, setReviewHoverRating] = useState(0);
+  const [reviewName, setReviewName] = useState('');
+  const [reviewText, setReviewText] = useState('');
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
   // Derive isFavorite from wishlist state
   const isFavorite = room ? isInWishlist(room.id) : false;
@@ -722,7 +731,10 @@ export const RoomDetailPage = () => {
                   <span className="text-neutral-600">({room.reviewCount} reviews)</span>
                 </div>
               </div>
-              <Button variant="outline" size="md" className="hidden sm:flex" onClick={() => reviewsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+              <Button variant="outline" size="md" className="hidden sm:flex" onClick={() => {
+                setShowReviewForm(true);
+                setTimeout(() => reviewFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+              }}>
                 Write a Review
               </Button>
             </div>
@@ -834,11 +846,190 @@ export const RoomDetailPage = () => {
               </motion.div>
             </div>
 
-            {/* Load More Button */}
+            {/* Additional Reviews (shown on "View All") */}
+            <AnimatePresence>
+              {showAllReviews && (
+                <>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="bg-white rounded-2xl p-6 border border-neutral-200 hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0 text-white font-bold text-lg">
+                        RK
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-neutral-900">Rajesh Kumar</h3>
+                        <p className="text-sm text-neutral-600">Verified Guest • 2 months ago</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} size={14} fill={i < 4 ? 'currentColor' : 'none'} className="text-amber-500" />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-neutral-700 leading-relaxed">
+                      "Wonderful stay! The room was very clean and spacious. The breakfast spread was excellent with great variety. Staff was courteous and helpful throughout."
+                    </p>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ delay: 0.1 }}
+                    className="bg-white rounded-2xl p-6 border border-neutral-200 hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center flex-shrink-0 text-white font-bold text-lg">
+                        AT
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-neutral-900">Anna Thompson</h3>
+                        <p className="text-sm text-neutral-600">Verified Guest • 2 months ago</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} size={14} fill="currentColor" className="text-amber-500" />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-neutral-700 leading-relaxed">
+                      "A truly luxurious experience from start to finish. The spa amenities were world-class and the room had the most comfortable bed I've ever slept in. Can't wait to return!"
+                    </p>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+
+            {/* View All / Show Less Button */}
             <div className="flex justify-center mt-8">
-              <Button variant="outline" size="lg" className="font-semibold" onClick={() => reviewsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
-                View All {room.reviewCount} Reviews
+              <Button
+                variant="outline"
+                size="lg"
+                className="font-semibold"
+                onClick={() => {
+                  setShowAllReviews(!showAllReviews);
+                  if (!showAllReviews) {
+                    // Already at reviews section, no need to scroll
+                  } else {
+                    // Scrolling back to top of reviews when collapsing
+                    reviewsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+              >
+                {showAllReviews ? 'Show Less' : `View All ${room.reviewCount} Reviews`}
               </Button>
+            </div>
+
+            {/* Write a Review Form */}
+            <div ref={reviewFormRef}>
+              <AnimatePresence>
+                {showReviewForm && !reviewSubmitted && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="mt-10 bg-white rounded-2xl p-6 sm:p-8 border border-neutral-200"
+                  >
+                    <h3 className="text-xl font-bold text-neutral-900 mb-1">Write a Review</h3>
+                    <p className="text-sm text-neutral-500 mb-6">Share your experience with other guests</p>
+
+                    {/* Star Rating Selector */}
+                    <div className="mb-5">
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">Your Rating</label>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onMouseEnter={() => setReviewHoverRating(star)}
+                            onMouseLeave={() => setReviewHoverRating(0)}
+                            onClick={() => setReviewRating(star)}
+                            className="p-0.5 transition-transform hover:scale-110"
+                          >
+                            <Star
+                              size={28}
+                              fill={(reviewHoverRating || reviewRating) >= star ? 'currentColor' : 'none'}
+                              className={(reviewHoverRating || reviewRating) >= star ? 'text-amber-500' : 'text-neutral-300'}
+                            />
+                          </button>
+                        ))}
+                        {reviewRating > 0 && (
+                          <span className="ml-2 text-sm text-neutral-500">
+                            {reviewRating === 5 ? 'Excellent' : reviewRating === 4 ? 'Very Good' : reviewRating === 3 ? 'Good' : reviewRating === 2 ? 'Fair' : 'Poor'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Name Input */}
+                    <div className="mb-5">
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">Your Name</label>
+                      <input
+                        type="text"
+                        value={reviewName}
+                        onChange={(e) => setReviewName(e.target.value)}
+                        placeholder="Enter your name"
+                        className="w-full h-11 px-4 border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                      />
+                    </div>
+
+                    {/* Review Text */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">Your Review</label>
+                      <textarea
+                        value={reviewText}
+                        onChange={(e) => setReviewText(e.target.value)}
+                        placeholder="Tell us about your experience..."
+                        rows={4}
+                        className="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all resize-none"
+                      />
+                    </div>
+
+                    {/* Submit Buttons */}
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant="primary"
+                        size="md"
+                        onClick={() => {
+                          if (reviewRating > 0 && reviewText.trim()) {
+                            setReviewSubmitted(true);
+                          }
+                        }}
+                        disabled={reviewRating === 0 || !reviewText.trim()}
+                      >
+                        <Send size={16} className="mr-2" />
+                        Submit Review
+                      </Button>
+                      <Button variant="outline" size="md" onClick={() => {
+                        setShowReviewForm(false);
+                        setReviewRating(0);
+                        setReviewName('');
+                        setReviewText('');
+                      }}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {reviewSubmitted && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="mt-10 bg-green-50 rounded-2xl p-6 sm:p-8 border border-green-200 text-center"
+                  >
+                    <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                      <Check size={28} className="text-green-600" />
+                    </div>
+                    <h3 className="text-xl font-bold text-neutral-900 mb-1">Thank You!</h3>
+                    <p className="text-sm text-neutral-600">Your review has been submitted and will be published after moderation.</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
         </div>

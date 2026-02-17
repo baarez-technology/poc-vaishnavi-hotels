@@ -14,7 +14,6 @@ import KeywordFrequency from '../../components/reputation/KeywordFrequency';
 import ReviewFeed from '../../components/reputation/ReviewFeed';
 import ReviewDetailDrawer from '../../components/reputation/ReviewDetailDrawer';
 import AutoReplies from '../../components/reputation/AutoReplies';
-import FiltersBar from '../../components/reputation/FiltersBar';
 import ImpactOnRevenue from '../../components/reputation/ImpactOnRevenue';
 import CRMGuestImpact from '../../components/reputation/CRMGuestImpact';
 
@@ -29,7 +28,6 @@ function ReputationAIContent() {
     otaRatings,
     keywords,
     filteredReviews,
-    filters,
     settings,
     metrics,
     isLoading,
@@ -174,9 +172,6 @@ function ReputationAIContent() {
             </Button>
           </div>
         </div>
-
-        {/* Filters Bar */}
-        <FiltersBar filters={filters} onFilterChange={updateFilters} />
 
         {/* Sentiment Summary KPIs */}
         <SentimentSummary metrics={metrics} />

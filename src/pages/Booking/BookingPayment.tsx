@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Elements, CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { ArrowLeft, Lock, CreditCard } from 'lucide-react';
+import { ArrowLeft, Lock, CreditCard, MapPin, Globe, Landmark, Building2, Hash } from 'lucide-react';
 import { useBookingStore } from '@/stores/bookingStore';
 import { BookingProgressStepper } from '@/components/booking/BookingProgressStepper';
 import { BookingSummaryWidget } from '@/components/booking/BookingSummaryWidget';
 import { Button, Input } from '@/components/ui';
+import { SearchableSelect } from '@/components/ui2/SearchableSelect';
+import { useGeoAddress } from '@/hooks/useGeoAddress';
 import { bookingApi } from '@/api/services/booking.service';
 import { z } from 'zod';
 import { getStripe } from '@/lib/stripe';
@@ -15,6 +17,11 @@ import { getStripe } from '@/lib/stripe';
 // Payment form schema (without Stripe-handled fields)
 const paymentFormSchema = z.object({
   cardHolder: z.string().min(3, 'Cardholder name is required').max(50),
+  address: z.string().min(3, 'Street address is required'),
+  country: z.string().min(2, 'Country is required'),
+  state: z.string().min(1, 'State / Province is required'),
+  city: z.string().min(1, 'City is required'),
+  zipCode: z.string().min(3, 'ZIP / Postal code is required'),
   saveCard: z.boolean().catch(false),
 });
 
@@ -54,12 +61,50 @@ const PaymentFormContent = () => {
     register,
     handleSubmit,
     formState: { errors },
+    watch,
+    setValue,
+    control,
   } = useForm<PaymentFormData>({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
+      address: '',
+      country: '',
+      state: '',
+      city: '',
+      zipCode: '',
       saveCard: false,
     },
   });
+
+  const watchedCountry = watch('country');
+  const watchedState = watch('state');
+  const watchedCity = watch('city');
+
+  const { countries, states, cities, hasStates, hasCities } = useGeoAddress({
+    countryCode: watchedCountry,
+    stateCode: watchedState,
+    cityName: watchedCity,
+    onStateReset: () => {
+      setValue('state', '');
+      setValue('city', '');
+    },
+    onCityReset: () => {
+      setValue('city', '');
+    },
+  });
+
+  const countryOptions = useMemo(
+    () => countries.map((c) => ({ value: c.isoCode, label: c.name })),
+    [countries]
+  );
+  const stateOptions = useMemo(
+    () => states.map((s) => ({ value: s.isoCode, label: s.name })),
+    [states]
+  );
+  const cityOptions = useMemo(
+    () => cities.map((c) => ({ value: c.name, label: c.name })),
+    [cities]
+  );
 
   // Redirect if no booking draft or guest info
   useEffect(() => {
@@ -96,6 +141,13 @@ const PaymentFormContent = () => {
           name: data.cardHolder,
           email: guestInfo.email,
           phone: guestInfo.phone,
+          address: {
+            line1: data.address,
+            city: data.city,
+            state: data.state,
+            postal_code: data.zipCode,
+            country: data.country,
+          },
         },
       });
 
@@ -184,6 +236,166 @@ const PaymentFormContent = () => {
                   aria-label="Cardholder name"
                   disabled={isProcessing}
                 />
+
+                {/* Billing Address Section */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-neutral-500" />
+                    Billing Address
+                  </h3>
+
+                  {/* Street Address */}
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Street Address <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="123 Main Street, Apt 4B"
+                      {...register('address')}
+                      disabled={isProcessing}
+                      className={`w-full px-4 py-3 border rounded-lg text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:border-primary-500 transition-colors ${
+                        errors.address ? 'border-red-500 focus:ring-red-500/20' : 'border-neutral-300 focus:ring-primary-500/20'
+                      }`}
+                    />
+                    {errors.address && (
+                      <p className="mt-1 text-sm text-red-600">{errors.address.message}</p>
+                    )}
+                  </div>
+
+                  {/* Country & State Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Country */}
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        Country <span className="text-red-500">*</span>
+                      </label>
+                      <Controller
+                        name="country"
+                        control={control}
+                        render={({ field }) => (
+                          <SearchableSelect
+                            options={countryOptions}
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Select Country"
+                            icon={Globe}
+                            error={!!errors.country}
+                            disabled={isProcessing}
+                            searchable
+                          />
+                        )}
+                      />
+                      {errors.country && (
+                        <p className="mt-1 text-sm text-red-600">{errors.country.message}</p>
+                      )}
+                    </div>
+
+                    {/* State / Province */}
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        State / Province <span className="text-red-500">*</span>
+                      </label>
+                      {hasStates ? (
+                        <Controller
+                          name="state"
+                          control={control}
+                          render={({ field }) => (
+                            <SearchableSelect
+                              options={stateOptions}
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Select State"
+                              icon={Landmark}
+                              error={!!errors.state}
+                              disabled={isProcessing || !watchedCountry}
+                              searchable
+                            />
+                          )}
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          placeholder={watchedCountry ? 'Enter state or province' : 'Select country first'}
+                          {...register('state')}
+                          disabled={isProcessing || !watchedCountry}
+                          className={`w-full px-4 py-3 border rounded-lg text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:border-primary-500 transition-colors ${
+                            errors.state ? 'border-red-500 focus:ring-red-500/20' : 'border-neutral-300 focus:ring-primary-500/20'
+                          } ${!watchedCountry ? 'opacity-50 cursor-not-allowed bg-neutral-50' : ''}`}
+                        />
+                      )}
+                      {errors.state && (
+                        <p className="mt-1 text-sm text-red-600">{errors.state.message}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* City & ZIP Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* City */}
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        City <span className="text-red-500">*</span>
+                      </label>
+                      {hasCities ? (
+                        <Controller
+                          name="city"
+                          control={control}
+                          render={({ field }) => (
+                            <SearchableSelect
+                              options={cityOptions}
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Select City"
+                              icon={Building2}
+                              error={!!errors.city}
+                              disabled={isProcessing || !watchedState}
+                              searchable
+                            />
+                          )}
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          placeholder={watchedState ? 'Enter city' : 'Select state first'}
+                          {...register('city')}
+                          disabled={isProcessing || !watchedCountry}
+                          className={`w-full px-4 py-3 border rounded-lg text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:border-primary-500 transition-colors ${
+                            errors.city ? 'border-red-500 focus:ring-red-500/20' : 'border-neutral-300 focus:ring-primary-500/20'
+                          } ${!watchedCountry ? 'opacity-50 cursor-not-allowed bg-neutral-50' : ''}`}
+                        />
+                      )}
+                      {errors.city && (
+                        <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>
+                      )}
+                    </div>
+
+                    {/* ZIP / Postal Code */}
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        ZIP / Postal Code <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <Hash className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                        <input
+                          type="text"
+                          placeholder="10001"
+                          {...register('zipCode')}
+                          disabled={isProcessing}
+                          className={`w-full pl-10 pr-4 py-3 border rounded-lg text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:border-primary-500 transition-colors ${
+                            errors.zipCode ? 'border-red-500 focus:ring-red-500/20' : 'border-neutral-300 focus:ring-primary-500/20'
+                          }`}
+                        />
+                      </div>
+                      {errors.zipCode && (
+                        <p className="mt-1 text-sm text-red-600">{errors.zipCode.message}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Divider before card section */}
+                <div className="border-t border-neutral-200" />
 
                 {/* Card Number */}
                 <div>

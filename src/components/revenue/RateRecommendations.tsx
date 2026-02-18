@@ -36,9 +36,9 @@ export default function RateRecommendations({ settings, onRefreshCalendar }: Rat
   // Use local state for rendering
   const recommendations = localRecommendations;
 
-  // Create a unique ID for each recommendation
+  // Create a unique ID for each recommendation (date_room_type_id to match API and RMSContext)
   const getRecommendationId = (rec: PricingRecommendation): string => {
-    return `${rec.room_type_id}_${rec.date}`;
+    return `${rec.date}_${rec.room_type_id}`;
   };
 
   // Accept single recommendation

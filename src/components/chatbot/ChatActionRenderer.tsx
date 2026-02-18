@@ -567,7 +567,7 @@ const BookingsListCard: React.FC<BookingsListCardProps> = ({ bookings, onSelect 
     <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
       {bookings.map((booking, idx) => (
         <div
-          key={idx}
+          key={booking.id ?? booking.confirmation_code ?? idx}
           onClick={() => onSelect(booking)}
           className="bg-white border border-neutral-200 rounded-lg p-3 cursor-pointer hover:border-primary-300 transition-colors"
         >

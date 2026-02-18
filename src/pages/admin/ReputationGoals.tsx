@@ -157,6 +157,8 @@ function ReputationGoalsContent() {
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [deletingGoal, setDeletingGoal] = useState<Goal | null>(null);
   const [togglingGoal, setTogglingGoal] = useState<Goal | null>(null);
+  const [isToggling, setIsToggling] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [filter, setFilter] = useState<string>('all');
 
   const getStatusBadge = (status: string) => {
@@ -213,18 +215,22 @@ function ReputationGoalsContent() {
   };
 
   const handleDeleteGoal = async () => {
-    if (!deletingGoal) return;
+    if (!deletingGoal || isDeleting) return;
+    setIsDeleting(true);
     try {
       await deleteGoal(deletingGoal.id);
       toast.success('Goal deleted successfully');
       setDeletingGoal(null);
     } catch (error) {
       toast.error('Failed to delete goal');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const handleToggleStatus = async () => {
-    if (!togglingGoal) return;
+    if (!togglingGoal || isToggling) return;
+    setIsToggling(true);
     try {
       await toggleGoalStatus(togglingGoal.id);
       const wasActive = togglingGoal.status === 'active';
@@ -232,6 +238,8 @@ function ReputationGoalsContent() {
       setTogglingGoal(null);
     } catch (error) {
       toast.error('Failed to update goal status');
+    } finally {
+      setIsToggling(false);
     }
   };
 
@@ -476,7 +484,7 @@ function ReputationGoalsContent() {
 
       {/* Toggle Status Confirmation Dialog */}
       {!!togglingGoal && (
-        <div className="fixed inset-0 z-[99998] flex items-center justify-center" onClick={() => setTogglingGoal(null)}>
+        <div className="fixed inset-0 z-[99998] flex items-center justify-center" onClick={() => !isToggling && setTogglingGoal(null)}>
           <div className="absolute inset-0 bg-black/40" />
           <div
             className="relative w-full max-w-[400px] mx-4 bg-white rounded-[10px] border border-neutral-200 overflow-hidden"
@@ -508,12 +516,13 @@ function ReputationGoalsContent() {
 
             {/* Footer */}
             <div className="px-6 py-4 border-t border-neutral-100 flex items-center justify-end gap-3">
-              <Button variant="outline" onClick={() => setTogglingGoal(null)}>
+              <Button variant="outline" onClick={() => setTogglingGoal(null)} disabled={isToggling}>
                 Cancel
               </Button>
               <Button
                 variant={togglingGoal.status === 'active' ? 'outline' : 'primary'}
                 onClick={handleToggleStatus}
+                loading={isToggling}
               >
                 {togglingGoal.status === 'active' ? 'Deactivate' : 'Activate'}
               </Button>
@@ -524,7 +533,7 @@ function ReputationGoalsContent() {
 
       {/* Delete Confirmation Dialog */}
       {!!deletingGoal && (
-        <div className="fixed inset-0 z-[99998] flex items-center justify-center" onClick={() => setDeletingGoal(null)}>
+        <div className="fixed inset-0 z-[99998] flex items-center justify-center" onClick={() => !isDeleting && setDeletingGoal(null)}>
           <div className="absolute inset-0 bg-black/40" />
           <div
             className="relative w-full max-w-[400px] mx-4 bg-white rounded-[10px] border border-neutral-200 overflow-hidden"
@@ -547,14 +556,15 @@ function ReputationGoalsContent() {
 
             {/* Footer */}
             <div className="px-6 py-4 border-t border-neutral-100 flex items-center justify-end gap-3">
-              <Button variant="outline" onClick={() => setDeletingGoal(null)}>
+              <Button variant="outline" onClick={() => setDeletingGoal(null)} disabled={isDeleting}>
                 Keep Goal
               </Button>
               <button
-                onClick={() => { handleDeleteGoal(); }}
-                className="h-9 px-4 text-[13px] font-semibold rounded-[8px] text-white bg-rose-500 hover:bg-rose-600 transition-colors"
+                onClick={handleDeleteGoal}
+                disabled={isDeleting}
+                className="h-9 px-4 text-[13px] font-semibold rounded-[8px] text-white bg-rose-500 hover:bg-rose-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Delete Goal
+                {isDeleting ? 'Deleting...' : 'Delete Goal'}
               </button>
             </div>
           </div>

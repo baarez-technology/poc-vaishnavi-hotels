@@ -22,7 +22,7 @@ export const Footer = () => {
     ],
     services: [
       { name: 'Pre-Check-In', href: '/rooms' },
-      { name: 'Amenities', href: '/rooms' },
+      { name: 'Amenities', href: '/amenities' },
       { name: 'AI Concierge', href: '/' },
       { name: 'Business Services', href: '/contact' },
     ],

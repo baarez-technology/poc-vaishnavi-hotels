@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
+import { DatePicker } from '../ui2/DatePicker';
 
 const SOURCE_OPTIONS = [
   { value: 'Website', label: 'Website' },
@@ -17,29 +18,42 @@ const SOURCE_OPTIONS = [
   { value: 'Expedia', label: 'Expedia' },
 ];
 
-const calculateNights = (checkIn, checkOut) => {
+const calculateNights = (checkIn: string, checkOut: string) => {
   if (!checkIn || !checkOut) return 0;
   const start = new Date(checkIn);
   const end = new Date(checkOut);
-  const diff = Math.max(0, Math.floor((end - start) / (1000 * 60 * 60 * 24)));
+  const diff = Math.max(0, Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
   return diff;
 };
 
-// Custom Select Component matching CMS pattern
-function CustomSelect({ value, onChange, options, placeholder = 'Select...' }) {
-  const [isOpen, setIsOpen] = useState(false);
+const validateEmail = (email: string): string => {
+  if (!email.trim()) return 'Email is required';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Enter a valid email address';
+  return '';
+};
 
-  const selectedOption = options.find(opt => opt.value === value);
+const validatePhone = (phone: string): string => {
+  if (!phone.trim()) return 'Phone number is required';
+  const cleaned = phone.replace(/[\s\-().+]/g, '');
+  if (cleaned.length < 7 || cleaned.length > 15) return 'Phone must be 7–15 digits';
+  if (!/^\d+$/.test(cleaned)) return 'Phone must contain only digits';
+  return '';
+};
+
+// Custom Select Component matching CMS pattern
+function CustomSelect({ value, onChange, options, placeholder = 'Select...' }: any) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption = options.find((opt: any) => opt.value === value);
 
   return (
     <div className="relative">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border transition-all duration-150 text-left flex items-center justify-between focus:outline-none ${
+        className={`w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border transition-all duration-200 ease-out text-left flex items-center justify-between focus:outline-none ${
           isOpen
-            ? 'border-terra-400 ring-2 ring-terra-500/10'
-            : 'border-neutral-200 hover:border-neutral-300'
+            ? 'border-terra-400/60 ring-2 ring-terra-500/10'
+            : 'border-neutral-200/80 hover:border-terra-300/60'
         }`}
       >
         <span className={selectedOption ? 'text-neutral-900' : 'text-neutral-400'}>
@@ -54,7 +68,7 @@ function CustomSelect({ value, onChange, options, placeholder = 'Select...' }) {
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div className="absolute z-50 w-full mt-1 bg-white rounded-lg border border-neutral-200 shadow-lg overflow-hidden max-h-60 overflow-y-auto">
-            {options.map((option) => (
+            {options.map((option: any) => (
               <button
                 key={option.value}
                 type="button"
@@ -76,7 +90,15 @@ function CustomSelect({ value, onChange, options, placeholder = 'Select...' }) {
   );
 }
 
-export default function EditBookingModal({ isOpen, booking, onClose, onSave, isSaving }) {
+interface FieldErrors {
+  guest?: string;
+  email?: string;
+  phone?: string;
+  checkIn?: string;
+  checkOut?: string;
+}
+
+export default function EditBookingModal({ isOpen, booking, onClose, onSave, isSaving }: any) {
   const [formState, setFormState] = useState({
     guest: '',
     email: '',
@@ -86,6 +108,9 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
     notes: '',
     source: 'Website',
   });
+
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (booking && isOpen) {
@@ -98,38 +123,81 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
         notes: booking.specialRequests || '',
         source: booking.source || 'Website',
       });
+      setErrors({});
+      setTouched({});
     }
   }, [booking, isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setFormState((prev) => ({
-        ...prev,
-        notes: booking?.specialRequests || '',
-      }));
-    }
-  }, [isOpen, booking]);
 
   const nights = useMemo(
     () => calculateNights(formState.checkIn, formState.checkOut),
     [formState.checkIn, formState.checkOut]
   );
 
-  const isFormValid =
-    formState.guest.trim() &&
-    formState.email.trim() &&
-    formState.checkIn &&
-    formState.checkOut &&
-    nights > 0;
-
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setFormState((prev) => ({ ...prev, [name]: value }));
+  const validateField = (name: string, value: string): string => {
+    switch (name) {
+      case 'guest':
+        return value.trim() ? '' : 'Guest name is required';
+      case 'email':
+        return validateEmail(value);
+      case 'phone':
+        return validatePhone(value);
+      case 'checkIn':
+        return value ? '' : 'Check-in date is required';
+      case 'checkOut':
+        if (!value) return 'Check-out date is required';
+        if (formState.checkIn && new Date(value) <= new Date(formState.checkIn))
+          return 'Check-out must be after check-in';
+        return '';
+      default:
+        return '';
+    }
   };
 
-  const handleSubmit = (event) => {
+  const validateAll = (): boolean => {
+    const newErrors: FieldErrors = {};
+    let valid = true;
+    const fields: (keyof FieldErrors)[] = ['guest', 'email', 'phone', 'checkIn', 'checkOut'];
+
+    fields.forEach((field) => {
+      const msg = validateField(field, formState[field]);
+      if (msg) {
+        newErrors[field] = msg;
+        valid = false;
+      }
+    });
+
+    setErrors(newErrors);
+    setTouched({ guest: true, email: true, phone: true, checkIn: true, checkOut: true });
+    return valid;
+  };
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = event.target;
+    setFormState((prev) => ({ ...prev, [name]: value }));
+
+    if (touched[name]) {
+      const msg = validateField(name, value);
+      setErrors((prev) => ({ ...prev, [name]: msg || undefined }));
+    }
+  };
+
+  const handleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    const msg = validateField(name, value);
+    setErrors((prev) => ({ ...prev, [name]: msg || undefined }));
+  };
+
+  const handleDateChange = (name: 'checkIn' | 'checkOut', value: string) => {
+    setFormState((prev) => ({ ...prev, [name]: value }));
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    const msg = validateField(name, value);
+    setErrors((prev) => ({ ...prev, [name]: msg || undefined }));
+  };
+
+  const handleSubmit = (event?: React.FormEvent) => {
     event?.preventDefault();
-    if (!booking || !isFormValid) return;
+    if (!booking || !validateAll()) return;
     onSave({
       guest: formState.guest.trim(),
       email: formState.email.trim(),
@@ -144,6 +212,14 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
 
   if (!booking) return null;
 
+  const inputBase =
+    'w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border transition-all duration-200 ease-out focus:outline-none';
+  const inputNormal = `${inputBase} border-neutral-200/80 hover:border-terra-300/60 focus:border-terra-400/60 focus:ring-2 focus:ring-terra-500/10`;
+  const inputError = `${inputBase} border-red-300 hover:border-red-400 focus:border-red-400 focus:ring-2 focus:ring-red-500/10`;
+
+  const getInputClass = (field: keyof FieldErrors) =>
+    errors[field] && touched[field] ? inputError : inputNormal;
+
   const drawerFooter = (
     <div className="flex items-center justify-end gap-3 w-full">
       <Button variant="outline" onClick={onClose}>
@@ -152,7 +228,6 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
       <Button
         variant="primary"
         onClick={handleSubmit}
-        disabled={!isFormValid}
         loading={isSaving}
       >
         Save Changes
@@ -177,51 +252,72 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
           </h3>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
+              {/* Guest Name */}
               <div className="space-y-2">
                 <label className="block text-[13px] font-medium text-neutral-700">
-                  Guest Name
+                  Guest Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   name="guest"
                   value={formState.guest}
                   onChange={handleChange}
-                  className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
+                  onBlur={handleBlur}
+                  placeholder="John Doe"
+                  className={getInputClass('guest')}
                 />
+                {errors.guest && touched.guest && (
+                  <p className="text-[11px] text-red-600 font-medium">{errors.guest}</p>
+                )}
               </div>
+
+              {/* Email */}
               <div className="space-y-2">
                 <label className="block text-[13px] font-medium text-neutral-700">
-                  Email
+                  Email <span className="text-red-500">*</span>
                 </label>
                 <input
                   name="email"
                   type="email"
                   value={formState.email}
                   onChange={handleChange}
-                  className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
+                  onBlur={handleBlur}
+                  placeholder="john@example.com"
+                  className={getInputClass('email')}
                 />
+                {errors.email && touched.email && (
+                  <p className="text-[11px] text-red-600 font-medium">{errors.email}</p>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
+              {/* Phone */}
               <div className="space-y-2">
                 <label className="block text-[13px] font-medium text-neutral-700">
-                  Phone
+                  Phone <span className="text-red-500">*</span>
                 </label>
                 <input
                   name="phone"
                   type="tel"
                   value={formState.phone}
                   onChange={handleChange}
-                  className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
+                  onBlur={handleBlur}
+                  placeholder="+1 (555) 123-4567"
+                  className={getInputClass('phone')}
                 />
+                {errors.phone && touched.phone && (
+                  <p className="text-[11px] text-red-600 font-medium">{errors.phone}</p>
+                )}
               </div>
+
+              {/* Booking Source */}
               <div className="space-y-2">
                 <label className="block text-[13px] font-medium text-neutral-700">
                   Booking Source
                 </label>
                 <CustomSelect
                   value={formState.source}
-                  onChange={(value) => setFormState(prev => ({ ...prev, source: value }))}
+                  onChange={(value: string) => setFormState(prev => ({ ...prev, source: value }))}
                   options={SOURCE_OPTIONS}
                   placeholder="Select source"
                 />
@@ -237,42 +333,47 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
           </h3>
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
+              {/* Check-in */}
               <div className="space-y-2">
                 <label className="block text-[13px] font-medium text-neutral-700">
-                  Check-in
+                  Check-in <span className="text-red-500">*</span>
                 </label>
-                <input
-                  name="checkIn"
-                  type="date"
+                <DatePicker
                   value={formState.checkIn}
-                  onChange={handleChange}
-                  className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
+                  onChange={(val) => handleDateChange('checkIn', val)}
+                  placeholder="Select check-in"
+                  className="w-full"
                 />
+                {errors.checkIn && touched.checkIn && (
+                  <p className="text-[11px] text-red-600 font-medium">{errors.checkIn}</p>
+                )}
               </div>
+
+              {/* Check-out */}
               <div className="space-y-2">
                 <label className="block text-[13px] font-medium text-neutral-700">
-                  Check-out
+                  Check-out <span className="text-red-500">*</span>
                 </label>
-                <input
-                  name="checkOut"
-                  type="date"
+                <DatePicker
                   value={formState.checkOut}
-                  onChange={handleChange}
-                  className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
+                  onChange={(val) => handleDateChange('checkOut', val)}
+                  placeholder="Select check-out"
+                  minDate={formState.checkIn || undefined}
+                  className="w-full"
                 />
+                {errors.checkOut && touched.checkOut && (
+                  <p className="text-[11px] text-red-600 font-medium">{errors.checkOut}</p>
+                )}
               </div>
+
+              {/* Nights */}
               <div className="space-y-2">
                 <label className="block text-[13px] font-medium text-neutral-700">
                   Nights
                 </label>
-                <div className="h-9 px-3.5 bg-neutral-50 border border-neutral-200 rounded-lg text-neutral-700 font-medium flex items-center text-[13px]">
-                  {nights || 'TBD'}
+                <div className="h-9 px-3.5 bg-neutral-50 border border-neutral-200/80 rounded-lg text-neutral-700 font-medium flex items-center text-[13px]">
+                  {nights > 0 ? `${nights} night${nights > 1 ? 's' : ''}` : '—'}
                 </div>
-                {formState.checkIn && formState.checkOut && nights <= 0 && (
-                  <p className="text-[11px] text-rose-500">
-                    Check-out must be after check-in.
-                  </p>
-                )}
               </div>
             </div>
           </div>
@@ -293,7 +394,7 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
                 value={formState.notes}
                 readOnly
                 rows={3}
-                className="w-full px-3.5 py-2.5 rounded-lg text-[13px] bg-neutral-50 border border-neutral-200 text-neutral-600 cursor-not-allowed resize-none"
+                className="w-full px-3.5 py-2.5 rounded-lg text-[13px] bg-neutral-50 border border-neutral-200/80 text-neutral-600 cursor-not-allowed resize-none"
               />
             </div>
           </section>

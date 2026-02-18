@@ -33,6 +33,7 @@ import { ResetPassword } from './pages/Auth/ResetPassword';
 import { RoomsPage } from './pages/Rooms/RoomsPage';
 import { RoomDetailPage } from './pages/Rooms/RoomDetailPage';
 import { ContactPage } from './pages/Contact/ContactPage';
+import { AmenitiesPage } from './pages/Amenities/AmenitiesPage';
 import { WishlistPage } from './pages/Wishlist/WishlistPage';
 import { BookingPage } from './pages/Booking/BookingPage';
 import { BookingReview } from './pages/Booking/BookingReview';
@@ -187,6 +188,9 @@ function App() {
                             {/* Rooms routes */}
                             <Route path="/rooms" element={<RoomsPage />} />
                             <Route path="/rooms/:slug" element={<RoomDetailPage />} />
+
+                            {/* Amenities route */}
+                            <Route path="/amenities" element={<AmenitiesPage />} />
 
                             {/* Contact route */}
                             <Route path="/contact" element={<ContactPage />} />

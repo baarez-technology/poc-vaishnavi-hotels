@@ -213,12 +213,16 @@ export const getTodayStats = async (): Promise<{
   return response.data;
 };
 
+/** Timeout for AI insights (60s) - backend may be slow generating insights */
+const AI_INSIGHTS_TIMEOUT_MS = 60000;
+
 /**
  * Get AI insights for availability patterns
  */
 export const getAIInsights = async (daysAhead: number = 30): Promise<AIInsightsResponse> => {
   const response = await apiClient.get('/api/v1/availability/insights', {
-    params: { days_ahead: daysAhead }
+    params: { days_ahead: daysAhead },
+    timeout: AI_INSIGHTS_TIMEOUT_MS
   });
   return response.data;
 };

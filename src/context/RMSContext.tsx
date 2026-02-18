@@ -152,8 +152,11 @@ export function useRMS() {
 export function RMSProvider({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
-  // Check if on revenue-intelligence page
-  const isRMSPage = location.pathname.includes('/revenue-intelligence');
+  // Check if on any revenue management page (so pickup, calendar, etc. load data)
+  const isRMSPage =
+    location.pathname.includes('/revenue-intelligence') ||
+    location.pathname.includes('/revenue/') ||
+    location.pathname.endsWith('/revenue');
 
   // Loading state
   const [isLoading, setIsLoading] = useState(true);

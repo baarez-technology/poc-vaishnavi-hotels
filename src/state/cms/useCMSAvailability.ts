@@ -288,11 +288,10 @@ export default function useCMSAvailability() {
 
       if (!mounted) return;
 
-      try {
-        await fetchAIInsights();
-      } catch (err) {
+      // Load AI insights in background - don't block calendar; insights panel shows empty if it fails
+      fetchAIInsights().catch((err) => {
         console.error('Failed to load AI insights:', err);
-      }
+      });
     };
 
     loadData();

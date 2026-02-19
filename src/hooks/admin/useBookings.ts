@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { bookingService } from '@/api/services/booking.service';
 import { roomsService } from '@/api/services/rooms.service';
+import { clearApiCache } from '@/api/client';
 
 // Interface for frontend booking representation
 export interface AdminBooking {
@@ -137,6 +138,8 @@ function transformBooking(apiBooking: any): AdminBooking {
     'direct': 'Website',
     'Dummy Channel Manager': 'Dummy Channel Manager',
     'dummy channel manager': 'Dummy Channel Manager',
+    'DUMMY': 'Dummy Channel Manager',
+    'dummy': 'Dummy Channel Manager',
     'CRS': 'Dummy Channel Manager',
     'crs': 'Dummy Channel Manager',
     'Booking.com': 'Booking.com',
@@ -146,11 +149,14 @@ function transformBooking(apiBooking: any): AdminBooking {
     'Walk-in': 'Walk-in',
     'walk_in': 'Walk-in',
     'walk-in': 'Walk-in',
-    'OTA': 'Booking.com',
+    'OTA': 'OTA',  // Do NOT map to Booking.com - Dummy CM bookings use OTA; keep generic
   };
   const rawSource = apiBooking.bookingSource || apiBooking.booking_source || apiBooking.source || '';
-  // Map the source, but if not found in map, use raw source (don't default to something else)
-  const source = rawSource ? (sourceMap[rawSource] || rawSource) : 'Website';
+  // If ota_code/channel/metadata indicates Dummy CM, use that (backend may wrongly return Booking.com for CM bookings)
+  const otaCode = (apiBooking.ota_code || apiBooking.otaCode || apiBooking.channel_code || apiBooking.metadata?.ota || '').toString().toUpperCase();
+  const channel = (apiBooking.channel || apiBooking.source_channel || apiBooking.metadata?.channel || '').toString().toLowerCase();
+  const isDummyCM = otaCode === 'DUMMY' || otaCode === 'CRS' || channel.includes('dummy') || channel.includes('crs');
+  const source = isDummyCM ? 'Dummy Channel Manager' : (rawSource ? (sourceMap[rawSource] || rawSource) : 'Website');
 
   // Extract special requests - check guestInfo first
   const specialRequests = apiBooking.guestInfo?.specialRequests ||
@@ -259,6 +265,7 @@ export function useBookings() {
     try {
       setIsLoading(true);
       setError(null);
+      clearApiCache('/api/v1/bookings');
 
       const response = await bookingService.getBookings(page, pageSize, status);
 

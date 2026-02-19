@@ -13,7 +13,6 @@ import { samplePromotions } from '../data/cbs/samplePromotions';
 import { getCalendarDates, checkAvailability } from '../data/cbs/sampleAvailability';
 import { roomsData } from '../data/roomsData';
 import { apiClient, clearApiCache } from '../api/client';
-
 // Import CMS Zustand stores for enhanced functionality
 import useCMSBookings from '../state/cms/useCMSBookings';
 import useCMSAvailability from '../state/cms/useCMSAvailability';
@@ -234,23 +233,21 @@ export function CBSProvider({ children }) {
               adults: (b.guests?.adults || b.adults || 1),
               children: (b.guests?.children || b.children || 0),
               status: statusMap[b.status?.toLowerCase()] || 'CONFIRMED',
-              // Map source to normalized format (e.g., "crs" -> "CRS")
+              // Map source - prefer ota_code/channel for Dummy CM (backend may wrongly return Booking.com)
               source: (() => {
+                const otaCode = (b.ota_code || b.otaCode || b.channel_code || b.metadata?.ota || '').toString().toUpperCase();
+                const channel = (b.channel || b.source_channel || b.metadata?.channel || '').toString().toLowerCase();
+                const isDummyCM = otaCode === 'DUMMY' || otaCode === 'CRS' || channel.includes('dummy') || channel.includes('crs');
+                if (isDummyCM) return 'Dummy Channel Manager';
                 const sourceMap = {
-                  'Website': 'Website',
-                  'direct': 'Website',
-                  'Dummy Channel Manager': 'Dummy Channel Manager',
-                  'dummy channel manager': 'Dummy Channel Manager',
-                  'CRS': 'Dummy Channel Manager',
-                  'crs': 'Dummy Channel Manager',
-                  'Booking.com': 'Booking.com',
-                  'booking.com': 'Booking.com',
-                  'Expedia': 'Expedia',
-                  'expedia': 'Expedia',
-                  'Walk-in': 'Walk-in',
-                  'walk_in': 'Walk-in',
-                  'walk-in': 'Walk-in',
-                  'OTA': 'Booking.com',
+                  'Website': 'Website', 'direct': 'Website',
+                  'Dummy Channel Manager': 'Dummy Channel Manager', 'dummy channel manager': 'Dummy Channel Manager',
+                  'DUMMY': 'Dummy Channel Manager', 'dummy': 'Dummy Channel Manager',
+                  'CRS': 'Dummy Channel Manager', 'crs': 'Dummy Channel Manager',
+                  'Booking.com': 'Booking.com', 'booking.com': 'Booking.com',
+                  'Expedia': 'Expedia', 'expedia': 'Expedia',
+                  'Walk-in': 'Walk-in', 'walk_in': 'Walk-in', 'walk-in': 'Walk-in',
+                  'OTA': 'OTA',
                 };
                 const rawSource = b.bookingSource || b.booking_source || 'Direct';
                 return sourceMap[rawSource] || rawSource;
@@ -451,27 +448,25 @@ export function CBSProvider({ children }) {
             adults: (b.guests?.adults || b.adults || 1),
             children: (b.guests?.children || b.children || 0),
             status: statusMap[b.status?.toLowerCase()] || 'CONFIRMED',
-            // Map source to normalized format (e.g., "crs" -> "CRS")
-            source: (() => {
-              const sourceMap = {
-                'Website': 'Website',
-                'direct': 'Website',
-                'Dummy Channel Manager': 'Dummy Channel Manager',
-                'dummy channel manager': 'Dummy Channel Manager',
-                'CRS': 'Dummy Channel Manager',
-                'crs': 'Dummy Channel Manager',
-                'Booking.com': 'Booking.com',
-                'booking.com': 'Booking.com',
-                'Expedia': 'Expedia',
-                'expedia': 'Expedia',
-                'Walk-in': 'Walk-in',
-                'walk_in': 'Walk-in',
-                'walk-in': 'Walk-in',
-                'OTA': 'Booking.com',
-              };
-              const rawSource = b.bookingSource || b.booking_source || 'Direct';
-              return sourceMap[rawSource] || rawSource;
-            })(),
+            // Map source - prefer ota_code/channel for Dummy CM (backend may wrongly return Booking.com)
+              source: (() => {
+                const otaCode = (b.ota_code || b.otaCode || b.channel_code || b.metadata?.ota || '').toString().toUpperCase();
+                const channel = (b.channel || b.source_channel || b.metadata?.channel || '').toString().toLowerCase();
+                const isDummyCM = otaCode === 'DUMMY' || otaCode === 'CRS' || channel.includes('dummy') || channel.includes('crs');
+                if (isDummyCM) return 'Dummy Channel Manager';
+                const sourceMap = {
+                  'Website': 'Website', 'direct': 'Website',
+                  'Dummy Channel Manager': 'Dummy Channel Manager', 'dummy channel manager': 'Dummy Channel Manager',
+                  'DUMMY': 'Dummy Channel Manager', 'dummy': 'Dummy Channel Manager',
+                  'CRS': 'Dummy Channel Manager', 'crs': 'Dummy Channel Manager',
+                  'Booking.com': 'Booking.com', 'booking.com': 'Booking.com',
+                  'Expedia': 'Expedia', 'expedia': 'Expedia',
+                  'Walk-in': 'Walk-in', 'walk_in': 'Walk-in', 'walk-in': 'Walk-in',
+                  'OTA': 'OTA',
+                };
+                const rawSource = b.bookingSource || b.booking_source || 'Direct';
+                return sourceMap[rawSource] || rawSource;
+              })(),
             amount: totalPrice,
             amountPaid: amountPaid,
             balance: balance,

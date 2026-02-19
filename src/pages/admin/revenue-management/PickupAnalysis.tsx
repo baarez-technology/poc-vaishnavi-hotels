@@ -27,6 +27,15 @@ const PickupAnalysis = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [showAlertDetails, setShowAlertDetails] = useState(false);
   const [showAlertsDrawer, setShowAlertsDrawer] = useState(false);
+  // Fallback: stop showing full-page loading after this time so UI is never stuck
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
+  const LOADING_TIMEOUT_MS = 12000;
+
+  useEffect(() => {
+    if (!isLoading || Object.keys(pickup).length > 0) return;
+    const t = setTimeout(() => setLoadingTimedOut(true), LOADING_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [isLoading, pickup]);
 
   // Fetch AI insights from API
   useEffect(() => {
@@ -138,8 +147,9 @@ const PickupAnalysis = () => {
     });
   }, [pickup, dateRange, searchQuery]);
 
-  // Show loading state when initial data is being loaded
-  if (isLoading && Object.keys(pickup).length === 0) {
+  // Show loading state only while initial data is loading and we haven't timed out
+  const showFullPageLoading = isLoading && Object.keys(pickup).length === 0 && !loadingTimedOut;
+  if (showFullPageLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F9F7F7' }}>
         <div className="flex flex-col items-center gap-4">
@@ -189,6 +199,15 @@ const PickupAnalysis = () => {
           </Button>
         </div>
       </header>
+
+      {loadingTimedOut && Object.keys(pickup).length === 0 && (
+        <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 flex items-center justify-between gap-3">
+          <p className="text-sm text-amber-800">Pickup data is taking longer than usual. You can try refreshing.</p>
+          <Button variant="outline" size="sm" onClick={handleRefresh} loading={isRefreshing} icon={RefreshCw}>
+            Refresh
+          </Button>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">

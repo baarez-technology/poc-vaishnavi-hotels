@@ -325,66 +325,58 @@ export default function BulkMappingDrawer({
 
   const hasChanges = mappingsToSave.length > 0 || mappingsToDelete.length > 0;
 
-  /** Mappings that were previously saved but user cleared the OTA field — we delete these on save */
-  const mappingIdsToRemove = useMemo(() => {
-    return items
-      .filter(
-        (it) =>
-          it.mappingId != null &&
-          (localMappings[it.pmsRoomTypeId] ?? '').trim().length === 0
-      )
-      .map((it) => it.mappingId);
-  }, [items, localMappings]);
-
-  const hasChangesToSave =
-    mappingsToSave.length > 0 || mappingIdsToRemove.length > 0;
-
   const handleSave = async () => {
-    if (!hasChangesToSave) {
-      showError('Add at least one OTA room type to save, or clear mappings to remove them.');
+    if (!hasChanges) {
+      showError('No changes detected. Modify at least one mapping to save.');
       return;
     }
     setSaving(true);
     try {
-      let removedCount = 0;
-      if (mappingIdsToRemove.length > 0) {
-        await Promise.all(
-          mappingIdsToRemove.map((id) =>
-            channelManagerService.deleteRoomMapping(String(id))
-          )
-        );
-        removedCount = mappingIdsToRemove.length;
+      const errs: string[] = [];
+
+      // Delete cleared mappings
+      for (const it of mappingsToDelete) {
+        if (it.mappingId) {
+          try {
+            await channelManagerService.deleteRoomMapping(String(it.mappingId));
+          } catch (err) {
+            console.error('Delete mapping error:', err);
+            errs.push(
+              err?.response?.data?.error || `Failed to remove mapping for ${it.pmsRoomType}`
+            );
+          }
+        }
       }
+
+      // Save new/updated mappings
+      let created = 0;
+      let updated = 0;
       if (mappingsToSave.length > 0) {
         const result = await channelManagerService.bulkRoomMappings({
           otaCode,
           mappings: mappingsToSave,
         });
-        const created = result?.created ?? 0;
-        const updated = result?.updated ?? 0;
-        const errs = result?.errors ?? [];
-        if (errs.length > 0) {
-          showError(errs.slice(0, 3).join('; ') + (errs.length > 3 ? '…' : ''));
-        }
-        if (created > 0 || updated > 0 || removedCount > 0) {
-          const parts = [];
-          if (removedCount > 0) parts.push(`${removedCount} removed`);
-          if (created > 0) parts.push(`${created} created`);
-          if (updated > 0) parts.push(`${updated} updated`);
-          success(`Mappings saved: ${parts.join(', ')}.`);
-          onSuccess?.();
-          onClose();
-        } else if (errs.length === 0 && removedCount === 0) {
-          success('No changes to save.');
-          onClose();
-        }
-      } else {
-        success(
-          removedCount === 1
-            ? '1 mapping removed.'
-            : `${removedCount} mappings removed.`
-        );
+        created = result?.created ?? 0;
+        updated = result?.updated ?? 0;
+        if (result?.errors?.length) errs.push(...result.errors);
+      }
+
+      if (errs.length > 0) {
+        showError(errs.slice(0, 3).join('; ') + (errs.length > 3 ? '...' : ''));
+      }
+
+      const totalSaved = created + updated;
+      const totalRemoved = mappingsToDelete.length;
+
+      if (totalSaved > 0 || totalRemoved > 0) {
+        const parts: string[] = [];
+        if (totalSaved > 0) parts.push(`${totalSaved} room type${totalSaved === 1 ? '' : 's'} mapped`);
+        if (totalRemoved > 0) parts.push(`${totalRemoved} removed`);
+        success(parts.join(', '));
         onSuccess?.();
+        onClose();
+      } else if (errs.length === 0) {
+        success('Mappings are already up to date.');
         onClose();
       }
     } catch (err) {
@@ -419,7 +411,7 @@ export default function BulkMappingDrawer({
             <Button
               variant="primary"
               onClick={handleSave}
-              disabled={!hasChangesToSave || saving}
+              disabled={!hasChanges || saving}
               loading={saving}
               className="px-5 py-2 text-[13px] font-semibold"
             >

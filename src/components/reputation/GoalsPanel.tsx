@@ -226,7 +226,7 @@ function GoalDrawer({ isOpen, onClose, onSubmit, initialData, mode }: GoalDrawer
               value={startDate}
               onChange={handleStartDateChange}
               placeholder="Select start date"
-              minDate={today}
+              minDate={mode === 'edit' ? (initialData?.start_date || today) : today}
               maxDate={endDate || undefined}
               className="w-full"
             />

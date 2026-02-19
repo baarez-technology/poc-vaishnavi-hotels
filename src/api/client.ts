@@ -99,8 +99,10 @@ const cleanupCache = () => {
   }
 };
 
-// Run cleanup every 30 seconds
-setInterval(cleanupCache, 30000);
+// Run cleanup every 30 seconds (prevent duplicates in HMR)
+if (!(window as any).__glimmora_cache_cleanup__) {
+  (window as any).__glimmora_cache_cleanup__ = setInterval(cleanupCache, 30000);
+}
 
 // Create axios instance
 export const apiClient = axios.create({

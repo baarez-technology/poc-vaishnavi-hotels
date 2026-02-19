@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useCurrency } from '@/hooks/useCurrency';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -121,15 +122,6 @@ const getTierConfig = (tierId: string): TierConfig | undefined => {
   return TIERS.find(t => t.id === tierId);
 };
 
-const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-};
-
 export default function TierUpgradeModal({
   isOpen,
   onClose,
@@ -137,6 +129,7 @@ export default function TierUpgradeModal({
   onUpgrade,
   isLoading = false,
 }: TierUpgradeModalProps) {
+  const { formatCurrency } = useCurrency();
   const modalRef = useRef<HTMLDivElement>(null);
   const [showTierDropdown, setShowTierDropdown] = useState(false);
 

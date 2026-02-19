@@ -1,6 +1,8 @@
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function RevenueForecastChart({ historicalData, forecastData }) {
+  const { symbol } = useCurrency();
   // Safety check for empty or undefined data
   if (!historicalData || historicalData.length === 0 || !forecastData || forecastData.length === 0) {
     return (
@@ -45,12 +47,12 @@ export default function RevenueForecastChart({ historicalData, forecastData }) {
           <p className="font-semibold text-neutral-900 mb-2">{data.dateLabel}</p>
           <div className="space-y-1">
             <p className="text-sm text-neutral-700">
-              <span className="font-medium">Revenue:</span> ${data.revenue?.toLocaleString()}
+              <span className="font-medium">Revenue:</span> {symbol}{data.revenue?.toLocaleString()}
             </p>
             {isForecast && (
               <>
                 <p className="text-sm text-neutral-500">
-                  Range: ${data.lowerBound?.toLocaleString()} - ${data.upperBound?.toLocaleString()}
+                  Range: {symbol}{data.lowerBound?.toLocaleString()} - {symbol}{data.upperBound?.toLocaleString()}
                 </p>
                 <p className="text-xs text-[#A57865] font-medium mt-2">AI Forecast</p>
               </>
@@ -94,7 +96,7 @@ export default function RevenueForecastChart({ historicalData, forecastData }) {
           <YAxis
             tick={{ fill: '#6b7280', fontSize: 12 }}
             tickLine={{ stroke: '#e5e7eb' }}
-            tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
+            tickFormatter={(value) => `${symbol}${(value / 1000).toFixed(0)}K`}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend

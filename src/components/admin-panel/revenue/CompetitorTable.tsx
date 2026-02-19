@@ -2,12 +2,14 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Building, TrendingUp, TrendingDown, Minus, Star, MapPin, RefreshCw, Plus, Loader2, Trash2 } from 'lucide-react';
 import { revenueIntelligenceService, Competitor, CreateCompetitorRequest } from '../../../api/services/revenue-intelligence.service';
 import { useToast } from '../../../context/ToastContext';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface CompetitorTableProps {
   yourRate?: number;
 }
 
 export default function CompetitorTable({ yourRate = 150 }: CompetitorTableProps) {
+  const { symbol } = useCurrency();
   const { showToast } = useToast();
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -198,12 +200,12 @@ export default function CompetitorTable({ yourRate = 150 }: CompetitorTableProps
         <div className="flex items-center gap-4">
           <div className="text-right">
             <p className="text-xs text-neutral-500">Your Rate</p>
-            <p className="text-lg font-bold text-neutral-900">${yourRate.toLocaleString()}</p>
+            <p className="text-lg font-bold text-neutral-900">{symbol}{yourRate.toLocaleString()}</p>
           </div>
           <div className="text-right">
             <p className="text-xs text-neutral-500">Market Avg</p>
             <p className="text-lg font-bold text-neutral-600">
-              {avgCompetitorRate > 0 ? `$${avgCompetitorRate.toLocaleString()}` : '-'}
+              {avgCompetitorRate > 0 ? `${symbol}${avgCompetitorRate.toLocaleString()}` : '-'}
             </p>
           </div>
           <div className="px-3 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: `${yourPosition.color}20`, color: yourPosition.color }}>
@@ -354,12 +356,12 @@ export default function CompetitorTable({ yourRate = 150 }: CompetitorTableProps
                     </td>
                     <td className="px-4 py-4 text-center">
                       <span className="font-semibold text-neutral-900">
-                        ${competitor.today.toLocaleString()}
+                        {symbol}{competitor.today.toLocaleString()}
                       </span>
                     </td>
                     <td className="px-4 py-4 text-center">
                       <span className="font-semibold text-neutral-700">
-                        ${competitor.next7.toLocaleString()}
+                        {symbol}{competitor.next7.toLocaleString()}
                       </span>
                     </td>
                     <td className="px-4 py-4 text-center">

@@ -1,6 +1,8 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function LTVChart({ data: rawData }) {
+  const { symbol } = useCurrency();
   // Ensure data is valid
   const data = rawData && rawData.length > 0 ? rawData : [
     { month: 'N/A', avgLTV: 0, vipLTV: 0, frequentLTV: 0, occasionalLTV: 0 }
@@ -20,7 +22,7 @@ export default function LTVChart({ data: rawData }) {
                 <span className="text-sm text-neutral-600">{entry.name}:</span>
               </div>
               <span className="text-sm font-semibold text-neutral-900">
-                ${entry.value.toLocaleString()}
+                {symbol}{entry.value.toLocaleString()}
               </span>
             </div>
           ))}
@@ -50,7 +52,7 @@ export default function LTVChart({ data: rawData }) {
           <YAxis
             stroke="#9CA3AF"
             style={{ fontSize: '12px' }}
-            tickFormatter={(value) => `$${value}`}
+            tickFormatter={(value) => `${symbol}${value}`}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend
@@ -88,25 +90,25 @@ export default function LTVChart({ data: rawData }) {
       <div className="mt-6 pt-6 border-t border-neutral-200 grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="text-center">
           <p className="text-2xl font-bold text-[#A57865]">
-            ${(data[data.length - 2]?.avgLTV || data[0]?.avgLTV || 0).toLocaleString()}
+            {symbol}{(data[data.length - 2]?.avgLTV || data[0]?.avgLTV || 0).toLocaleString()}
           </p>
           <p className="text-xs text-neutral-600 mt-1">Average LTV</p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-bold text-pink-600">
-            ${(data[data.length - 2]?.vipLTV || data[0]?.vipLTV || 0).toLocaleString()}
+            {symbol}{(data[data.length - 2]?.vipLTV || data[0]?.vipLTV || 0).toLocaleString()}
           </p>
           <p className="text-xs text-neutral-600 mt-1">VIP Segment</p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-bold text-blue-600">
-            ${(data[data.length - 2]?.frequentLTV || data[0]?.frequentLTV || 0).toLocaleString()}
+            {symbol}{(data[data.length - 2]?.frequentLTV || data[0]?.frequentLTV || 0).toLocaleString()}
           </p>
           <p className="text-xs text-neutral-600 mt-1">Frequent Segment</p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-bold text-[#4E5840]">
-            ${(data[data.length - 2]?.occasionalLTV || data[0]?.occasionalLTV || 0).toLocaleString()}
+            {symbol}{(data[data.length - 2]?.occasionalLTV || data[0]?.occasionalLTV || 0).toLocaleString()}
           </p>
           <p className="text-xs text-neutral-600 mt-1">Occasional Segment</p>
         </div>

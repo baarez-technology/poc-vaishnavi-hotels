@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Sparkles, TrendingUp, AlertTriangle, CheckCircle, Lightbulb, Loader2, RefreshCw } from 'lucide-react';
 import { revenueIntelligenceService, AIInsight, AIInsightsResponse } from '../../api/services/revenue-intelligence.service';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface AIInsightsProps {
   onRefresh?: () => void;
 }
 
 export default function AIInsights({ onRefresh }: AIInsightsProps) {
+  const { symbol } = useCurrency();
   const [insights, setInsights] = useState<AIInsight[]>([]);
   const [stats, setStats] = useState<AIInsightsResponse['stats'] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -87,11 +89,11 @@ export default function AIInsights({ onRefresh }: AIInsightsProps) {
 
   const formatCurrency = (value: number) => {
     if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(1)}M`;
+      return `${symbol}${(value / 1000000).toFixed(1)}M`;
     } else if (value >= 1000) {
-      return `$${(value / 1000).toFixed(0)}K`;
+      return `${symbol}${(value / 1000).toFixed(0)}K`;
     }
-    return `$${value.toFixed(0)}`;
+    return `${symbol}${value.toFixed(0)}`;
   };
 
   if (isLoading) {

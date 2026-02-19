@@ -10,37 +10,29 @@ import {
   ReferenceLine
 } from 'recharts';
 import { TrendingUp } from 'lucide-react';
-
-const formatCurrency = (value) => {
-  if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`;
-  }
-  if (value >= 1000) {
-    return `$${(value / 1000).toFixed(0)}K`;
-  }
-  return `$${value.toLocaleString()}`;
-};
-
-const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-white border border-[#E5E5E5] rounded-xl p-3 shadow-lg">
-        <p className="text-xs text-neutral-500 mb-1">{label}</p>
-        <p className="text-sm font-bold text-[#A57865]">
-          {formatCurrency(payload[0].value)}
-        </p>
-        {payload[0].payload.demand && (
-          <p className="text-xs text-neutral-400 mt-1">
-            Demand: {Math.round(payload[0].payload.demand * 100)}%
-          </p>
-        )}
-      </div>
-    );
-  }
-  return null;
-};
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function ForecastChart({ data }) {
+  const { symbol, formatCurrency } = useCurrency();
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white border border-[#E5E5E5] rounded-xl p-3 shadow-lg">
+          <p className="text-xs text-neutral-500 mb-1">{label}</p>
+          <p className="text-sm font-bold text-[#A57865]">
+            {formatCurrency(payload[0].value)}
+          </p>
+          {payload[0].payload.demand && (
+            <p className="text-xs text-neutral-400 mt-1">
+              Demand: {Math.round(payload[0].payload.demand * 100)}%
+            </p>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
   const chartData = useMemo(() => {
     return data.map((item) => ({
       ...item,
@@ -98,7 +90,7 @@ export default function ForecastChart({ data }) {
               tick={{ fontSize: 11, fill: '#6B7280' }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
+              tickFormatter={(value) => `${symbol}${(value / 1000).toFixed(0)}K`}
             />
             <Tooltip content={<CustomTooltip />} />
 

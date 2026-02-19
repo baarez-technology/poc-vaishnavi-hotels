@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useCurrency } from '@/hooks/useCurrency';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -74,15 +75,6 @@ const INTERACTION_ICONS: Record<string, typeof MessageSquare> = {
   review: Star,
   booking: Calendar,
   complaint: AlertTriangle,
-};
-
-const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 };
 
 const formatRelativeTime = (dateString: string): string => {
@@ -228,6 +220,7 @@ export default function GuestIntelligenceSidebar({
   onCreateRecovery,
   onUpgradeTier,
 }: GuestIntelligenceSidebarProps) {
+  const { formatCurrency } = useCurrency();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [intelligence, setIntelligence] = useState<GuestIntelligence | null>(null);

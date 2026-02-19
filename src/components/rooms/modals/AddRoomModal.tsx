@@ -9,6 +9,7 @@ import { createPortal } from 'react-dom';
 import { Check, ChevronDown } from 'lucide-react';
 import { Drawer } from '../../ui2/Drawer';
 import { Button } from '../../ui2/Button';
+import { useCurrency } from '@/hooks/useCurrency';
 
 // Custom Select Dropdown Component with React Portal
 function SelectDropdown({ value, onChange, options, placeholder }) {
@@ -151,6 +152,7 @@ function SelectDropdown({ value, onChange, options, placeholder }) {
 }
 
 export default function AddRoomModal({ isOpen, onClose, onAdd }) {
+  const { symbol } = useCurrency();
   const [formData, setFormData] = useState({
     roomNumber: '',
     type: 'Minimalist Studio',
@@ -365,7 +367,7 @@ export default function AddRoomModal({ isOpen, onClose, onAdd }) {
                 Price per Night
               </label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-[13px]">$</span>
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-[13px]">{symbol}</span>
                 <input
                   type="number"
                   name="price"

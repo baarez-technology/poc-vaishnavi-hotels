@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useCurrency } from '@/hooks/useCurrency';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -89,15 +90,6 @@ const getOTAColors = (source: string) => {
   return OTA_COLORS[normalizedSource] || OTA_COLORS.default;
 };
 
-const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-};
-
 const getConversionColor = (probability: number): string => {
   if (probability >= 70) return 'text-emerald-600';
   if (probability >= 40) return 'text-amber-600';
@@ -116,6 +108,7 @@ export default function OTAConversionOfferModal({
   guest,
   onSend,
 }: OTAConversionOfferModalProps) {
+  const { formatCurrency } = useCurrency();
   const modalRef = useRef<HTMLDivElement>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);

@@ -15,11 +15,11 @@ import {
   LOYALTY_TIERS,
   GUEST_STATUS_CONFIG,
   EMOTION_CONFIG,
-  formatCurrency,
   formatDate,
 } from '../../utils/guests';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function GuestDrawer({
   guest,
@@ -30,6 +30,7 @@ export default function GuestDrawer({
   onBlacklist,
   onViewProfile,
 }) {
+  const { formatCurrency } = useCurrency();
   if (!guest) return null;
 
   const loyaltyTier = calculateLoyaltyTier(guest.totalStays || 0, guest.totalSpent || 0);

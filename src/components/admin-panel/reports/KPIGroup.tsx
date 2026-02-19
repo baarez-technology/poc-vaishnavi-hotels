@@ -1,14 +1,15 @@
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 
-const formatValue = (value, format) => {
+const formatValue = (value, format, currencySymbol = '$') => {
   if (format === 'currency') {
     if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(1)}M`;
+      return `${currencySymbol}${(value / 1000000).toFixed(1)}M`;
     }
     if (value >= 1000) {
-      return `$${(value / 1000).toFixed(1)}K`;
+      return `${currencySymbol}${(value / 1000).toFixed(1)}K`;
     }
-    return `$${value.toLocaleString()}`;
+    return `${currencySymbol}${value.toLocaleString()}`;
   }
   if (format === 'percent') {
     return `${value}%`;
@@ -36,6 +37,7 @@ const getTrendColor = (trend, inverse = false) => {
 };
 
 export default function KPIGroup({ kpis }) {
+  const { symbol } = useCurrency();
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
       {kpis.map((kpi, index) => {
@@ -59,7 +61,7 @@ export default function KPIGroup({ kpis }) {
             </div>
             <div>
               <p className="text-2xl font-bold text-neutral-900">
-                {formatValue(kpi.value, kpi.format)}
+                {formatValue(kpi.value, kpi.format, symbol)}
               </p>
               <p className="text-xs text-neutral-500 mt-1">{kpi.label}</p>
               {kpi.trend !== undefined && (

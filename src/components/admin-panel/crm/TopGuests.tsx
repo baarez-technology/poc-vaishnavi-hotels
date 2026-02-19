@@ -1,7 +1,9 @@
 import { Crown, Mail, Phone, Calendar, DollarSign, Award, TrendingUp } from 'lucide-react';
 import { Button } from '../../ui2/Button';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function TopGuests({ guests: rawGuests }) {
+  const { symbol } = useCurrency();
   // Ensure guests array is valid
   const guests = rawGuests && rawGuests.length > 0 ? rawGuests : [];
 
@@ -105,7 +107,7 @@ export default function TopGuests({ guests: rawGuests }) {
             <div className="grid grid-cols-3 gap-3 mb-3">
               <div className="text-center p-2 bg-[#FAF8F6] rounded-lg">
                 <p className="text-lg font-bold text-[#A57865]">
-                  ${(guest.lifetimeValue / 1000).toFixed(0)}k
+                  {symbol}{(guest.lifetimeValue / 1000).toFixed(0)}k
                 </p>
                 <p className="text-xs text-neutral-600">LTV</p>
               </div>
@@ -115,7 +117,7 @@ export default function TopGuests({ guests: rawGuests }) {
               </div>
               <div className="text-center p-2 bg-[#FAF8F6] rounded-lg">
                 <p className="text-lg font-bold text-[#4E5840]">
-                  ${(guest.averageSpend / 100).toFixed(1) * 100}
+                  {symbol}{(guest.averageSpend / 100).toFixed(1) * 100}
                 </p>
                 <p className="text-xs text-neutral-600">Avg Spend</p>
               </div>
@@ -158,7 +160,7 @@ export default function TopGuests({ guests: rawGuests }) {
       {/* Summary Stats */}
       <div className="mt-6 pt-6 border-t border-neutral-200 grid grid-cols-2 gap-4">
         <div className="text-center">
-          <p className="text-2xl font-bold text-[#A57865]">$286k</p>
+          <p className="text-2xl font-bold text-[#A57865]">{symbol}286k</p>
           <p className="text-xs text-neutral-600 mt-1">Combined LTV</p>
         </div>
         <div className="text-center">

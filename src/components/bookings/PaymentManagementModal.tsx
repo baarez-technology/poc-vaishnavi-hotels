@@ -9,6 +9,7 @@ import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 import { CreditCard, DollarSign, Receipt, RefreshCw, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import { paymentStatusConfig } from '../../data/bookingsData';
+import { useCurrency } from '@/hooks/useCurrency';
 
 const PAYMENT_STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending', icon: Clock, color: 'text-amber-600' },
@@ -92,16 +93,13 @@ export default function PaymentManagementModal({
   onSave,
   isSaving = false
 }: PaymentManagementModalProps) {
+  const { formatCurrency, symbol } = useCurrency();
   const [formState, setFormState] = useState({
     paymentStatus: 'pending',
     paymentMethod: 'card',
     amountPaid: 0,
     notes: '',
   });
-
-  const formatCurrency = (amount: number) => {
-    return `$${Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
 
   useEffect(() => {
     if (booking && isOpen) {
@@ -275,10 +273,10 @@ export default function PaymentManagementModal({
               </div>
               <div className="space-y-2">
                 <label className="block text-[13px] font-medium text-neutral-700">
-                  Amount Paid ($)
+                  Amount Paid ({symbol})
                 </label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[13px] font-medium text-neutral-400">{symbol}</span>
                   <input
                     name="amountPaid"
                     type="number"

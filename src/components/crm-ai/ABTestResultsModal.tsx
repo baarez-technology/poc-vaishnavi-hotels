@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { useCurrency } from '@/hooks/useCurrency';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -84,15 +85,6 @@ const formatDuration = (startDate?: string, endDate?: string): string => {
   return `${hours} hour${hours !== 1 ? 's' : ''}`;
 };
 
-const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-};
-
 const formatNumber = (value: number): string => {
   return new Intl.NumberFormat('en-US').format(value);
 };
@@ -107,6 +99,7 @@ export default function ABTestResultsModal({
   test,
   onDeployWinner,
 }: ABTestResultsModalProps) {
+  const { formatCurrency } = useCurrency();
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Handle ESC key and body scroll lock

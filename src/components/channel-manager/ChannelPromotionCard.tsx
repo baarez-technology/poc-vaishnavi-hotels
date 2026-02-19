@@ -9,6 +9,7 @@ import {
   ChevronDown, ChevronUp, Edit2, Trash2, Copy,
   ExternalLink
 } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function ChannelPromotionCard({
   promotion,
@@ -18,6 +19,7 @@ export default function ChannelPromotionCard({
   onToggle,
   onDuplicate
 }) {
+  const { symbol } = useCurrency();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const getStatusColor = () => {
@@ -86,7 +88,7 @@ export default function ChannelPromotionCard({
             {/* Discount Badge */}
             <div className="px-3 py-1.5 rounded-lg bg-terra-50">
               <span className="text-lg font-bold text-terra-600">
-                {promotion.discountType === 'percentage' ? `${promotion.discountValue}%` : `$${promotion.discountValue}`}
+                {promotion.discountType === 'percentage' ? `${promotion.discountValue}%` : `${symbol}${promotion.discountValue}`}
               </span>
               <span className="text-[11px] text-neutral-500 ml-1">off</span>
             </div>

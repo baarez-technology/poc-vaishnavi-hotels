@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { useCurrency } from '@/hooks/useCurrency';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -91,15 +92,6 @@ const SENTIMENT_ICONS: Record<string, typeof Smile> = {
   negative: Frown,
 };
 
-const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-};
-
 const formatDate = (dateString: string): string => {
   return new Date(dateString).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -129,6 +121,7 @@ export default function AISegmentDetailModal({
   onCreateCampaign,
   onExportMembers,
 }: AISegmentDetailModalProps) {
+  const { formatCurrency } = useCurrency();
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Handle ESC key and body scroll lock

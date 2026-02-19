@@ -7,7 +7,6 @@ import {
   MapPin,
   Calendar,
   TrendingUp,
-  DollarSign,
   BedDouble,
   Edit,
   MessageSquare,
@@ -29,8 +28,8 @@ import {
   EMOTION_CONFIG,
   formatDate,
   formatDateTime,
-  formatCurrency,
 } from '@/utils/admin/guests';
+import { useCurrency } from '@/hooks/useCurrency';
 import { guestsService, type GuestFullProfile } from '@/api/services/guests.service';
 import { Button } from '../../ui2/Button';
 
@@ -45,6 +44,7 @@ export default function GuestDrawer({
   onDeleteNote,
   onViewProfile
 }) {
+  const { formatCurrency, symbol } = useCurrency();
   const [newNote, setNewNote] = useState('');
   const [fullProfile, setFullProfile] = useState<GuestFullProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
@@ -237,7 +237,7 @@ export default function GuestDrawer({
                 <div className="bg-gradient-to-br from-[#4E5840]/5 to-[#4E5840]/10 rounded-xl p-4 border border-[#4E5840]/20">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-7 h-7 rounded-lg bg-[#4E5840]/10 flex items-center justify-center">
-                      <DollarSign className="w-4 h-4 text-[#4E5840]" />
+                      <span className="text-sm font-bold text-[#4E5840]">{symbol}</span>
                     </div>
                   </div>
                   <p className="text-xs font-medium text-[#4E5840] mb-1">Total Spent</p>

@@ -3,11 +3,11 @@
  * Computes KPIs, charts data, and insights from raw data
  */
 
-// Format currency
-export function formatCurrency(value) {
+// Format currency - pass currency code from useCurrency() hook in components
+export function formatCurrency(value, currency = 'USD') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);

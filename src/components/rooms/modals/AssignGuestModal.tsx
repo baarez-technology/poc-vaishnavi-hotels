@@ -11,7 +11,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Bed, UsersRound, DollarSign, ChevronDown, Check, Search, Calendar, AlertTriangle } from 'lucide-react';
+import { Bed, UsersRound, ChevronDown, Check, Search, Calendar, AlertTriangle } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
+import { DatePicker } from '../../ui2/DatePicker';
 import { Drawer } from '../../ui2/Drawer';
 import { Button } from '../../ui2/Button';
 import { guestsService } from '../../../api/services/guests.service';
@@ -205,6 +207,7 @@ function GuestSelectDropdown({ value, onChange, options, placeholder, isLoading 
 }
 
 export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
+  const { symbol, formatCurrency } = useCurrency();
   const [selectedGuest, setSelectedGuest] = useState('');
   const [checkInDate, setCheckInDate] = useState('');
   const [checkOutDate, setCheckOutDate] = useState('');
@@ -528,12 +531,11 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
                 <Calendar className="w-3 h-3 inline mr-1" />
                 Check-in Date
               </label>
-              <input
-                type="date"
+              <DatePicker
                 value={checkInDate}
-                onChange={(e) => setCheckInDate(e.target.value)}
-                className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all"
-                required
+                onChange={(val) => setCheckInDate(val)}
+                placeholder="Select check-in"
+                className="w-full"
               />
             </div>
             <div>
@@ -541,13 +543,12 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
                 <Calendar className="w-3 h-3 inline mr-1" />
                 Check-out Date
               </label>
-              <input
-                type="date"
+              <DatePicker
                 value={checkOutDate}
-                onChange={(e) => setCheckOutDate(e.target.value)}
-                min={checkInDate}
-                className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all"
-                required
+                onChange={(val) => setCheckOutDate(val)}
+                placeholder="Select check-out"
+                minDate={checkInDate}
+                className="w-full"
               />
             </div>
           </div>
@@ -585,10 +586,10 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
             </div>
             <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100">
               <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="w-4 h-4 text-neutral-400" />
+                <span className="text-sm font-bold text-neutral-400">{symbol}</span>
                 <span className="text-[11px] font-medium text-neutral-500">Price</span>
               </div>
-              <p className="text-[13px] font-semibold text-neutral-900">${room.price}/night</p>
+              <p className="text-[13px] font-semibold text-neutral-900">{formatCurrency(room.price)}/night</p>
             </div>
           </div>
         </div>

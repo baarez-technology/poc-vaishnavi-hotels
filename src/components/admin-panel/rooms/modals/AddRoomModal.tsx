@@ -4,8 +4,10 @@ import { createPortal } from 'react-dom';
 import { X, Plus } from 'lucide-react';
 import { SimpleDropdown } from '@/components/ui/Select';
 import { Button } from '../../../ui2/Button';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function AddRoomModal({ isOpen, onClose, onAdd }) {
+  const { symbol } = useCurrency();
   const [formData, setFormData] = useState({
     roomNumber: '',
     type: 'Minimalist Studio',
@@ -254,7 +256,7 @@ export default function AddRoomModal({ isOpen, onClose, onAdd }) {
                 Price per Night <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">$</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">{symbol}</span>
                 <input
                   type="number"
                   name="price"

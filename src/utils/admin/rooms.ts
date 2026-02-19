@@ -128,11 +128,11 @@ export function generateRoomId() {
   return `room-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Format currency
-export function formatCurrency(amount) {
+// Format currency - pass currency code from useCurrency() hook in components
+export function formatCurrency(amount, currency = 'USD') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency,
     minimumFractionDigits: 0,
   }).format(amount);
 }

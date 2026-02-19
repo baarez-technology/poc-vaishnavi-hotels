@@ -1,36 +1,38 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { TrendingUp } from 'lucide-react';
-
-const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-white px-4 py-3 rounded-xl shadow-lg border border-neutral-200/80">
-        <p className="text-xs font-bold text-neutral-900 mb-2.5">{label}</p>
-        {payload.map((entry, index) => (
-          <div key={index} className="flex items-center justify-between gap-4 mb-1 last:mb-0">
-            <div className="flex items-center gap-2">
-              <div
-                className="w-2.5 h-2.5 rounded-full"
-                style={{ backgroundColor: entry.color }}
-              />
-              <span className="text-xs text-neutral-600 font-medium">
-                {entry.name}
-              </span>
-            </div>
-            <span className="text-xs font-bold text-neutral-900">
-              {entry.name === 'Revenue'
-                ? `$${entry.value.toLocaleString()}`
-                : `${entry.value}%`}
-            </span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function OccupancyRevenueChart({ data, dateRange = '7d', onRangeChange }) {
+  const { symbol } = useCurrency();
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white px-4 py-3 rounded-xl shadow-lg border border-neutral-200/80">
+          <p className="text-xs font-bold text-neutral-900 mb-2.5">{label}</p>
+          {payload.map((entry, index) => (
+            <div key={index} className="flex items-center justify-between gap-4 mb-1 last:mb-0">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="text-xs text-neutral-600 font-medium">
+                  {entry.name}
+                </span>
+              </div>
+              <span className="text-xs font-bold text-neutral-900">
+                {entry.name === 'Revenue'
+                  ? `${symbol}${entry.value.toLocaleString()}`
+                  : `${entry.value}%`}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
   const rangeLabels = {
     '7d': 'Last 7 days',
     '14d': 'Last 14 days',

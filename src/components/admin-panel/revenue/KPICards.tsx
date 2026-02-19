@@ -7,6 +7,7 @@ import {
   Calendar,
   Building2
 } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface KPIData {
   // API format (snake_case)
@@ -33,17 +34,18 @@ interface KPICardsProps {
   data?: KPIData | null;
 }
 
-const formatCurrency = (value: number) => {
-  if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`;
-  }
-  if (value >= 1000) {
-    return `$${(value / 1000).toFixed(0)}K`;
-  }
-  return `$${value.toLocaleString()}`;
-};
-
 export default function KPICards({ data }: KPICardsProps) {
+  const { symbol } = useCurrency();
+
+  const formatCurrencyCompact = (value: number) => {
+    if (value >= 1000000) {
+      return `${symbol}${(value / 1000000).toFixed(1)}M`;
+    }
+    if (value >= 1000) {
+      return `${symbol}${(value / 1000).toFixed(0)}K`;
+    }
+    return `${symbol}${value.toLocaleString()}`;
+  };
   // Loading skeleton when no data
   if (!data) {
     return (
@@ -80,7 +82,7 @@ export default function KPICards({ data }: KPICardsProps) {
     {
       id: 'todayRevenue',
       label: "Today's Revenue",
-      value: formatCurrency(todayRevenue),
+      value: formatCurrencyCompact(todayRevenue),
       icon: DollarSign,
       color: '#A57865',
       bgColor: 'bg-[#A57865]/10',
@@ -90,7 +92,7 @@ export default function KPICards({ data }: KPICardsProps) {
     {
       id: 'adr',
       label: 'ADR',
-      value: `$${adr.toLocaleString()}`,
+      value: `${symbol}${adr.toLocaleString()}`,
       icon: Building2,
       color: '#5C9BA4',
       bgColor: 'bg-[#5C9BA4]/10',
@@ -99,7 +101,7 @@ export default function KPICards({ data }: KPICardsProps) {
     {
       id: 'revpar',
       label: 'RevPAR',
-      value: `$${revpar.toLocaleString()}`,
+      value: `${symbol}${revpar.toLocaleString()}`,
       icon: BarChart3,
       color: '#4E5840',
       bgColor: 'bg-[#4E5840]/10',
@@ -117,7 +119,7 @@ export default function KPICards({ data }: KPICardsProps) {
     {
       id: 'forecast',
       label: 'Forecasted Revenue',
-      value: formatCurrency(forecastedRevenue),
+      value: formatCurrencyCompact(forecastedRevenue),
       icon: Calendar,
       color: '#8E6554',
       bgColor: 'bg-[#8E6554]/10',

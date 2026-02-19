@@ -7,41 +7,32 @@ import {
   Tooltip
 } from 'recharts';
 import { PieChartIcon } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 
 // Default fallback color
 const DEFAULT_COLOR = '#6B7280';
 const SEGMENT_COLORS = ['#A57865', '#5C9BA4', '#4E5840', '#CDB261', '#8E6554'];
 
-const formatCurrency = (value) => {
-  if (!value || isNaN(value)) return '$0';
-  if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`;
-  }
-  if (value >= 1000) {
-    return `$${(value / 1000).toFixed(0)}K`;
-  }
-  return `$${value.toLocaleString()}`;
-};
-
-const CustomTooltip = ({ active, payload }) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    return (
-      <div className="bg-white border border-[#E5E5E5] rounded-xl p-3 shadow-lg">
-        <p className="text-sm font-semibold text-neutral-900">{data.segment}</p>
-        <p className="text-sm font-bold" style={{ color: data.color }}>
-          {formatCurrency(data.value)}
-        </p>
-        <p className="text-xs text-neutral-500 mt-1">
-          {data.bookings} bookings • Avg ${data.avgRate.toLocaleString()}
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
-
 export default function RevenueBySegment({ data: rawData }) {
+  const { symbol, formatCurrency } = useCurrency();
+
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-white border border-[#E5E5E5] rounded-xl p-3 shadow-lg">
+          <p className="text-sm font-semibold text-neutral-900">{data.segment}</p>
+          <p className="text-sm font-bold" style={{ color: data.color }}>
+            {formatCurrency(data.value)}
+          </p>
+          <p className="text-xs text-neutral-500 mt-1">
+            {data.bookings} bookings • Avg {symbol}{data.avgRate.toLocaleString()}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
   // Ensure data has colors and default values
   const data = (rawData || []).map((segment, index) => ({
     ...segment,
@@ -139,7 +130,7 @@ export default function RevenueBySegment({ data: rawData }) {
         <div className="text-center">
           <p className="text-xs text-neutral-500">Highest Avg Rate</p>
           <p className="text-sm font-bold text-neutral-900">
-            ${Math.max(...data.map(d => d.avgRate)).toLocaleString()}
+            {symbol}{Math.max(...data.map(d => d.avgRate)).toLocaleString()}
           </p>
         </div>
         <div className="text-center">

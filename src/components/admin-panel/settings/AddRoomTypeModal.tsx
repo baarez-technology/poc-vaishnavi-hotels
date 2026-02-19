@@ -3,8 +3,10 @@ import { createPortal } from 'react-dom';
 import { X, BedDouble, AlertCircle, Plus } from 'lucide-react';
 import { AMENITIES } from '@/utils/admin/settings';
 import { Button } from '../../ui2/Button';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function AddRoomTypeModal({ onClose, onSave }) {
+  const { symbol } = useCurrency();
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -129,7 +131,7 @@ export default function AddRoomTypeModal({ onClose, onSave }) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Price per Night ($) *
+                  Price per Night ({symbol}) *
                 </label>
                 <input
                   type="number"

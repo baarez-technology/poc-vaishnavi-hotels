@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import SearchHighlight from '../ui2/SearchHighlight';
 import { Button, IconButton } from '../ui2/Button';
+import { useCurrency } from '@/hooks/useCurrency';
 
 const discountTypeLabels = {
   'percentage': 'Percentage Off',
@@ -21,6 +22,7 @@ const discountTypeLabels = {
 };
 
 export default function PromotionCard({ promotion, onUpdate, onToggleStatus, onDelete, onEdit, searchQuery = '' }) {
+  const { symbol } = useCurrency();
   const [isExpanded, setIsExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -34,7 +36,7 @@ export default function PromotionCard({ promotion, onUpdate, onToggleStatus, onD
     if (promotion.discountType === 'percentage') {
       return `${promotion.discountValue}%`;
     } else if (promotion.discountType === 'fixed') {
-      return `$${promotion.discountValue}`;
+      return `${symbol}${promotion.discountValue}`;
     } else if (promotion.discountType === 'free_night') {
       return `${promotion.discountValue}`;
     }
@@ -246,7 +248,7 @@ export default function PromotionCard({ promotion, onUpdate, onToggleStatus, onD
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Min Spend</p>
                 <p className="text-[13px] font-semibold text-neutral-800">
-                  {promotion.minBookingAmount ? `$${promotion.minBookingAmount}` : 'None'}
+                  {promotion.minBookingAmount ? `${symbol}${promotion.minBookingAmount}` : 'None'}
                 </p>
               </div>
             </div>

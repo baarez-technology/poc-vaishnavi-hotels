@@ -245,7 +245,7 @@ export function calculateEngagementRate(campaigns) {
 }
 
 // Generate CRM insights
-export function generateCRMInsights(guests, segments, campaigns, tiers) {
+export function generateCRMInsights(guests, segments, campaigns, tiers, currency = 'USD') {
   const insights = [];
 
   // LTV insight
@@ -254,7 +254,7 @@ export function generateCRMInsights(guests, segments, campaigns, tiers) {
   if (highValueGuests.length > 0) {
     insights.push({
       type: 'success',
-      message: `${highValueGuests.length} high-value guests (LTV > $${Math.round(avgLTV * 1.5).toLocaleString()}) represent your top tier segment.`
+      message: `${highValueGuests.length} high-value guests (LTV > ${formatCurrency(Math.round(avgLTV * 1.5), currency)}) represent your top tier segment.`
     });
   }
 
@@ -480,11 +480,11 @@ export function formatDate(dateStr) {
   }
 }
 
-// Format currency
-export function formatCurrency(amount) {
+// Format currency - pass currency code from useCurrency() hook in components
+export function formatCurrency(amount, currency = 'USD') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
   }).format(amount || 0);

@@ -11,6 +11,7 @@ import { channelManagerService } from '../../api/services/channel-manager.servic
 import { useToast } from '../../contexts/ToastContext';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
+import { useCurrency } from '@/hooks/useCurrency';
 
 /** Combobox dropdown for OTA room type selection — matches Glimmora SelectDropdown style */
 function OtaRoomTypeCombobox({
@@ -236,6 +237,7 @@ export default function BulkMappingDrawer({
   otaName,
   onSuccess,
 }) {
+  const { symbol } = useCurrency();
   const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -507,7 +509,7 @@ export default function BulkMappingDrawer({
                         )}
                       </td>
                       <td className="px-4 py-3 text-right text-[13px] text-neutral-600 tabular-nums">
-                        {typeof it.basePrice === 'number' ? `$${it.basePrice}` : '-'}
+                        {typeof it.basePrice === 'number' ? `${symbol}${it.basePrice}` : '-'}
                       </td>
                       <td className="px-4 py-3 text-right text-[13px] text-neutral-600 tabular-nums">
                         {typeof it.inventory === 'number' ? it.inventory : '-'}

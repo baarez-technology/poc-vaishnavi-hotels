@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { RefreshCw } from 'lucide-react';
 import { useForecast, useKPISummary } from '../../contexts/RevenueDataContext';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface ChartDataItem {
   date: string;
@@ -18,23 +19,24 @@ interface ChartDataItem {
   occupancy: number;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-white border border-neutral-200 rounded-[10px] p-3 shadow-lg">
-        <p className="text-[11px] text-neutral-500 font-medium mb-2">{label}</p>
-        {payload.map((entry: any, index: number) => (
-          <p key={index} className="text-sm font-semibold" style={{ color: entry.color }}>
-            {entry.name}: {entry.name === 'ADR' ? `$${entry.value.toLocaleString()}` : `${entry.value}%`}
-          </p>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
-
 export default function ADROccupancyChart() {
+  const { symbol } = useCurrency();
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white border border-neutral-200 rounded-[10px] p-3 shadow-lg">
+          <p className="text-[11px] text-neutral-500 font-medium mb-2">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} className="text-sm font-semibold" style={{ color: entry.color }}>
+              {entry.name}: {entry.name === 'ADR' ? `${symbol}${entry.value.toLocaleString()}` : `${entry.value}%`}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
   const { data: forecastResponse, loading: forecastLoading, error: forecastError, refresh } = useForecast();
   const { data: kpiSummary, loading: kpiLoading } = useKPISummary();
 
@@ -158,7 +160,7 @@ export default function ADROccupancyChart() {
         <div className="flex items-center gap-4">
           <div className="text-right">
             <p className="text-[11px] text-neutral-400 font-medium">Avg ADR</p>
-            <p className="text-lg font-bold text-ocean-600">${avgADR.toLocaleString()}</p>
+            <p className="text-lg font-bold text-ocean-600">{symbol}{avgADR.toLocaleString()}</p>
           </div>
           <div className="text-right">
             <p className="text-[11px] text-neutral-400 font-medium">Avg Occupancy</p>
@@ -185,7 +187,7 @@ export default function ADROccupancyChart() {
               tick={{ fontSize: 11, fill: '#9ca3af' }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
+              tickFormatter={(value) => `${symbol}${(value / 1000).toFixed(0)}K`}
               domain={['dataMin - 1000', 'dataMax + 1000']}
               dx={-5}
             />
@@ -228,13 +230,13 @@ export default function ADROccupancyChart() {
         <div className="p-3 rounded-lg bg-neutral-50 text-center">
           <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-wider">Peak ADR</p>
           <p className="text-[15px] font-bold text-ocean-600 mt-1">
-            ${Math.max(...data.map(d => d.adr)).toLocaleString()}
+            {symbol}{Math.max(...data.map(d => d.adr)).toLocaleString()}
           </p>
         </div>
         <div className="p-3 rounded-lg bg-neutral-50 text-center">
           <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-wider">Low ADR</p>
           <p className="text-[15px] font-bold text-neutral-600 mt-1">
-            ${Math.min(...data.map(d => d.adr)).toLocaleString()}
+            {symbol}{Math.min(...data.map(d => d.adr)).toLocaleString()}
           </p>
         </div>
         <div className="p-3 rounded-lg bg-neutral-50 text-center">

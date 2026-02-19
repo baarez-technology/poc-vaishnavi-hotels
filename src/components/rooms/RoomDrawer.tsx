@@ -6,9 +6,11 @@
 
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
-import { Users, Sparkles, Bed, UsersRound, DollarSign } from 'lucide-react';
+import { Users, Sparkles, Bed, UsersRound } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAssignGuest, onMarkClean, onMarkDirty, onBlockRoom, onUnassignGuest, onUnblockRoom }) {
+  const { symbol, formatCurrency } = useCurrency();
   if (!room) return null;
 
   // Status config
@@ -122,10 +124,10 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
             </div>
             <div className="p-3 sm:p-4 rounded-lg bg-neutral-50 border border-neutral-100">
               <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="w-4 h-4 text-neutral-400" />
+                <span className="text-sm font-bold text-neutral-400">{symbol}</span>
                 <span className="text-[11px] font-medium text-neutral-500">Price</span>
               </div>
-              <p className="text-[13px] font-semibold text-neutral-900">${room.price}/night</p>
+              <p className="text-[13px] font-semibold text-neutral-900">{formatCurrency(room.price)}/night</p>
             </div>
           </div>
         </div>

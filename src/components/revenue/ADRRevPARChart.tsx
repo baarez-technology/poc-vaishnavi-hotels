@@ -1,6 +1,8 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function ADRRevPARChart({ historicalData }) {
+  const { symbol } = useCurrency();
   // Safety check for empty or undefined data
   if (!historicalData || historicalData.length === 0) {
     return (
@@ -35,10 +37,10 @@ export default function ADRRevPARChart({ historicalData }) {
           <p className="font-semibold text-neutral-900 mb-2">{data.date}</p>
           <div className="space-y-1">
             <p className="text-sm text-[#A57865]">
-              <span className="font-medium">ADR:</span> ${data.adr}
+              <span className="font-medium">ADR:</span> {symbol}{data.adr}
             </p>
             <p className="text-sm text-[#CDB261]">
-              <span className="font-medium">RevPAR:</span> ${data.revpar}
+              <span className="font-medium">RevPAR:</span> {symbol}{data.revpar}
             </p>
           </div>
         </div>
@@ -82,7 +84,7 @@ export default function ADRRevPARChart({ historicalData }) {
           <YAxis
             tick={{ fill: '#6b7280', fontSize: 12 }}
             tickLine={{ stroke: '#e5e7eb' }}
-            tickFormatter={(value) => `$${value}`}
+            tickFormatter={(value) => `${symbol}${value}`}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend wrapperStyle={{ paddingTop: '20px' }} />
@@ -114,7 +116,7 @@ export default function ADRRevPARChart({ historicalData }) {
             <div className="w-3 h-3 rounded-full bg-[#8E6554]" />
             <span className="text-sm font-medium text-neutral-700">Average ADR</span>
           </div>
-          <p className="text-3xl font-bold text-[#A57865]">${avgADR}</p>
+          <p className="text-3xl font-bold text-[#A57865]">{symbol}{avgADR}</p>
           <p className="text-xs text-neutral-500 mt-1">Average daily rate over 30 days</p>
         </div>
         <div>
@@ -122,7 +124,7 @@ export default function ADRRevPARChart({ historicalData }) {
             <div className="w-3 h-3 rounded-full bg-[#B89D4E]" />
             <span className="text-sm font-medium text-neutral-700">Average RevPAR</span>
           </div>
-          <p className="text-3xl font-bold text-[#CDB261]">${avgRevPAR}</p>
+          <p className="text-3xl font-bold text-[#CDB261]">{symbol}{avgRevPAR}</p>
           <p className="text-xs text-neutral-500 mt-1">Revenue per available room</p>
         </div>
       </div>

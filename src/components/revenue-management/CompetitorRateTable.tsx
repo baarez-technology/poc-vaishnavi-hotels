@@ -27,6 +27,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { revenueIntelligenceService, CompetitorInsightsResponse, Competitor } from '../../api/services/revenue-intelligence.service';
 import { Button } from '../ui2/Button';
 import { Drawer } from '../ui2/Drawer';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface CompetitorRateData {
   date: string;
@@ -63,6 +64,7 @@ const DATE_RANGE_OPTIONS: DateRangeOption[] = [
 ];
 
 const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
+  const { symbol } = useCurrency();
   const { success, error: showError } = useToast();
   const navigate = useNavigate();
 
@@ -312,7 +314,7 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
       state: {
         preselectedDate: row.date,
         suggestedRate: row.avgMarket,
-        reason: `Match market avg (was $${row.ourRate}, market avg $${row.avgMarket})`,
+        reason: `Match market avg (was ${symbol}${row.ourRate}, market avg ${symbol}${row.avgMarket})`,
       },
     });
   };
@@ -323,7 +325,7 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
       state: {
         preselectedDate: row.date,
         suggestedRate: newRate,
-        reason: `Undercut lowest competitor (market min $${row.minMarket})`,
+        reason: `Undercut lowest competitor (market min ${symbol}${row.minMarket})`,
       },
     });
   };
@@ -446,11 +448,11 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
                     tick={{ fontSize: 9, fill: '#6A6A6A' }}
                     axisLine={false}
                     tickLine={false}
-                    tickFormatter={(value) => `$${value}`}
+                    tickFormatter={(value) => `${symbol}${value}`}
                     width={40}
                   />
                   <Tooltip
-                    formatter={(value: number) => [`$${value}`, '']}
+                    formatter={(value: number) => [`${symbol}${value}`, '']}
                     contentStyle={{
                       backgroundColor: 'white',
                       border: '1px solid #E5E4E0',
@@ -546,16 +548,16 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right text-[15px] font-semibold text-neutral-900">
-                    ${row.ourRate}
+                    {symbol}{row.ourRate}
                   </td>
                   <td className="px-6 py-4 text-right text-[13px] text-neutral-700">
-                    ${row.avgMarket}
+                    {symbol}{row.avgMarket}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <span className="text-[13px] font-medium text-sage-600">${row.minMarket}</span>
+                    <span className="text-[13px] font-medium text-sage-600">{symbol}{row.minMarket}</span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <span className="text-[13px] font-medium text-rose-500">${row.maxMarket}</span>
+                    <span className="text-[13px] font-medium text-rose-500">{symbol}{row.maxMarket}</span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-center gap-1.5">
@@ -705,11 +707,11 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
               <div className="grid grid-cols-3 gap-3 mb-3">
                 <div className="text-center p-2 bg-neutral-50 rounded-lg">
                   <p className="text-[10px] text-neutral-400 mb-1">Our Rate</p>
-                  <p className="text-[15px] font-bold text-neutral-900">${row.ourRate}</p>
+                  <p className="text-[15px] font-bold text-neutral-900">{symbol}{row.ourRate}</p>
                 </div>
                 <div className="text-center p-2 bg-ocean-50 rounded-lg">
                   <p className="text-[10px] text-neutral-400 mb-1">Market Avg</p>
-                  <p className="text-[15px] font-bold text-ocean-600">${row.avgMarket}</p>
+                  <p className="text-[15px] font-bold text-ocean-600">{symbol}{row.avgMarket}</p>
                 </div>
                 <div className="text-center p-2 bg-neutral-50 rounded-lg">
                   <p className="text-[10px] text-neutral-400 mb-1">Gap</p>
@@ -733,10 +735,10 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
 
               <div className="flex items-center justify-between text-[11px] text-neutral-600 mb-3 px-2">
                 <span>
-                  Min: <span className="font-semibold text-sage-600">${row.minMarket}</span>
+                  Min: <span className="font-semibold text-sage-600">{symbol}{row.minMarket}</span>
                 </span>
                 <span>
-                  Max: <span className="font-semibold text-rose-500">${row.maxMarket}</span>
+                  Max: <span className="font-semibold text-rose-500">{symbol}{row.maxMarket}</span>
                 </span>
               </div>
 
@@ -835,13 +837,13 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
                   Your Rate
                 </p>
-                <p className="text-2xl font-bold text-neutral-900">${selectedRow.ourRate}</p>
+                <p className="text-2xl font-bold text-neutral-900">{symbol}{selectedRow.ourRate}</p>
               </div>
               <div className="p-4 rounded-lg bg-ocean-50">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
                   Market Avg
                 </p>
-                <p className="text-2xl font-bold text-ocean-600">${selectedRow.avgMarket}</p>
+                <p className="text-2xl font-bold text-ocean-600">{symbol}{selectedRow.avgMarket}</p>
               </div>
             </div>
 
@@ -862,7 +864,7 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
                   {selectedRow.gapPercent}%
                 </span>
                 <span className="text-[11px] text-neutral-400">
-                  (${Math.abs(selectedRow.ourRate - selectedRow.avgMarket)})
+                  ({symbol}{Math.abs(selectedRow.ourRate - selectedRow.avgMarket)})
                 </span>
               </div>
             </div>
@@ -874,7 +876,7 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
               <div className="flex items-center gap-4">
                 <div className="text-center">
                   <p className="text-[11px] text-neutral-400 mb-1">Lowest</p>
-                  <p className="text-lg font-bold text-sage-600">${selectedRow.minMarket}</p>
+                  <p className="text-lg font-bold text-sage-600">{symbol}{selectedRow.minMarket}</p>
                 </div>
                 <div className="flex-1 relative h-1.5 rounded-full bg-neutral-100">
                   <div className="absolute inset-0 rounded-full bg-gradient-to-r from-sage-300 via-gold-300 to-rose-300" />
@@ -888,7 +890,7 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
                 </div>
                 <div className="text-center">
                   <p className="text-[11px] text-neutral-400 mb-1">Highest</p>
-                  <p className="text-lg font-bold text-rose-500">${selectedRow.maxMarket}</p>
+                  <p className="text-lg font-bold text-rose-500">{symbol}{selectedRow.maxMarket}</p>
                 </div>
               </div>
             </div>
@@ -917,7 +919,7 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xl font-bold text-neutral-900">${selectedRow.avgMarket}</p>
+                      <p className="text-xl font-bold text-neutral-900">{symbol}{selectedRow.avgMarket}</p>
                       <p
                         className={`text-[11px] font-medium ${
                           selectedRow.avgMarket > selectedRow.ourRate
@@ -929,7 +931,7 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
                       >
                         {selectedRow.avgMarket > selectedRow.ourRate ? '+' : ''}
                         {selectedRow.avgMarket - selectedRow.ourRate !== 0
-                          ? `$${selectedRow.avgMarket - selectedRow.ourRate}`
+                          ? `${symbol}${selectedRow.avgMarket - selectedRow.ourRate}`
                           : 'No change'}
                       </p>
                     </div>
@@ -948,13 +950,13 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
                       <p className="text-[13px] font-semibold text-neutral-900 group-hover:text-sage-700">
                         Undercut Lowest
                       </p>
-                      <p className="text-[11px] text-neutral-400 mt-0.5">$5 below lowest competitor</p>
+                      <p className="text-[11px] text-neutral-400 mt-0.5">{symbol}5 below lowest competitor</p>
                     </div>
                     <div className="text-right">
                       <p className="text-xl font-bold text-neutral-900">
-                        ${selectedRow.minMarket - 5}
+                        {symbol}{selectedRow.minMarket - 5}
                       </p>
-                      <p className="text-[11px] font-medium text-sage-600">-$5 below min</p>
+                      <p className="text-[11px] font-medium text-sage-600">-{symbol}5 below min</p>
                     </div>
                   </div>
                 </button>
@@ -965,7 +967,7 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
                       state: {
                         preselectedDate: selectedRow.date,
                         suggestedRate: selectedRow.maxMarket,
-                        reason: `Premium position at market high ($${selectedRow.maxMarket})`,
+                        reason: `Premium position at market high (${symbol}${selectedRow.maxMarket})`,
                       },
                     });
                     setShowAdjustModal(false);
@@ -980,7 +982,7 @@ const CompetitorRateTable = ({ dateRange: initialDateRange = 14 }) => {
                       <p className="text-[11px] text-neutral-400 mt-0.5">Match highest competitor</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xl font-bold text-neutral-900">${selectedRow.maxMarket}</p>
+                      <p className="text-xl font-bold text-neutral-900">{symbol}{selectedRow.maxMarket}</p>
                       <p className="text-[11px] font-medium text-gold-600">Market high</p>
                     </div>
                   </div>
@@ -1001,6 +1003,7 @@ interface CompetitorCardProps {
 }
 
 export const CompetitorCard = ({ competitor }: CompetitorCardProps) => {
+  const { symbol } = useCurrency();
   return (
     <div className="p-3 sm:p-5 rounded-lg border border-neutral-100 bg-neutral-50/50 hover:bg-white transition-colors">
       <div className="flex items-start justify-between mb-3 sm:mb-4">
@@ -1029,15 +1032,15 @@ export const CompetitorCard = ({ competitor }: CompetitorCardProps) => {
       <div className="space-y-1.5 sm:space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-[10px] sm:text-[11px] font-medium text-neutral-500">Today's Rate</span>
-          <span className="text-lg sm:text-xl font-bold text-neutral-900">${competitor.todayRate}</span>
+          <span className="text-lg sm:text-xl font-bold text-neutral-900">{symbol}{competitor.todayRate}</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-[10px] sm:text-[11px] font-medium text-neutral-500">7-Day Avg</span>
-          <span className="text-xs sm:text-[13px] font-semibold text-neutral-700">${competitor.avgRate7Day}</span>
+          <span className="text-xs sm:text-[13px] font-semibold text-neutral-700">{symbol}{competitor.avgRate7Day}</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-[10px] sm:text-[11px] font-medium text-neutral-500">30-Day Avg</span>
-          <span className="text-xs sm:text-[13px] font-semibold text-neutral-700">${competitor.avgRate30Day}</span>
+          <span className="text-xs sm:text-[13px] font-semibold text-neutral-700">{symbol}{competitor.avgRate30Day}</span>
         </div>
       </div>
 

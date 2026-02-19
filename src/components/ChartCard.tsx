@@ -1,6 +1,8 @@
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { useCurrency } from '@/hooks/useCurrency';
 
 const ChartCard = ({ title, subtitle, data, type = 'line' }) => {
+  const { symbol } = useCurrency();
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
@@ -17,7 +19,7 @@ const ChartCard = ({ title, subtitle, data, type = 'line' }) => {
               </span>
               <span className="text-xs font-semibold text-neutral-900">
                 {entry.name === 'revenue'
-                  ? `$${entry.value.toLocaleString()}`
+                  ? `${symbol}${entry.value.toLocaleString()}`
                   : entry.name === 'occupancy'
                   ? `${entry.value}%`
                   : entry.value}

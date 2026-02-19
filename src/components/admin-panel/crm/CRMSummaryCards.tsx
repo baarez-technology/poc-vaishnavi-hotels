@@ -1,6 +1,8 @@
 import { Users, UserCheck, DollarSign, Repeat } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function CRMSummaryCards({ summary }) {
+  const { symbol } = useCurrency();
   const cards = [
     {
       title: 'Total Guests',
@@ -24,7 +26,7 @@ export default function CRMSummaryCards({ summary }) {
     },
     {
       title: 'Average LTV',
-      value: `$${summary.averageLTV.toLocaleString()}`,
+      value: `${symbol}${summary.averageLTV.toLocaleString()}`,
       change: summary.averageLTVChange,
       trend: summary.averageLTVTrend,
       icon: DollarSign,

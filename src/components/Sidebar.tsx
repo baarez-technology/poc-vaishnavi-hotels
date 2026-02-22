@@ -45,7 +45,7 @@ import { useSettingsContext } from '../contexts/SettingsContext';
 import { useAuth } from '../hooks';
 import { getModuleForRoute, canViewModule, DEFAULT_PERMISSIONS, resolveRolePermissions } from '../config/rolePermissions';
 import type { PermissionMap, StaffRole } from '../config/rolePermissions';
-import GlimmoraLogo from '../assets/G white logo.svg';
+import GlimmoraLogo from '../assets/G white logo.png';
 
 /**
  * Glimmora Design System v5.0 - Modern Sidebar
@@ -239,12 +239,18 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly,
         <div className="h-16 flex items-center justify-between px-5 border-b border-neutral-100">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 flex-shrink-0">
-              <div className="w-full h-full rounded-xl flex items-center justify-center p-1.5 bg-gradient-to-br from-terra-500 to-terra-600">
-                <img src={GlimmoraLogo} alt="Glimmora" className="w-full h-full object-contain" />
-              </div>
+              {customLogo ? (
+                <div className="w-full h-full rounded-xl flex items-center justify-center overflow-hidden bg-white border border-neutral-200">
+                  <img src={customLogo} alt={hotelName} className="w-full h-full object-contain" />
+                </div>
+              ) : (
+                <div className="w-full h-full rounded-xl flex items-center justify-center p-1.5 bg-gradient-to-br from-terra-500 to-terra-600">
+                  <img src={GlimmoraLogo} alt="Glimmora" className="w-full h-full object-contain" />
+                </div>
+              )}
             </div>
             <div>
-              <h1 className="text-sm font-semibold text-neutral-800">Glimmora</h1>
+              <h1 className="text-sm font-semibold text-neutral-800">{hotelName}</h1>
               <p className="text-[10px] text-neutral-400">Hotel Management</p>
             </div>
           </div>

@@ -162,20 +162,35 @@ export const DEFAULT_PERMISSIONS: Record<StaffRole, PermissionMap> = {
 // ── Sidebar route → module mapping ───────────────────────────────────────────
 
 export const ROUTE_MODULE_MAP: Record<string, PermissionModule> = {
-  '/admin':                'dashboard',
-  '/admin/bookings':       'bookings',
-  '/admin/guests':         'guests',
-  '/admin/rooms':          'rooms',
-  '/admin/staff':          'staff',
-  '/admin/housekeeping':   'housekeeping',
-  '/admin/maintenance':    'maintenance',
-  '/admin/revenue':        'revenueAI',
-  '/admin/ai/reputation':  'reputationAI',
-  '/admin/ai/crm':         'crmAI',
+  '/admin':                  'dashboard',
+  '/admin/dashboard':        'dashboard',
+  '/admin/bookings':         'bookings',
+  '/admin/guests':           'guests',
+  '/admin/rooms':            'rooms',
+  '/admin/staff':            'staff',
+  '/admin/housekeeping':     'housekeeping',
+  '/admin/maintenance':      'maintenance',
+  '/admin/runner':           'maintenance',
+  // CMS — availability & rate management
+  '/admin/cms':              'revenueAI',
+  // Channel Manager — distribution management
+  '/admin/channel-manager':  'revenueAI',
+  // Revenue management
+  '/admin/revenue':          'revenueAI',
+  '/admin/rms':              'revenueAI',
+  // AI tools
+  '/admin/ai/reputation':    'reputationAI',
+  '/admin/ai/crm':           'crmAI',
   '/admin/ai/crm-dashboard': 'crmAI',
-  '/admin/reports':        'reports',
-  '/admin/settings':       'settings',
-  '/admin/runner':         'maintenance', // runner maps to maintenance module
+  '/admin/ai/ab-testing':    'crmAI',
+  '/admin/ai/ota-conversion':'crmAI',
+  '/admin/ai/member-tiers':  'crmAI',
+  '/admin/ai/ai-segments':   'crmAI',
+  '/admin/ai/recovery':      'crmAI',
+  // Reports & Settings
+  '/admin/reports':          'reports',
+  '/admin/analytics':        'reports',
+  '/admin/settings':         'settings',
 };
 
 // ── Utility functions ────────────────────────────────────────────────────────
@@ -208,15 +223,47 @@ export function isOverridden(
   return DEFAULT_PERMISSIONS[role][module][permission] !== currentValue;
 }
 
-/** Get the module for a given route path */
+/**
+ * Resolve permissions for a role, checking Settings customizations first.
+ * Priority: user.permissions > localStorage glimmora_roles > DEFAULT_PERMISSIONS
+ */
+export function resolveRolePermissions(role: StaffRole): PermissionMap {
+  try {
+    const stored = localStorage.getItem('glimmora_roles');
+    if (stored) {
+      const roles = JSON.parse(stored) as { id: string; permissions?: PermissionMap }[];
+      const match = roles.find(r => r.id === role);
+      if (match?.permissions) {
+        // Merge with defaults to ensure all 13 modules exist
+        const merged = { ...DEFAULT_PERMISSIONS[role] };
+        for (const mod of PERMISSION_MODULES) {
+          if (match.permissions[mod.id]) {
+            merged[mod.id] = match.permissions[mod.id];
+          }
+        }
+        return merged;
+      }
+    }
+  } catch {
+    // localStorage parse error — fall through to defaults
+  }
+  return DEFAULT_PERMISSIONS[role];
+}
+
+/** Get the module for a given route path (longest/most-specific prefix wins) */
 export function getModuleForRoute(path: string): PermissionModule | null {
   // Exact match first
   if (ROUTE_MODULE_MAP[path]) return ROUTE_MODULE_MAP[path];
-  // Prefix match for nested routes
+  // Prefix match — find the longest matching route for specificity
+  let bestMatch: PermissionModule | null = null;
+  let bestLen = 0;
   for (const [route, mod] of Object.entries(ROUTE_MODULE_MAP)) {
-    if (path.startsWith(route + '/')) return mod;
+    if (path.startsWith(route + '/') && route.length > bestLen) {
+      bestMatch = mod;
+      bestLen = route.length;
+    }
   }
-  return null;
+  return bestMatch;
 }
 
 /** Check if user has view access to a given module */

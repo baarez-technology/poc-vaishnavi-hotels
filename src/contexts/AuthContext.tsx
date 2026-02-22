@@ -38,6 +38,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           // Validate token by fetching current user
           const currentUser = await authService.getCurrentUser();
+
+          // DEV: allow role override for RBAC testing
+          // Set localStorage key "glimmora_dev_role" to test, e.g. "receptionist"
+          if (import.meta.env.DEV) {
+            const devRole = localStorage.getItem('glimmora_dev_role');
+            if (devRole) {
+              currentUser.role = devRole;
+              currentUser.isSuperuser = false;
+              console.log(`[DEV] RBAC override: role="${devRole}"`);
+            }
+          }
+
           setUser(currentUser);
           // Store user in localStorage for quick access
           localStorage.setItem('glimmora_user', JSON.stringify(currentUser));

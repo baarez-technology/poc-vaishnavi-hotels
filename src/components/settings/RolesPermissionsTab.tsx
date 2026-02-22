@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Check, ChevronDown, ChevronUp, Shield, Users, RotateCcw, Minus, AlertTriangle } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { Check, ChevronDown, ChevronUp, Shield, Users, RotateCcw, Minus, AlertTriangle, Save, Info } from 'lucide-react';
 import { Button } from '../ui2/Button';
 import {
   STAFF_ROLES,
@@ -34,7 +34,9 @@ export default function RolesPermissionsTab() {
   const [roles, setRoles] = useState<StoredRole[]>([]);
   const [expandedRole, setExpandedRole] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [changeCount, setChangeCount] = useState(0);
   const [pushConfirm, setPushConfirm] = useState<string | null>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -79,8 +81,10 @@ export default function RolesPermissionsTab() {
   const saveRoles = (newRoles: StoredRole[]) => {
     setRoles(newRoles);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newRoles));
+    setChangeCount(c => c + 1);
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    savedTimerRef.current = setTimeout(() => setSaved(false), 3000);
   };
 
   const togglePermission = (roleId: string, module: PermissionModule, permission: keyof ModulePermission) => {
@@ -157,13 +161,29 @@ export default function RolesPermissionsTab() {
             Configure access levels for each of the {STAFF_ROLES.length} staff roles across {PERMISSION_MODULES.length} modules
           </p>
         </div>
-        {saved && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg self-start border border-emerald-200">
-            <Check className="w-3.5 h-3.5" />
-            <span className="text-xs font-medium">Saved</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2 self-start">
+          {saved ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-200 animate-in fade-in">
+              <Check className="w-3.5 h-3.5" />
+              <span className="text-xs font-medium">Changes saved</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#FAF8F6] text-neutral-500 rounded-lg border border-neutral-200">
+              <Save className="w-3.5 h-3.5" />
+              <span className="text-xs font-medium">Auto-save enabled</span>
+            </div>
+          )}
+        </div>
       </header>
+
+      {/* Info Banner */}
+      <div className="flex items-start gap-3 px-4 py-3 bg-blue-50/60 border border-blue-100 rounded-xl">
+        <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+        <p className="text-xs text-blue-700 leading-relaxed">
+          Permission changes are <strong>saved automatically</strong> and take effect immediately.
+          Toggle any checkbox to grant or revoke access — the sidebar and page access will update on the next page load for users with that role.
+        </p>
+      </div>
 
       {/* Roles List */}
       <div className="space-y-3">

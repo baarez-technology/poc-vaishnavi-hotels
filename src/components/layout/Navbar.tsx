@@ -67,11 +67,13 @@ export const Navbar = () => {
             }`}
           >
             {hotelInfo.logo ? (
-              <img src={hotelInfo.logo} alt={hotelInfo.name} className="h-7 w-auto" />
+              <img src={hotelInfo.logo} alt={hotelInfo.name} className="h-8 w-auto max-w-[180px] object-contain" />
             ) : (
-              <Hotel size={28} />
+              <>
+                <Hotel size={28} />
+                <span className="text-xl font-serif font-bold">{hotelInfo.name}</span>
+              </>
             )}
-            <span className="text-xl font-serif font-bold">{hotelInfo.name}</span>
           </Link>
 
           {/* Desktop Navigation */}

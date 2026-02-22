@@ -7,8 +7,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { loadGeneralSettings, saveGeneralSettings, loadBilling, saveBilling } from '../utils/settingsStorage';
 
 const defaultGeneralSettings = {
-  hotelName: 'Glimmora Hotel & Suites',
-  tagline: 'Your Luxury Escape',
+  hotelName: 'Glimmora',
+  tagline: 'Grounded in Luxury',
   currency: 'USD',
   timezone: 'America/New_York',
   dateFormat: 'MM/DD/YYYY',

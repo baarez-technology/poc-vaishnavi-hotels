@@ -111,13 +111,10 @@ const RevenueSnapshotReport = lazyWithRetry(() => import('./pages/admin/RevenueS
 const GuestExperienceReport = lazyWithRetry(() => import('./pages/admin/GuestExperienceReport'));
 const AdvancedAnalytics = lazyWithRetry(() => import('./pages/admin/AdvancedAnalytics'));
 const Profile = lazyWithRetry(() => import('./pages/admin/Profile'));
+const AccessDenied = lazyWithRetry(() => import('./pages/admin/AccessDenied'));
 
 
-// CMS Pages
-// const CMSAvailability = lazy(() => import('./pages/admin/cms/Availability'));
-// const CMSBookings = lazy(() => import('./pages/admin/cms/Bookings'));
-// const CMSRatePlans = lazy(() => import('./pages/admin/cbs/RatePlans'));
-// const CMSPromotions = lazy(() => import('./pages/admin/cbs/Promotions'));
+
 
 
 //Modified CMS pages as its in UI codebase
@@ -180,6 +177,7 @@ function App() {
                       <Toaster position="top-right" />
                       <AriaChatWidgetWrapper />
                       <CBSProvider>
+                        <SettingsProvider>
                         <Routes>
                           {/* Public routes with navbar/footer */}
                           <Route element={<PublicLayout />}>
@@ -290,7 +288,6 @@ function App() {
                               <ProtectedRoute>
                                 <ToastProvider>
                                   <SSEProvider>
-                                    <SettingsProvider>
                                       <AdminProvider>
                                         <ChannelManagerProvider>
                                           <AIInsightsProvider>
@@ -305,6 +302,7 @@ function App() {
                                               }>
                                                 <Routes>
                                                   <Route element={<AdminLayout />}>
+                                                    <Route path="access-denied" element={<AccessDenied />} />
                                                     <Route index element={<Dashboard />} />
                                                     <Route path="dashboard" element={<Dashboard />} />
                                                     <Route path="bookings" element={<Bookings />} />
@@ -373,7 +371,6 @@ function App() {
                                           </AIInsightsProvider>
                                         </ChannelManagerProvider>
                                       </AdminProvider>
-                                    </SettingsProvider>
                                   </SSEProvider>
                                 </ToastProvider>
                               </ProtectedRoute>
@@ -456,6 +453,7 @@ function App() {
                           {/* 404 */}
                           <Route path="*" element={<NotFound />} />
                         </Routes>
+                        </SettingsProvider>
                       </CBSProvider>
                     </GuestAIProvider>
                   </BookingProvider>

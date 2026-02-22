@@ -1,28 +1,35 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, User, Mail, Phone, Briefcase, Calendar, MapPin, Hash, Lock, Eye, EyeOff, DollarSign } from 'lucide-react';
+import { X, User, Mail, Phone, Briefcase, Calendar, Hash, DollarSign, Shield, Check, Minus, AlertTriangle, ChevronDown } from 'lucide-react';
 import { Button } from '../../../ui2/Button';
+import { useCurrency } from '@/hooks/useCurrency';
+import {
+  STAFF_ROLES,
+  PERMISSION_MODULES,
+  DEFAULT_PERMISSIONS,
+  getDefaultPermissions,
+  isOverridden
+} from '@/config/rolePermissions';
+import type { StaffRole, PermissionModule, ModulePermission, PermissionMap } from '@/config/rolePermissions';
 
 export default function AddStaffModal({ isOpen, onClose, onAdd }) {
+  const { symbol } = useCurrency();
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
-    role: 'housekeeping',
-    department: 'housekeeping',
+    role: 'admin',
+    department: 'management',
     joinDate: new Date().toISOString().split('T')[0],
-    floorAssignment: [],
     status: 'active',
     employeeId: '',
-    password: '',
-    confirmPassword: '',
     shift: 'morning',
     hourlyRate: 15
   });
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordError, setPasswordError] = useState('');
+  const [permissions, setPermissions] = useState<PermissionMap>(getDefaultPermissions('admin'));
+  const [permissionsExpanded, setPermissionsExpanded] = useState(true);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -53,20 +60,16 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
       name: '',
       email: '',
       phone: '',
-      role: 'housekeeping',
-      department: 'housekeeping',
+      role: 'admin',
+      department: 'management',
       joinDate: new Date().toISOString().split('T')[0],
-      floorAssignment: [],
       status: 'active',
       employeeId: '',
-      password: '',
-      confirmPassword: '',
       shift: 'morning',
       hourlyRate: 15
     });
-    setPasswordError('');
-    setShowPassword(false);
-    setShowConfirmPassword(false);
+    setPermissions(getDefaultPermissions('admin'));
+    setPermissionsExpanded(true);
 
     document.addEventListener('keydown', handleEsc);
 
@@ -100,120 +103,46 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
     }));
   };
 
-  const handleFloorToggle = (floor) => {
+  const handleRoleChange = (e) => {
+    const role = e.target.value as StaffRole;
+    const roleMeta = STAFF_ROLES.find(r => r.value === role);
     setFormData(prev => ({
       ...prev,
-      floorAssignment: prev.floorAssignment.includes(floor)
-        ? prev.floorAssignment.filter(f => f !== floor)
-        : [...prev.floorAssignment, floor]
+      role,
+      department: roleMeta?.department || 'general'
+    }));
+    setPermissions(getDefaultPermissions(role));
+  };
+
+  const togglePermission = (module: PermissionModule, action: keyof ModulePermission) => {
+    setPermissions(prev => ({
+      ...prev,
+      [module]: {
+        ...prev[module],
+        [action]: !prev[module][action]
+      }
     }));
   };
 
-  const handleRoleChange = (e) => {
-    const role = e.target.value;
-    // Auto-set department based on role
-    const roleToDepMap = {
-      'housekeeping': 'housekeeping',
-      'housekeeper': 'housekeeping',
-      'room_attendant': 'housekeeping',
-      'laundry_attendant': 'housekeeping',
-      'maintenance': 'maintenance',
-      'technician': 'maintenance',
-      'electrician': 'maintenance',
-      'plumber': 'maintenance',
-      'hvac_technician': 'maintenance',
-      'runner': 'runner',
-      'bellhop': 'runner',
-      'valet': 'runner',
-      'front_desk': 'frontdesk',
-      'receptionist': 'frontdesk',
-      'concierge': 'frontdesk',
-      'night_auditor': 'frontdesk',
-      'manager': 'management',
-      'supervisor': 'management',
-      'general_manager': 'management',
-      'admin': 'management'
-    };
-    setFormData(prev => ({
-      ...prev,
-      role: role,
-      department: roleToDepMap[role] || 'general'
-    }));
-  };
+  const hasOverrides = useMemo(() => {
+    const defaults = DEFAULT_PERMISSIONS[formData.role as StaffRole];
+    if (!defaults) return false;
+    return PERMISSION_MODULES.some(mod =>
+      (['view', 'edit', 'delete'] as const).some(action =>
+        permissions[mod.id][action] !== defaults[mod.id][action]
+      )
+    );
+  }, [formData.role, permissions]);
 
   const handleSubmit = () => {
     if (!formData.name || !formData.email || !formData.phone) {
       alert('Please fill in all required fields');
       return;
     }
-
-    if (!formData.password) {
-      alert('Password is required');
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      setPasswordError('Password must be at least 8 characters');
-      return;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      setPasswordError('Passwords do not match');
-      return;
-    }
-
-    setPasswordError('');
-    onAdd(formData);
+    // Include permissions in the form data
+    onAdd({ ...formData, permissions });
     onClose();
   };
-
-  // Comprehensive role options grouped by department
-  const roleGroups = [
-    {
-      label: 'Housekeeping',
-      roles: [
-        { value: 'housekeeping', label: 'Housekeeper' },
-        { value: 'room_attendant', label: 'Room Attendant' },
-        { value: 'laundry_attendant', label: 'Laundry Attendant' },
-      ]
-    },
-    {
-      label: 'Maintenance',
-      roles: [
-        { value: 'maintenance', label: 'Maintenance Staff' },
-        { value: 'technician', label: 'Technician' },
-        { value: 'electrician', label: 'Electrician' },
-        { value: 'plumber', label: 'Plumber' },
-        { value: 'hvac_technician', label: 'HVAC Technician' },
-      ]
-    },
-    {
-      label: 'Runner / Bellhop',
-      roles: [
-        { value: 'runner', label: 'Runner' },
-        { value: 'bellhop', label: 'Bellhop' },
-        { value: 'valet', label: 'Valet' },
-      ]
-    },
-    {
-      label: 'Front Desk',
-      roles: [
-        { value: 'front_desk', label: 'Front Desk Agent' },
-        { value: 'receptionist', label: 'Receptionist' },
-        { value: 'concierge', label: 'Concierge' },
-        { value: 'night_auditor', label: 'Night Auditor' },
-      ]
-    },
-    {
-      label: 'Management',
-      roles: [
-        { value: 'supervisor', label: 'Supervisor' },
-        { value: 'manager', label: 'Manager' },
-        { value: 'general_manager', label: 'General Manager' },
-        { value: 'admin', label: 'Administrator' },
-      ]
-    }
-  ];
 
   const shifts = [
     { value: 'morning', label: 'Morning (6AM - 2PM)' },
@@ -221,8 +150,6 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
     { value: 'night', label: 'Night (10PM - 6AM)' },
     { value: 'flexible', label: 'Flexible' },
   ];
-
-  const floors = [1, 2, 3, 4, 5, 6];
 
   const modalContent = (
     <>
@@ -300,78 +227,11 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
                   onChange={handleRoleChange}
                   className="w-full px-4 py-2.5 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] transition-all duration-200 cursor-pointer"
                 >
-                  {roleGroups.map(group => (
-                    <optgroup key={group.label} label={group.label}>
-                      {group.roles.map(role => (
-                        <option key={role.value} value={role.value}>{role.label}</option>
-                      ))}
-                    </optgroup>
+                  {STAFF_ROLES.map(role => (
+                    <option key={role.value} value={role.value}>{role.label}</option>
                   ))}
                 </select>
               </div>
-            </div>
-          </div>
-
-          {/* Account Credentials */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-1 h-5 bg-[#5C9BA4] rounded-full"></div>
-              <h3 className="text-base font-semibold text-neutral-900">Account Credentials</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-neutral-700 mb-2">
-                  <Lock className="w-4 h-4 text-[#5C9BA4]" />
-                  Password <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="Min. 8 characters"
-                    className="w-full px-4 py-2.5 pr-10 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#5C9BA4] focus:border-[#5C9BA4] transition-all duration-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-neutral-700 mb-2">
-                  <Lock className="w-4 h-4 text-[#5C9BA4]" />
-                  Confirm Password <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="Confirm password"
-                    className="w-full px-4 py-2.5 pr-10 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#5C9BA4] focus:border-[#5C9BA4] transition-all duration-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              {passwordError && (
-                <div className="col-span-2">
-                  <p className="text-sm text-red-500">{passwordError}</p>
-                </div>
-              )}
             </div>
           </div>
 
@@ -473,7 +333,7 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
               <div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-neutral-700 mb-2">
                   <DollarSign className="w-4 h-4 text-[#CDB261]" />
-                  Hourly Rate ($)
+                  Hourly Rate ({symbol})
                 </label>
                 <input
                   type="number"
@@ -489,32 +349,97 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
             </div>
           </div>
 
-          {/* Floor Assignment */}
+          {/* Access Permissions */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-1 h-5 bg-[#A57865] rounded-full"></div>
-              <MapPin className="w-4 h-4 text-[#A57865]" />
-              <h3 className="text-base font-semibold text-neutral-900">Floor Assignment</h3>
-            </div>
-            <div className="bg-[#FAF8F6] rounded-xl p-4 border border-neutral-100">
-              <p className="text-sm text-neutral-600 mb-3">Select floors this staff member will be assigned to</p>
-              <div className="flex flex-wrap gap-2">
-                {floors.map(floor => (
-                  <button
-                    key={floor}
-                    type="button"
-                    onClick={() => handleFloorToggle(floor)}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 active:scale-95 ${
-                      formData.floorAssignment.includes(floor)
-                        ? 'bg-[#A57865] text-white border-2 border-[#A57865]'
-                        : 'bg-white text-neutral-700 border-2 border-neutral-200 hover:border-[#A57865]/30'
-                    }`}
-                  >
-                    Floor {floor}
-                  </button>
-                ))}
+            <button
+              type="button"
+              onClick={() => setPermissionsExpanded(!permissionsExpanded)}
+              className="w-full flex items-center justify-between gap-2 mb-4"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-5 bg-[#5C9BA4] rounded-full"></div>
+                <Shield className="w-4 h-4 text-[#5C9BA4]" />
+                <h3 className="text-base font-semibold text-neutral-900">Access Permissions</h3>
+                {hasOverrides && (
+                  <span className="px-2 py-0.5 text-[10px] font-medium bg-amber-50 text-amber-700 rounded-full border border-amber-200">
+                    Customised
+                  </span>
+                )}
               </div>
-            </div>
+              <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${permissionsExpanded ? 'rotate-180' : ''}`} />
+            </button>
+
+            {permissionsExpanded && (
+              <div className="bg-[#FAF8F6] rounded-xl border border-neutral-100 overflow-hidden">
+                {/* Info banner */}
+                <div className="px-4 py-2.5 bg-[#5C9BA4]/5 border-b border-[#5C9BA4]/10 flex items-start gap-2">
+                  <AlertTriangle className="w-3.5 h-3.5 text-[#5C9BA4] mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-neutral-600">
+                    Permissions are auto-filled based on the selected role. Customise individual permissions below — overrides are highlighted in <span className="text-amber-600 font-medium">amber</span>.
+                  </p>
+                </div>
+
+                {/* Permissions grid */}
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-neutral-200/60">
+                        <th className="text-left py-2.5 px-4 text-xs font-semibold text-neutral-600">Module</th>
+                        <th className="text-center py-2.5 px-3 text-xs font-semibold text-neutral-600 w-16">View</th>
+                        <th className="text-center py-2.5 px-3 text-xs font-semibold text-neutral-600 w-16">Edit</th>
+                        <th className="text-center py-2.5 px-3 text-xs font-semibold text-neutral-600 w-16">Delete</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {PERMISSION_MODULES.map((mod, idx) => {
+                        const perm = permissions[mod.id];
+                        return (
+                          <tr key={mod.id} className={idx !== PERMISSION_MODULES.length - 1 ? 'border-b border-neutral-100' : ''}>
+                            <td className="py-2.5 px-4">
+                              <span className="text-sm text-neutral-700">{mod.label}</span>
+                            </td>
+                            {(['view', 'edit', 'delete'] as const).map(action => {
+                              const isOn = perm[action];
+                              const overridden = isOverridden(formData.role as StaffRole, mod.id, action, isOn);
+                              return (
+                                <td key={action} className="py-2.5 px-3 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => togglePermission(mod.id, action)}
+                                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 ${
+                                      isOn
+                                        ? overridden
+                                          ? 'bg-amber-100 border-2 border-amber-400 text-amber-600'
+                                          : 'bg-emerald-100 border-2 border-emerald-400 text-emerald-600'
+                                        : overridden
+                                          ? 'bg-amber-50 border-2 border-amber-300 text-amber-400'
+                                          : 'bg-white border-2 border-neutral-200 text-neutral-300 hover:border-neutral-300'
+                                    }`}
+                                  >
+                                    {isOn ? <Check className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
+                                  </button>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Reset button */}
+                <div className="px-4 py-3 border-t border-neutral-200/60 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setPermissions(getDefaultPermissions(formData.role as StaffRole))}
+                    className="text-xs font-medium text-[#5C9BA4] hover:text-[#4E8A93] transition-colors"
+                  >
+                    Reset to Role Defaults
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           </div>
 

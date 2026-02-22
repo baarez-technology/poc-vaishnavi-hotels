@@ -14,6 +14,7 @@ import { ConfirmModal } from '../../../components/ui2/Modal';
 import { Button } from '../../../components/ui2/Button';
 import { MinStayConfigModal } from '../../../components/availability/MinStayConfigModal';
 import { BulkUpdateDrawer } from '../../../components/availability/BulkUpdateDrawer';
+import { StopSellConfigModal } from '../../../components/availability/StopSellConfigModal';
 import { cn } from '../../../lib/utils';
 import { useBookingsSSE } from '../../../hooks/useBookingsSSE';
 import { useChannelManagerSSEEvents } from '../../../hooks/useChannelManagerSSEEvents';
@@ -41,6 +42,7 @@ export default function CBSCalendar() {
   const [isInsightsExpanded, setIsInsightsExpanded] = useState(false);
   const [isMinStayModalOpen, setIsMinStayModalOpen] = useState(false);
   const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
+  const [isStopSellModalOpen, setIsStopSellModalOpen] = useState(false);
 
   const dates = useMemo(() => getCalendarData(30), [getCalendarData]);
 
@@ -185,18 +187,6 @@ export default function CBSCalendar() {
     return weekendDates;
   };
 
-  // Helper: Get all dates for next 30 days
-  const getAllDatesNext30Days = () => {
-    const allDates: string[] = [];
-    const today = new Date();
-    for (let i = 0; i < 30; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() + i);
-      allDates.push(date.toISOString().split('T')[0]);
-    }
-    return allDates;
-  };
-
   // Handler: Close Weekends to Arrival (CTA)
   const handleCloseWeekends = async () => {
     const weekendDates = getWeekendDates();
@@ -237,22 +227,36 @@ export default function CBSCalendar() {
     }
   };
 
-  // Handler: Stop Sell All
-  const handleStopSellAll = async () => {
-    const allDates = getAllDatesNext30Days();
+  // Handler: Stop Sell (selective via modal)
+  const handleStopSell = async ({ startDate, endDate, roomTypes: selectedRoomTypes, action }: {
+    startDate: string;
+    endDate: string;
+    roomTypes: string[];
+    action: 'enable' | 'disable';
+  }) => {
+    // Generate all dates in the range
+    const datesToUpdate: string[] = [];
+    let current = new Date(startDate);
+    const end = new Date(endDate);
+    while (current <= end) {
+      datesToUpdate.push(current.toISOString().split('T')[0]);
+      current.setDate(current.getDate() + 1);
+    }
 
     try {
-      for (const roomType of roomTypes) {
-        for (const date of allDates) {
+      for (const roomType of selectedRoomTypes) {
+        for (const date of datesToUpdate) {
           await cmsAvailability.updateAvailability(date, roomType, {
-            isClosed: true
+            isClosed: action === 'enable'
           });
         }
       }
-      success(`Stop sell applied to all ${roomTypes.length} room types for next 30 days`);
+      const verb = action === 'enable' ? 'applied' : 'removed';
+      success(`Stop sell ${verb} for ${selectedRoomTypes.length} room types across ${datesToUpdate.length} days`);
     } catch (error) {
       console.error('Error applying stop sell:', error);
     }
+    setIsStopSellModalOpen(false);
   };
 
   // Handler: Bulk Update
@@ -426,16 +430,10 @@ export default function CBSCalendar() {
     },
     {
       icon: AlertTriangle,
-      title: 'Stop Sell All',
-      description: 'Block all bookings',
+      title: 'Stop Sell',
+      description: 'Selective date control',
       accent: 'rose',
-      onClick: () => setConfirmDialog({
-        isOpen: true,
-        title: 'Stop Sell All Rooms',
-        message: 'This will prevent ALL new bookings for ALL room types for the next 30 days. This is a drastic action that blocks your entire inventory.',
-        variant: 'danger',
-        onConfirm: handleStopSellAll
-      })
+      onClick: () => setIsStopSellModalOpen(true)
     }
   ];
 
@@ -801,6 +799,15 @@ export default function CBSCalendar() {
         roomTypes={roomTypes}
         availability={availability}
         onApply={handleBulkUpdate}
+      />
+
+      {/* Stop Sell Configuration Modal */}
+      <StopSellConfigModal
+        isOpen={isStopSellModalOpen}
+        onClose={() => setIsStopSellModalOpen(false)}
+        roomTypes={roomTypes}
+        availability={availability}
+        onApply={handleStopSell}
       />
     </div>
   );

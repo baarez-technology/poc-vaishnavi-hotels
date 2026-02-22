@@ -16,6 +16,7 @@ export interface Staff {
   avatar?: string;
   performance_rating?: number;
   clocked_in?: boolean;
+  permissions?: Record<string, { view: boolean; edit: boolean; delete: boolean }>;
 }
 
 export interface StaffFullProfile extends Staff {
@@ -61,10 +62,11 @@ export interface StaffCreate {
   phone?: string;
   role: string;
   department?: string;
-  password: string;
+  password?: string;
   specialty?: string;
   shift?: string;
   hourly_rate?: number;
+  permissions?: Record<string, { view: boolean; edit: boolean; delete: boolean }>;
 }
 
 export interface StaffUpdate {

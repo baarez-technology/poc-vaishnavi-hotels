@@ -1,9 +1,12 @@
 import { useState, useRef } from 'react';
-import { AlertCircle, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { AlertCircle, Upload, X, Image as ImageIcon, Plus, GripVertical } from 'lucide-react';
 import { AMENITIES } from '../../utils/settings';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 import { useCurrency } from '@/hooks/useCurrency';
+
+const MAX_IMAGES = 10;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export default function AddRoomTypeModal({ onClose, onSave }) {
   const { symbol } = useCurrency();
@@ -15,10 +18,10 @@ export default function AddRoomTypeModal({ onClose, onSave }) {
     maxOccupancy: 2,
     amenities: [],
     inclusions: '',
-    image: null
+    images: [] as File[]
   });
-  const [imagePreview, setImagePreview] = useState(null);
-  const [errors, setErrors] = useState({});
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -35,40 +38,57 @@ export default function AddRoomTypeModal({ onClose, onSave }) {
   };
 
   const handleImageChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setErrors((prev) => ({ ...prev, image: 'Please select an image file' }));
-        return;
-      }
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors((prev) => ({ ...prev, image: 'Image size should be less than 5MB' }));
-        return;
-      }
-      setForm((prev) => ({ ...prev, image: file }));
-      setErrors((prev) => ({ ...prev, image: '' }));
+    const files: File[] = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-      // Create preview
+    const remaining = MAX_IMAGES - form.images.length;
+    if (remaining <= 0) {
+      setErrors((prev) => ({ ...prev, images: `Maximum ${MAX_IMAGES} images allowed` }));
+      return;
+    }
+
+    const filesToAdd = files.slice(0, remaining);
+    const invalidType = filesToAdd.find(f => !f.type.startsWith('image/'));
+    if (invalidType) {
+      setErrors((prev) => ({ ...prev, images: `"${invalidType.name}" is not an image file` }));
+      return;
+    }
+
+    const tooLarge = filesToAdd.find(f => f.size > MAX_FILE_SIZE);
+    if (tooLarge) {
+      setErrors((prev) => ({ ...prev, images: `"${tooLarge.name}" exceeds 5MB limit` }));
+      return;
+    }
+
+    setErrors((prev) => ({ ...prev, images: '' }));
+
+    // Generate previews for new files
+    filesToAdd.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result);
+        setImagePreviews((prev) => [...prev, reader.result as string]);
       };
       reader.readAsDataURL(file);
-    }
-  };
+    });
 
-  const removeImage = () => {
-    setForm((prev) => ({ ...prev, image: null }));
-    setImagePreview(null);
+    setForm((prev) => ({ ...prev, images: [...prev.images, ...filesToAdd] }));
+
+    // Reset input so the same file can be re-selected
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
+  const removeImage = (index: number) => {
+    setForm((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const validate = () => {
-    const newErrors = {};
+    const newErrors: Record<string, string> = {};
     if (!form.name.trim()) newErrors.name = 'Room type name is required';
     if (!form.price || parseFloat(form.price) <= 0) newErrors.price = 'Valid price is required';
     if (!form.maxOccupancy || form.maxOccupancy < 1) newErrors.maxOccupancy = 'Valid occupancy is required';
@@ -92,7 +112,7 @@ export default function AddRoomTypeModal({ onClose, onSave }) {
       maxOccupancy: parseInt(form.maxOccupancy),
       amenities: form.amenities,
       inclusions: inclusionsList,
-      image: form.image
+      images: form.images
     });
   };
 
@@ -156,36 +176,78 @@ export default function AddRoomTypeModal({ onClose, onSave }) {
           />
         </div>
 
-        {/* Room Image */}
+        {/* Room Images - Multiple */}
         <div>
-          <label className={labelClass}>Room Image</label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-[13px] font-medium text-neutral-600">
+              Room Images
+            </label>
+            <span className="text-[11px] text-neutral-400">
+              {form.images.length}/{MAX_IMAGES}
+            </span>
+          </div>
+
           <input
             ref={fileInputRef}
             type="file"
             accept="image/*"
+            multiple
             onChange={handleImageChange}
             className="hidden"
           />
 
-          {imagePreview ? (
-            <div className="relative rounded-lg overflow-hidden border border-neutral-200 bg-neutral-50">
-              <img
-                src={imagePreview}
-                alt="Room preview"
-                className="w-full h-40 object-cover"
-              />
-              <button
-                type="button"
-                onClick={removeImage}
-                className="absolute top-2 right-2 p-1.5 rounded-full bg-neutral-900/70 hover:bg-neutral-900/90 text-white transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-              <div className="absolute bottom-0 left-0 right-0 px-3 py-2 bg-gradient-to-t from-neutral-900/70 to-transparent">
-                <p className="text-xs text-white truncate">{form.image?.name}</p>
-              </div>
+          {/* Image Grid */}
+          {imagePreviews.length > 0 && (
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              {imagePreviews.map((preview, index) => (
+                <div
+                  key={index}
+                  className="relative group rounded-lg overflow-hidden border border-neutral-200 bg-neutral-50 aspect-[4/3]"
+                >
+                  <img
+                    src={preview}
+                    alt={`Room image ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                  {/* First image badge */}
+                  {index === 0 && (
+                    <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 text-[9px] font-semibold bg-terra-500 text-white rounded">
+                      Cover
+                    </span>
+                  )}
+                  {/* Remove button */}
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute top-1.5 right-1.5 p-1 rounded-full bg-neutral-900/70 hover:bg-neutral-900/90 text-white transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                  {/* File name overlay */}
+                  <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-gradient-to-t from-neutral-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                    <p className="text-[9px] text-white truncate">{form.images[index]?.name}</p>
+                  </div>
+                </div>
+              ))}
+
+              {/* Add more button (inside grid) */}
+              {form.images.length < MAX_IMAGES && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="rounded-lg border-2 border-dashed border-neutral-200 hover:border-terra-300 bg-neutral-50 hover:bg-terra-50/30 transition-colors flex flex-col items-center justify-center gap-1 aspect-[4/3] group"
+                >
+                  <Plus className="w-5 h-5 text-neutral-400 group-hover:text-terra-500 transition-colors" />
+                  <span className="text-[10px] font-medium text-neutral-400 group-hover:text-terra-500 transition-colors">
+                    Add More
+                  </span>
+                </button>
+              )}
             </div>
-          ) : (
+          )}
+
+          {/* Empty state upload zone */}
+          {imagePreviews.length === 0 && (
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
@@ -196,19 +258,19 @@ export default function AddRoomTypeModal({ onClose, onSave }) {
               </div>
               <div className="text-center">
                 <p className="text-sm font-medium text-neutral-700 group-hover:text-terra-600 transition-colors">
-                  Click to upload image
+                  Click to upload images
                 </p>
                 <p className="text-xs text-neutral-400 mt-0.5">
-                  PNG, JPG up to 5MB
+                  PNG, JPG up to 5MB each &middot; Max {MAX_IMAGES} images
                 </p>
               </div>
             </button>
           )}
 
-          {errors.image && (
+          {errors.images && (
             <p className="mt-1.5 text-xs text-rose-500 flex items-center gap-1">
               <AlertCircle className="w-3.5 h-3.5" />
-              {errors.image}
+              {errors.images}
             </p>
           )}
         </div>

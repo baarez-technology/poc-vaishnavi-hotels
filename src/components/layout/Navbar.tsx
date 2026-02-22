@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/hooks';
 import { Button } from '@/components/ui';
-import { APP_NAME, ROUTES } from '@/config/constants';
+import { ROUTES } from '@/config/constants';
+import { useHotelInfo } from '@/hooks/useHotelInfo';
 
 export const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { isAuthenticated, user, logout } = useAuth();
+  const hotelInfo = useHotelInfo();
   const location = useLocation();
 
   // Close mobile menu on route change
@@ -64,8 +66,12 @@ export const Navbar = () => {
                 : 'text-white hover:text-white/80'
             }`}
           >
-            <Hotel size={28} />
-            <span className="text-xl font-serif font-bold">{APP_NAME}</span>
+            {hotelInfo.logo ? (
+              <img src={hotelInfo.logo} alt={hotelInfo.name} className="h-7 w-auto" />
+            ) : (
+              <Hotel size={28} />
+            )}
+            <span className="text-xl font-serif font-bold">{hotelInfo.name}</span>
           </Link>
 
           {/* Desktop Navigation */}

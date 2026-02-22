@@ -121,9 +121,11 @@ export interface ChannelPromotion {
 export interface SyncLog {
   id: string;
   timestamp: string;
+  /** Backend returns date as YYYY-MM-DD */
+  date?: string;
   otaCode: string;
   otaName: string;
-  action: 'rate_update' | 'availability_update' | 'restriction_update' | 
+  action: 'rate_update' | 'availability_update' | 'restriction_update' |
          'promotion_sync' | 'booking_import' | 'connection' | 'bulk_sync';
   status: 'success' | 'error' | 'warning' | 'pending';
   message: string;
@@ -256,6 +258,7 @@ export const channelManagerService = {
 
   /**
    * Trigger manual sync for specific OTA
+   * POST /otas/{id}/sync – returns syncId (number), startedAt (ISO), status "in_progress" (or "pending")
    */
   async syncOTA(id: string, options?: {
     syncType?: 'rates' | 'availability' | 'restrictions' | 'all';
@@ -264,24 +267,40 @@ export const channelManagerService = {
       end: string;
     };
   }): Promise<{
-    syncId: string;
+    syncId: number;
+    startedAt?: string;
     status: 'pending' | 'in_progress';
-    estimatedDuration: number;
+    estimatedDuration?: number;
   }> {
     const response = await apiClient.post(`${BASE_URL}/otas/${id}/sync`, options || {});
-    return response.data?.data || response.data;
+    const data = response.data?.data ?? response.data ?? {};
+    const syncId = typeof data.syncId === 'number' ? data.syncId : Number(data.syncId);
+    return {
+      syncId: Number.isFinite(syncId) ? syncId : 0,
+      startedAt: data.startedAt,
+      status: data.status === 'in_progress' ? 'in_progress' : 'pending',
+      estimatedDuration: data.estimatedDuration,
+    };
   },
 
   /**
    * Trigger sync for all connected OTAs
+   * POST /otas/sync/all – returns syncIds (number[]), status "pending"
    */
   async syncAllOTAs(): Promise<{
-    syncId: string;
-    status: 'pending' | 'in_progress';
-    estimatedDuration: number;
+    syncIds: number[];
+    status: 'pending';
   }> {
     const response = await apiClient.post(`${BASE_URL}/otas/sync/all`);
-    return response.data?.data || response.data;
+    const data = response.data?.data ?? response.data ?? {};
+    const rawIds = data.syncIds ?? [];
+    const syncIds = Array.isArray(rawIds)
+      ? rawIds.map((id: unknown) => (typeof id === 'number' ? id : Number(id))).filter((n: number) => Number.isFinite(n))
+      : [];
+    return {
+      syncIds,
+      status: 'pending',
+    };
   },
 
   // ==================== ROOM MAPPINGS ====================
@@ -738,7 +757,46 @@ export const channelManagerService = {
   // ==================== SYNC LOGS ====================
 
   /**
-   * Get sync logs
+   * Normalize a sync log item so it always has a valid id and timestamp (avoids dummy/placeholder data).
+   */
+  normalizeSyncLogItem(raw: any, index: number): SyncLog {
+    const now = Date.now();
+    const fallbackId = `sync-${now}-${String(index).padStart(3, '0')}`;
+    const fallbackTimestamp = new Date(now).toISOString();
+
+    const validActions: SyncLog['action'][] = ['rate_update', 'availability_update', 'restriction_update', 'promotion_sync', 'booking_import', 'connection', 'bulk_sync'];
+    const validStatuses: SyncLog['status'][] = ['success', 'error', 'warning', 'pending'];
+
+    let id = raw?.id;
+    if (id !== 0 && !id) id = fallbackId;
+    else if (typeof id === 'number') id = String(id);
+    else id = String(id).trim() || fallbackId;
+    if (String(id).toLowerCase() === 'dummy' || String(id) === '0') id = fallbackId;
+
+    let timestamp = raw?.timestamp ?? raw?.startedAt ?? raw?.createdAt;
+    if (!timestamp || (typeof timestamp === 'string' && !timestamp.trim())) timestamp = fallbackTimestamp;
+    else if (typeof timestamp === 'number') timestamp = new Date(timestamp).toISOString();
+    else timestamp = String(timestamp);
+    if (Number.isNaN(new Date(timestamp).getTime())) timestamp = fallbackTimestamp;
+
+    const action = validActions.includes(raw?.action) ? raw.action : 'bulk_sync';
+    const status = validStatuses.includes(raw?.status) ? raw.status : 'pending';
+
+    return {
+      id,
+      timestamp,
+      date: raw?.date,
+      otaCode: raw?.otaCode ?? '',
+      otaName: raw?.otaName ?? '',
+      action,
+      status,
+      message: raw?.message ?? '',
+      details: raw?.details,
+    };
+  },
+
+  /**
+   * Get sync logs (each item normalized with valid id and timestamp)
    */
   async getSyncLogs(filters?: {
     otaCode?: string;
@@ -756,21 +814,28 @@ export const channelManagerService = {
     totalPages: number;
   }> {
     const response = await apiClient.get(`${BASE_URL}/sync-logs`, { params: filters });
-    return response.data?.data || response.data || {
-      items: [],
-      total: 0,
-      page: 1,
-      pageSize: 50,
-      totalPages: 0,
+    // Backend: list in response.data.items, pagination in response.data (camelCase: pageSize)
+    const d = response.data?.data ?? response.data;
+    const rawItems = Array.isArray(d?.items) ? d.items : [];
+    const items = rawItems.map((raw: any, index: number) =>
+      this.normalizeSyncLogItem(raw, index)
+    );
+    return {
+      items,
+      total: d?.total ?? 0,
+      page: d?.page ?? 1,
+      pageSize: d?.pageSize ?? 50,
+      totalPages: d?.totalPages ?? 1,
     };
   },
 
   /**
-   * Get specific sync log
+   * Get specific sync log (normalized with valid id and timestamp)
    */
   async getSyncLog(id: string): Promise<SyncLog> {
     const response = await apiClient.get(`${BASE_URL}/sync-logs/${id}`);
-    return response.data?.data || response.data;
+    const raw = response.data?.data || response.data;
+    return raw ? this.normalizeSyncLogItem(raw, 0) : this.normalizeSyncLogItem({ id, message: '' }, 0);
   },
 
   /**

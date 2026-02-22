@@ -366,6 +366,10 @@ export default function useCMSAvailability() {
         apiUpdate.closed_to_departure = updates.restrictions.CTD;
         hasUpdates = true;
       }
+      if (updates.baseRate !== undefined) {
+        apiUpdate.base_rate = updates.baseRate;
+        hasUpdates = true;
+      }
 
       // Only call API if there are actual updates to persist
       if (hasUpdates) {
@@ -373,7 +377,7 @@ export default function useCMSAvailability() {
         console.log('[useCMSAvailability] Availability updated via API');
       }
 
-      // Handle base rate (price) update separately - this updates the room type's base price
+      // Handle base rate (price) update - also update room type default so config and other dates reflect it
       if (updates.baseRate !== undefined) {
         await updateRoomTypePrice(roomTypeData.id, updates.baseRate);
         console.log('[useCMSAvailability] Room type price updated via API:', roomTypeData.name, updates.baseRate);

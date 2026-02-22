@@ -248,8 +248,14 @@ export function evaluateCondition(condition, context) {
 }
 
 export function evaluateRule(rule, context) {
-  // Check if rule applies to this room type
-  if (!rule.roomTypes.includes('ALL') && !rule.roomTypes.includes(context.roomType)) {
+  // Check if rule applies to this room type (empty/missing roomTypes = apply to ALL)
+  const roomTypes = rule.roomTypes;
+  const appliesToRoom =
+    !Array.isArray(roomTypes) ||
+    roomTypes.length === 0 ||
+    roomTypes.includes('ALL') ||
+    roomTypes.includes(context.roomType);
+  if (!appliesToRoom) {
     return { applies: false, rule };
   }
 

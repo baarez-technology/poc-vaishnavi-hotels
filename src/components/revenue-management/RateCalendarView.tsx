@@ -416,18 +416,16 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
     if (onDateSelect) onDateSelect(dateStr);
   };
 
-  // Update rate via API
+  // Update rate via API (use backend room type id so persisted rate is returned on refetch)
   const handleUpdateRate = async (date: string, newRate: number, reason?: string) => {
     const rateKey = `${selectedRoomType}_${date}`;
     setUpdatingRates(prev => new Set(prev).add(rateKey));
 
     try {
-      // Get room type ID from name
       const roomType = (roomTypes ?? []).find(r => r.id === selectedRoomType);
-      const roomTypeId = roomType?.id ? parseInt(roomType.id, 10) || 1 : 1;
+      const apiRoomTypeId = roomType?.dbId ?? (roomType?.id != null ? parseInt(String(roomType.id), 10) : undefined) ?? 1;
 
-      // Call API
-      await revenueIntelligenceService.updateRate(roomTypeId, date, newRate, reason);
+      await revenueIntelligenceService.updateRate(apiRoomTypeId, date, { rate: newRate, reason });
 
       // Update local state for immediate feedback
       localUpdateRate(selectedRoomType, date, newRate, reason);
@@ -773,7 +771,7 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
                       roomData={roomData}
                       isSelected={selectedDate === dateStr}
                       onSelect={() => handleDateSelect(date)}
-                      onUpdateRate={(newRate, reason) => handleUpdateRate(dateStr, newRate, reason)}
+                      onUpdateRate={(date, newRate) => handleUpdateRate(date, newRate)}
                       onApplyRestriction={(restriction) => applyRestriction(selectedRoomType, dateStr, restriction)}
                       compact={true}
                       isUpdating={isUpdating}
@@ -786,109 +784,6 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {/* Keyboard Help Overlay */}
-      {showKeyboardHelp && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-4" onClick={() => setShowKeyboardHelp(false)}>
-          <div className="bg-white rounded-[10px] shadow-xl max-w-2xl w-full p-4 sm:p-8 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h3 className="text-base sm:text-xl font-semibold text-neutral-900">Keyboard Shortcuts</h3>
-              <button
-                onClick={() => setShowKeyboardHelp(false)}
-                className="p-1.5 sm:p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              {/* Navigation */}
-              <div>
-                <h4 className="text-xs sm:text-sm font-bold text-neutral-500 uppercase tracking-wider mb-2 sm:mb-3">Navigation</h4>
-                <div className="space-y-1.5 sm:space-y-2">
-                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-xs sm:text-sm text-neutral-700">Arrow keys</span>
-                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Arrow Keys</kbd>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-xs sm:text-sm text-neutral-700">Select date</span>
-                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Enter</kbd>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-xs sm:text-sm text-neutral-700">Clear focus</span>
-                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Esc</kbd>
-                  </div>
-                </div>
-              </div>
-
-              {/* Month Controls */}
-              <div>
-                <h4 className="text-xs sm:text-sm font-bold text-neutral-500 uppercase tracking-wider mb-2 sm:mb-3">Month Controls</h4>
-                <div className="space-y-1.5 sm:space-y-2">
-                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-xs sm:text-sm text-neutral-700">Previous month</span>
-                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + Left</kbd>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-xs sm:text-sm text-neutral-700">Next month</span>
-                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + Right</kbd>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-xs sm:text-sm text-neutral-700">Go to today</span>
-                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">T</kbd>
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div>
-                <h4 className="text-xs sm:text-sm font-bold text-neutral-500 uppercase tracking-wider mb-2 sm:mb-3">Actions</h4>
-                <div className="space-y-1.5 sm:space-y-2">
-                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-xs sm:text-sm text-neutral-700">Undo change</span>
-                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + Z</kbd>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-xs sm:text-sm text-neutral-700">Redo change</span>
-                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded"><span className="hidden sm:inline">Ctrl + Shift + Z</span><span className="sm:hidden">Ctrl+⇧+Z</span></kbd>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-xs sm:text-sm text-neutral-700">Recalculate rates</span>
-                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">R</kbd>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-xs sm:text-sm text-neutral-700">Show this help</span>
-                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">?</kbd>
-                  </div>
-                </div>
-              </div>
-
-              {/* Rate Editing */}
-              <div>
-                <h4 className="text-xs sm:text-sm font-bold text-neutral-500 uppercase tracking-wider mb-2 sm:mb-3">Rate Editing</h4>
-                <div className="space-y-1.5 sm:space-y-2">
-                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-xs sm:text-sm text-neutral-700">Save rate</span>
-                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Enter</kbd>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
-                    <span className="text-xs sm:text-sm text-neutral-700">Cancel editing</span>
-                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Esc</kbd>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-neutral-200">
-              <p className="text-xs sm:text-sm text-neutral-500 text-center">
-                Press <kbd className="px-1 sm:px-1.5 py-0.5 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-neutral-100 border border-neutral-300 rounded">Esc</kbd> or click outside to close
-              </p>
-            </div>
           </div>
         </div>
       )}
@@ -992,6 +887,109 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
           })()}
         </div>
       </Modal>
+
+      {/* Keyboard Help Overlay */}
+      {showKeyboardHelp && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-4" onClick={() => setShowKeyboardHelp(false)}>
+          <div className="bg-white rounded-[10px] shadow-xl max-w-2xl w-full p-4 sm:p-8 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className="text-base sm:text-xl font-semibold text-neutral-900">Keyboard Shortcuts</h3>
+              <button
+                onClick={() => setShowKeyboardHelp(false)}
+                className="p-1.5 sm:p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              {/* Navigation */}
+              <div>
+                <h4 className="text-xs sm:text-sm font-bold text-neutral-500 uppercase tracking-wider mb-2 sm:mb-3">Navigation</h4>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Arrow keys</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Arrow Keys</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Select date</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Enter</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Clear focus</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Esc</kbd>
+                  </div>
+                </div>
+              </div>
+
+              {/* Month Controls */}
+              <div>
+                <h4 className="text-xs sm:text-sm font-bold text-neutral-500 uppercase tracking-wider mb-2 sm:mb-3">Month Controls</h4>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Previous month</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + Left</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Next month</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + Right</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Go to today</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">T</kbd>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div>
+                <h4 className="text-xs sm:text-sm font-bold text-neutral-500 uppercase tracking-wider mb-2 sm:mb-3">Actions</h4>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Undo change</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Ctrl + Z</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Redo change</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded"><span className="hidden sm:inline">Ctrl + Shift + Z</span><span className="sm:hidden">Ctrl+⇧+Z</span></kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Recalculate rates</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">R</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Show this help</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">?</kbd>
+                  </div>
+                </div>
+              </div>
+
+              {/* Rate Editing */}
+              <div>
+                <h4 className="text-xs sm:text-sm font-bold text-neutral-500 uppercase tracking-wider mb-2 sm:mb-3">Rate Editing</h4>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Save rate</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Enter</kbd>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 sm:py-2 px-2 sm:px-3 bg-neutral-50 rounded-lg">
+                    <span className="text-xs sm:text-sm text-neutral-700">Cancel editing</span>
+                    <kbd className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-white border border-neutral-300 rounded">Esc</kbd>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-neutral-200">
+              <p className="text-xs sm:text-sm text-neutral-500 text-center">
+                Press <kbd className="px-1 sm:px-1.5 py-0.5 text-[10px] sm:text-xs font-semibold text-neutral-600 bg-neutral-100 border border-neutral-300 rounded">Esc</kbd> or click outside to close
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

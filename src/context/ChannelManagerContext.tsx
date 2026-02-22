@@ -326,8 +326,9 @@ export function ChannelManagerProvider({ children }) {
         return prev; // Skip duplicate log
       }
 
+      // ID and timestamp basis: unique id from timestamp + short random suffix
       const newLog: SyncLog = {
-        id: `log-${now}-${Math.random().toString(36).substr(2, 5)}`,
+        id: `log-${now}-${Math.random().toString(36).slice(2, 7)}`,
         timestamp: new Date(now).toISOString(),
         otaCode,
         otaName,
@@ -904,8 +905,9 @@ export function ChannelManagerProvider({ children }) {
         setOTAs(prev => prev.map(o => o.status === 'connected' ? { ...o, lastSync: syncTimestamp } : o));
         setSyncingOTAs([]);
         setLastGlobalSync(syncTimestamp);
-        success('Sync initiated for all OTAs');
-        // Refresh sync logs to show updated timestamps
+        const count = result.syncIds?.length;
+        success(count != null && count > 0 ? `Started ${count} sync${count === 1 ? '' : 's'}` : 'Sync initiated for all OTAs');
+        // Refetch Sync Logs so new rows (with result.syncIds) and timestamps appear
         await fetchSyncLogs({ pageSize: 50 });
         return result;
       } else {
@@ -919,8 +921,11 @@ export function ChannelManagerProvider({ children }) {
         setOTAs(prev => prev.map(o => o.code === otaCode ? { ...o, lastSync: syncTimestamp } : o));
         setSyncingOTAs([]);
         setLastGlobalSync(syncTimestamp);
-        success(`Sync initiated for ${ota.name}`);
-        // Refresh sync logs to show updated timestamps
+        const startedMsg = result.startedAt
+          ? `Sync started at ${new Date(result.startedAt).toLocaleString()}`
+          : `Sync initiated for ${ota.name}`;
+        success(startedMsg);
+        // Refetch Sync Logs so new row (id === result.syncId) and startedAt appear
         await fetchSyncLogs({ pageSize: 50 });
         return result;
       }

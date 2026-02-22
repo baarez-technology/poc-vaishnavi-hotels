@@ -354,8 +354,8 @@ const RateCalendar = () => {
       return Math.max(0, Math.round(currentRate * (1 + changeNum / 100)));
     };
 
-    // Build updates from context rateCalendar (try both string and number room type keys)
-    let updates = [];
+    // Build updates from context rateCalendar; use room_type_id (dbId) for API
+    let updates: Array<{ roomTypeId: string; room_type_id: number; date: string; rate: number }> = [];
     const calendar = rateCalendar || {};
     const selectedSet = new Set(selectedDates);
     for (const date of selectedDates) {
@@ -364,7 +364,9 @@ const RateCalendar = () => {
       for (const roomTypeId of Object.keys(dayData.rooms)) {
         const room = dayData.rooms[roomTypeId];
         const currentRate = room?.dynamicRate ?? room?.overrideRate ?? room?.rates?.BAR ?? 0;
-        updates.push({ roomTypeId, date, rate: computeNewRate(currentRate) });
+        const dbId = roomTypes.find((r) => r.id === roomTypeId || String(r.dbId) === roomTypeId)?.dbId ?? parseInt(roomTypeId, 10);
+        if (Number.isNaN(dbId)) continue;
+        updates.push({ roomTypeId, room_type_id: dbId, date, rate: computeNewRate(currentRate) });
       }
     }
 
@@ -380,7 +382,9 @@ const RateCalendar = () => {
             if (day.rooms && typeof day.rooms === 'object') {
               for (const [roomTypeId, room] of Object.entries(day.rooms)) {
                 const currentRate = room?.dynamicRate ?? room?.baseRate ?? 0;
-                updates.push({ roomTypeId, date: day.date, rate: computeNewRate(currentRate) });
+                const dbId = typeof (room as any).roomTypeId === 'number' ? (room as any).roomTypeId : parseInt(String(roomTypeId), 10);
+                if (Number.isNaN(dbId)) continue;
+                updates.push({ roomTypeId, room_type_id: dbId, date: day.date, rate: computeNewRate(currentRate) });
               }
             }
           }
@@ -398,15 +402,20 @@ const RateCalendar = () => {
     toast.info(`Applying ${changeType === 'amount' ? '$' + rateChange : rateChange + '%'} change to ${selectedDates.length} dates...`);
     setIsApplyingBulk(true);
     try {
-      await bulkUpdateRates(updates);
-      toast.success(`Successfully updated ${selectedDates.length} date${selectedDates.length !== 1 ? 's' : ''}`);
+      const { updated_count, failed_count } = await bulkUpdateRates(updates);
+      if (failed_count > 0) {
+        toast.warning(`Updated ${updated_count} rates; ${failed_count} failed.`);
+      } else {
+        toast.success(`Successfully updated ${updated_count} rate${updated_count !== 1 ? 's' : ''}`);
+      }
       setShowBulkEditModal(false);
       setBulkEditMode(false);
       setSelectedDates([]);
       setBulkEditData({ rateChange: '', changeType: 'amount' });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Bulk rate update failed:', err);
-      toast.error('Failed to save rate updates. Please try again.');
+      const message = err?.response?.data?.detail ?? err?.message ?? 'Failed to save rate updates. Please try again.';
+      toast.error(typeof message === 'string' ? message : 'Failed to save rate updates. Please try again.');
     } finally {
       setIsApplyingBulk(false);
     }

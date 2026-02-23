@@ -4,10 +4,10 @@
  * Side drawer following CMS pattern
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, Tag, Plus } from 'lucide-react';
+import { State as GeoState } from 'country-state-city';
 import {
-  COUNTRIES,
   GUEST_TAGS,
   GUEST_STATUS_CONFIG,
   EMOTION_CONFIG,
@@ -16,6 +16,8 @@ import {
 } from '../../utils/guests';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
+import { SearchableSelect } from '../ui2/SearchableSelect';
+import { useGeoAddress } from '@/hooks/useGeoAddress';
 
 // Custom Select Component matching CMS pattern
 function CustomSelect({ value, onChange, options, placeholder = 'Select...' }) {
@@ -75,6 +77,8 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
     email: '',
     phone: '',
     country: '',
+    state: '',
+    city: '',
     status: 'Active',
     vipStatus: false,
     emotion: 'neutral',
@@ -84,6 +88,30 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
   const [newTag, setNewTag] = useState('');
   const [showTagDropdown, setShowTagDropdown] = useState(false);
   const [newPreference, setNewPreference] = useState('');
+
+  // Cascading country/state/city dropdowns
+  const { countries, states, cities, hasStates, hasCities, getCountryName, getStateName } = useGeoAddress({
+    countryCode: formData.country,
+    stateCode: formData.state,
+    cityName: formData.city,
+    onStateReset: () => setFormData(prev => ({ ...prev, state: '', city: '' })),
+    onCityReset: () => setFormData(prev => ({ ...prev, city: '' })),
+  });
+
+  const countryOptions = useMemo(
+    () => countries.map((c) => ({ value: c.isoCode, label: c.name })),
+    [countries]
+  );
+
+  const stateOptions = useMemo(
+    () => states.map((s) => ({ value: s.isoCode, label: s.name })),
+    [states]
+  );
+
+  const cityOptions = useMemo(
+    () => cities.map((c) => ({ value: c.name, label: c.name })),
+    [cities]
+  );
 
   // BUG-011 FIX: Map lowercase display status back to GUEST_STATUS_CONFIG keys
   const mapStatusToConfigKey = (status: string) => {
@@ -98,12 +126,32 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
 
   useEffect(() => {
     if (guest) {
+      // Convert country name to ISO code (guest.country may be a name like "India" or already an ISO code like "IN")
+      const guestCountry = guest.country || '';
+      const countryMatch = countries.find(
+        (c) => c.name.toLowerCase() === guestCountry.toLowerCase() || c.isoCode === guestCountry
+      );
+      const countryCode = countryMatch?.isoCode || '';
+
+      // Convert state name to ISO code
+      let stateCode = '';
+      const guestState = guest.state || '';
+      if (countryCode && guestState) {
+        const statesOfCountry = GeoState.getStatesOfCountry(countryCode);
+        const stateMatch = statesOfCountry.find(
+          (s) => s.name.toLowerCase() === guestState.toLowerCase() || s.isoCode === guestState
+        );
+        stateCode = stateMatch?.isoCode || '';
+      }
+
       setFormData({
         firstName: guest.firstName || guest.first_name || '',
         lastName: guest.lastName || guest.last_name || '',
         email: guest.email || '',
         phone: guest.phone || '',
-        country: guest.country || 'United States',
+        country: countryCode,
+        state: stateCode,
+        city: guest.city || '',
         status: mapStatusToConfigKey(guest.status),
         vipStatus: guest.vipStatus || false,
         emotion: guest.emotion || 'neutral',
@@ -111,7 +159,7 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
         preferences: Array.isArray(guest.preferences) ? guest.preferences : [],
       });
     }
-  }, [guest]);
+  }, [guest, countries]);
 
   // Close tag dropdown when clicking outside
   useEffect(() => {
@@ -174,7 +222,9 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
       lastName: formData.lastName,
       email: formData.email,
       phone: formData.phone,
-      country: formData.country,
+      country: formData.country ? getCountryName(formData.country) : '',
+      state: formData.state ? getStateName(formData.country, formData.state) : '',
+      city: formData.city,
       status: formData.status,
       vipStatus: formData.status.toUpperCase() === 'VIP',
       emotion: formData.emotion,
@@ -195,11 +245,6 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
   const isFormValid = formData.firstName.trim() && formData.lastName.trim() && formData.email.trim();
 
   // Options for dropdowns
-  const countryOptions = COUNTRIES.map(country => ({
-    value: country,
-    label: country
-  }));
-
   const statusOptions = Object.keys(GUEST_STATUS_CONFIG).map(status => ({
     value: status,
     label: GUEST_STATUS_CONFIG[status].label
@@ -314,12 +359,67 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
                 <label className="block text-[13px] font-medium text-neutral-700">
                   Country
                 </label>
-                <CustomSelect
+                <SearchableSelect
+                  options={countryOptions}
                   value={formData.country}
                   onChange={(value) => setFormData(prev => ({ ...prev, country: value }))}
-                  options={countryOptions}
-                  placeholder="Select country"
+                  placeholder="Select Country"
+                  searchable
                 />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-[13px] font-medium text-neutral-700">
+                  State
+                </label>
+                {hasStates ? (
+                  <SearchableSelect
+                    options={stateOptions}
+                    value={formData.state}
+                    onChange={(value) => setFormData(prev => ({ ...prev, state: value }))}
+                    placeholder="Select State"
+                    disabled={!formData.country}
+                    searchable
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleChange}
+                    placeholder={formData.country ? 'Enter state or province' : 'Select country first'}
+                    disabled={!formData.country}
+                    className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-[13px] font-medium text-neutral-700">
+                  City
+                </label>
+                {hasCities ? (
+                  <SearchableSelect
+                    options={cityOptions}
+                    value={formData.city}
+                    onChange={(value) => setFormData(prev => ({ ...prev, city: value }))}
+                    placeholder="Select City"
+                    disabled={!formData.state}
+                    searchable
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    placeholder={formData.state || !hasStates ? 'Enter city' : 'Select state first'}
+                    disabled={!formData.country}
+                    className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                )}
               </div>
 
               <div className="space-y-2">

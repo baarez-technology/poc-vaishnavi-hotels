@@ -33,6 +33,7 @@ function transformApiGuest(apiGuest: ApiGuest): any {
     email: apiGuest.email || '',
     phone: apiGuest.phone || '',
     country: apiGuest.country || 'Unknown',
+    state: apiGuest.state || '',
     city: apiGuest.city || '',
     address: apiGuest.address || '',
     postalCode: apiGuest.postal_code || '',
@@ -175,6 +176,7 @@ export function useGuests() {
       if (updates.email) apiUpdates.email = updates.email;
       if (updates.phone) apiUpdates.phone = updates.phone;
       if (updates.country) apiUpdates.country = updates.country;
+      if (updates.state) apiUpdates.state = updates.state;
       if (updates.city) apiUpdates.city = updates.city;
       if (updates.address) apiUpdates.address = updates.address;
       if (updates.postalCode || updates.postal_code) apiUpdates.postal_code = updates.postalCode || updates.postal_code;
@@ -200,8 +202,8 @@ export function useGuests() {
       const updatedGuest = await guestsService.update(String(id), apiUpdates);
       const transformedGuest = transformApiGuest(updatedGuest);
 
-      // Update local state with transformed guest
-      setGuests(prev => prev.map(g => String(g.id) === String(id) ? transformedGuest : g));
+      // Merge with existing guest data to preserve fields the PATCH response may not return
+      setGuests(prev => prev.map(g => String(g.id) === String(id) ? { ...g, ...transformedGuest } : g));
     } catch (err) {
       console.error('Failed to update guest via API:', err);
       throw err; // Propagate error

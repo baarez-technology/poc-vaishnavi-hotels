@@ -580,35 +580,7 @@ export default function NewBookingModal({
                 </div>
               </div>
 
-              {/* Booking Source */}
-              <div>
-                <h3 className="text-xs sm:text-sm font-semibold text-neutral-900 mb-3 sm:mb-4 flex items-center gap-2">
-                  <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-terra-500" />
-                  Booking Source
-                </h3>
-                <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                  {sources.map(source => {
-                    const Icon = source.icon;
-                    const isSelected = formData.source === source.id;
-                    return (
-                      <button
-                        key={source.id}
-                        type="button"
-                        onClick={() => handleChange('source', source.id)}
-                        className={cn(
-                          'flex items-center gap-1.5 sm:gap-2 py-1.5 sm:py-2 px-3 sm:px-4 rounded-full text-xs sm:text-sm font-medium transition-all duration-200',
-                          isSelected
-                            ? 'bg-terra-500 text-white shadow-md shadow-terra-500/25'
-                            : 'bg-white border border-neutral-200 text-neutral-600 hover:border-terra-300 hover:bg-terra-50'
-                        )}
-                      >
-                        <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                        {source.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              {/* Booking Source - Auto-set to Direct for in-hotel bookings */}
 
               {/* Special Requests */}
               <FormField label="Special Requests" description="Optional - any special requirements or preferences">

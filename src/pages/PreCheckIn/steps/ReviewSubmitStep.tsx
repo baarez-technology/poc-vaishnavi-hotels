@@ -36,10 +36,10 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
       return;
     }
 
-    // Check if room was selected
-    const selectedRoomId = (preCheckInData.selectedRoom as any)?.room_id;
-    if (!selectedRoomId) {
-      toast.error('Please select a room before completing pre-check-in.');
+    // Check if room type was selected
+    const selectedRoomSlug = preCheckInData.selectedRoom?.slug;
+    if (!selectedRoomSlug) {
+      toast.error('Please select a room type before completing pre-check-in.');
       return;
     }
 
@@ -88,9 +88,9 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
         } as any);
       }
 
-      // Complete pre-checkin with room selection (this generates digital key and sends email)
+      // Complete pre-checkin with room type selection (hotel assigns actual room later)
       const result = await precheckinService.completePrecheckin(precheckin.id, {
-        selected_room_id: selectedRoomId,
+        room_type_slug: selectedRoomSlug,
         ai_score: preCheckInData.selectedRoom?.aiScore,
         ai_reasoning: preCheckInData.selectedRoom?.aiReasoning,
       });
@@ -106,10 +106,6 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
             activated: data.digital_key.activated,
             qrCode: data.digital_key.qr_code,
           },
-          selectedRoom: {
-            ...preCheckInData.selectedRoom,
-            number: data.room.number,
-          } as any,
         });
 
         toast.success('Pre-check-in completed! Check your email for your digital key.');
@@ -129,12 +125,13 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
   const steps = [
     { number: 1, label: 'Welcome', active: false },
     { number: 2, label: 'Guest Details', active: false },
-    { number: 3, label: 'Room Preferences', active: false },
-    { number: 4, label: 'Verification', active: false },
+    { number: 3, label: 'Room Type', active: false },
+    { number: 4, label: 'Travel Details', active: false },
     { number: 5, label: 'Documents', active: false },
-    { number: 6, label: 'Payment Info', active: false },
-    { number: 7, label: 'Review', active: false },
-    { number: 8, label: 'Confirmation', active: true },
+    { number: 6, label: 'Preferences', active: false },
+    { number: 7, label: 'Special Requests', active: false },
+    { number: 8, label: 'Review', active: true },
+    { number: 9, label: 'Confirmation', active: false },
   ];
 
   const currentStepIndex = steps.findIndex(s => s.active);

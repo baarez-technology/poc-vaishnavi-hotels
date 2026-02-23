@@ -75,6 +75,9 @@ export const RoomsPage = () => {
           console.log('[RoomsPage] Using API data, first room slug:', apiRooms[0]?.slug, 'price:', apiRooms[0]?.price);
           // Use API prices directly (they come from RoomType.base_price in the database)
           setRooms(apiRooms);
+          // Clear stale filter selections that may not exist in API data
+          setSelectedAmenities([]);
+          setSelectedCategories([]);
         } else {
           console.log('[RoomsPage] Falling back to mock data');
           // Fallback to mock data if API returns empty
@@ -125,10 +128,10 @@ export const RoomsPage = () => {
   const allAmenities = useMemo(() => {
     const amenitiesSet = new Set<string>();
     rooms.forEach(room => {
-      room.amenities.forEach(amenity => amenitiesSet.add(amenity));
+      room.amenities?.forEach(amenity => amenitiesSet.add(amenity));
     });
     return Array.from(amenitiesSet).sort();
-  }, []);
+  }, [rooms]);
 
   const categories = ['standard', 'deluxe', 'suite', 'presidential'];
 
@@ -167,19 +170,21 @@ export const RoomsPage = () => {
       // Price range filter
       if (room.price < priceRange[0] || room.price > priceRange[1]) return false;
 
-      // Category filter
-      if (selectedCategories.length > 0 && room.category) {
-        if (!selectedCategories.includes(room.category)) return false;
+      // Category filter (case-insensitive)
+      if (selectedCategories.length > 0) {
+        const roomCategory = (room.category || '').toLowerCase();
+        if (!roomCategory || !selectedCategories.includes(roomCategory)) return false;
       }
 
       // Guest count filter
       const totalGuests = searchData.adults + searchData.children;
       if (room.maxGuests < totalGuests) return false;
 
-      // Amenities filter
+      // Amenities filter (case-insensitive)
       if (selectedAmenities.length > 0) {
+        const roomAmenities = (room.amenities || []).map(a => a.toLowerCase());
         const hasAllAmenities = selectedAmenities.every(amenity =>
-          room.amenities.includes(amenity)
+          roomAmenities.includes(amenity.toLowerCase())
         );
         if (!hasAllAmenities) return false;
       }

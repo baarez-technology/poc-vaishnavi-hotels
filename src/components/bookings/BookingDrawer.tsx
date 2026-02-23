@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X, Crown, Mail, Phone, Bed, Globe,
@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { statusConfig, sourceConfig } from '../../data/bookingsData';
 import { useCurrency } from '@/hooks/useCurrency';
+import { precheckinService, type PreCheckInResponse } from '@/api/services/precheckin.service';
+import { PreCheckInDetails } from '../shared/PreCheckInDetails';
 
 export default function BookingDrawer({
   booking,
@@ -21,6 +23,29 @@ export default function BookingDrawer({
   const [showStatusSuccess, setShowStatusSuccess] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const [precheckinData, setPrecheckinData] = useState<PreCheckInResponse | null>(null);
+  const [precheckinLoading, setPrecheckinLoading] = useState(false);
+
+  // Fetch pre-check-in data when drawer opens
+  useEffect(() => {
+    if (!isOpen || !booking?.id) {
+      setPrecheckinData(null);
+      return;
+    }
+    let cancelled = false;
+    setPrecheckinLoading(true);
+    precheckinService.getByReservation(Number(booking.id))
+      .then((data) => {
+        if (!cancelled) setPrecheckinData(data);
+      })
+      .catch(() => {
+        if (!cancelled) setPrecheckinData(null);
+      })
+      .finally(() => {
+        if (!cancelled) setPrecheckinLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [isOpen, booking?.id]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -318,6 +343,9 @@ export default function BookingDrawer({
                   <p className="text-xs sm:text-[13px] text-gold-900">{booking.specialRequests}</p>
                 </div>
               )}
+
+              {/* Pre Check-In Details */}
+              <PreCheckInDetails data={precheckinData} isLoading={precheckinLoading} />
 
               {/* Upsells */}
               {booking.upsells && booking.upsells.length > 0 && (

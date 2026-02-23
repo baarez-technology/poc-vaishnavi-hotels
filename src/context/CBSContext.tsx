@@ -256,6 +256,7 @@ export function CBSProvider({ children }) {
               ]
             };
           });
+
           setBookings(transformedBookings);
         } else {
           console.log('[CBS] API returned no bookings, using sample data');
@@ -470,6 +471,7 @@ export function CBSProvider({ children }) {
             }]
           };
         });
+
         setBookings(transformedBookings);
       } else {
         console.log('[CBS] Refresh: API returned no bookings, using sample data');

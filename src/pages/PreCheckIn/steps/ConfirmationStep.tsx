@@ -71,7 +71,7 @@ export function ConfirmationStep({ }: ConfirmationStepProps) {
       ctx.font = 'bold 14px Arial';
       ctx.textAlign = 'center';
       const footerY = headerHeight + qrSize + padding;
-      ctx.fillText(`Room: ${typeof preCheckInData?.selectedRoom === 'object' ? preCheckInData?.selectedRoom?.number : preCheckInData?.selectedRoom || 'TBA'}`, totalWidth / 2, footerY + 20);
+      ctx.fillText(`${typeof preCheckInData?.selectedRoom === 'object' ? preCheckInData?.selectedRoom?.name : preCheckInData?.selectedRoom || 'Room assigned at check-in'}`, totalWidth / 2, footerY + 20);
       ctx.font = '12px monospace';
       ctx.fillStyle = '#666666';
       ctx.fillText(`Key ID: ${preCheckInData?.digitalKey?.keyId || 'N/A'}`, totalWidth / 2, footerY + 45);
@@ -159,7 +159,7 @@ export function ConfirmationStep({ }: ConfirmationStepProps) {
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold">Your Digital Key</h2>
-                  <p className="text-[13px] text-white/80">Room {typeof preCheckInData?.selectedRoom === 'object' ? preCheckInData?.selectedRoom?.number : preCheckInData?.selectedRoom || 'TBA'}</p>
+                  <p className="text-[13px] text-white/80">{typeof preCheckInData?.selectedRoom === 'object' ? preCheckInData?.selectedRoom?.name : preCheckInData?.selectedRoom || 'Room assigned at check-in'}</p>
                 </div>
               </div>
               <Sparkles className="w-5 h-5 text-white/60" />
@@ -238,10 +238,10 @@ export function ConfirmationStep({ }: ConfirmationStepProps) {
                     <MapPin className="w-4 h-4 text-terra-600" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-[11px] text-neutral-400 mb-0.5">Room Number</div>
+                    <div className="text-[11px] text-neutral-400 mb-0.5">Room Type</div>
                     <div className="text-[13px] font-medium text-neutral-800">
                       {typeof preCheckInData?.selectedRoom === 'object'
-                        ? preCheckInData?.selectedRoom?.number
+                        ? preCheckInData?.selectedRoom?.name
                         : preCheckInData?.selectedRoom || 'Assigned at check-in'}
                     </div>
                   </div>

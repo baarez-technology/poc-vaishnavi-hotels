@@ -416,17 +416,7 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-[13px] font-medium text-neutral-700">
-                  Booking Source
-                </label>
-                <CustomSelect
-                  value={formData.source}
-                  onChange={(value) => setFormData(prev => ({ ...prev, source: value }))}
-                  options={SOURCE_OPTIONS}
-                  placeholder="Select source"
-                />
-              </div>
+              {/* Booking Source - Auto-set to Direct for in-hotel bookings */}
             </div>
 
             <div className="space-y-2">

@@ -6,6 +6,8 @@ import { statusConfig, sourceConfig, paymentStatusConfig } from '../../data/book
 import { IconButton } from '../ui2/Button';
 import { StatusBadge } from '../ui2/Badge';
 import { useCurrency } from '@/hooks/useCurrency';
+import { PreCheckInBadge } from '../shared/PreCheckInBadge';
+import { usePrecheckinStatus } from '@/hooks/admin/usePrecheckinStatus';
 
 type BookingLike = any;
 type SortConfigLike = { field?: string; direction?: 'asc' | 'desc' } | any;
@@ -30,6 +32,7 @@ export default function BookingsTable({
   onManagePayment?: (booking: BookingLike) => void;
 }) {
   const { formatCurrency } = useCurrency();
+  const { getStatus } = usePrecheckinStatus();
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -151,7 +154,7 @@ export default function BookingsTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[1200px] border-collapse">
+      <table className="w-full min-w-[1320px] border-collapse">
         <colgroup>
           <col style={{ width: '200px' }} />
           <col style={{ width: '150px' }} />
@@ -159,6 +162,8 @@ export default function BookingsTable({
           <col style={{ width: '90px' }} />
           <col style={{ width: '190px' }} />
           <col style={{ width: '130px' }} />
+          <col style={{ width: '110px' }} />
+          <col style={{ width: '120px' }} />
           <col style={{ width: '120px' }} />
           <col style={{ width: '130px' }} />
           <col style={{ width: '120px' }} />
@@ -225,6 +230,9 @@ export default function BookingsTable({
                 Payment <SortIndicator field="paymentStatus" />
               </span>
             </th>
+            <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
+              Pre Check-In
+            </th>
             <th
               onClick={() => onSort('amount')}
               className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest cursor-pointer hover:text-neutral-600 whitespace-nowrap"
@@ -242,7 +250,7 @@ export default function BookingsTable({
         <tbody className="divide-y divide-neutral-100">
           {bookings.length === 0 ? (
             <tr>
-              <td colSpan={10} className="px-4 py-12 text-center">
+              <td colSpan={11} className="px-4 py-12 text-center">
                 <div className="flex flex-col items-center">
                   <div className="w-12 h-12 rounded-lg bg-terra-50 flex items-center justify-center mb-4">
                     <CalendarX className="w-5 h-5 text-terra-500" />
@@ -333,6 +341,11 @@ export default function BookingsTable({
                         </span>
                       );
                     })()}
+                  </td>
+
+                  {/* Pre Check-In */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <PreCheckInBadge status={getStatus(Number(booking.id))} />
                   </td>
 
                   {/* Amount */}

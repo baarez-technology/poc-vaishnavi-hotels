@@ -1,20 +1,20 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { Check, ArrowLeft, Star, Sparkles, Eye, TrendingUp, Bed, Sun, Moon, Trees, Volume2, Loader2 } from 'lucide-react';
+import { Check, ArrowLeft, Sparkles, Bed, Sun, Moon, Trees, Volume2, Loader2, Users, Eye, Maximize } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePreCheckIn } from '@/contexts/PreCheckInContext';
+import { useCurrency } from '@/hooks/useCurrency';
+import type { Room } from '@/api/types/room.types';
 import logo from '@/assets/logo.png';
 
-interface RoomRecommendation {
-  room_id: number;
-  room_number: string;
-  room_type: string;
-  floor: number;
-  view: string;
-  bed_type: string;
-  score: number;
-  reasoning: string[];
-}
+const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&auto=format&fit=crop';
+
+const categoryColors: Record<string, string> = {
+  standard: 'bg-blue-50 text-blue-700 border-blue-200',
+  deluxe: 'bg-purple-50 text-purple-700 border-purple-200',
+  suite: 'bg-amber-50 text-amber-700 border-amber-200',
+  presidential: 'bg-rose-50 text-rose-700 border-rose-200',
+};
 
 interface AIRoomSelectionStepProps {
   onNext: () => void;
@@ -23,13 +23,11 @@ interface AIRoomSelectionStepProps {
 
 export function AIRoomSelectionStep({ onNext, onPrevious }: AIRoomSelectionStepProps) {
   const navigate = useNavigate();
-  const { updatePreCheckInData, getRecommendedRooms } = usePreCheckIn();
-  const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
-  const [selectionMode, setSelectionMode] = useState<'choice' | 'ai' | 'manual' | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [showRecommendations, setShowRecommendations] = useState(false);
+  const { updatePreCheckInData, getRoomTypes, preCheckInData } = usePreCheckIn();
+  const { formatCurrency } = useCurrency();
+  const [selectedRoomSlug, setSelectedRoomSlug] = useState<string | null>(null);
   const [showPreferences, setShowPreferences] = useState(true);
-  const [recommendedRooms, setRecommendedRooms] = useState<RoomRecommendation[]>([]);
+  const [roomTypes, setRoomTypes] = useState<Room[]>([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [roomsError, setRoomsError] = useState<string | null>(null);
 
@@ -46,8 +44,8 @@ export function AIRoomSelectionStep({ onNext, onPrevious }: AIRoomSelectionStepP
   const [bedType, setBedType] = useState<string>('any');
   const [quietnessLevel, setQuietnessLevel] = useState<string>('any');
 
-  const handlePreferencesContinue = () => {
-    // Save preferences to context - using correct field names
+  const handlePreferencesContinue = async () => {
+    // Save preferences to context
     updatePreCheckInData({
       roomPreferences: {
         floor: floorPreference as any,
@@ -57,54 +55,44 @@ export function AIRoomSelectionStep({ onNext, onPrevious }: AIRoomSelectionStepP
       },
     });
     setShowPreferences(false);
+    // Fetch room types
+    await fetchRoomTypes();
   };
 
-  const handleModeSelect = (mode: 'ai' | 'manual') => {
-    setSelectionMode(mode);
-    if (mode === 'ai') {
-      handleAnalyze();
-    } else {
-      setShowRecommendations(true);
-    }
-  };
-
-  const handleAnalyze = async () => {
-    setIsAnalyzing(true);
+  const fetchRoomTypes = async () => {
+    setLoadingRooms(true);
     setRoomsError(null);
     try {
-      // Fetch real room recommendations from API
-      const rooms = await getRecommendedRooms();
-      if (rooms && rooms.length > 0) {
-        setRecommendedRooms(rooms);
+      const types = await getRoomTypes();
+      if (types && types.length > 0) {
+        setRoomTypes(types);
       } else {
-        setRoomsError('No rooms available for your dates');
+        setRoomsError('No room types available for your dates');
       }
     } catch (error) {
-      console.error('Failed to get room recommendations:', error);
-      setRoomsError('Failed to load room recommendations');
+      console.error('Failed to fetch room types:', error);
+      setRoomsError('Failed to load room types');
     } finally {
-      setIsAnalyzing(false);
-      setShowRecommendations(true);
+      setLoadingRooms(false);
     }
   };
 
-  const handleRoomSelect = (roomId: string) => {
-    // Toggle selection - if clicking the same room, deselect it
-    const newSelection = selectedRoom === roomId ? null : roomId;
-    setSelectedRoom(newSelection);
+  const handleRoomTypeSelect = (room: Room) => {
+    const slug = room.slug || room.id;
+    const newSelection = selectedRoomSlug === slug ? null : slug;
+    setSelectedRoomSlug(newSelection);
 
-    // Find the full room data and update context
-    const selectedRoomData = recommendedRooms.find(r => String(r.room_id) === roomId);
-    if (selectedRoomData && newSelection) {
+    if (newSelection) {
       updatePreCheckInData({
         selectedRoom: {
-          room_id: selectedRoomData.room_id,  // Store the actual database room ID
-          number: selectedRoomData.room_number,
-          floor: selectedRoomData.floor,
-          view: selectedRoomData.view || '',
-          aiScore: selectedRoomData.score,
-          aiReasoning: selectedRoomData.reasoning.filter(r => r),
-        } as any,
+          slug: slug,
+          name: room.name,
+          category: room.category || '',
+          price: room.price,
+          image: room.images?.[0],
+          aiScore: 0,
+          aiReasoning: [],
+        },
       });
     } else {
       updatePreCheckInData({ selectedRoom: undefined });
@@ -112,7 +100,7 @@ export function AIRoomSelectionStep({ onNext, onPrevious }: AIRoomSelectionStepP
   };
 
   const handleContinue = () => {
-    if (selectedRoom) {
+    if (selectedRoomSlug) {
       onNext();
     }
   };
@@ -120,12 +108,13 @@ export function AIRoomSelectionStep({ onNext, onPrevious }: AIRoomSelectionStepP
   const steps = [
     { number: 1, label: 'Welcome', active: false },
     { number: 2, label: 'Guest Details', active: false },
-    { number: 3, label: 'Room Preferences', active: true },
-    { number: 4, label: 'Verification', active: false },
+    { number: 3, label: 'Room Type', active: true },
+    { number: 4, label: 'Travel Details', active: false },
     { number: 5, label: 'Documents', active: false },
-    { number: 6, label: 'Payment Info', active: false },
-    { number: 7, label: 'Review', active: false },
-    { number: 8, label: 'Confirmation', active: false },
+    { number: 6, label: 'Preferences', active: false },
+    { number: 7, label: 'Special Requests', active: false },
+    { number: 8, label: 'Review', active: false },
+    { number: 9, label: 'Confirmation', active: false },
   ];
 
   const currentStepIndex = steps.findIndex(s => s.active);
@@ -191,7 +180,7 @@ export function AIRoomSelectionStep({ onNext, onPrevious }: AIRoomSelectionStepP
                   </div>
                   {step.active && (
                     <div className="text-[11px] text-neutral-400">
-                      Choose your room selection method
+                      Select your preferred room type
                     </div>
                   )}
                 </motion.div>
@@ -228,11 +217,11 @@ export function AIRoomSelectionStep({ onNext, onPrevious }: AIRoomSelectionStepP
           <motion.button
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
-            onClick={onPrevious}
+            onClick={showPreferences ? onPrevious : () => { setShowPreferences(true); setSelectedRoomSlug(null); }}
             className="flex items-center gap-2 text-[13px] text-neutral-600 hover:text-neutral-800 transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Previous</span>
+            <span>{showPreferences ? 'Previous' : 'Back to preferences'}</span>
           </motion.button>
 
           {/* Content Card */}
@@ -244,12 +233,12 @@ export function AIRoomSelectionStep({ onNext, onPrevious }: AIRoomSelectionStepP
             {/* Header */}
             <div className="mb-6 lg:mb-8">
               <h1 className="text-lg font-semibold text-neutral-800 mb-2">
-                {showPreferences ? 'Room Preferences' : 'Select Your Room'}
+                {showPreferences ? 'Room Preferences' : 'Select Your Room Type'}
               </h1>
               <p className="text-[13px] text-neutral-500">
                 {showPreferences
                   ? 'Tell us your preferences to find the perfect room'
-                  : 'Choose how you would like to select your room'}
+                  : 'Choose the room type that best suits your stay. The hotel will assign your specific room.'}
               </p>
             </div>
 
@@ -384,89 +373,28 @@ export function AIRoomSelectionStep({ onNext, onPrevious }: AIRoomSelectionStepP
                   Continue
                 </button>
               </div>
-            ) : !selectionMode ? (
-              /* Mode Selection */
-              <div className="space-y-4">
-                {/* AI Selection Option */}
-                <button
-                  onClick={() => handleModeSelect('ai')}
-                  className="w-full p-5 border border-neutral-200 rounded-lg hover:border-terra-500 hover:bg-terra-50 transition-all text-left group"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-11 h-11 bg-gradient-to-br from-terra-500 to-terra-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="w-5 h-5 text-white" strokeWidth={2} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <h3 className="font-semibold text-neutral-800 text-[13px]">
-                          AI Room Recommendation
-                        </h3>
-                        <span className="px-2 py-0.5 bg-terra-500 text-white text-[10px] font-medium rounded">
-                          Recommended
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        Let our AI analyze your preferences and recommend the perfect room for you.
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
-                {/* Manual Selection Option */}
-                <button
-                  onClick={() => handleModeSelect('manual')}
-                  className="w-full p-5 border border-neutral-200 rounded-lg hover:border-neutral-300 hover:bg-neutral-50 transition-all text-left group"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-11 h-11 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-neutral-200 transition-colors">
-                      <Bed className="w-5 h-5 text-neutral-600" strokeWidth={2} />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-neutral-800 text-[13px] mb-1.5">
-                        Browse All Rooms
-                      </h3>
-                      <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        View all available rooms and choose the one that best fits your needs.
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              </div>
-            ) : isAnalyzing ? (
-              /* AI Analyzing State */
+            ) : loadingRooms ? (
+              /* Loading State */
               <div className="py-12 text-center">
                 <div className="w-14 h-14 bg-terra-500 rounded-full flex items-center justify-center mx-auto mb-5">
-                  <TrendingUp className="w-7 h-7 text-white animate-pulse" />
+                  <Loader2 className="w-7 h-7 text-white animate-spin" />
                 </div>
                 <h3 className="text-[15px] font-semibold text-neutral-800 mb-2">
-                  Analyzing Your Preferences
+                  Finding Room Types
                 </h3>
                 <p className="text-[13px] text-neutral-500">
-                  Finding the perfect room match for you...
+                  Loading available room types for your stay...
                 </p>
               </div>
-            ) : showRecommendations ? (
-              /* Room Selection */
+            ) : (
+              /* Room Type Selection */
               <div className="space-y-4">
-                {/* Back to Mode Selection Button */}
-                <button
-                  onClick={() => {
-                    setSelectionMode(null);
-                    setShowRecommendations(false);
-                    setSelectedRoom(null);
-                  }}
-                  className="flex items-center gap-2 text-[13px] text-neutral-600 hover:text-neutral-800 transition-colors mb-4"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Back to selection mode</span>
-                </button>
-
-                {/* Header with Mode Indicator */}
-                {selectionMode === 'ai' && recommendedRooms.length > 0 && (
+                {/* Success Banner */}
+                {roomTypes.length > 0 && (
                   <div className="flex items-center gap-2 mb-4 p-3 bg-sage-50 border border-sage-200 rounded-lg">
                     <Check className="w-4 h-4 text-sage-600" />
                     <span className="text-[13px] font-medium text-sage-800">
-                      Found {recommendedRooms.length} available rooms
+                      {roomTypes.length} room type{roomTypes.length !== 1 ? 's' : ''} available
                     </span>
                   </div>
                 )}
@@ -478,103 +406,121 @@ export function AIRoomSelectionStep({ onNext, onPrevious }: AIRoomSelectionStepP
                   </div>
                 )}
 
-                {/* Loading State */}
-                {loadingRooms && (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-5 h-5 animate-spin text-terra-500" />
-                    <span className="ml-2 text-[13px] text-neutral-600">Loading rooms...</span>
-                  </div>
-                )}
+                {/* Room Type Cards */}
+                {roomTypes.map((room) => {
+                  const slug = room.slug || room.id;
+                  const isSelected = selectedRoomSlug === slug;
+                  const categoryClass = categoryColors[(room.category || 'standard').toLowerCase()] || categoryColors.standard;
+                  const amenities = room.amenities || [];
+                  const displayAmenities = amenities.slice(0, 4);
+                  const extraAmenities = amenities.length - 4;
 
-                {/* Room Cards - Use recommendedRooms from API */}
-                {recommendedRooms.map((room) => {
-                  const isSelected = selectedRoom === String(room.room_id);
                   return (
-                    <button
-                      key={room.room_id}
-                      onClick={() => handleRoomSelect(String(room.room_id))}
-                      className={`w-full p-4 border rounded-lg transition-all text-left ${
+                    <motion.button
+                      key={slug}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      onClick={() => handleRoomTypeSelect(room)}
+                      className={`w-full border rounded-xl transition-all text-left overflow-hidden ${
                         isSelected
-                          ? 'border-terra-500 bg-terra-50'
+                          ? 'border-terra-500 ring-2 ring-terra-500/20'
                           : 'border-neutral-200 hover:border-neutral-300'
                       }`}
                     >
-                      {/* Room Header */}
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-[13px] text-neutral-800">
-                              {room.room_type}
-                            </span>
-                            {selectionMode === 'ai' && room.score >= 70 && (
-                              <span className="px-2 py-0.5 bg-terra-500 text-white text-[10px] font-medium rounded">
-                                {room.score >= 90 ? 'Best Match' : 'Good Match'}
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[11px] text-neutral-500">
-                            Floor {room.floor || 'N/A'} • Room {room.room_number}
-                          </div>
-                        </div>
+                      {/* Room Image */}
+                      <div className="relative h-44 sm:h-52 bg-neutral-100">
+                        <img
+                          src={room.images?.[0] || PLACEHOLDER_IMAGE}
+                          alt={room.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE; }}
+                        />
+                        {/* Category Badge */}
+                        {room.category && (
+                          <span className={`absolute top-3 left-3 px-2.5 py-1 text-[10px] font-semibold rounded-md border capitalize ${categoryClass}`}>
+                            {room.category}
+                          </span>
+                        )}
+                        {/* Selected Indicator */}
                         {isSelected && (
-                          <div className="w-5 h-5 bg-terra-500 rounded-full flex items-center justify-center flex-shrink-0">
-                            <Check className="w-3 h-3 text-white" strokeWidth={2.5} />
+                          <div className="absolute top-3 right-3 w-7 h-7 bg-terra-500 rounded-full flex items-center justify-center shadow-lg">
+                            <Check className="w-4 h-4 text-white" strokeWidth={2.5} />
                           </div>
                         )}
+                        {/* Price Badge */}
+                        <div className="absolute bottom-3 right-3 px-3 py-1.5 bg-white/95 backdrop-blur-sm rounded-lg shadow-sm">
+                          <span className="text-[15px] font-bold text-neutral-900">{formatCurrency(room.price)}</span>
+                          <span className="text-[11px] text-neutral-500 ml-0.5">/night</span>
+                        </div>
                       </div>
 
-                      {/* AI Score - Only show in AI mode */}
-                      {selectionMode === 'ai' && (
-                        <div className="flex items-center gap-2 mb-2">
-                          <Star className="w-3.5 h-3.5 text-gold-500" fill="currentColor" />
-                          <span className="text-[11px] font-semibold text-neutral-800">
-                            {Math.round(room.score)}% Match Score
-                          </span>
-                        </div>
-                      )}
+                      {/* Room Info */}
+                      <div className="p-4 sm:p-5">
+                        {/* Name & Description */}
+                        <h3 className="font-semibold text-[15px] text-neutral-900 mb-1.5">{room.name}</h3>
+                        {room.shortDescription && (
+                          <p className="text-[12px] text-neutral-500 leading-relaxed mb-3 line-clamp-2">
+                            {room.shortDescription}
+                          </p>
+                        )}
 
-                      {/* AI Reasoning - Only show in AI mode */}
-                      {selectionMode === 'ai' && room.reasoning && room.reasoning.filter(r => r).length > 0 && (
-                        <div className="mb-2">
-                          <div className="text-[10px] font-medium text-neutral-600 mb-1">
-                            Why we recommend this:
-                          </div>
-                          <ul className="space-y-0.5">
-                            {room.reasoning.filter(r => r).map((reason, idx) => (
-                              <li key={idx} className="text-[10px] text-neutral-500 flex items-start gap-1.5">
-                                <span className="text-terra-500 mt-0.5">•</span>
-                                <span>{reason}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* Features - Show view and bed type */}
-                      <div className="mt-2">
-                        <div className="flex flex-wrap gap-1.5">
+                        {/* Quick Info Badges */}
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {room.bedType && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-neutral-50 text-neutral-600 text-[11px] font-medium rounded-md">
+                              <Bed className="w-3 h-3" />
+                              {room.bedType}
+                            </span>
+                          )}
                           {room.view && (
-                            <span className="px-2 py-0.5 bg-neutral-100 text-neutral-600 text-[10px] font-medium rounded">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-neutral-50 text-neutral-600 text-[11px] font-medium rounded-md">
+                              <Eye className="w-3 h-3" />
                               {room.view}
                             </span>
                           )}
-                          {room.bed_type && (
-                            <span className="px-2 py-0.5 bg-neutral-100 text-neutral-600 text-[10px] font-medium rounded">
-                              {room.bed_type}
+                          {room.maxGuests && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-neutral-50 text-neutral-600 text-[11px] font-medium rounded-md">
+                              <Users className="w-3 h-3" />
+                              Up to {room.maxGuests} guests
+                            </span>
+                          )}
+                          {room.size && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-neutral-50 text-neutral-600 text-[11px] font-medium rounded-md">
+                              <Maximize className="w-3 h-3" />
+                              {room.size} sq ft
                             </span>
                           )}
                         </div>
+
+                        {/* Amenities */}
+                        {amenities.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {displayAmenities.map((amenity, idx) => (
+                              <span
+                                key={idx}
+                                className="px-2 py-0.5 bg-neutral-100 text-neutral-500 text-[10px] font-medium rounded"
+                              >
+                                {amenity}
+                              </span>
+                            ))}
+                            {extraAmenities > 0 && (
+                              <span className="px-2 py-0.5 bg-terra-50 text-terra-600 text-[10px] font-medium rounded">
+                                +{extraAmenities} more
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    </button>
+                    </motion.button>
                   );
                 })}
 
                 {/* Continue Button */}
                 <button
                   onClick={handleContinue}
-                  disabled={!selectedRoom}
+                  disabled={!selectedRoomSlug}
                   className={`w-full h-10 text-white font-semibold rounded-lg transition-all text-[13px] mt-4 ${
-                    selectedRoom
+                    selectedRoomSlug
                       ? 'bg-terra-500 hover:bg-terra-600 active:scale-[0.98]'
                       : 'bg-neutral-300 cursor-not-allowed'
                   }`}
@@ -582,7 +528,7 @@ export function AIRoomSelectionStep({ onNext, onPrevious }: AIRoomSelectionStepP
                   Next
                 </button>
               </div>
-            ) : null}
+            )}
           </motion.div>
         </div>
       </div>

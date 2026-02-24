@@ -562,6 +562,89 @@ function ChannelDistribution({ data }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// PAYMENT MODE CHART - Donut + legend for payment method breakdown
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const PAYMENT_MODE_COLORS = ['#4E5840', '#A57865', '#5C9BA4', '#CDB261', '#C8B29D'];
+
+function PaymentModeChart({ data, symbol = '$' }) {
+  const total = data.reduce((sum, d) => sum + d.amount, 0);
+
+  return (
+    <div className="flex flex-col items-center gap-4 sm:gap-6">
+      <div className="relative w-32 h-32 sm:w-44 sm:h-44 flex-shrink-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <defs>
+              <filter id="paymentShadow">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.1"/>
+              </filter>
+            </defs>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={35}
+              outerRadius={50}
+              paddingAngle={3}
+              dataKey="amount"
+              strokeWidth={0}
+            >
+              {data.map((entry, index) => (
+                <Cell
+                  key={index}
+                  fill={PAYMENT_MODE_COLORS[index % PAYMENT_MODE_COLORS.length]}
+                  style={{ filter: 'url(#paymentShadow)' }}
+                />
+              ))}
+            </Pie>
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const d = payload[0].payload;
+                  return (
+                    <div className="bg-neutral-900 text-white text-[12px] px-3 py-2 rounded-lg">
+                      <p className="font-medium">{d.name}</p>
+                      <p>{symbol}{d.amount.toLocaleString()} ({d.percent}%)</p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-lg sm:text-[22px] font-semibold text-neutral-900 tracking-tight">
+            {symbol}{total >= 1000 ? `${(total / 1000).toFixed(1)}K` : total.toLocaleString()}
+          </span>
+          <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mt-0.5 sm:mt-1">
+            Total
+          </span>
+        </div>
+      </div>
+
+      <div className="w-full flex flex-col gap-2 sm:gap-3">
+        {data.map((mode, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-neutral-50/50 hover:bg-neutral-50 transition-colors"
+          >
+            <div
+              className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0"
+              style={{ backgroundColor: PAYMENT_MODE_COLORS[i % PAYMENT_MODE_COLORS.length] }}
+            />
+            <span className="text-xs sm:text-[13px] font-medium text-neutral-600 flex-1">{mode.name}</span>
+            <span className="text-xs sm:text-[13px] font-semibold text-neutral-900">{symbol}{mode.amount.toLocaleString()}</span>
+            <span className="text-[10px] sm:text-[11px] text-neutral-400 w-10 text-right">{mode.percent}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // QUICK ACTION - Refined button style
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -787,6 +870,45 @@ export default function Dashboard() {
   const channelMix = dashboardData?.channel_distribution || [
     { name: 'Direct', value: 100 },
   ];
+
+  // Payment mode breakdown from recent bookings
+  const paymentModeData = useMemo(() => {
+    const modeMap: Record<string, number> = {};
+    const normalize = (method: string): string => {
+      const lower = (method || '').toLowerCase().trim();
+      if (lower === 'cash') return 'Cash';
+      if (['card', 'credit_card', 'debit_card', 'credit card', 'debit card'].includes(lower)) return 'Card';
+      if (lower === 'upi') return 'UPI';
+      if (['online', 'bank_transfer', 'bank transfer', 'wallet', 'net_banking', 'net banking'].includes(lower)) return 'Online';
+      return lower ? lower.charAt(0).toUpperCase() + lower.slice(1) : 'Other';
+    };
+
+    for (const booking of recentBookings) {
+      const mode = normalize(booking.paymentMethod || '');
+      modeMap[mode] = (modeMap[mode] || 0) + (booking.totalAmount || 0);
+    }
+
+    const total = Object.values(modeMap).reduce((s, v) => s + v, 0);
+    const entries = Object.entries(modeMap)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, amount]) => ({
+        name,
+        amount: Math.round(amount),
+        percent: total > 0 ? ((amount / total) * 100).toFixed(1) : '0.0',
+      }));
+
+    // If no data, show default categories with 0
+    if (entries.length === 0) {
+      return [
+        { name: 'Cash', amount: 0, percent: '0.0' },
+        { name: 'Card', amount: 0, percent: '0.0' },
+        { name: 'UPI', amount: 0, percent: '0.0' },
+        { name: 'Online', amount: 0, percent: '0.0' },
+      ];
+    }
+
+    return entries;
+  }, [recentBookings]);
 
   // AI Insights - hardcoded for now, will be generated by backend later
   const aiInsights = [
@@ -1157,12 +1279,12 @@ export default function Dashboard() {
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════════ */}
-        {/* OPERATIONS SECTION - 3 × 4 columns = 12 columns */}
+        {/* OPERATIONS ROW 1 — Visual Charts: Channels + Payment Modes + Housekeeping */}
         {/* ═══════════════════════════════════════════════════════════════════ */}
 
         <div className="grid grid-cols-12 gap-4 sm:gap-6 mb-4 sm:mb-6">
-          {/* Channel Distribution - 4 columns on xl+, 6 on lg (iPad Pro with sidebar) */}
-          <div className="col-span-12 lg:col-span-6 xl:col-span-4">
+          {/* Channel Distribution — 4 cols */}
+          <div className="col-span-12 md:col-span-6 xl:col-span-4">
             <LuxurySectionCard
               title="Booking Channels"
               subtitle="Distribution breakdown"
@@ -1172,22 +1294,18 @@ export default function Dashboard() {
             </LuxurySectionCard>
           </div>
 
-          {/* AI Insights - 4 columns on xl+, 6 on lg (iPad Pro with sidebar) */}
-          <div className="col-span-12 lg:col-span-6 xl:col-span-4">
+          {/* Payment Modes — 4 cols */}
+          <div className="col-span-12 md:col-span-6 xl:col-span-4">
             <LuxurySectionCard
-              title="AI Insights"
-              subtitle="Powered by Glimmora Intelligence"
+              title="Payment Modes"
+              subtitle="Revenue by method"
               className="h-full"
             >
-              <div className="space-y-3 max-h-[360px] overflow-y-auto pr-2 -mr-2">
-                {aiInsights.slice(0, 4).map((insight, idx) => (
-                  <InsightCard key={insight.id} insight={insight} index={idx} />
-                ))}
-              </div>
+              <PaymentModeChart data={paymentModeData} symbol={symbol} />
             </LuxurySectionCard>
           </div>
 
-          {/* Housekeeping - 4 columns on xl+, full width on lg (iPad Pro with sidebar) */}
+          {/* Housekeeping — 4 cols */}
           <div className="col-span-12 xl:col-span-4">
             <LuxurySectionCard
               title="Housekeeping Status"
@@ -1201,6 +1319,22 @@ export default function Dashboard() {
               </div>
             </LuxurySectionCard>
           </div>
+        </div>
+
+        {/* OPERATIONS ROW 2 — AI Insights (full width) */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+
+        <div className="mb-4 sm:mb-6">
+          <LuxurySectionCard
+            title="AI Insights"
+            subtitle="Powered by Glimmora Intelligence"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+              {aiInsights.slice(0, 4).map((insight, idx) => (
+                <InsightCard key={insight.id} insight={insight} index={idx} />
+              ))}
+            </div>
+          </LuxurySectionCard>
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════════ */}

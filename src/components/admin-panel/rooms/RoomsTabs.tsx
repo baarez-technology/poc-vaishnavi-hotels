@@ -1,4 +1,4 @@
-import { Home, Check, Users, AlertTriangle, XCircle } from 'lucide-react';
+import { Home, Check, Users, AlertTriangle, XCircle, Ban } from 'lucide-react';
 
 export default function RoomsTabs({ activeTab, onTabChange, counts }) {
   const tabs = [
@@ -6,7 +6,8 @@ export default function RoomsTabs({ activeTab, onTabChange, counts }) {
     { id: 'available', label: 'Available', icon: Check, count: counts.available },
     { id: 'occupied', label: 'Occupied', icon: Users, count: counts.occupied },
     { id: 'dirty', label: 'Dirty', icon: AlertTriangle, count: counts.dirty },
-    { id: 'out_of_service', label: 'Out of Service', icon: XCircle, count: counts.out_of_service }
+    { id: 'out_of_service', label: 'Out of Service', icon: XCircle, count: counts.out_of_service },
+    { id: 'out_of_order', label: 'Out of Order', icon: Ban, count: counts.out_of_order }
   ];
 
   return (

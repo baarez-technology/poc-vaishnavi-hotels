@@ -30,7 +30,8 @@ export default function ChangeStatusModal({ room, isOpen, onClose, onSave }) {
     { value: 'available', label: 'Available', description: 'Room is ready for new guests', dot: 'bg-sage-500', activeBg: 'bg-sage-50', activeBorder: 'border-sage-200' },
     { value: 'occupied', label: 'Occupied', description: 'Room has current guests', dot: 'bg-terra-500', activeBg: 'bg-terra-50', activeBorder: 'border-terra-200' },
     { value: 'dirty', label: 'Dirty', description: 'Room needs cleaning', dot: 'bg-gold-500', activeBg: 'bg-gold-50', activeBorder: 'border-gold-200' },
-    { value: 'out_of_service', label: 'Out of Service', description: 'Room is blocked/unavailable', dot: 'bg-rose-500', activeBg: 'bg-rose-50', activeBorder: 'border-rose-200' }
+    { value: 'out_of_service', label: 'Out of Service', description: 'Minor issues, can be sold in emergency', dot: 'bg-orange-500', activeBg: 'bg-orange-50', activeBorder: 'border-orange-200' },
+    { value: 'out_of_order', label: 'Out of Order', description: 'Major issues (plumbing, electrical), cannot be sold', dot: 'bg-rose-500', activeBg: 'bg-rose-50', activeBorder: 'border-rose-200' }
   ];
 
   return (

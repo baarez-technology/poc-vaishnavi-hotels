@@ -73,7 +73,8 @@ export default function Rooms() {
     available: rawRooms.filter(r => r.status === 'available').length,
     occupied: rawRooms.filter(r => r.status === 'occupied').length,
     dirty: rawRooms.filter(r => r.status === 'dirty').length,
-    out_of_service: rawRooms.filter(r => r.status === 'out_of_service').length
+    out_of_service: rawRooms.filter(r => r.status === 'out_of_service').length,
+    out_of_order: rawRooms.filter(r => r.status === 'out_of_order').length
   };
 
   // Extract unique room types and floors from actual API data

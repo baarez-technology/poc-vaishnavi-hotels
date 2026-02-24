@@ -483,6 +483,10 @@ function transformGuest(apiGuest: GuestFullProfile): any {
     email: apiGuest.email || '',
     phone: apiGuest.phone || '',
     country: apiGuest.country || 'Unknown',
+    state: apiGuest.state || '',
+    city: apiGuest.city || '',
+    address: apiGuest.address || '',
+    postalCode: apiGuest.postal_code || '',
     status: apiGuest.status || 'Active',
     emotion: apiGuest.emotion || apiGuest.sentiment || 'neutral',
     totalStays: apiGuest.total_bookings || 0,
@@ -788,13 +792,17 @@ export default function GuestProfile() {
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#4E5840]/10 flex items-center justify-center">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#4E5840]/10 flex items-center justify-center flex-shrink-0">
                   <MapPin className="w-5 h-5 text-[#4E5840]" />
                 </div>
                 <div>
-                  <p className="text-xs text-neutral-500">Country</p>
-                  <p className="text-sm font-medium text-neutral-900">{guest.country}</p>
+                  <p className="text-xs text-neutral-500">Address</p>
+                  <p className="text-sm font-medium text-neutral-900">
+                    {[guest.address, guest.city, guest.state, guest.postalCode, guest.country]
+                      .filter(Boolean)
+                      .join(', ') || 'No address'}
+                  </p>
                 </div>
               </div>
             </div>

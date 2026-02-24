@@ -79,6 +79,8 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
     country: '',
     state: '',
     city: '',
+    address: '',
+    postalCode: '',
     status: 'Active',
     vipStatus: false,
     emotion: 'neutral',
@@ -152,6 +154,8 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
         country: countryCode,
         state: stateCode,
         city: guest.city || '',
+        address: guest.address || '',
+        postalCode: guest.postalCode || guest.postal_code || '',
         status: mapStatusToConfigKey(guest.status),
         vipStatus: guest.vipStatus || false,
         emotion: guest.emotion || 'neutral',
@@ -225,6 +229,8 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
       country: formData.country ? getCountryName(formData.country) : '',
       state: formData.state ? getStateName(formData.country, formData.state) : '',
       city: formData.city,
+      address: formData.address,
+      postalCode: formData.postalCode,
       status: formData.status,
       vipStatus: formData.status.toUpperCase() === 'VIP',
       emotion: formData.emotion,
@@ -431,6 +437,35 @@ export default function EditGuestModal({ guest, isOpen, onClose, onSave, isSavin
                   onChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
                   options={statusOptions}
                   placeholder="Select status"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-[13px] font-medium text-neutral-700">
+                  Address
+                </label>
+                <input
+                  type="text"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  placeholder="Street address"
+                  className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-[13px] font-medium text-neutral-700">
+                  Postal Code
+                </label>
+                <input
+                  type="text"
+                  name="postalCode"
+                  value={formData.postalCode}
+                  onChange={handleChange}
+                  placeholder="Postal / ZIP code"
+                  className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
                 />
               </div>
             </div>

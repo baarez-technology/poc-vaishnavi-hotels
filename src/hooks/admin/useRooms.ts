@@ -1,7 +1,8 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { filterByTab, filterRooms, searchRooms } from '@/utils/admin/roomFilters';
 import { roomsService } from '@/api/services/rooms.service';
 import { bookingService } from '@/api/services/booking.service';
+import { clearApiCache } from '@/api/client';
 
 /**
  * Transform API room to admin panel format
@@ -65,6 +66,7 @@ function mapRoomStatus(status: string): string {
 export function useRooms() {
   // Raw data state - start empty and fetch from API
   const [rooms, setRooms] = useState<any[]>([]);
+  const [allBookings, setAllBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,6 +87,7 @@ export function useRooms() {
           try {
             const bookingsResponse = await bookingService.getBookings(1, 1000);
             const bookings = bookingsResponse.items || (Array.isArray(bookingsResponse) ? bookingsResponse : []);
+            setAllBookings(bookings);
             const today = new Date().toISOString().split('T')[0];
 
             for (const room of transformedRooms) {
@@ -108,8 +111,8 @@ export function useRooms() {
                 room.guests = {
                   name: `${firstName} ${lastName}`.trim(),
                   email: activeBooking.guestInfo?.email || '',
-                  checkIn: activeBooking.checkIn,
-                  checkOut: activeBooking.checkOut,
+                  checkIn: activeBooking.checkIn || activeBooking.arrival_date,
+                  checkOut: activeBooking.checkOut || activeBooking.departure_date,
                   adults: activeBooking.guests?.adults || 1,
                   children: activeBooking.guests?.children || 0,
                   bookingId: activeBooking.id,
@@ -156,6 +159,19 @@ export function useRooms() {
     };
 
     fetchRooms();
+  }, []);
+
+  // Refresh just bookings data (for calendar updates after assign/unassign)
+  const refetchBookings = useCallback(async () => {
+    try {
+      // Clear bookings cache to ensure fresh data
+      clearApiCache('/bookings');
+      const resp = await bookingService.getBookings(1, 1000);
+      const bookings = resp.items || (Array.isArray(resp) ? resp : []);
+      setAllBookings(bookings);
+    } catch (err) {
+      console.warn('[useRooms] Could not refetch bookings:', err);
+    }
   }, []);
 
   // Tab state
@@ -354,6 +370,30 @@ export function useRooms() {
             bookingLinked = true;
             console.log('[useRooms] Room assignment persisted to existing booking:', existingBooking.id);
           }
+
+          // If no existing booking found, create a walk-in booking so it persists across refresh
+          if (!bookingLinked) {
+            try {
+              const nameParts = (guest.name || '').split(' ');
+              await bookingService.createBooking({
+                roomId: String(roomId),
+                checkIn: guest.checkIn,
+                checkOut: guest.checkOut,
+                guests: { adults: 1, children: 0, infants: 0 },
+                guestInfo: {
+                  firstName: nameParts[0] || '',
+                  lastName: nameParts.slice(1).join(' ') || '',
+                  email: guest.email || '',
+                  phone: guest.phone || '',
+                },
+                paymentMethodId: 'walk_in',
+              } as any);
+              bookingLinked = true;
+              console.log('[useRooms] Walk-in booking created for room assignment');
+            } catch (createErr) {
+              console.warn('[useRooms] Could not create walk-in booking (assignment still applied locally):', createErr);
+            }
+          }
         } catch (bookingErr: any) {
           if (bookingErr.message?.includes('Double booking') || bookingErr.message?.includes('not available')) {
             throw bookingErr;
@@ -381,6 +421,9 @@ export function useRooms() {
       }
       return r;
     }));
+
+    // Refresh bookings so calendar view updates immediately
+    await refetchBookings();
   };
 
   // Unassign guest from room
@@ -419,6 +462,9 @@ export function useRooms() {
       }
       return r;
     }));
+
+    // Refresh bookings so calendar view updates immediately
+    await refetchBookings();
   };
 
   // Block room
@@ -534,6 +580,7 @@ export function useRooms() {
   return {
     rooms: processedRooms,
     rawRooms: rooms,
+    allBookings,
     isLoading,
     error,
     activeTab,

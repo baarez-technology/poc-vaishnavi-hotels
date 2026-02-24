@@ -12,6 +12,10 @@ export interface StaffNotification {
   is_read: boolean;
   read_at?: string;
   created_at: string;
+  /** Guest ID for guest-related notifications (check-in, check-out, etc.) */
+  guest_id?: number | string;
+  /** Booking ID for booking-related notifications */
+  booking_id?: number | string;
   task?: {
     id: number;
     task_type: string;

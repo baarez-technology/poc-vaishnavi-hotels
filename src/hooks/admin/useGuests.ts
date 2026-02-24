@@ -199,11 +199,36 @@ export function useGuests() {
       // Handle tags updates
       if (updates.tags) apiUpdates.tags = updates.tags;
 
-      const updatedGuest = await guestsService.update(String(id), apiUpdates);
-      const transformedGuest = transformApiGuest(updatedGuest);
+      await guestsService.update(String(id), apiUpdates);
 
-      // Merge with existing guest data to preserve fields the PATCH response may not return
-      setGuests(prev => prev.map(g => String(g.id) === String(id) ? { ...g, ...transformedGuest } : g));
+      // Update local state using submitted values directly instead of PATCH response,
+      // because PATCH may return partial data and transformApiGuest would set defaults
+      // (e.g., totalBookings: 0) that overwrite correct existing values
+      setGuests(prev => prev.map(g => {
+        if (String(g.id) !== String(id)) return g;
+        const firstName = updates.firstName || updates.first_name || g.firstName;
+        const lastName = updates.lastName || updates.last_name || g.lastName;
+        return {
+          ...g,
+          firstName,
+          lastName,
+          name: `${firstName} ${lastName}`.trim(),
+          email: updates.email || g.email,
+          phone: updates.phone ?? g.phone,
+          country: updates.country || g.country,
+          state: 'state' in updates ? updates.state : g.state,
+          city: 'city' in updates ? updates.city : g.city,
+          address: 'address' in updates ? updates.address : g.address,
+          postalCode: updates.postalCode || updates.postal_code || g.postalCode,
+          status: updates.status
+            ? (updates.status.toUpperCase() === 'VIP' ? 'vip' : updates.status.toLowerCase())
+            : g.status,
+          vipStatus: updates.vipStatus ?? g.vipStatus,
+          emotion: updates.emotion || g.emotion,
+          tags: updates.tags || g.tags,
+          preferences: updates.preferences ?? g.preferences,
+        };
+      }));
     } catch (err) {
       console.error('Failed to update guest via API:', err);
       throw err; // Propagate error
@@ -220,6 +245,7 @@ export function useGuests() {
         email: guestData.email,
         phone: guestData.phone,
         country: guestData.country,
+        state: guestData.state,
         city: guestData.city,
         address: guestData.address,
         postal_code: guestData.postalCode || guestData.postal_code,
@@ -227,7 +253,18 @@ export function useGuests() {
 
       const newGuest = await guestsService.create(apiData);
       const transformedGuest = transformApiGuest(newGuest);
-      setGuests(prev => [transformedGuest, ...prev]);
+
+      // Merge submitted data (tags, status, preferences) that the API response may not include
+      const fullGuest = {
+        ...transformedGuest,
+        status: guestData.status
+          ? (guestData.status.toUpperCase() === 'VIP' ? 'vip' : guestData.status.toLowerCase())
+          : transformedGuest.status,
+        vipStatus: guestData.status?.toUpperCase() === 'VIP' || false,
+        tags: guestData.tags || transformedGuest.tags,
+        preferences: guestData.preferences || transformedGuest.preferences,
+      };
+      setGuests(prev => [fullGuest, ...prev]);
     } catch (err) {
       console.error('Failed to add guest via API:', err);
       throw err; // Propagate error instead of silent fallback

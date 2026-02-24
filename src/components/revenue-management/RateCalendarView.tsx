@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight, Calendar, Filter, Download, RefreshCw, Sparkles, ChevronDown, Check, HelpCircle, Loader2, Play } from 'lucide-react';
+import { Calendar, Filter, Download, RefreshCw, Sparkles, ChevronDown, Check, HelpCircle, Loader2, Play, X } from 'lucide-react';
 import { useRMS } from '../../context/RMSContext';
 import { useToast } from '../../contexts/ToastContext';
 import RateCell from './RateCell';
@@ -10,6 +10,7 @@ import revenueIntelligenceService, {
 } from '../../api/services/revenue-intelligence.service';
 import { useChannelManagerSSEEvents } from '../../hooks/useChannelManagerSSEEvents';
 import { Modal } from '../ui2/Modal';
+import DatePicker from '../ui2/DatePicker';
 
 // Local date to YYYY-MM-DD without UTC conversion
 function toDateStr(date: Date): string {
@@ -65,6 +66,24 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
   const dropdownPortalRef = useRef<HTMLDivElement>(null);
   const [dropdownBounds, setDropdownBounds] = useState<{ top: number; left: number; width: number } | null>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
+
+  // Date range filter state
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
+  const isFilterActive = filterStartDate || filterEndDate;
+
+  const handleFilterStartChange = (date: string) => {
+    setFilterStartDate(date);
+    if (date) {
+      const d = new Date(date + 'T00:00:00');
+      setCurrentMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+    }
+  };
+
+  const handleClearFilter = () => {
+    setFilterStartDate('');
+    setFilterEndDate('');
+  };
 
   // Fetch rate calendar data from API
   const fetchCalendarData = useCallback(async () => {
@@ -203,14 +222,6 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
     success(message, { duration: 2000 });
   };
 
-  const handlePrevMonth = () => {
-    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-  };
-
-  const handleNextMonth = () => {
-    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-  };
-
   const handleGoToToday = useCallback(() => {
     const now = new Date();
     const todayStr = toDateStr(now);
@@ -314,13 +325,13 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
       // Ctrl/Cmd + Left/Right for month navigation
       if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowLeft') {
         e.preventDefault();
-        handlePrevMonth();
+        setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
         setFocusedDateIndex(null);
       }
 
       if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowRight') {
         e.preventDefault();
-        handleNextMonth();
+        setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
         setFocusedDateIndex(null);
       }
 
@@ -491,27 +502,40 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
       <div className="p-4 sm:p-6 border-b border-neutral-100 bg-white space-y-4 sm:space-y-5">
         {/* Top Row: Month Navigation + Primary Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-          {/* Month Navigation */}
+          {/* Date Range Filter */}
           <div className="flex items-center justify-center sm:justify-start gap-2 sm:gap-3">
-            <button
-              type="button"
-              onClick={handlePrevMonth}
-              className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
-              aria-label="Previous month"
-            >
-              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-500" />
-            </button>
-            <h2 className="text-base sm:text-lg font-semibold text-neutral-900 min-w-[140px] sm:min-w-[180px] text-center">
+            <h2 className="text-base sm:text-lg font-semibold text-neutral-900">
               {formatMonthYear(currentMonth)}
             </h2>
-            <button
-              type="button"
-              onClick={handleNextMonth}
-              className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
-              aria-label="Next month"
-            >
-              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-500" />
-            </button>
+            <div className="hidden sm:flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-neutral-50 rounded-lg border border-neutral-200">
+                <Filter className="w-3.5 h-3.5 text-neutral-400" />
+                <DatePicker
+                  value={filterStartDate}
+                  onChange={handleFilterStartChange}
+                  placeholder="From"
+                  minDate={new Date().toISOString().split('T')[0]}
+                  className="w-28"
+                />
+                <span className="text-neutral-300">—</span>
+                <DatePicker
+                  value={filterEndDate}
+                  onChange={setFilterEndDate}
+                  placeholder="To"
+                  minDate={filterStartDate || new Date().toISOString().split('T')[0]}
+                  className="w-28"
+                />
+              </div>
+              {isFilterActive && (
+                <button
+                  onClick={handleClearFilter}
+                  className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-medium text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Primary Action Buttons */}

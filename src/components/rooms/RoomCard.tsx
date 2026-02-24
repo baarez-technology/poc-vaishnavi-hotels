@@ -110,8 +110,8 @@ export default function RoomCard({ room, onClick }) {
           )}
         </div>
 
-        {/* Guest Info */}
-        {room.guests && (
+        {/* Guest Info — only show for occupied rooms */}
+        {room.status === 'occupied' && room.guests && (
           <div className="flex items-center gap-3 mb-4 p-3 bg-terra-50 rounded-lg">
             <div className="w-9 h-9 rounded-full bg-terra-500 flex items-center justify-center">
               <Users className="w-4 h-4 text-white" />

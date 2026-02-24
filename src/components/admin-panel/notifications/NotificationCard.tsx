@@ -45,7 +45,12 @@ export default function NotificationCard({ notification, onDelete, onNavigate })
     if (notification.link) {
       // Close the drawer before navigating so the page is visible
       if (onNavigate) onNavigate();
-      navigate(notification.link);
+      // Pass entity IDs via navigation state so target pages can
+      // auto-select/highlight the relevant guest or booking
+      const state: Record<string, string> = {};
+      if (notification.guestId) state.guestId = String(notification.guestId);
+      if (notification.bookingId) state.bookingId = String(notification.bookingId);
+      navigate(notification.link, Object.keys(state).length > 0 ? { state } : undefined);
     }
   };
 

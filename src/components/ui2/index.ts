@@ -128,3 +128,6 @@ export {
   InfoTooltip,
   Popover,
 } from './Tooltip';
+
+// MonthYearPicker Component
+export { MonthYearPicker } from './MonthYearPicker';

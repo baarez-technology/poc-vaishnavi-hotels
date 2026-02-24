@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useGuests } from '../../hooks/admin/useGuests';
 import { usePagination } from '../../hooks/usePagination';
@@ -27,6 +27,7 @@ import {
 
 export default function Guests() {
   const navigate = useNavigate();
+  const location = useLocation();
   const adminContext = useAdminSafe();
 
   // Master state management
@@ -66,6 +67,19 @@ export default function Guests() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [blacklistConfirm, setBlacklistConfirm] = useState({ isOpen: false, guest: null });
+
+  // Auto-open guest drawer when navigating from a notification with guestId
+  useEffect(() => {
+    const state = location.state as { guestId?: string } | null;
+    if (state?.guestId && rawGuests.length > 0) {
+      const guest = rawGuests.find(g => String(g.id) === state.guestId);
+      if (guest) {
+        drawer.openDrawer(guest);
+      }
+      // Clear navigation state so it doesn't re-trigger on re-render
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, rawGuests]);
 
   // Event Handlers
   const handleGuestClick = (guest) => {
@@ -141,7 +155,7 @@ export default function Guests() {
     try {
       if (addGuest) {
         await addGuest(guestData);
-        toast.success(`Guest "${guestData.name}" added successfully`);
+        toast.success(`Guest "${guestData.firstName} ${guestData.lastName}" added successfully`);
       }
       addModal.closeModal();
     } catch (error: any) {

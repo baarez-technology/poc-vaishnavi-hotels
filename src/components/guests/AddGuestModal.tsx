@@ -4,10 +4,9 @@
  * Side drawer following CMS pattern
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, Plus, Tag } from 'lucide-react';
 import {
-  COUNTRIES,
   GUEST_TAGS,
   GUEST_STATUS_CONFIG,
   validateGuest,
@@ -15,6 +14,8 @@ import {
 } from '../../utils/guests';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
+import { SearchableSelect } from '../ui2/SearchableSelect';
+import { useGeoAddress } from '@/hooks/useGeoAddress';
 
 // Custom Select Component matching CMS pattern
 function CustomSelect({ value, onChange, options, placeholder = 'Select...' }) {
@@ -73,7 +74,11 @@ export default function AddGuestModal({ isOpen, onClose, onSubmit, isAdding }) {
     lastName: '',
     email: '',
     phone: '',
-    country: 'United States',
+    country: '',
+    state: '',
+    city: '',
+    address: '',
+    postalCode: '',
     status: 'Active',
     tags: [],
     preferences: [],
@@ -84,6 +89,30 @@ export default function AddGuestModal({ isOpen, onClose, onSubmit, isAdding }) {
   const [showTagDropdown, setShowTagDropdown] = useState(false);
   const [newPreference, setNewPreference] = useState('');
 
+  // Cascading country/state/city dropdowns
+  const { countries, states, cities, hasStates, hasCities, getCountryName, getStateName } = useGeoAddress({
+    countryCode: formData.country,
+    stateCode: formData.state,
+    cityName: formData.city,
+    onStateReset: () => setFormData(prev => ({ ...prev, state: '', city: '' })),
+    onCityReset: () => setFormData(prev => ({ ...prev, city: '' })),
+  });
+
+  const countryOptions = useMemo(
+    () => countries.map((c) => ({ value: c.isoCode, label: c.name })),
+    [countries]
+  );
+
+  const stateOptions = useMemo(
+    () => states.map((s) => ({ value: s.isoCode, label: s.name })),
+    [states]
+  );
+
+  const cityOptions = useMemo(
+    () => cities.map((c) => ({ value: c.name, label: c.name })),
+    [cities]
+  );
+
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -92,7 +121,11 @@ export default function AddGuestModal({ isOpen, onClose, onSubmit, isAdding }) {
         lastName: '',
         email: '',
         phone: '',
-        country: 'United States',
+        country: '',
+        state: '',
+        city: '',
+        address: '',
+        postalCode: '',
         status: 'Active',
         tags: [],
         preferences: [],
@@ -178,7 +211,11 @@ export default function AddGuestModal({ isOpen, onClose, onSubmit, isAdding }) {
       lastName: formData.lastName.trim(),
       email: formData.email.trim(),
       phone: formData.phone.trim() || '',
-      country: formData.country,
+      country: formData.country ? getCountryName(formData.country) : '',
+      state: formData.state ? getStateName(formData.country, formData.state) : formData.state,
+      city: formData.city,
+      address: formData.address,
+      postalCode: formData.postalCode,
       status: formData.status,
       tags: formData.tags,
       preferences: formData.preferences,
@@ -195,11 +232,6 @@ export default function AddGuestModal({ isOpen, onClose, onSubmit, isAdding }) {
   const isFormValid = formData.firstName.trim() && formData.lastName.trim() && formData.email.trim();
 
   // Options for dropdowns
-  const countryOptions = COUNTRIES.map(country => ({
-    value: country,
-    label: country
-  }));
-
   const statusOptions = Object.keys(GUEST_STATUS_CONFIG).map(status => ({
     value: status,
     label: GUEST_STATUS_CONFIG[status].label
@@ -322,12 +354,67 @@ export default function AddGuestModal({ isOpen, onClose, onSubmit, isAdding }) {
                 <label className="block text-[13px] font-medium text-neutral-700">
                   Country
                 </label>
-                <CustomSelect
+                <SearchableSelect
+                  options={countryOptions}
                   value={formData.country}
                   onChange={(value) => setFormData(prev => ({ ...prev, country: value }))}
-                  options={countryOptions}
-                  placeholder="Select country"
+                  placeholder="Select Country"
+                  searchable
                 />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-[13px] font-medium text-neutral-700">
+                  State
+                </label>
+                {hasStates ? (
+                  <SearchableSelect
+                    options={stateOptions}
+                    value={formData.state}
+                    onChange={(value) => setFormData(prev => ({ ...prev, state: value }))}
+                    placeholder="Select State"
+                    disabled={!formData.country}
+                    searchable
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleChange}
+                    placeholder={formData.country ? 'Enter state or province' : 'Select country first'}
+                    disabled={!formData.country}
+                    className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-[13px] font-medium text-neutral-700">
+                  City
+                </label>
+                {hasCities ? (
+                  <SearchableSelect
+                    options={cityOptions}
+                    value={formData.city}
+                    onChange={(value) => setFormData(prev => ({ ...prev, city: value }))}
+                    placeholder="Select City"
+                    disabled={!formData.state}
+                    searchable
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    placeholder={formData.state || !hasStates ? 'Enter city' : 'Select state first'}
+                    disabled={!formData.country}
+                    className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                )}
               </div>
 
               <div className="space-y-2">
@@ -339,6 +426,35 @@ export default function AddGuestModal({ isOpen, onClose, onSubmit, isAdding }) {
                   onChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
                   options={statusOptions}
                   placeholder="Select status"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-[13px] font-medium text-neutral-700">
+                  Address
+                </label>
+                <input
+                  type="text"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  placeholder="Street address"
+                  className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-[13px] font-medium text-neutral-700">
+                  Postal Code
+                </label>
+                <input
+                  type="text"
+                  name="postalCode"
+                  value={formData.postalCode}
+                  onChange={handleChange}
+                  placeholder="Postal / ZIP code"
+                  className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
                 />
               </div>
             </div>

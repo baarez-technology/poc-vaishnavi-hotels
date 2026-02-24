@@ -9,6 +9,7 @@ import { createPortal } from 'react-dom';
 import { Check, ChevronDown } from 'lucide-react';
 import { Drawer } from '../../ui2/Drawer';
 import { Button } from '../../ui2/Button';
+import { useCurrency } from '@/hooks/useCurrency';
 
 // Custom Select Dropdown Component with React Portal
 function SelectDropdown({ value, onChange, options, placeholder }) {
@@ -151,6 +152,7 @@ function SelectDropdown({ value, onChange, options, placeholder }) {
 }
 
 export default function EditRoomModal({ room, isOpen, onClose, onSave }) {
+  const { symbol } = useCurrency();
   const [formData, setFormData] = useState({
     roomNumber: '',
     type: 'Minimalist Studio',
@@ -225,22 +227,7 @@ export default function EditRoomModal({ room, isOpen, onClose, onSave }) {
       return;
     }
 
-    // Prepare API update payload with proper field mapping
-    const apiUpdates = {
-      // Note: room number typically shouldn't change, but include it for completeness
-      number: formData.roomNumber,
-      room_type: formData.type,
-      floor: parseInt(formData.floor),
-      bed_type: formData.bedType,
-      capacity: parseInt(formData.capacity),
-      max_occupancy: parseInt(formData.capacity),
-      // Note: price is controlled by room type, not individual rooms in the API
-      amenities: JSON.stringify(formData.amenities),
-      description: formData.description || null,
-      view_type: formData.viewType || null
-    };
-
-    // Also prepare local state update (for immediate UI feedback)
+    // Prepare update payload — used for both local state and API
     const updatedRoom = {
       ...room,
       roomNumber: formData.roomNumber,
@@ -250,11 +237,10 @@ export default function EditRoomModal({ room, isOpen, onClose, onSave }) {
       capacity: parseInt(formData.capacity),
       price: parseFloat(formData.price),
       amenities: formData.amenities,
-      description: formData.description
+      description: formData.description,
+      viewType: formData.viewType || 'Standard'
     };
 
-    // Pass both the API updates and local updates
-    // The parent component (useRooms) will handle the API call
     onSave(room.id, updatedRoom);
     onClose();
   };
@@ -371,7 +357,7 @@ export default function EditRoomModal({ room, isOpen, onClose, onSave }) {
                 Price per Night
               </label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-[13px]">$</span>
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-[13px]">{symbol}</span>
                 <input
                   type="number"
                   name="price"

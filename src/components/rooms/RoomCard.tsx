@@ -119,6 +119,11 @@ export default function RoomCard({ room, onClick }) {
             <div className="flex-1 min-w-0">
               <p className="text-[10px] uppercase tracking-wider text-terra-600 font-medium">Current Guest</p>
               <p className="text-[13px] font-semibold text-neutral-900 truncate">{room.guests.name}</p>
+              {room.guests.checkIn && room.guests.checkOut && (
+                <p className="text-[10px] text-terra-500 mt-0.5">
+                  {new Date(room.guests.checkIn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date(room.guests.checkOut).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </p>
+              )}
             </div>
           </div>
         )}

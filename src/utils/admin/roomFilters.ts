@@ -35,7 +35,10 @@ export function filterRooms(rooms, filters) {
 
   // Floor filter
   if (filters.floor && filters.floor !== 'all') {
-    filtered = filtered.filter(r => r.floor === parseInt(filters.floor));
+    const floorNum = parseInt(filters.floor, 10);
+    if (!isNaN(floorNum)) {
+      filtered = filtered.filter(r => r.floor === floorNum);
+    }
   }
 
   // Status filter
@@ -60,10 +63,10 @@ export function searchRooms(rooms, query) {
   const lowerQuery = query.toLowerCase().trim();
 
   return rooms.filter(room => {
-    const roomNumberMatch = room.roomNumber.toLowerCase().includes(lowerQuery);
-    const typeMatch = room.type.toLowerCase().includes(lowerQuery);
-    const guestMatch = room.guests && room.guests.name.toLowerCase().includes(lowerQuery);
-    const bedTypeMatch = room.bedType.toLowerCase().includes(lowerQuery);
+    const roomNumberMatch = (room.roomNumber || '').toLowerCase().includes(lowerQuery);
+    const typeMatch = (room.type || '').toLowerCase().includes(lowerQuery);
+    const guestMatch = room.guests && (room.guests.name || '').toLowerCase().includes(lowerQuery);
+    const bedTypeMatch = (room.bedType || '').toLowerCase().includes(lowerQuery);
 
     return roomNumberMatch || typeMatch || guestMatch || bedTypeMatch;
   });

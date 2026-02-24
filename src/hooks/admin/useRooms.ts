@@ -212,8 +212,24 @@ export function useRooms() {
   // Room update function
   const updateRoom = async (id: number | string, updates: any) => {
     try {
-      // Call API to update room
-      await roomsService.updateRoom(id, updates);
+      // Map frontend fields to API fields (same pattern as addRoom)
+      const apiData: any = {};
+      if (updates.roomNumber !== undefined) apiData.number = updates.roomNumber;
+      if (updates.type !== undefined) apiData.room_type = updates.type;
+      if (updates.floor !== undefined) apiData.floor = updates.floor;
+      if (updates.bedType !== undefined) apiData.bed_type = updates.bedType;
+      if (updates.capacity !== undefined) {
+        apiData.capacity = updates.capacity;
+        apiData.max_occupancy = updates.capacity;
+      }
+      if (updates.price !== undefined) apiData.price_per_night = updates.price;
+      if (updates.amenities !== undefined) {
+        apiData.amenities = Array.isArray(updates.amenities) ? updates.amenities.join(', ') : updates.amenities;
+      }
+      if (updates.description !== undefined) apiData.description = updates.description || null;
+      if (updates.viewType !== undefined) apiData.view_type = updates.viewType || null;
+
+      await roomsService.updateRoom(id, apiData);
     } catch (err) {
       console.error('[useRooms] Failed to update room via API:', err);
     }

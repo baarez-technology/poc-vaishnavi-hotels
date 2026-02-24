@@ -44,8 +44,10 @@ export default function RoomCalendar({ rooms, bookings = [], isLoading = false, 
 
     // Check if room has a booking on this day
     const booking = bookings.find(b => {
-      if (b.room !== room.roomNumber) return false;
-      const terminal = ['CANCELLED', 'CHECKED_OUT', 'NO_SHOW', 'cancelled', 'checked_out', 'no_show'];
+      // Safely resolve room number from booking (may be string or object)
+      const bookingRoom = typeof b.room === 'object' ? (b.room?.number || '') : String(b.room || '');
+      if (!bookingRoom || bookingRoom !== room.roomNumber) return false;
+      const terminal = ['CANCELLED', 'CHECKED_OUT', 'NO_SHOW', 'cancelled', 'checked_out', 'no_show', 'checked-out'];
       if (terminal.includes(b.status)) return false;
 
       const checkIn = new Date(b.checkIn);
@@ -97,13 +99,13 @@ export default function RoomCalendar({ rooms, bookings = [], isLoading = false, 
       }
     }
 
-    // Check dirty room status (needs cleaning — not bookable)
-    if (room.status === 'dirty') {
+    // Dirty/Occupied are CURRENT point-in-time states — only apply to today/past.
+    // Future dates should show as available (room will be cleaned / guest will check out).
+    if (room.status === 'dirty' && (day.isToday || day.isPast)) {
       return { status: 'dirty', label: 'Dirty', color: 'bg-gold-500' };
     }
 
-    // Occupied room without a matching booking/guest record
-    if (room.status === 'occupied') {
+    if (room.status === 'occupied' && (day.isToday || day.isPast)) {
       return { status: 'occupied', label: 'Occupied', color: 'bg-terra-500' };
     }
 

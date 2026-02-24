@@ -11,6 +11,7 @@ import { WishlistProvider } from './contexts/WishlistContext';
 import { SSEProvider } from './contexts/SSEContext';
 import { BrandingProvider } from '@/contexts/BrandingContext';
 import { AGIChatWidget } from './components/chatbot/AGIChatWidget';
+import { HotelGuard } from './components/HotelGuard';
 
 // Wrapper component to conditionally show Aria AI Chat Widget only on guest pages
 function AriaChatWidgetWrapper() {
@@ -167,11 +168,12 @@ const StaffTaskAcceptance = lazyWithRetry(() => import('./pages/staff/TaskAccept
 
 function App() {
   return (
-    <ThemeProvider>
-      <WishlistProvider>
-        <BrandingProvider>
-          <Router>
-          <AuthProvider>
+    <HotelGuard>
+      <ThemeProvider>
+        <WishlistProvider>
+          <BrandingProvider>
+            <Router>
+            <AuthProvider>
             <ChatProvider>
               <AGIChatProvider>
                 <PreCheckInProvider>
@@ -463,10 +465,11 @@ function App() {
               </AGIChatProvider>
             </ChatProvider>
           </AuthProvider>
-          </Router>
-        </BrandingProvider>
-      </WishlistProvider>
-    </ThemeProvider>
+            </Router>
+          </BrandingProvider>
+        </WishlistProvider>
+      </ThemeProvider>
+    </HotelGuard>
   );
 }
 

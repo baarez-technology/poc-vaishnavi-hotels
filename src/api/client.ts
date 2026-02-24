@@ -175,6 +175,12 @@ export const getAccessToken = () => {
 // Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
+    // Always add X-Hotel-Code header for multi-tenant support
+    // This allows both authenticated and unauthenticated requests to work
+    if (ENV.HOTEL_CODE) {
+      config.headers['X-Hotel-Code'] = ENV.HOTEL_CODE;
+    }
+
     // Don't add Authorization header for public endpoints
     const isPublicEndpoint = config.url?.includes('/api/v1/auth/login') ||
                           config.url?.includes('/api/v1/auth/signup') ||
@@ -183,19 +189,19 @@ apiClient.interceptors.request.use(
                           config.url?.includes('/api/v1/auth/reset-password') ||
                           config.url?.includes('/api/v1/otp/') ||
                           config.url?.includes('/api/v1/precheckin/verify-booking');
-    
+
     // Add access token if available and not a public endpoint
     if (accessToken && !isPublicEndpoint) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
-    
+
     // Ensure Content-Type is set for POST/PUT requests
-    if ((config.method === 'post' || config.method === 'put' || config.method === 'patch') && 
-        config.data && 
+    if ((config.method === 'post' || config.method === 'put' || config.method === 'patch') &&
+        config.data &&
         !config.headers['Content-Type']) {
       config.headers['Content-Type'] = 'application/json';
     }
-    
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -295,12 +301,28 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       originalRequest._retry = true;
 
+      // Only try refresh if we have a token
+      const currentToken = getAccessToken();
+      if (!currentToken) {
+        // No token to refresh, redirect to login
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+        return Promise.reject(error);
+      }
+
       try {
-        // Try to refresh token
+        // Try to refresh token - must include current token and hotel code
         const response = await axios.post(
           `${ENV.API_URL}/api/v1/auth/refresh`,
           {},
-          { withCredentials: false }
+          {
+            withCredentials: false,
+            headers: {
+              'Authorization': `Bearer ${currentToken}`,
+              'X-Hotel-Code': ENV.HOTEL_CODE || '',
+            }
+          }
         );
 
         const newAccessToken = response.data.access_token || response.data.accessToken;

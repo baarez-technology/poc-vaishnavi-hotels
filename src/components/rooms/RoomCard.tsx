@@ -110,8 +110,8 @@ export default function RoomCard({ room, onClick }) {
           )}
         </div>
 
-        {/* Guest Info */}
-        {room.guests && (
+        {/* Guest Info — only show for occupied rooms */}
+        {room.status === 'occupied' && room.guests && (
           <div className="flex items-center gap-3 mb-4 p-3 bg-terra-50 rounded-lg">
             <div className="w-9 h-9 rounded-full bg-terra-500 flex items-center justify-center">
               <Users className="w-4 h-4 text-white" />
@@ -119,6 +119,11 @@ export default function RoomCard({ room, onClick }) {
             <div className="flex-1 min-w-0">
               <p className="text-[10px] uppercase tracking-wider text-terra-600 font-medium">Current Guest</p>
               <p className="text-[13px] font-semibold text-neutral-900 truncate">{room.guests.name}</p>
+              {room.guests.checkIn && room.guests.checkOut && (
+                <p className="text-[10px] text-terra-500 mt-0.5">
+                  {new Date(room.guests.checkIn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date(room.guests.checkOut).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </p>
+              )}
             </div>
           </div>
         )}

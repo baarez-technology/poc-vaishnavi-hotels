@@ -142,9 +142,13 @@ export default function GuestDrawer({
                 <span className="text-[13px] text-neutral-700">{guest.phone}</span>
               </div>
             )}
-            <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-lg">
-              <MapPin className="w-4 h-4 text-neutral-400" />
-              <span className="text-[13px] text-neutral-700">{guest.country}</span>
+            <div className="flex items-start gap-3 p-3 bg-neutral-50 rounded-lg">
+              <MapPin className="w-4 h-4 text-neutral-400 mt-0.5 flex-shrink-0" />
+              <span className="text-[13px] text-neutral-700">
+                {[guest.address, guest.city, guest.state, guest.postalCode, guest.country]
+                  .filter(Boolean)
+                  .join(', ') || 'No address'}
+              </span>
             </div>
           </div>
         </section>

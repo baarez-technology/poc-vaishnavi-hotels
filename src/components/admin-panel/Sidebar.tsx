@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -18,6 +19,9 @@ import {
 } from 'lucide-react';
 import GlimmoraLogo from '../../assets/G white logo.svg';
 import { useSettingsContext } from '../../contexts/SettingsContext';
+import { useAuth } from '../../hooks';
+import { ROUTE_MODULE_MAP, canViewModule, DEFAULT_PERMISSIONS } from '../../config/rolePermissions';
+import type { PermissionMap, StaffRole } from '../../config/rolePermissions';
 
 const navCategories = [
   {
@@ -65,6 +69,18 @@ const Sidebar = () => {
   const { generalSettings } = useSettingsContext();
   const hotelName = generalSettings?.hotelName || 'Glimmora';
   const customLogo = generalSettings?.branding?.logo;
+  const { user } = useAuth();
+
+  // Get user permissions - from user object, or derive from role defaults
+  const userPermissions: PermissionMap | undefined = useMemo(() => {
+    if (user?.permissions) return user.permissions as PermissionMap;
+    if (user?.isSuperuser) return DEFAULT_PERMISSIONS.admin;
+    if (user?.role && user.role in DEFAULT_PERMISSIONS) {
+      return DEFAULT_PERMISSIONS[user.role as StaffRole];
+    }
+    // If no role match, show everything (admin access)
+    return DEFAULT_PERMISSIONS.admin;
+  }, [user]);
 
   return (
     <div className="h-full bg-gradient-to-b from-white via-[#FAF8F6]/30 to-white border-r border-[#A57865]/20 flex flex-col shadow-sm">
@@ -91,59 +107,71 @@ const Sidebar = () => {
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-6 overflow-y-auto custom-scrollbar">
-        {navCategories.map((category) => (
-          <div key={category.name}>
-            {/* Category Header */}
-            <div className="px-3 mb-2">
-              <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                {category.name}
-              </h3>
+        {navCategories.map((category) => {
+          // Filter items by user permissions
+          const visibleItems = category.items.filter(item => {
+            const module = ROUTE_MODULE_MAP[item.to];
+            if (!module) return true; // No mapping = always show
+            return canViewModule(userPermissions, module);
+          });
+
+          // Don't render empty categories
+          if (visibleItems.length === 0) return null;
+
+          return (
+            <div key={category.name}>
+              {/* Category Header */}
+              <div className="px-3 mb-2">
+                <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+                  {category.name}
+                </h3>
+              </div>
+
+              {/* Category Items */}
+              <ul className="space-y-1">
+                {visibleItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.to}>
+                      <NavLink
+                        to={item.to}
+                        end={item.to === '/admin'}
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ease-out group relative overflow-hidden ${
+                            isActive
+                              ? 'bg-gradient-to-r from-[#A57865]/10 to-[#A57865]/5 text-[#A57865] font-semibold shadow-sm'
+                              : 'text-neutral-600 hover:bg-gradient-to-r hover:from-[#A57865]/5 hover:to-transparent hover:text-[#A57865] hover:shadow-sm'
+                          }`
+                        }
+                      >
+                        {({ isActive }) => (
+                          <>
+                            {/* Active indicator */}
+                            {isActive && (
+                              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-[#A57865] to-[#8E6554] rounded-r-full"></div>
+                            )}
+
+                            <Icon className={`w-5 h-5 flex-shrink-0 transition-all duration-300 ${
+                              isActive ? 'scale-110' : 'group-hover:scale-110 group-hover:rotate-6'
+                            }`} />
+                            <span className="text-sm transition-all duration-300">{item.name}</span>
+
+                            {/* Hover effect */}
+                            {!isActive && (
+                              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-[#A57865]/5 to-transparent"></div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </NavLink>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
-
-            {/* Category Items */}
-            <ul className="space-y-1">
-              {category.items.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <li key={item.to}>
-                    <NavLink
-                      to={item.to}
-                      end={item.to === '/admin'}
-                      className={({ isActive }) =>
-                        `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ease-out group relative overflow-hidden ${
-                          isActive
-                            ? 'bg-gradient-to-r from-[#A57865]/10 to-[#A57865]/5 text-[#A57865] font-semibold shadow-sm'
-                            : 'text-neutral-600 hover:bg-gradient-to-r hover:from-[#A57865]/5 hover:to-transparent hover:text-[#A57865] hover:shadow-sm'
-                        }`
-                      }
-                    >
-                      {({ isActive }) => (
-                        <>
-                          {/* Active indicator */}
-                          {isActive && (
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-[#A57865] to-[#8E6554] rounded-r-full"></div>
-                          )}
-
-                          <Icon className={`w-5 h-5 flex-shrink-0 transition-all duration-300 ${
-                            isActive ? 'scale-110' : 'group-hover:scale-110 group-hover:rotate-6'
-                          }`} />
-                          <span className="text-sm transition-all duration-300">{item.name}</span>
-
-                          {/* Hover effect */}
-                          {!isActive && (
-                            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-[#A57865]/5 to-transparent"></div>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </NavLink>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* Footer */}

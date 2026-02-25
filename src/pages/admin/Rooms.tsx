@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRooms } from '../../hooks/admin/useRooms';
 import { usePagination } from '../../hooks/usePagination';
 import { useDrawer } from '../../hooks/useDrawer';
@@ -31,6 +31,8 @@ export default function Rooms() {
   const {
     rooms,
     rawRooms,
+    allBookings,
+    isLoading: isLoadingRooms,
     activeTab,
     setActiveTab,
     searchQuery,
@@ -62,6 +64,63 @@ export default function Rooms() {
   const changeStatusModal = useModal();
   const assignGuestModal = useModal();
   const blockRoomModal = useModal();
+
+  // Transform bookings from useRooms for calendar consumption (no extra API call)
+  const calendarBookings = useMemo(() => {
+    return allBookings.map((b: any) => {
+      // Resolve room number — must match room.roomNumber used by RoomCalendar
+      let room = '';
+      const roomId = b.room_id || (b.room && typeof b.room === 'object' ? b.room.id : null);
+
+      // Try direct number field first
+      if (b.room && typeof b.room === 'object') {
+        room = b.room.number || '';
+      } else if (b.room_number) {
+        room = String(b.room_number);
+      }
+
+      // If no room number yet, cross-reference by ID against rawRooms
+      if (!room && roomId) {
+        const matched = rawRooms.find(r => String(r.id) === String(roomId));
+        if (matched) room = matched.roomNumber;
+      }
+
+      // Last resort: if b.room is a raw value (string/number), check if it's an ID
+      if (!room && b.room && typeof b.room !== 'object') {
+        const asStr = String(b.room);
+        // Check if it matches a roomNumber directly
+        const directMatch = rawRooms.find(r => r.roomNumber === asStr);
+        if (directMatch) {
+          room = asStr;
+        } else {
+          // Try as room ID
+          const idMatch = rawRooms.find(r => String(r.id) === asStr);
+          if (idMatch) room = idMatch.roomNumber;
+        }
+      }
+
+      // Extract guest name
+      let guest = 'Guest';
+      if (b.guestInfo) {
+        guest = `${b.guestInfo.firstName || ''} ${b.guestInfo.lastName || ''}`.trim() || 'Guest';
+      } else if (b.guest_name) {
+        guest = b.guest_name;
+      } else if (b.guest && typeof b.guest === 'object') {
+        guest = `${b.guest.first_name || ''} ${b.guest.last_name || ''}`.trim() || 'Guest';
+      } else if (b.guest) {
+        guest = String(b.guest);
+      }
+
+      return {
+        id: b.id,
+        room,
+        checkIn: b.arrival_date || b.checkIn,
+        checkOut: b.departure_date || b.checkOut,
+        guest,
+        status: b.status,
+      };
+    });
+  }, [allBookings, rawRooms]);
 
   // Confirmation states
   const [unassignConfirm, setUnassignConfirm] = useState({ isOpen: false, room: null });
@@ -102,9 +161,9 @@ export default function Rooms() {
     toast.success('Room status updated successfully!');
   };
 
-  const handleAssignGuest = (room) => {
+  const handleAssignGuest = (room, prefilledCheckIn?: string) => {
     drawer.closeDrawer();
-    assignGuestModal.openModal(room);
+    assignGuestModal.openModal({ ...room, _prefilledCheckIn: prefilledCheckIn });
   };
 
   // BUG-013 / BUG-016: Pass full guest data (including checkIn/checkOut) to assignGuestToRoom
@@ -351,11 +410,12 @@ export default function Rooms() {
           /* Calendar View */
           <RoomCalendar
             rooms={rooms}
-            bookings={[]} // TODO: Connect to bookings data
+            bookings={calendarBookings}
+            isLoading={isLoadingRooms}
             onRoomClick={handleRoomClick}
             onDateClick={(room, day, status) => {
               if (status.status === 'available') {
-                handleAssignGuest(room);
+                handleAssignGuest(room, day.dateStr);
               } else if (status.status === 'booked') {
                 handleRoomClick(room);
               }
@@ -406,6 +466,7 @@ export default function Rooms() {
           isOpen={assignGuestModal.isOpen}
           onClose={assignGuestModal.closeModal}
           onAssign={handleAssign}
+          allBookings={allBookings}
         />
 
         {/* Block Room Modal */}

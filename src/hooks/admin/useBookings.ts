@@ -285,6 +285,7 @@ export function useBookings() {
       }
 
       const transformedBookings = bookingsData.map(transformBooking);
+
       setBookings(transformedBookings);
       setPagination({ page, pageSize, total, totalPages });
     } catch (err: any) {

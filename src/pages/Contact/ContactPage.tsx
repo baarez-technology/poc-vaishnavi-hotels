@@ -1,9 +1,11 @@
 import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Clock, Instagram, Facebook, Twitter, Linkedin } from 'lucide-react';
-import { APP_NAME, APP_TAGLINE, CONTACT_INFO } from '@/config/constants';
+import { useHotelInfo } from '@/hooks/useHotelInfo';
 import { Footer } from '@/components/layout/Footer';
 
 export const ContactPage = () => {
+  const hotelInfo = useHotelInfo();
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
@@ -52,50 +54,54 @@ export const ContactPage = () => {
                     <div>
                       <h3 className="text-sm sm:text-base font-semibold text-neutral-800 mb-1">Location</h3>
                       <p className="text-sm text-neutral-500 leading-relaxed">
-                        {CONTACT_INFO.address.street}<br />
-                        {CONTACT_INFO.address.city}, {CONTACT_INFO.address.state} {CONTACT_INFO.address.zip}<br />
-                        {CONTACT_INFO.address.country}
+                        {hotelInfo.address.street}<br />
+                        {hotelInfo.address.city}, {hotelInfo.address.state} {hotelInfo.address.zip}<br />
+                        {hotelInfo.address.country}
                       </p>
                     </div>
                   </div>
 
                   {/* Phone */}
-                  <div className="flex gap-3 sm:gap-4 pt-5 sm:pt-6 border-t border-neutral-100">
-                    <div className="w-11 h-11 sm:w-12 sm:h-12 bg-primary-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Phone size={20} className="text-primary-600" />
+                  {hotelInfo.phone && (
+                    <div className="flex gap-3 sm:gap-4 pt-5 sm:pt-6 border-t border-neutral-100">
+                      <div className="w-11 h-11 sm:w-12 sm:h-12 bg-primary-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Phone size={20} className="text-primary-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm sm:text-base font-semibold text-neutral-800 mb-1">Phone</h3>
+                        <a
+                          href={`tel:${hotelInfo.phone}`}
+                          className="text-neutral-700 hover:text-primary-600 font-medium transition-colors text-sm sm:text-base"
+                        >
+                          {hotelInfo.phone}
+                        </a>
+                        <p className="text-xs text-neutral-400 mt-1">
+                          Available 24/7
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-sm sm:text-base font-semibold text-neutral-800 mb-1">Phone</h3>
-                      <a
-                        href={`tel:${CONTACT_INFO.phone}`}
-                        className="text-neutral-700 hover:text-primary-600 font-medium transition-colors text-sm sm:text-base"
-                      >
-                        {CONTACT_INFO.phone}
-                      </a>
-                      <p className="text-xs text-neutral-400 mt-1">
-                        Available {CONTACT_INFO.hours.frontDesk}
-                      </p>
-                    </div>
-                  </div>
+                  )}
 
                   {/* Email */}
-                  <div className="flex gap-3 sm:gap-4 pt-5 sm:pt-6 border-t border-neutral-100">
-                    <div className="w-11 h-11 sm:w-12 sm:h-12 bg-primary-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Mail size={20} className="text-primary-600" />
+                  {hotelInfo.email && (
+                    <div className="flex gap-3 sm:gap-4 pt-5 sm:pt-6 border-t border-neutral-100">
+                      <div className="w-11 h-11 sm:w-12 sm:h-12 bg-primary-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Mail size={20} className="text-primary-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm sm:text-base font-semibold text-neutral-800 mb-1">Email</h3>
+                        <a
+                          href={`mailto:${hotelInfo.email}`}
+                          className="text-neutral-700 hover:text-primary-600 font-medium transition-colors text-sm break-all"
+                        >
+                          {hotelInfo.email}
+                        </a>
+                        <p className="text-xs text-neutral-400 mt-1">
+                          We'll respond within 24 hours
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-sm sm:text-base font-semibold text-neutral-800 mb-1">Email</h3>
-                      <a
-                        href={`mailto:${CONTACT_INFO.email}`}
-                        className="text-neutral-700 hover:text-primary-600 font-medium transition-colors text-sm break-all"
-                      >
-                        {CONTACT_INFO.email}
-                      </a>
-                      <p className="text-xs text-neutral-400 mt-1">
-                        We'll respond within 24 hours
-                      </p>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </motion.div>
 
@@ -117,66 +123,76 @@ export const ContactPage = () => {
                 <div className="space-y-0 sm:ml-[60px]">
                   <div className="flex justify-between items-center py-3 border-b border-neutral-100">
                     <span className="text-sm text-neutral-500">Front Desk</span>
-                    <span className="text-sm font-semibold text-neutral-700">{CONTACT_INFO.hours.frontDesk}</span>
+                    <span className="text-sm font-semibold text-neutral-700">24/7</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-neutral-100">
                     <span className="text-sm text-neutral-500">Check-in</span>
-                    <span className="text-sm font-semibold text-neutral-700">After {CONTACT_INFO.hours.checkIn}</span>
+                    <span className="text-sm font-semibold text-neutral-700">After {hotelInfo.checkInTime}</span>
                   </div>
                   <div className="flex justify-between items-center py-3">
                     <span className="text-sm text-neutral-500">Check-out</span>
-                    <span className="text-sm font-semibold text-neutral-700">Before {CONTACT_INFO.hours.checkOut}</span>
+                    <span className="text-sm font-semibold text-neutral-700">Before {hotelInfo.checkOutTime}</span>
                   </div>
                 </div>
               </motion.div>
 
               {/* Social Media */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="bg-white rounded-2xl border border-neutral-200 p-5 sm:p-6 lg:p-8 shadow-sm"
-              >
-                <h3 className="text-lg sm:text-xl font-semibold text-neutral-800 mb-4 sm:mb-5">Follow Us</h3>
-                <div className="flex flex-wrap gap-3">
-                  <a
-                    href={CONTACT_INFO.social.instagram}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-11 h-11 bg-neutral-100 rounded-lg flex items-center justify-center hover:bg-primary-600 group transition-all duration-200"
-                    aria-label="Instagram"
-                  >
-                    <Instagram size={20} className="text-neutral-500 group-hover:text-white transition-colors" />
-                  </a>
-                  <a
-                    href={CONTACT_INFO.social.facebook}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-11 h-11 bg-neutral-100 rounded-lg flex items-center justify-center hover:bg-primary-600 group transition-all duration-200"
-                    aria-label="Facebook"
-                  >
-                    <Facebook size={20} className="text-neutral-500 group-hover:text-white transition-colors" />
-                  </a>
-                  <a
-                    href={`https://twitter.com/${CONTACT_INFO.social.twitter.replace('@', '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-11 h-11 bg-neutral-100 rounded-lg flex items-center justify-center hover:bg-primary-600 group transition-all duration-200"
-                    aria-label="Twitter"
-                  >
-                    <Twitter size={20} className="text-neutral-500 group-hover:text-white transition-colors" />
-                  </a>
-                  <a
-                    href={CONTACT_INFO.social.linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-11 h-11 bg-neutral-100 rounded-lg flex items-center justify-center hover:bg-primary-600 group transition-all duration-200"
-                    aria-label="LinkedIn"
-                  >
-                    <Linkedin size={20} className="text-neutral-500 group-hover:text-white transition-colors" />
-                  </a>
-                </div>
-              </motion.div>
+              {(hotelInfo.socialMedia.instagram || hotelInfo.socialMedia.facebook || hotelInfo.socialMedia.twitter || hotelInfo.socialMedia.linkedin) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="bg-white rounded-2xl border border-neutral-200 p-5 sm:p-6 lg:p-8 shadow-sm"
+                >
+                  <h3 className="text-lg sm:text-xl font-semibold text-neutral-800 mb-4 sm:mb-5">Follow Us</h3>
+                  <div className="flex flex-wrap gap-3">
+                    {hotelInfo.socialMedia.instagram && (
+                      <a
+                        href={hotelInfo.socialMedia.instagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-11 h-11 bg-neutral-100 rounded-lg flex items-center justify-center hover:bg-primary-600 group transition-all duration-200"
+                        aria-label="Instagram"
+                      >
+                        <Instagram size={20} className="text-neutral-500 group-hover:text-white transition-colors" />
+                      </a>
+                    )}
+                    {hotelInfo.socialMedia.facebook && (
+                      <a
+                        href={hotelInfo.socialMedia.facebook}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-11 h-11 bg-neutral-100 rounded-lg flex items-center justify-center hover:bg-primary-600 group transition-all duration-200"
+                        aria-label="Facebook"
+                      >
+                        <Facebook size={20} className="text-neutral-500 group-hover:text-white transition-colors" />
+                      </a>
+                    )}
+                    {hotelInfo.socialMedia.twitter && (
+                      <a
+                        href={hotelInfo.socialMedia.twitter.startsWith('http') ? hotelInfo.socialMedia.twitter : `https://twitter.com/${hotelInfo.socialMedia.twitter.replace('@', '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-11 h-11 bg-neutral-100 rounded-lg flex items-center justify-center hover:bg-primary-600 group transition-all duration-200"
+                        aria-label="Twitter"
+                      >
+                        <Twitter size={20} className="text-neutral-500 group-hover:text-white transition-colors" />
+                      </a>
+                    )}
+                    {hotelInfo.socialMedia.linkedin && (
+                      <a
+                        href={hotelInfo.socialMedia.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-11 h-11 bg-neutral-100 rounded-lg flex items-center justify-center hover:bg-primary-600 group transition-all duration-200"
+                        aria-label="LinkedIn"
+                      >
+                        <Linkedin size={20} className="text-neutral-500 group-hover:text-white transition-colors" />
+                      </a>
+                    )}
+                  </div>
+                </motion.div>
+              )}
             </div>
 
             {/* Right Column - Map Placeholder */}
@@ -194,32 +210,18 @@ export const ContactPage = () => {
                         <MapPin size={24} className="text-primary-600 sm:w-7 sm:h-7" />
                       </div>
                       <h3 className="text-lg sm:text-xl font-semibold text-neutral-800 mb-2">
-                        {APP_NAME}
+                        {hotelInfo.name}
                       </h3>
-                      <p className="text-neutral-500 mb-3 sm:mb-4 text-sm sm:text-base">{APP_TAGLINE}</p>
+                      <p className="text-neutral-500 mb-3 sm:mb-4 text-sm sm:text-base">{hotelInfo.tagline}</p>
                       <p className="text-sm text-neutral-600 font-medium">
-                        {CONTACT_INFO.address.street}<br />
-                        {CONTACT_INFO.address.city}, {CONTACT_INFO.address.state}
+                        {hotelInfo.address.street}<br />
+                        {hotelInfo.address.city}, {hotelInfo.address.state}
                       </p>
                       <p className="text-xs text-neutral-400 mt-5 sm:mt-6 px-4 py-2 bg-white rounded-lg border border-neutral-200 inline-block">
                         Google Maps integration coming soon
                       </p>
                     </div>
                   </div>
-
-                  {/* Uncomment and add your Google Maps embed code here */}
-                  {/*
-                  <iframe
-                    src="YOUR_GOOGLE_MAPS_EMBED_URL"
-                    width="100%"
-                    height="100%"
-                    style={{ border: 0 }}
-                    allowFullScreen
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    title="Glimmora Location"
-                  ></iframe>
-                  */}
                 </div>
               </div>
             </motion.div>
@@ -236,7 +238,7 @@ export const ContactPage = () => {
             transition={{ delay: 0.3 }}
           >
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-white mb-4 sm:mb-5">
-              Ready to Experience Glimmora?
+              Ready to Experience {hotelInfo.name}?
             </h2>
             <p className="text-neutral-400 text-base sm:text-lg mb-6 sm:mb-8 leading-relaxed">
               Book your stay today and discover where modern luxury meets natural tranquility.

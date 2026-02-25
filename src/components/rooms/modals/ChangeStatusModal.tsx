@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Check } from 'lucide-react';
+import { Check, AlertTriangle } from 'lucide-react';
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalContent, ModalFooter } from '../../ui2/Modal';
 import { Button } from '../../ui2/Button';
 
@@ -76,6 +76,24 @@ export default function ChangeStatusModal({ room, isOpen, onClose, onSave }) {
                 );
               })}
             </div>
+
+            {/* Warning: changing from occupied to non-occupied with guest assigned */}
+            {room.status === 'occupied' && room.guests && selectedStatus !== 'occupied' && (
+              <div className="mt-4 p-4 rounded-lg border bg-amber-50 border-amber-200">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-600" />
+                  <div>
+                    <p className="text-[13px] font-semibold text-amber-800">
+                      Guest Currently Assigned
+                    </p>
+                    <p className="text-[12px] mt-1 text-amber-700">
+                      <span className="font-semibold">{room.guests.name}</span> is currently assigned to this room.
+                      Changing status will not automatically unassign the guest. Please unassign the guest first from the room drawer.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </form>
       </ModalContent>

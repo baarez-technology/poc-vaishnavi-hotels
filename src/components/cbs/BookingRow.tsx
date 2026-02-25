@@ -21,6 +21,8 @@ import SearchHighlight from '../ui2/SearchHighlight';
 import { StatusBadge, Badge } from '../ui2/Badge';
 import { ActionMenu } from '../ui2/DropdownMenu';
 import { Button, IconButton } from '../ui2/Button';
+import { PreCheckInBadge } from '../shared/PreCheckInBadge';
+import type { PrecheckinStatusValue } from '@/hooks/admin/usePrecheckinStatus';
 
 // Source Badge - Using ui2 Badge with brand colors
 function SourceBadge({ source }) {
@@ -77,7 +79,8 @@ export default function BookingRow({
   searchQuery = '',
   isSelected = false,
   onSelect,
-  animationDelay = 0
+  animationDelay = 0,
+  precheckinStatus = 'not_started' as PrecheckinStatusValue
 }) {
   const { symbol } = useCurrency();
   const [isHovered, setIsHovered] = useState(false);
@@ -217,6 +220,11 @@ export default function BookingRow({
       {/* Source */}
       <td className="px-6 py-3">
         <SourceBadge source={booking.source} />
+      </td>
+
+      {/* Pre Check-In */}
+      <td className="px-6 py-3">
+        <PreCheckInBadge status={precheckinStatus} />
       </td>
 
       {/* Amount */}

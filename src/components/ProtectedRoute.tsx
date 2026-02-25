@@ -1,7 +1,15 @@
-import { ReactNode } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { getAccessToken } from '@/api/client';
+import { DEFAULT_PERMISSIONS, getModuleForRoute, canViewModule, resolveRolePermissions } from '@/config/rolePermissions';
+import type { PermissionMap, StaffRole } from '@/config/rolePermissions';
+
+// Roles that access admin panel (all 10 RBAC roles)
+const ADMIN_PANEL_ROLES = new Set<string>(Object.keys(DEFAULT_PERMISSIONS));
+
+// Roles that should go to the staff portal instead of admin panel
+const STAFF_PORTAL_ROLES = ['housekeeping', 'housekeeper', 'maintenance', 'runner'];
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -16,6 +24,17 @@ export function ProtectedRoute({ children, allowedRoles, requireAdmin }: Protect
   // Double-check: ensure we have both a user AND a valid token
   const hasToken = !!getAccessToken();
   const isReallyAuthenticated = isAuthenticated && user && hasToken;
+
+  // Resolve RBAC permissions (checks Settings customizations via localStorage)
+  const userPermissions: PermissionMap | undefined = useMemo(() => {
+    if (!user) return undefined;
+    if (user.permissions) return user.permissions as PermissionMap;
+    if (user.isSuperuser) return DEFAULT_PERMISSIONS.admin;
+    if (user.role && user.role in DEFAULT_PERMISSIONS) {
+      return resolveRolePermissions(user.role as StaffRole);
+    }
+    return undefined;
+  }, [user]);
 
   // Show loading spinner while checking auth
   if (isLoading) {
@@ -36,24 +55,31 @@ export function ProtectedRoute({ children, allowedRoles, requireAdmin }: Protect
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Check admin routes - only allow admin or superuser
+  // Check admin routes
   const isAdminRoute = location.pathname.startsWith('/admin');
   const userRole = user?.role?.toLowerCase() || '';
   const isSuperuser = user?.isSuperuser || false;
 
   if (isAdminRoute || requireAdmin) {
-    // Only admin or superuser can access admin routes
-    const hasAdminAccess = isSuperuser || userRole === 'admin';
+    // Allow superuser, admin, or any of the 10 RBAC roles into the admin panel
+    const hasAdminAccess = isSuperuser || ADMIN_PANEL_ROLES.has(userRole);
+
     if (!hasAdminAccess) {
-      // Redirect guests to dashboard, staff to their portal
-      if (['housekeeping', 'maintenance', 'runner'].includes(userRole)) {
+      // Staff portal roles → redirect to staff portal
+      if (STAFF_PORTAL_ROLES.includes(userRole)) {
         return <Navigate to={`/staff/${userRole}`} replace />;
       }
       if (['front_desk', 'frontdesk'].includes(userRole)) {
         return <Navigate to="/dashboard/frontdesk" replace />;
       }
-      // Guest or unknown role - redirect to home
+      // Guest or unknown role → redirect to home
       return <Navigate to="/" replace />;
+    }
+
+    // RBAC: check module-level permission for the specific admin route
+    const module = getModuleForRoute(location.pathname);
+    if (module && userPermissions && !canViewModule(userPermissions, module)) {
+      return <Navigate to="/admin/access-denied" replace />;
     }
   }
 

@@ -6,13 +6,13 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
-  ChevronLeft, ChevronRight, DollarSign, Calendar,
-  AlertCircle, Ban, ChevronDown, CheckCircle, XCircle, Clock, Bed
+  DollarSign, Calendar,
+  AlertCircle, Ban, ChevronDown, CheckCircle, XCircle, Clock, Bed, Filter, X
 } from 'lucide-react';
 import { useChannelManager } from '../../context/ChannelManagerContext';
 import { DropdownMenu, DropdownMenuItem } from '../ui2/DropdownMenu';
-import { IconButton } from '../ui2/Button';
 import { Tooltip } from '../ui2/Tooltip';
+import DatePicker from '../ui2/DatePicker';
 
 export default function RateSyncCalendar({ selectedRoomType = null }) {
   const { rateCalendar, otas, roomTypes, updateRateForOTA, updateAvailabilityForOTA, toggleStopSell } = useChannelManager();
@@ -22,6 +22,24 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
   const [editingCell, setEditingCell] = useState(null);
   const [editValue, setEditValue] = useState('');
   const scrollContainerRef = useRef(null);
+
+  // Date range filter state
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
+  const isFilterActive = filterStartDate || filterEndDate;
+
+  const handleFilterStartChange = (date: string) => {
+    setFilterStartDate(date);
+    if (date) {
+      setViewStartDate(new Date(date + 'T00:00:00'));
+    }
+  };
+
+  const handleClearFilter = () => {
+    setFilterStartDate('');
+    setFilterEndDate('');
+    setViewStartDate(new Date());
+  };
 
   // Use prop if provided, otherwise use internal state (first room type from API)
   const activeRoomType = selectedRoomType || internalRoomType || (roomTypes.length > 0 ? roomTypes[0].name : null);
@@ -37,7 +55,7 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
     }
   }, [roomTypes, internalRoomType]);
 
-  // Generate 14 visible days
+  // Generate 14 visible days, filtered by date range if active
   const visibleDays = useMemo(() => {
     const days = [];
     for (let i = 0; i < 14; i++) {
@@ -52,20 +70,13 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
         isToday: date.toDateString() === new Date().toDateString()
       });
     }
+
+    // Apply end date filter if set
+    if (filterEndDate) {
+      return days.filter(d => d.date <= filterEndDate);
+    }
     return days;
-  }, [viewStartDate]);
-
-  const handlePrevWeek = () => {
-    const newDate = new Date(viewStartDate);
-    newDate.setDate(newDate.getDate() - 7);
-    setViewStartDate(newDate);
-  };
-
-  const handleNextWeek = () => {
-    const newDate = new Date(viewStartDate);
-    newDate.setDate(newDate.getDate() + 7);
-    setViewStartDate(newDate);
-  };
+  }, [viewStartDate, filterEndDate]);
 
   const handleEditStart = (date, roomType, otaCode, field, currentValue) => {
     setEditingCell({ date, roomType, otaCode, field });
@@ -137,11 +148,50 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
         <div>
           <h3 className="text-xs sm:text-sm font-semibold text-neutral-800">Rate Calendar</h3>
           <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">
-            <span className="hidden sm:inline">Click any cell to edit rates & restrictions</span>
-            <span className="sm:hidden">Tap to edit rates</span>
+            {isFilterActive ? (
+              <span className="text-terra-600">
+                Showing {visibleDays.length} days {filterStartDate && `from ${new Date(filterStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                {filterEndDate && ` to ${new Date(filterEndDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+              </span>
+            ) : (
+              <>
+                <span className="hidden sm:inline">Click any cell to edit rates & restrictions</span>
+                <span className="sm:hidden">Tap to edit rates</span>
+              </>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto">
+          {/* Date Range Filter */}
+          <div className="hidden sm:flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-neutral-50 rounded-lg border border-neutral-200">
+              <Filter className="w-3.5 h-3.5 text-neutral-400" />
+              <DatePicker
+                value={filterStartDate}
+                onChange={handleFilterStartChange}
+                placeholder="From"
+                minDate={new Date().toISOString().split('T')[0]}
+                className="w-28"
+              />
+              <span className="text-neutral-300">—</span>
+              <DatePicker
+                value={filterEndDate}
+                onChange={setFilterEndDate}
+                placeholder="To"
+                minDate={filterStartDate || new Date().toISOString().split('T')[0]}
+                className="w-28"
+              />
+            </div>
+            {isFilterActive && (
+              <button
+                onClick={handleClearFilter}
+                className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-medium text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
+              >
+                <X className="w-3 h-3" />
+                Clear
+              </button>
+            )}
+          </div>
           {/* Filters */}
           {!selectedRoomType && (
             <DropdownMenu
@@ -181,23 +231,6 @@ export default function RateSyncCalendar({ selectedRoomType = null }) {
             ))}
           </DropdownMenu>
 
-          {/* Navigation */}
-          <div className="flex items-center gap-1.5 sm:gap-2 pl-2 sm:pl-3 border-l border-neutral-200 flex-shrink-0">
-            <IconButton
-              onClick={handlePrevWeek}
-              icon={ChevronLeft}
-              variant="outline"
-              size="sm"
-              label="Previous week"
-            />
-            <IconButton
-              onClick={handleNextWeek}
-              icon={ChevronRight}
-              variant="outline"
-              size="sm"
-              label="Next week"
-            />
-          </div>
         </div>
       </div>
 

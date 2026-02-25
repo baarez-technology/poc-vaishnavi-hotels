@@ -65,6 +65,7 @@ export interface RecentBooking {
   totalAmount: number;
   paymentStatus?: string;
   amountPaid?: number;
+  paymentMethod?: string;
   isVIP?: boolean;
   specialRequests?: string | string[];
 }

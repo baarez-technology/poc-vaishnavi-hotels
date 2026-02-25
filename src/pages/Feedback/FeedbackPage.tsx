@@ -18,7 +18,7 @@ import {
   Car,
 } from 'lucide-react';
 import { Button, Card } from '@/components/ui';
-import { APP_NAME } from '@/config/constants';
+import { useHotelInfo } from '@/hooks/useHotelInfo';
 import { apiClient } from '@/api/client';
 
 // Rating categories with icons
@@ -139,6 +139,7 @@ function CategoryRating({
 export const FeedbackPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const hotelInfo = useHotelInfo();
   const bookingId = searchParams.get('bookingId');
 
   const [booking, setBooking] = useState<BookingDetails | null>(null);
@@ -322,7 +323,7 @@ export const FeedbackPage = () => {
             </motion.div>
 
             <Button variant="primary" onClick={() => navigate('/')} className="w-full">
-              Return to {APP_NAME}
+              Return to {hotelInfo.name}
             </Button>
           </Card>
         </motion.div>
@@ -360,7 +361,7 @@ export const FeedbackPage = () => {
               transition={{ delay: 0.2 }}
               className="text-lg text-neutral-600"
             >
-              We'd love to hear about your experience at {APP_NAME}
+              We'd love to hear about your experience at {hotelInfo.name}
             </motion.p>
           </div>
         </div>
@@ -632,7 +633,7 @@ export const FeedbackPage = () => {
       <div className="bg-white border-t border-neutral-200 py-6">
         <div className="container mx-auto px-4 text-center">
           <p className="text-neutral-500 text-sm">
-            Thank you for choosing {APP_NAME}. We hope to see you again soon!
+            Thank you for choosing {hotelInfo.name}. We hope to see you again soon!
           </p>
         </div>
       </div>

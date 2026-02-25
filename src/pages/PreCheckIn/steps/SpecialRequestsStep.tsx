@@ -28,12 +28,13 @@ export function SpecialRequestsStep({ onNext, onPrevious }: SpecialRequestsStepP
   const steps = [
     { number: 1, label: 'Welcome', active: false },
     { number: 2, label: 'Guest Details', active: false },
-    { number: 3, label: 'Room Preferences', active: false },
-    { number: 4, label: 'Verification', active: false },
+    { number: 3, label: 'Room Type', active: false },
+    { number: 4, label: 'Travel Details', active: false },
     { number: 5, label: 'Documents', active: false },
-    { number: 6, label: 'Payment Info', active: false },
-    { number: 7, label: 'Review', active: true },
-    { number: 8, label: 'Confirmation', active: false },
+    { number: 6, label: 'Preferences', active: false },
+    { number: 7, label: 'Special Requests', active: true },
+    { number: 8, label: 'Review', active: false },
+    { number: 9, label: 'Confirmation', active: false },
   ];
 
   const currentStepIndex = steps.findIndex(s => s.active);

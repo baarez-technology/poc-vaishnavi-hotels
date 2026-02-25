@@ -19,7 +19,8 @@ import ProfileMenu from './ProfileMenu';
 import { useAuth } from '@/hooks/useAuth';
 import { useUnreadNotificationCount } from '@/hooks/staff-portal/useStaffApi';
 import { LucideIcon } from 'lucide-react';
-import GlimmoraLogo from '../../../assets/G white logo.svg';
+import { useSettingsContext } from '@/contexts/SettingsContext';
+import GlimmoraLogo from '../../../assets/G white logo.png';
 
 interface NavItem {
   to: string;
@@ -48,6 +49,10 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
   const { user } = useAuth();
   const { count: unreadCount } = useUnreadNotificationCount();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const settingsContext = useSettingsContext() as any;
+  const generalSettings = settingsContext?.generalSettings;
+  const hotelName = generalSettings?.hotelName || 'Glimmora';
+  const customLogo = generalSettings?.branding?.logo;
 
   // Helper function to get department from role or URL path
   const getDepartment = (role?: string): string => {
@@ -182,14 +187,20 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
         }`}>
           <div className="flex items-center gap-3">
             <div className={`flex-shrink-0 ${isCollapsed ? 'w-8 h-8' : 'w-9 h-9'}`}>
-              <div className="w-full h-full rounded-xl flex items-center justify-center p-1.5 bg-[var(--brand-primary)]">
-                <img src={GlimmoraLogo} alt="Glimmora" className="w-full h-full object-contain" />
-              </div>
+              {customLogo ? (
+                <div className="w-full h-full rounded-xl flex items-center justify-center overflow-hidden bg-white border border-neutral-200">
+                  <img src={customLogo} alt={hotelName} className="w-full h-full object-contain" />
+                </div>
+              ) : (
+                <div className="w-full h-full rounded-xl flex items-center justify-center p-1.5 bg-[var(--brand-primary)]">
+                  <img src={GlimmoraLogo} alt="Glimmora" className="w-full h-full object-contain" />
+                </div>
+              )}
             </div>
 
             {!isCollapsed && (
               <div>
-                <h1 className="text-sm font-semibold text-neutral-800">Glimmora</h1>
+                <h1 className="text-sm font-semibold text-neutral-800">{hotelName}</h1>
                 <p className="text-[10px] text-neutral-400">{getRoleTitle(user?.role)}</p>
               </div>
             )}
@@ -415,12 +426,18 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
       <div className="h-14 flex items-center justify-between px-5 border-b border-neutral-100">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 flex-shrink-0">
-            <div className="w-full h-full rounded-xl flex items-center justify-center p-1.5 bg-[var(--brand-primary)]">
-              <img src={GlimmoraLogo} alt="Glimmora" className="w-full h-full object-contain" />
-            </div>
+            {customLogo ? (
+              <div className="w-full h-full rounded-xl flex items-center justify-center overflow-hidden bg-white border border-neutral-200">
+                <img src={customLogo} alt={hotelName} className="w-full h-full object-contain" />
+              </div>
+            ) : (
+              <div className="w-full h-full rounded-xl flex items-center justify-center p-1.5 bg-[var(--brand-primary)]">
+                <img src={GlimmoraLogo} alt="Glimmora" className="w-full h-full object-contain" />
+              </div>
+            )}
           </div>
           <div>
-            <h1 className="text-sm font-semibold text-neutral-800">Glimmora</h1>
+            <h1 className="text-sm font-semibold text-neutral-800">{hotelName}</h1>
             <p className="text-[10px] text-neutral-400">{getRoleTitle(user?.role)}</p>
           </div>
         </div>

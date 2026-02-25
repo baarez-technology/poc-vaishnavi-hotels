@@ -37,6 +37,10 @@ interface Notification {
   read: boolean;
   priority?: 'high' | 'medium' | 'low';
   link?: string;
+  /** Guest ID for guest-related notifications — enables direct navigation */
+  guestId?: string;
+  /** Booking ID for booking-related notifications */
+  bookingId?: string;
 }
 
 // Resolve notification type from any backend value (handles variations like
@@ -103,6 +107,8 @@ const transformNotification = (apiNotification: StaffNotification): Notification
               apiNotification.task?.priority === 'high' ? 'high' :
               apiNotification.task?.priority === 'medium' ? 'medium' : 'low',
     link: resolveNotificationRoute(apiNotification.notification_type),
+    guestId: apiNotification.guest_id != null ? String(apiNotification.guest_id) : undefined,
+    bookingId: apiNotification.booking_id != null ? String(apiNotification.booking_id) : undefined,
   };
 };
 
@@ -176,7 +182,12 @@ export function NotificationsDrawer({ isOpen, onClose, onUnreadCountChange }: No
     // Close drawer first, then navigate
     onClose();
     if (notification.link) {
-      navigate(notification.link);
+      // Pass entity IDs via navigation state so target pages can
+      // auto-select/highlight the relevant guest or booking
+      const state: Record<string, string> = {};
+      if (notification.guestId) state.guestId = notification.guestId;
+      if (notification.bookingId) state.bookingId = notification.bookingId;
+      navigate(notification.link, Object.keys(state).length > 0 ? { state } : undefined);
     }
   };
 

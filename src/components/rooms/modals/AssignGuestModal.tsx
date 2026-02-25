@@ -9,7 +9,7 @@
  * - BUG-016: Requires check-in/check-out dates for proper date-based assignment
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Bed, UsersRound, ChevronDown, Check, Search, Calendar, AlertTriangle } from 'lucide-react';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -189,7 +189,14 @@ function GuestSelectDropdown({ value, onChange, options, placeholder, isLoading 
                   }`}
                 >
                   <div className="flex flex-col min-w-0">
-                    <span className="truncate">{option.label}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="truncate">{option.label}</span>
+                      {option.hasReservation && (
+                        <span className="flex-shrink-0 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider bg-sage-100 text-sage-700 rounded">
+                          Has Reservation
+                        </span>
+                      )}
+                    </div>
                     {option.email && (
                       <span className="text-[11px] text-neutral-400 truncate">{option.email}</span>
                     )}
@@ -206,7 +213,7 @@ function GuestSelectDropdown({ value, onChange, options, placeholder, isLoading 
   );
 }
 
-export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
+export default function AssignGuestModal({ room, isOpen, onClose, onAssign, allBookings = [] }) {
   const { symbol, formatCurrency } = useCurrency();
   const [selectedGuest, setSelectedGuest] = useState('');
   const [checkInDate, setCheckInDate] = useState('');
@@ -217,18 +224,20 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [reassignConfirmed, setReassignConfirmed] = useState(false);
   const [isCheckingGuest, setIsCheckingGuest] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [roomTypeMismatch, setRoomTypeMismatch] = useState<{ bookedType: string; roomType: string } | null>(null);
   const toast = useToast();
 
   useEffect(() => {
     if (isOpen) {
       setSelectedGuest('');
-      // Default check-in to today, check-out to tomorrow
-      const today = new Date();
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      setCheckInDate(today.toISOString().split('T')[0]);
-      setCheckOutDate(tomorrow.toISOString().split('T')[0]);
+      // Use prefilled check-in date from calendar click, or default to today
+      const prefilled = room?._prefilledCheckIn;
+      const checkIn = prefilled || new Date().toISOString().split('T')[0];
+      const nextDay = new Date(checkIn + 'T00:00:00');
+      nextDay.setDate(nextDay.getDate() + 1);
+      setCheckInDate(checkIn);
+      setCheckOutDate(nextDay.toISOString().split('T')[0]);
       setExistingAssignment(null);
       setShowDuplicateWarning(false);
       setReassignConfirmed(false);
@@ -368,9 +377,64 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
     }
   };
 
+  // Cross-reference guests with bookings for this room type
+  const guestOptionsWithReservation = useMemo(() => {
+    if (!availableGuests.length || !room) return [];
+
+    const roomType = (room.type || '').toLowerCase().trim();
+
+    // Build a set of guest identifiers (name/email) that have bookings for this room type
+    const matchingGuestKeys = new Set<string>();
+
+    (allBookings || []).forEach((b: any) => {
+      const bookingRoomType = (
+        b.roomType || b.room_type_name ||
+        (typeof b.room_type === 'object' ? b.room_type?.name : b.room_type) || ''
+      ).toLowerCase().trim();
+
+      if (!bookingRoomType || !roomType) return;
+
+      // Match room type (exact or partial)
+      const typesMatch = bookingRoomType === roomType ||
+        roomType.includes(bookingRoomType) ||
+        bookingRoomType.includes(roomType);
+
+      if (!typesMatch) return;
+
+      // Status check — only active/upcoming bookings
+      const status = (b.status || '').toLowerCase().replace('-', '_');
+      if (status === 'cancelled' || status === 'checked_out' || status === 'no_show') return;
+
+      // Extract guest identifier from booking
+      const guestName = ((b.guestInfo?.firstName || '') + ' ' + (b.guestInfo?.lastName || '')).toLowerCase().trim();
+      const guestEmail = (b.guestInfo?.email || '').toLowerCase().trim();
+      const guestId = b.guestId ? String(b.guestId) : null;
+
+      if (guestId) matchingGuestKeys.add(`id:${guestId}`);
+      if (guestName) matchingGuestKeys.add(`name:${guestName}`);
+      if (guestEmail) matchingGuestKeys.add(`email:${guestEmail}`);
+    });
+
+    // Tag each guest with whether they have a matching reservation
+    return availableGuests.map(guest => {
+      const guestName = `${guest.first_name} ${guest.last_name}`.toLowerCase().trim();
+      const guestEmail = (guest.email || '').toLowerCase().trim();
+      const guestId = String(guest.id);
+
+      const hasReservation =
+        matchingGuestKeys.has(`id:${guestId}`) ||
+        matchingGuestKeys.has(`name:${guestName}`) ||
+        matchingGuestKeys.has(`email:${guestEmail}`);
+
+      return { ...guest, hasReservation };
+    })
+    // Sort: guests with reservations first
+    .sort((a, b) => (b.hasReservation ? 1 : 0) - (a.hasReservation ? 1 : 0));
+  }, [availableGuests, allBookings, room]);
+
   if (!room) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!selectedGuest) {
@@ -397,16 +461,23 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
 
     const guest = availableGuests.find(g => String(g.id) === String(selectedGuest));
     if (guest) {
-      onAssign(room.id, {
-        id: guest.id,
-        name: `${guest.first_name} ${guest.last_name}`,
-        email: guest.email,
-        phone: guest.phone,
-        checkIn: checkInDate,
-        checkOut: checkOutDate,
-      });
-      onClose();
-      setSelectedGuest('');
+      setIsSubmitting(true);
+      try {
+        await onAssign(room.id, {
+          id: guest.id,
+          name: `${guest.first_name} ${guest.last_name}`,
+          email: guest.email,
+          phone: guest.phone,
+          checkIn: checkInDate,
+          checkOut: checkOutDate,
+        });
+        onClose();
+        setSelectedGuest('');
+      } catch (err) {
+        // Error toast is handled by parent's handleAssign
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -424,10 +495,14 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
         type="submit"
         variant="primary"
         form="assign-guest-form"
-        disabled={(showDuplicateWarning && !reassignConfirmed) || !checkInDate || !checkOutDate || nights <= 0}
+        disabled={isSubmitting || (showDuplicateWarning && !reassignConfirmed) || !checkInDate || !checkOutDate || nights <= 0}
         className="px-5 py-2 text-[13px] font-semibold"
       >
-        {showDuplicateWarning && reassignConfirmed ? 'Reassign Guest' : 'Assign Guest'}
+        {isSubmitting
+          ? 'Assigning...'
+          : showDuplicateWarning && reassignConfirmed
+          ? 'Reassign Guest'
+          : 'Assign Guest'}
       </Button>
     </div>
   );
@@ -454,10 +529,11 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
             <GuestSelectDropdown
               value={selectedGuest}
               onChange={setSelectedGuest}
-              options={availableGuests.map((guest) => ({
+              options={guestOptionsWithReservation.map((guest) => ({
                 value: guest.id,
                 label: `${guest.first_name} ${guest.last_name}`,
-                email: guest.email
+                email: guest.email,
+                hasReservation: guest.hasReservation
               }))}
               placeholder="Select a guest"
               isLoading={isLoading}
@@ -535,6 +611,7 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
                 value={checkInDate}
                 onChange={(val) => setCheckInDate(val)}
                 placeholder="Select check-in"
+                minDate={new Date().toISOString().split('T')[0]}
                 className="w-full"
               />
             </div>

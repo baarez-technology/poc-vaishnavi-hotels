@@ -69,8 +69,8 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
           </div>
         </div>
 
-        {/* Guest Info */}
-        {room.guests && (
+        {/* Guest Info — only show for occupied rooms */}
+        {room.status === 'occupied' && room.guests && (
           <div>
             <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
               Current Guest
@@ -81,7 +81,13 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
               </div>
               <div>
                 <p className="text-[13px] font-semibold text-neutral-900">{room.guests.name}</p>
-                <p className="text-[11px] text-neutral-500 mt-0.5">Currently staying</p>
+                {room.guests.checkIn && room.guests.checkOut ? (
+                  <p className="text-[11px] text-neutral-500 mt-0.5">
+                    {new Date(room.guests.checkIn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date(room.guests.checkOut).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-neutral-500 mt-0.5">Currently staying</p>
+                )}
               </div>
             </div>
           </div>

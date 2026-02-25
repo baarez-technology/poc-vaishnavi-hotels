@@ -33,6 +33,7 @@ function transformApiGuest(apiGuest: ApiGuest): any {
     email: apiGuest.email || '',
     phone: apiGuest.phone || '',
     country: apiGuest.country || 'Unknown',
+    state: apiGuest.state || '',
     city: apiGuest.city || '',
     address: apiGuest.address || '',
     postalCode: apiGuest.postal_code || '',
@@ -175,6 +176,7 @@ export function useGuests() {
       if (updates.email) apiUpdates.email = updates.email;
       if (updates.phone) apiUpdates.phone = updates.phone;
       if (updates.country) apiUpdates.country = updates.country;
+      if (updates.state) apiUpdates.state = updates.state;
       if (updates.city) apiUpdates.city = updates.city;
       if (updates.address) apiUpdates.address = updates.address;
       if (updates.postalCode || updates.postal_code) apiUpdates.postal_code = updates.postalCode || updates.postal_code;
@@ -197,11 +199,36 @@ export function useGuests() {
       // Handle tags updates
       if (updates.tags) apiUpdates.tags = updates.tags;
 
-      const updatedGuest = await guestsService.update(String(id), apiUpdates);
-      const transformedGuest = transformApiGuest(updatedGuest);
+      await guestsService.update(String(id), apiUpdates);
 
-      // Update local state with transformed guest
-      setGuests(prev => prev.map(g => String(g.id) === String(id) ? transformedGuest : g));
+      // Update local state using submitted values directly instead of PATCH response,
+      // because PATCH may return partial data and transformApiGuest would set defaults
+      // (e.g., totalBookings: 0) that overwrite correct existing values
+      setGuests(prev => prev.map(g => {
+        if (String(g.id) !== String(id)) return g;
+        const firstName = updates.firstName || updates.first_name || g.firstName;
+        const lastName = updates.lastName || updates.last_name || g.lastName;
+        return {
+          ...g,
+          firstName,
+          lastName,
+          name: `${firstName} ${lastName}`.trim(),
+          email: updates.email || g.email,
+          phone: updates.phone ?? g.phone,
+          country: updates.country || g.country,
+          state: 'state' in updates ? updates.state : g.state,
+          city: 'city' in updates ? updates.city : g.city,
+          address: 'address' in updates ? updates.address : g.address,
+          postalCode: updates.postalCode || updates.postal_code || g.postalCode,
+          status: updates.status
+            ? (updates.status.toUpperCase() === 'VIP' ? 'vip' : updates.status.toLowerCase())
+            : g.status,
+          vipStatus: updates.vipStatus ?? g.vipStatus,
+          emotion: updates.emotion || g.emotion,
+          tags: updates.tags || g.tags,
+          preferences: updates.preferences ?? g.preferences,
+        };
+      }));
     } catch (err) {
       console.error('Failed to update guest via API:', err);
       throw err; // Propagate error
@@ -218,6 +245,7 @@ export function useGuests() {
         email: guestData.email,
         phone: guestData.phone,
         country: guestData.country,
+        state: guestData.state,
         city: guestData.city,
         address: guestData.address,
         postal_code: guestData.postalCode || guestData.postal_code,
@@ -225,7 +253,18 @@ export function useGuests() {
 
       const newGuest = await guestsService.create(apiData);
       const transformedGuest = transformApiGuest(newGuest);
-      setGuests(prev => [transformedGuest, ...prev]);
+
+      // Merge submitted data (tags, status, preferences) that the API response may not include
+      const fullGuest = {
+        ...transformedGuest,
+        status: guestData.status
+          ? (guestData.status.toUpperCase() === 'VIP' ? 'vip' : guestData.status.toLowerCase())
+          : transformedGuest.status,
+        vipStatus: guestData.status?.toUpperCase() === 'VIP' || false,
+        tags: guestData.tags || transformedGuest.tags,
+        preferences: guestData.preferences || transformedGuest.preferences,
+      };
+      setGuests(prev => [fullGuest, ...prev]);
     } catch (err) {
       console.error('Failed to add guest via API:', err);
       throw err; // Propagate error instead of silent fallback

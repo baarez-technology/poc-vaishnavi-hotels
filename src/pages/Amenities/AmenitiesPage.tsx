@@ -17,7 +17,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { APP_NAME } from '@/config/constants';
+import { useHotelInfo } from '@/hooks/useHotelInfo';
 
 interface Amenity {
   icon: React.ComponentType<any>;
@@ -151,6 +151,8 @@ const roomFeatures = [
 ];
 
 export function AmenitiesPage() {
+  const hotelInfo = useHotelInfo();
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
@@ -170,7 +172,7 @@ export function AmenitiesPage() {
               Hotel Amenities
             </h1>
             <p className="text-base sm:text-lg lg:text-xl text-neutral-500 leading-relaxed">
-              Discover the exceptional amenities and services that make {APP_NAME} your
+              Discover the exceptional amenities and services that make {hotelInfo.name} your
               home away from home. Every detail curated for your comfort.
             </p>
           </motion.div>
@@ -258,7 +260,7 @@ export function AmenitiesPage() {
             className="text-center max-w-2xl mx-auto"
           >
             <h2 className="text-2xl sm:text-3xl font-bold text-neutral-800 mb-4">
-              Ready to Experience {APP_NAME}?
+              Ready to Experience {hotelInfo.name}?
             </h2>
             <p className="text-neutral-500 mb-8">
               Browse our rooms and suites to find the perfect accommodation for your stay.

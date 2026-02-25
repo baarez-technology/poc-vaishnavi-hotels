@@ -39,7 +39,11 @@ function ReputationAIContent() {
     influenceChurnProbability,
     influenceLTVCurve,
     affectRateRecommendations,
-    loadReputation,
+    refreshDashboard,
+    refreshAnalytics,
+    refreshTrends,
+    loadPendingReviews,
+    loadEngineStats,
     engineStats
   } = useReputation();
 
@@ -69,9 +73,14 @@ function ReputationAIContent() {
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    showToast('Syncing reputation data...', 'info');
     try {
-      await loadReputation();
+      await Promise.all([
+        refreshDashboard(),
+        refreshAnalytics(),
+        refreshTrends(),
+        loadPendingReviews(),
+        loadEngineStats(),
+      ]);
       setLastUpdated(new Date());
       showToast('Reputation data synced successfully', 'success');
     } catch (err) {
@@ -80,7 +89,7 @@ function ReputationAIContent() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [loadReputation, showToast]);
+  }, [refreshDashboard, refreshAnalytics, refreshTrends, loadPendingReviews, loadEngineStats, showToast]);
 
   const handleExportCSV = useCallback(() => {
     const csvRows = [

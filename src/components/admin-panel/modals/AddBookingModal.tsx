@@ -381,23 +381,7 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit }) {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    <div className="flex items-center gap-1">
-                      <Globe className="w-3.5 h-3.5" />
-                      Booking Source
-                    </div>
-                  </label>
-                  <SimpleDropdown
-                    value={formData.source}
-                    onChange={(value) => setFormData((prev) => ({ ...prev, source: value }))}
-                    options={SOURCE_OPTIONS.map((source) => ({
-                      value: source,
-                      label: source
-                    }))}
-                    placeholder="Select Source"
-                  />
-                </div>
+                {/* Booking Source - Auto-set to Direct for in-hotel bookings */}
               </div>
 
               <div>

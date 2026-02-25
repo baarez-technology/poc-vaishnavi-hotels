@@ -26,6 +26,7 @@ import {
 import BookingRow from './BookingRow';
 import { Button } from '../ui2/Button';
 import { SearchBar } from '../ui2/SearchBar';
+import { usePrecheckinStatus } from '@/hooks/admin/usePrecheckinStatus';
 
 export default function BookingList({
   bookings,
@@ -47,6 +48,7 @@ export default function BookingList({
   const [sortField, setSortField] = useState('checkIn');
   const [sortDirection, setSortDirection] = useState('asc');
   const itemsPerPage = 10;
+  const { getStatus: getPrecheckinStatus } = usePrecheckinStatus();
 
   // Filter panel state
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
@@ -508,7 +510,7 @@ export default function BookingList({
 
         {/* Table */}
         <div className="overflow-x-auto overflow-y-hidden rounded-b-[10px]">
-          <table className="w-full min-w-[1280px] border-collapse">
+          <table className="w-full min-w-[1420px] border-collapse">
             <colgroup>
               <col style={{ width: '48px' }} />
               <col style={{ width: 'auto' }} />
@@ -516,6 +518,8 @@ export default function BookingList({
               <col style={{ width: '200px' }} />
               <col style={{ width: '200px' }} />
               <col style={{ width: '120px' }} />
+              <col style={{ width: '120px' }} />
+              <col style={{ width: '110px' }} />
               <col style={{ width: '140px' }} />
               <col style={{ width: '120px' }} />
               <col style={{ width: '48px' }} />
@@ -563,6 +567,9 @@ export default function BookingList({
                 <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
                   Source
                 </th>
+                <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">
+                  Pre Check-In
+                </th>
                 <th
                   onClick={() => handleSort('amount')}
                   className="text-right px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest cursor-pointer group hover:text-neutral-600"
@@ -582,7 +589,7 @@ export default function BookingList({
             <tbody>
               {paginatedBookings.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="px-6 py-16 text-center">
+                  <td colSpan="10" className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center">
                       <div className="w-12 h-12 rounded-lg bg-terra-50 flex items-center justify-center mb-4">
                         <Search className="w-5 h-5 text-terra-500" />
@@ -620,6 +627,7 @@ export default function BookingList({
                     isSelected={selectedIds.has(booking.id)}
                     onSelect={handleSelect}
                     animationDelay={index * 30}
+                    precheckinStatus={getPrecheckinStatus(Number(booking.dbId || booking.id))}
                   />
                 ))
               )}

@@ -112,6 +112,7 @@ export interface RevenueSnapshotReport {
   };
   daily_data: DailyOccupancy[];
   revenue_by_source: RevenueBySource[];
+  revenue_by_payment_mode?: RevenueBySource[];
   revenue_by_room_type: RevenueByRoomType[];
   weekly_summary: WeeklySummary[];
   ai_insights: AIInsight[];

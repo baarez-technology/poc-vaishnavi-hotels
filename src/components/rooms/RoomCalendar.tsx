@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Bed, User, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Bed, User, AlertTriangle, Check, Sparkles } from 'lucide-react';
 import { Button } from '../ui2/Button';
 
 /**
@@ -7,7 +7,7 @@ import { Button } from '../ui2/Button';
  * Shows rooms on Y-axis and dates on X-axis
  * Glimmora Design System v5.0
  */
-export default function RoomCalendar({ rooms, bookings = [], onRoomClick, onDateClick }) {
+export default function RoomCalendar({ rooms, bookings = [], isLoading = false, onRoomClick, onDateClick }) {
   const [startDate, setStartDate] = useState(new Date());
 
   // Generate 14 days starting from startDate
@@ -28,6 +28,7 @@ export default function RoomCalendar({ rooms, bookings = [], onRoomClick, onDate
         dayNum: date.getDate(),
         month: date.toLocaleDateString('en-US', { month: 'short' }),
         isToday: date.getTime() === today.getTime(),
+        isPast: date.getTime() < today.getTime(),
         isWeekend: date.getDay() === 0 || date.getDay() === 6,
       });
     }
@@ -43,8 +44,11 @@ export default function RoomCalendar({ rooms, bookings = [], onRoomClick, onDate
 
     // Check if room has a booking on this day
     const booking = bookings.find(b => {
-      if (b.room !== room.roomNumber) return false;
-      if (b.status === 'CANCELLED') return false;
+      // Safely resolve room number from booking (may be string or object)
+      const bookingRoom = typeof b.room === 'object' ? (b.room?.number || '') : String(b.room || '');
+      if (!bookingRoom || bookingRoom !== room.roomNumber) return false;
+      const terminal = ['CANCELLED', 'CHECKED_OUT', 'NO_SHOW', 'cancelled', 'checked_out', 'no_show', 'checked-out'];
+      if (terminal.includes(b.status)) return false;
 
       const checkIn = new Date(b.checkIn);
       checkIn.setHours(0, 0, 0, 0);
@@ -76,6 +80,35 @@ export default function RoomCalendar({ rooms, bookings = [], onRoomClick, onDate
       };
     }
 
+    // Fallback: check if room has a directly assigned guest (no booking record)
+    if (room.guests && room.guests.checkIn && room.guests.checkOut) {
+      const gCheckIn = new Date(room.guests.checkIn);
+      gCheckIn.setHours(0, 0, 0, 0);
+      const gCheckOut = new Date(room.guests.checkOut);
+      gCheckOut.setHours(0, 0, 0, 0);
+      const currentDay = day.date;
+
+      if (currentDay >= gCheckIn && currentDay < gCheckOut) {
+        return {
+          status: 'booked',
+          label: room.guests.name || 'Guest',
+          color: 'bg-terra-500',
+          isCheckIn: currentDay.getTime() === gCheckIn.getTime(),
+          isCheckOut: false,
+        };
+      }
+    }
+
+    // Dirty/Occupied are CURRENT point-in-time states — only apply to today/past.
+    // Future dates should show as available (room will be cleaned / guest will check out).
+    if (room.status === 'dirty' && (day.isToday || day.isPast)) {
+      return { status: 'dirty', label: 'Dirty', color: 'bg-gold-500' };
+    }
+
+    if (room.status === 'occupied' && (day.isToday || day.isPast)) {
+      return { status: 'occupied', label: 'Occupied', color: 'bg-terra-500' };
+    }
+
     // Room is available
     return { status: 'available', label: 'Available', color: 'bg-sage-500/20' };
   };
@@ -105,13 +138,21 @@ export default function RoomCalendar({ rooms, bookings = [], onRoomClick, onDate
     });
   }, [rooms]);
 
-  // Room type colors
+  // Room type colors — matches RoomCard typeConfig
   const getTypeColor = (type) => {
     const colors = {
+      'Minimalist Studio': 'text-neutral-600',
+      'Coastal Retreat': 'text-teal-600',
+      'Urban Oasis': 'text-sage-700',
+      'Sunset Vista': 'text-gold-700',
+      'Pacific Suite': 'text-terra-600',
+      'Wellness Suite': 'text-emerald-600',
+      'Family Sanctuary': 'text-terra-700',
+      'Oceanfront Penthouse': 'text-amber-700',
       'Standard': 'text-neutral-500',
       'Premium': 'text-terra-600',
       'Deluxe': 'text-terra-700',
-      'Suite': 'text-gold-700'
+      'Suite': 'text-gold-700',
     };
     return colors[type] || 'text-neutral-500';
   };
@@ -154,14 +195,18 @@ export default function RoomCalendar({ rooms, bookings = [], onRoomClick, onDate
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-6 mt-4">
+        <div className="flex items-center gap-4 sm:gap-6 mt-4 flex-wrap">
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-sage-500"></div>
             <span className="text-[11px] font-medium text-neutral-500">Available</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-terra-500"></div>
-            <span className="text-[11px] font-medium text-neutral-500">Booked</span>
+            <span className="text-[11px] font-medium text-neutral-500">Occupied / Booked</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-gold-500"></div>
+            <span className="text-[11px] font-medium text-neutral-500">Dirty</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-neutral-300"></div>
@@ -171,7 +216,15 @@ export default function RoomCalendar({ rooms, bookings = [], onRoomClick, onDate
       </div>
 
       {/* Calendar Grid */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto relative">
+        {isLoading && (
+          <div className="absolute inset-0 bg-white/60 z-20 flex items-center justify-center">
+            <div className="flex items-center gap-2 text-[13px] text-neutral-500">
+              <div className="w-4 h-4 border-2 border-terra-500 border-t-transparent rounded-full animate-spin" />
+              Loading bookings...
+            </div>
+          </div>
+        )}
         <table className="w-full min-w-[900px]">
           <thead>
             <tr>
@@ -223,23 +276,38 @@ export default function RoomCalendar({ rooms, bookings = [], onRoomClick, onDate
                     <td
                       key={idx}
                       className={`px-1.5 py-2 ${day.isToday ? 'bg-terra-50' : ''}`}
-                      onClick={() => onDateClick && onDateClick(room, day, dayStatus)}
+                      onClick={() => {
+                        // Past available cells and dirty cells are view-only — no assign
+                        if (day.isPast && dayStatus.status === 'available') return;
+                        if (dayStatus.status === 'dirty') return;
+                        onDateClick && onDateClick(room, day, dayStatus);
+                      }}
                     >
                       <div
-                        className={`h-10 rounded-lg flex items-center justify-center cursor-pointer transition-all ${
-                          dayStatus.status === 'booked'
-                            ? 'bg-terra-500 text-white hover:bg-terra-600'
+                        className={`h-10 rounded-lg flex items-center justify-center transition-all ${
+                          day.isPast && dayStatus.status === 'available'
+                            ? 'bg-neutral-100 text-neutral-300 cursor-default'
+                            : dayStatus.status === 'booked' || dayStatus.status === 'occupied'
+                            ? 'bg-terra-500 text-white hover:bg-terra-600 cursor-pointer'
+                            : dayStatus.status === 'dirty'
+                            ? 'bg-gold-200 text-gold-700 cursor-default'
                             : dayStatus.status === 'blocked'
-                            ? 'bg-neutral-200 text-neutral-400 hover:bg-neutral-300'
-                            : 'bg-sage-100 text-sage-600 hover:bg-sage-200'
+                            ? 'bg-neutral-200 text-neutral-400 hover:bg-neutral-300 cursor-pointer'
+                            : 'bg-sage-200 text-sage-600 hover:bg-sage-300 cursor-pointer'
                         }`}
-                        title={dayStatus.label}
+                        title={day.isPast && dayStatus.status === 'available' ? 'Past date' : dayStatus.label}
                       >
-                        {dayStatus.status === 'booked' && (
+                        {(dayStatus.status === 'booked' || dayStatus.status === 'occupied') && (
                           <User className="w-4 h-4" />
+                        )}
+                        {dayStatus.status === 'dirty' && (
+                          <Sparkles className="w-3.5 h-3.5" />
                         )}
                         {dayStatus.status === 'blocked' && (
                           <AlertTriangle className="w-4 h-4" />
+                        )}
+                        {dayStatus.status === 'available' && (
+                          <Check className="w-3.5 h-3.5" />
                         )}
                       </div>
                     </td>

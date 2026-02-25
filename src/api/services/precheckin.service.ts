@@ -270,7 +270,8 @@ export const precheckinService = {
    * Complete pre-checkin with room selection and generate digital key
    */
   completePrecheckin: async (precheckinId: number, data: {
-    selected_room_id: number;
+    selected_room_id?: number;
+    room_type_slug?: string;
     ai_score?: number;
     ai_reasoning?: string[];
   }): Promise<any> => {

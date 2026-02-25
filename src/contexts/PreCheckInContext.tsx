@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { precheckinService } from '@/api/services/precheckin.service';
 import { bookingService } from '@/api/services/booking.service';
+import { roomTypesService } from '@/api/services/roomTypes.service';
 import type { PreCheckInData as PreCheckInServiceData, PreCheckInRead } from '@/api/services/precheckin.service';
 
 export interface PreCheckInData {
@@ -28,9 +29,11 @@ export interface PreCheckInData {
     quietness: 'quiet' | 'moderate' | 'any';
   };
   selectedRoom?: {
-    number: string;
-    floor: number;
-    view: string;
+    slug: string;
+    name: string;
+    category?: string;
+    price?: number;
+    image?: string;
     aiScore: number;
     aiReasoning: string[];
   };
@@ -73,6 +76,7 @@ interface PreCheckInContextType {
   savePreCheckIn: () => Promise<void>;
   loadPreCheckIn: (reservationId: number) => Promise<void>;
   getRecommendedRooms: () => Promise<any[]>;
+  getRoomTypes: () => Promise<any[]>;
   resetPreCheckIn: () => void;
 }
 
@@ -158,9 +162,10 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
             quietness: (existing.quietness_preference as any) || 'any',
           },
           selectedRoom: existing.selected_room_id ? {
-            number: String(existing.selected_room_id),
-            floor: 0,
-            view: '',
+            slug: String(existing.selected_room_id),
+            name: booking.room?.name || '',
+            category: booking.room?.category || '',
+            price: booking.room?.price,
             aiScore: existing.ai_score || 0,
             aiReasoning: existing.ai_reasoning ? JSON.parse(existing.ai_reasoning) : [],
           } : undefined,
@@ -255,9 +260,9 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
       const existing = await precheckinService.getByReservation(data.reservationId);
       
       // Prepare update payload (only fields allowed in PreCheckInUpdate)
-      // Note: selected_room_id should be the room.id (database ID), not room number
+      // Note: room_type_slug stores the selected room type; hotel assigns actual room later
       const updatePayload: any = {
-        selected_room_id: (data.selectedRoom as any)?.room_id || (data.selectedRoom?.number ? Number(data.selectedRoom.number) : undefined),
+        room_type_slug: data.selectedRoom?.slug || undefined,
         ai_score: data.selectedRoom?.aiScore,
         ai_reasoning: data.selectedRoom?.aiReasoning ? JSON.stringify(data.selectedRoom.aiReasoning) : undefined,
         id_front_url: data.documents.idFrontUrl,
@@ -374,6 +379,19 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
     return rooms;
   };
 
+  const getRoomTypes = async () => {
+    try {
+      const filters: any = {};
+      if (preCheckInData?.checkInDate) filters.checkIn = preCheckInData.checkInDate;
+      if (preCheckInData?.checkOutDate) filters.checkOut = preCheckInData.checkOutDate;
+      const roomTypes = await roomTypesService.getRoomTypes(filters);
+      return Array.isArray(roomTypes) ? roomTypes : [];
+    } catch (error) {
+      console.error('Failed to fetch room types:', error);
+      return [];
+    }
+  };
+
   const resetPreCheckIn = () => {
     setPreCheckInData(null);
   };
@@ -387,6 +405,7 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
         savePreCheckIn,
         loadPreCheckIn,
         getRecommendedRooms,
+        getRoomTypes,
         resetPreCheckIn,
       }}
     >

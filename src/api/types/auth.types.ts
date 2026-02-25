@@ -8,6 +8,7 @@ export interface User {
   createdAt: string;
   role?: string;
   isSuperuser?: boolean;
+  permissions?: Record<string, { view: boolean; edit: boolean; delete: boolean }>;
 }
 
 export interface LoginCredentials {

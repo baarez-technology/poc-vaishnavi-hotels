@@ -9,7 +9,7 @@ import { createPortal } from 'react-dom';
 import {
   X, Crown, Mail, Phone, Bed, Users,
   ChevronDown, Check, CreditCard, Clock, AlertTriangle,
-  Sparkles, DollarSign, History, Brain,
+  Sparkles, DollarSign, History, Brain, ClipboardCheck,
   PenLine, Calendar, Copy, CheckCircle2, Moon, ChevronRight,
   Info, Upload, Image as ImageIcon
 } from 'lucide-react';
@@ -20,6 +20,8 @@ import { StatusBadge, Badge } from '../ui2/Badge';
 import { Drawer } from '../ui2/Drawer';
 import { statusConfig, sourceConfig } from '../../data/cbs/sampleBookings';
 import { useCurrency } from '@/hooks/useCurrency';
+import { precheckinService, type PreCheckInResponse } from '@/api/services/precheckin.service';
+import { PreCheckInDetails } from '../shared/PreCheckInDetails';
 
 const statusOptions = [
   { value: 'CONFIRMED', label: 'Confirmed', color: 'text-ocean-600', bg: 'bg-ocean-500', dotBg: 'bg-ocean-500', lightBg: 'bg-ocean-50' },
@@ -58,6 +60,31 @@ export default function BookingDrawer({
   const [copiedField, setCopiedField] = useState(null);
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
+  const [precheckinData, setPrecheckinData] = useState<PreCheckInResponse | null>(null);
+  const [precheckinLoading, setPrecheckinLoading] = useState(false);
+
+  // Fetch pre-check-in data when drawer opens
+  useEffect(() => {
+    if (!isOpen || !booking) {
+      setPrecheckinData(null);
+      return;
+    }
+    const reservationId = Number(booking.dbId || booking.id);
+    if (!reservationId) return;
+    let cancelled = false;
+    setPrecheckinLoading(true);
+    precheckinService.getByReservation(reservationId)
+      .then((data) => {
+        if (!cancelled) setPrecheckinData(data);
+      })
+      .catch(() => {
+        if (!cancelled) setPrecheckinData(null);
+      })
+      .finally(() => {
+        if (!cancelled) setPrecheckinLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [isOpen, booking?.dbId, booking?.id]);
 
   useEffect(() => {
     if (editingField && inputRef.current) {
@@ -161,6 +188,7 @@ export default function BookingDrawer({
 
   const tabs = [
     { id: 'details', label: 'Details', icon: Bed },
+    { id: 'precheckin', label: 'Pre Check-In', icon: ClipboardCheck },
     { id: 'payments', label: 'Payments', icon: CreditCard },
     { id: 'activity', label: 'Activity', icon: History },
     { id: 'insights', label: 'AI Insights', icon: Brain, badge: aiInsights.length }
@@ -574,6 +602,11 @@ export default function BookingDrawer({
                 </div>
               </div>
           </div>
+        )}
+
+        {/* Pre Check-In Tab */}
+        {activeTab === 'precheckin' && (
+          <PreCheckInDetails data={precheckinData} isLoading={precheckinLoading} />
         )}
 
         {/* Payments Tab */}

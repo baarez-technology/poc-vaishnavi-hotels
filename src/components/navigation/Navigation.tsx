@@ -7,6 +7,7 @@ import { useGuestAI } from '@/contexts/GuestAIContext';
 import { MobileMenu } from './MobileMenu';
 import { SearchOverlay } from './SearchOverlay';
 import { UserDropdown } from './UserDropdown';
+import { useHotelInfo } from '@/hooks/useHotelInfo';
 import logo from '@/assets/logo.png';
 
 export function Navigation() {
@@ -16,6 +17,7 @@ export function Navigation() {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const { openAI } = useGuestAI();
+  const hotelInfo = useHotelInfo();
 
   // Show AI button only on dashboard pages when authenticated
   const showAIAssistant = isAuthenticated && (location.pathname === '/dashboard' || location.pathname.startsWith('/dashboard'));
@@ -52,9 +54,9 @@ export function Navigation() {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group relative z-10">
               <motion.img
-                src={logo}
-                alt="Glimmora"
-                className="h-10 w-auto"
+                src={hotelInfo.logo ||logo }
+                alt={hotelInfo.name}
+                className="h-28 w-auto object-contain"
                 whileHover={{ scale: 1.05 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 17 }}
               />

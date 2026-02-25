@@ -353,10 +353,10 @@ export function CBSProvider({ children }) {
             const transformedRooms = apiRooms.map((r: any) => ({
               id: r.id, // Database ID for API calls
               roomNumber: r.number || r.roomNumber || String(r.id),
-              type: r.category || r.room_type?.name || r.type || 'Minimalist Studio',
+              type: r.type || (r.category ? r.category.split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : null) || r.room_type?.name || 'Minimalist Studio',
               floor: r.floor || 1,
               status: r.status || 'available',
-              cleaning: r.status === 'available' ? 'clean' : 'dirty',
+              cleaning: ['available', 'clean', 'inspected'].includes(r.status) ? 'clean' : 'dirty',
               price: r.price || r.room_type?.base_price || 0,
               capacity: r.max_occupancy || r.maxGuests || 2,
               bedType: r.bed_type || 'King',

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import { bookingService } from '@/api/services/booking.service';
+import { bookingService, type CheckInData, type CheckOutData } from '@/api/services/booking.service';
 import { roomsService } from '@/api/services/rooms.service';
 import { clearApiCache } from '@/api/client';
 
@@ -196,6 +196,10 @@ function transformBooking(apiBooking: any): AdminBooking {
     paymentMethod: apiBooking.paymentMethod || apiBooking.payment_method || '',
     amountPaid: apiBooking.amountPaid || apiBooking.amount_paid || apiBooking.deposit_amount || 0,
     paymentNotes: apiBooking.paymentNotes || apiBooking.payment_notes || '',
+    doNotMove: apiBooking.doNotMove || apiBooking.do_not_move || false,
+    dnmSetBy: apiBooking.dnmSetBy || apiBooking.dnm_set_by || null,
+    checkedInAt: apiBooking.checkedInAt || apiBooking.checked_in_at || null,
+    checkedOutAt: apiBooking.checkedOutAt || apiBooking.checked_out_at || null,
   };
 }
 
@@ -535,23 +539,43 @@ export function useBookings() {
     try {
       console.log('[useBookings.assignRoom] Assigning room:', { bookingId, roomId, roomNumber, checkIn });
 
-      // API expects roomId as a string
+      // Find the booking to check current state
+      const currentBooking = bookings.find(b => b.id === bookingId);
+      const previousRoomId = currentBooking?.roomId;
+
+      // API expects roomId as a string - backend validates conflicts + room type
       const result = await bookingService.updateBooking(bookingId, { roomId: String(roomId) });
       console.log('[useBookings.assignRoom] API response:', result);
 
-      // Always sync room status to occupied so the Rooms section reflects the assignment
+      // Sync room status so Room module reflects the assignment
       try {
         await roomsService.updateRoomStatus(roomId, 'occupied');
-        console.log('[useBookings.assignRoom] Room status synced to occupied');
+        console.log('[useBookings.assignRoom] New room status synced to occupied');
       } catch (roomErr) {
         console.warn('[useBookings.assignRoom] Could not sync room status:', roomErr);
       }
 
+      // If reassigning (guest had a previous room), free the old room
+      if (previousRoomId && String(previousRoomId) !== String(roomId)) {
+        try {
+          await roomsService.updateRoomStatus(previousRoomId, 'dirty');
+          console.log('[useBookings.assignRoom] Previous room set to dirty:', previousRoomId);
+        } catch (roomErr) {
+          console.warn('[useBookings.assignRoom] Could not free previous room:', roomErr);
+        }
+      }
+
+      // Preserve current booking status - don't force to CONFIRMED
       setBookings(prev => prev.map(b =>
         b.id === bookingId
-          ? { ...b, roomId: Number(roomId), room: roomNumber, status: 'CONFIRMED' }
+          ? { ...b, roomId: Number(roomId), room: roomNumber }
           : b
       ));
+
+      // Clear rooms cache so Room module picks up the assignment
+      clearApiCache('/api/v1/rooms');
+      clearApiCache('/rooms');
+      clearApiCache('/api/v1/housekeeping');
 
       toast.success(`Room ${roomNumber} assigned successfully`);
       return true;
@@ -560,12 +584,12 @@ export function useBookings() {
       toast.error(extractErrorMessage(err, 'Failed to assign room'));
       return false;
     }
-  }, []);
+  }, [bookings]);
 
   /**
    * Check-in guest
    */
-  const checkInGuest = useCallback(async (bookingId: string, data?: { room_id?: number }) => {
+  const checkInGuest = useCallback(async (bookingId: string, data?: CheckInData) => {
     try {
       await bookingService.checkIn(bookingId, data);
 
@@ -585,7 +609,7 @@ export function useBookings() {
   /**
    * Check-out guest
    */
-  const checkOutGuest = useCallback(async (bookingId: string, data?: { final_charges?: number }) => {
+  const checkOutGuest = useCallback(async (bookingId: string, data?: CheckOutData) => {
     try {
       await bookingService.checkOut(bookingId, data);
 
@@ -598,6 +622,72 @@ export function useBookings() {
     } catch (err: any) {
       console.error('Error checking out:', err);
       toast.error(extractErrorMessage(err, 'Failed to check out'));
+      return false;
+    }
+  }, []);
+
+  /**
+   * Cancel check-in (revert checked-in guest back to confirmed/arrival status)
+   */
+  const cancelCheckIn = useCallback(async (bookingId: string) => {
+    try {
+      await bookingService.cancelCheckIn(bookingId);
+
+      setBookings(prev => prev.map(b =>
+        b.id === bookingId ? { ...b, status: 'CONFIRMED' } : b
+      ));
+
+      toast.success('Check-in cancelled. Booking reverted to confirmed status.');
+      return true;
+    } catch (err: any) {
+      console.error('Error cancelling check-in:', err);
+      toast.error(extractErrorMessage(err, 'Failed to cancel check-in'));
+      return false;
+    }
+  }, []);
+
+  /**
+   * Room move for checked-in guest (uses room-change endpoint)
+   */
+  const moveRoom = useCallback(async (bookingId: string, newRoomId: number, reason?: string) => {
+    try {
+      const result = await bookingService.changeRoom(bookingId, {
+        new_room_id: newRoomId,
+        reason: reason || 'Room move requested by staff',
+      });
+
+      // Refresh bookings to get updated data
+      await fetchBookings(pagination.page, pagination.pageSize);
+
+      // Clear rooms cache so Room module reflects the move
+      clearApiCache('/api/v1/rooms');
+      clearApiCache('/rooms');
+
+      toast.success(`Room moved to ${result.new_room} successfully`);
+      return result;
+    } catch (err: any) {
+      console.error('Error moving room:', err);
+      toast.error(extractErrorMessage(err, 'Failed to move room'));
+      return null;
+    }
+  }, [fetchBookings, pagination.page, pagination.pageSize]);
+
+  /**
+   * Mark booking as No Show
+   */
+  const markNoShow = useCallback(async (bookingId: string) => {
+    try {
+      await bookingService.markNoShow(bookingId);
+
+      setBookings(prev => prev.map(b =>
+        b.id === bookingId ? { ...b, status: 'NO_SHOW' } : b
+      ));
+
+      toast.success('Booking marked as No Show');
+      return true;
+    } catch (err: any) {
+      console.error('Error marking no-show:', err);
+      toast.error(extractErrorMessage(err, 'Failed to mark as no-show'));
       return false;
     }
   }, []);
@@ -653,6 +743,9 @@ export function useBookings() {
     assignRoom,
     checkInGuest,
     checkOutGuest,
+    cancelCheckIn,
+    moveRoom,
+    markNoShow,
     // Helpers
     getArrivalsToday,
     getDeparturesToday,

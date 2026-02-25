@@ -7,6 +7,7 @@ export interface Room {
   description: string;
   shortDescription?: string;
   price: number;
+  originalPrice?: number; // Non-null when dynamic pricing applied a discount
   capacity?: number;
   maxGuests?: number;
   amenities: string[];

@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Check, ChevronDown, ChevronUp, Shield, Users, RotateCcw, Minus, AlertTriangle, Save, Info } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Shield, Users, RotateCcw, Minus, AlertTriangle, Save, Info, RefreshCw } from 'lucide-react';
 import { Button } from '../ui2/Button';
+import toast from 'react-hot-toast';
+import { apiClient } from '../../api/client';
 import {
   STAFF_ROLES,
   PERMISSION_MODULES,
@@ -38,44 +40,58 @@ export default function RolesPermissionsTab() {
   const [pushConfirm, setPushConfirm] = useState<string | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Fetch staff counts from the backend API
+  const fetchStaffCounts = async () => {
+    try {
+      const resp = await apiClient.get('/api/v1/rbac/roles');
+      const apiRoles = resp.data?.data || resp.data || [];
+      return new Map(apiRoles.map((r: any) => [r.role_code, r.staff_count || 0]));
+    } catch {
+      return new Map();
+    }
+  };
+
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        // Ensure all 10 roles exist
-        const roleMap = new Map(parsed.map((r: StoredRole) => [r.id, r]));
-        const merged = STAFF_ROLES.map(r => {
-          const existing = roleMap.get(r.value) as StoredRole | undefined;
-          if (existing && existing.permissions) {
-            // Ensure all 13 modules exist in permissions
-            const fullPerms = { ...getDefaultPermissions(r.value) };
-            for (const mod of PERMISSION_MODULES) {
-              if (existing.permissions[mod.id]) {
-                fullPerms[mod.id] = existing.permissions[mod.id];
+    const init = async () => {
+      const countMap = await fetchStaffCounts();
+
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          const roleMap = new Map(parsed.map((r: StoredRole) => [r.id, r]));
+          const merged = STAFF_ROLES.map(r => {
+            const existing = roleMap.get(r.value) as StoredRole | undefined;
+            if (existing && existing.permissions) {
+              const fullPerms = { ...getDefaultPermissions(r.value) };
+              for (const mod of PERMISSION_MODULES) {
+                if (existing.permissions[mod.id]) {
+                  fullPerms[mod.id] = existing.permissions[mod.id];
+                }
               }
+              return { ...existing, id: r.value, name: r.label, description: r.description, staffCount: countMap.get(r.value) || existing.staffCount || 0, permissions: fullPerms };
             }
-            return { ...existing, id: r.value, name: r.label, description: r.description, permissions: fullPerms };
-          }
-          return {
-            id: r.value,
-            name: r.label,
-            description: r.description,
-            staffCount: 0,
-            permissions: getDefaultPermissions(r.value),
-          };
-        });
-        setRoles(merged);
-      } catch {
-        const defaults = buildStoredRoles();
+            return {
+              id: r.value,
+              name: r.label,
+              description: r.description,
+              staffCount: countMap.get(r.value) || 0,
+              permissions: getDefaultPermissions(r.value),
+            };
+          });
+          setRoles(merged);
+        } catch {
+          const defaults = buildStoredRoles().map(r => ({ ...r, staffCount: countMap.get(r.id) || 0 }));
+          setRoles(defaults);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(defaults));
+        }
+      } else {
+        const defaults = buildStoredRoles().map(r => ({ ...r, staffCount: countMap.get(r.id) || 0 }));
         setRoles(defaults);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(defaults));
       }
-    } else {
-      const defaults = buildStoredRoles();
-      setRoles(defaults);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaults));
-    }
+    };
+    init();
   }, []);
 
   const saveRoles = (newRoles: StoredRole[]) => {
@@ -115,11 +131,29 @@ export default function RolesPermissionsTab() {
     saveRoles(newRoles);
   };
 
-  const pushDefaultsToAll = (roleId: string) => {
-    // Reset this role to defaults — in a real app this would also push to all staff with this role via API
-    resetRoleToDefaults(roleId);
-    setPushConfirm(roleId);
-    setTimeout(() => setPushConfirm(null), 3000);
+  const [pushing, setPushing] = useState<string | null>(null);
+
+  const pushDefaultsToAll = async (roleId: string) => {
+    setPushing(roleId);
+    try {
+      // First, save the current permissions to the backend
+      const role = roles.find(r => r.id === roleId);
+      if (role) {
+        await apiClient.put(`/api/v1/rbac/roles/${roleId}/permissions`, {
+          permissions: role.permissions,
+        });
+      }
+      // Then push to all staff with this role
+      const resp = await apiClient.post(`/api/v1/rbac/roles/${roleId}/push`);
+      const msg = resp.data?.message || resp.data?.data?.message || `Pushed to all ${roleId} staff`;
+      toast.success(msg);
+      setPushConfirm(roleId);
+      setTimeout(() => setPushConfirm(null), 3000);
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to push permissions');
+    } finally {
+      setPushing(null);
+    }
   };
 
   const countPermissions = (role: StoredRole) => {
@@ -319,6 +353,11 @@ export default function RolesPermissionsTab() {
                             <Check className="w-3 h-3" />
                             <span className="text-xs font-medium">Pushed to all {role.name} staff</span>
                           </div>
+                        ) : pushing === role.id ? (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 text-neutral-500">
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                            <span className="text-xs font-medium">Pushing...</span>
+                          </div>
                         ) : (
                           <Button
                             variant="ghost"
@@ -327,7 +366,7 @@ export default function RolesPermissionsTab() {
                             className="text-xs text-[#5C9BA4]"
                           >
                             <Users className="w-3 h-3 mr-1" />
-                            Push to All Staff
+                            Push to All {role.name} Staff
                           </Button>
                         )}
                       </div>

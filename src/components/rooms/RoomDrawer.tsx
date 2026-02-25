@@ -6,10 +6,10 @@
 
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
-import { Users, Sparkles, Bed, UsersRound } from 'lucide-react';
+import { Users, Sparkles, Bed, UsersRound, SprayCan } from 'lucide-react';
 import { useCurrency } from '@/hooks/useCurrency';
 
-export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAssignGuest, onMarkClean, onMarkDirty, onBlockRoom, onUnassignGuest, onUnblockRoom }) {
+export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAssignGuest, onMarkClean, onMarkDirty, onBlockRoom, onUnassignGuest, onUnblockRoom, onRequestCleaning }) {
   const { symbol, formatCurrency } = useCurrency();
   if (!room) return null;
 
@@ -203,8 +203,24 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
               )}
             </div>
 
+            {/* Request Cleaning — occupied rooms only */}
+            {room.status === 'occupied' && onRequestCleaning && (
+              <div className="flex items-center justify-between p-4 rounded-lg bg-sage-50 border border-sage-100">
+                <div>
+                  <p className="text-[13px] font-semibold text-neutral-900">Request Cleaning</p>
+                  <p className="text-[11px] text-neutral-500 mt-0.5">
+                    Submit a housekeeping task for this room
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => onRequestCleaning(room)} className="text-sage-700 border-sage-200 hover:bg-sage-100">
+                  <SprayCan className="w-3.5 h-3.5 mr-1.5" />
+                  Request
+                </Button>
+              </div>
+            )}
+
             {/* Assign/Unassign Guest */}
-            {(room.status === 'available' || room.status === 'occupied') && (
+            {(room.status === 'available' || room.status === 'occupied' || room.status === 'dirty') && (
               <div className="flex items-center justify-between p-4 rounded-lg bg-neutral-50 border border-neutral-100">
                 <div>
                   <p className="text-[13px] font-semibold text-neutral-900">Guest Assignment</p>
@@ -212,13 +228,13 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
                     {room.guests ? `Assigned to ${room.guests.name}` : 'No guest assigned'}
                   </p>
                 </div>
-                {room.status === 'available' ? (
-                  <Button variant="outline" size="sm" onClick={() => onAssignGuest(room)}>
-                    Assign Guest
-                  </Button>
-                ) : (
+                {room.guests ? (
                   <Button variant="outline" size="sm" onClick={() => onUnassignGuest(room)}>
                     Unassign
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={() => onAssignGuest(room)}>
+                    Assign Guest
                   </Button>
                 )}
               </div>

@@ -38,6 +38,8 @@ export const statusConfig = {
   'CHECKED-IN': { color: 'bg-[#4E5840]/10 text-[#4E5840] border-[#4E5840]/30', label: 'Checked In' },
   'CHECKED-OUT': { color: 'bg-neutral-200 text-neutral-700 border-neutral-300', label: 'Checked Out' },
   'CANCELLED': { color: 'bg-red-50 text-red-700 border-red-200', label: 'Cancelled' },
+  'NO-SHOW': { color: 'bg-orange-50 text-orange-700 border-orange-200', label: 'No Show' },
+  'NO_SHOW': { color: 'bg-orange-50 text-orange-700 border-orange-200', label: 'No Show' },
 };
 
 export const sourceConfig = {

@@ -43,7 +43,9 @@ export default function NotificationDrawer() {
   };
 
   const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
+    // Backend stores UTC times without Z suffix — append Z so JS interprets as UTC
+    const utcTimestamp = timestamp && !timestamp.endsWith('Z') && !timestamp.includes('+') ? timestamp + 'Z' : timestamp;
+    const date = new Date(utcTimestamp);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -77,11 +79,25 @@ export default function NotificationDrawer() {
     }
   };
 
+  const getNotificationUrl = (notification: any): string | null => {
+    if (notification.actionUrl) return notification.actionUrl;
+    // Derive navigation URL from entity references
+    const type = notification.notification_type || '';
+    if (type.includes('task') && notification.room_id) {
+      return `/staff/housekeeping/rooms/${notification.room_id}`;
+    }
+    if (notification.room_id) {
+      return `/staff/housekeeping/rooms/${notification.room_id}`;
+    }
+    return null;
+  };
+
   const handleNotificationClick = (notification: any) => {
     markNotificationRead(notification.id);
     toggleNotificationDrawer();
-    if (notification.actionUrl) {
-      navigate(notification.actionUrl);
+    const url = getNotificationUrl(notification);
+    if (url) {
+      navigate(url);
     }
   };
 
@@ -181,7 +197,7 @@ export default function NotificationDrawer() {
                           {formatTimestamp(notification.created_at || notification.timestamp)}
                         </span>
 
-                        {notification.actionUrl && (
+                        {getNotificationUrl(notification) && (
                           <span className="text-xs text-primary-500 flex items-center gap-0.5">
                             View <ChevronRight className="w-3 h-3" />
                           </span>

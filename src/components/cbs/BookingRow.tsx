@@ -95,7 +95,11 @@ export default function BookingRow({
     .toUpperCase()
     .slice(0, 2);
 
-  const formatDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const formatDate = (d) => {
+    if (!d) return 'N/A';
+    const safe = d.includes('T') ? d : `${d}T12:00:00`;
+    return new Date(safe).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
 
   // Check if booking is for today
   const today = new Date().toISOString().split('T')[0];
@@ -145,7 +149,7 @@ export default function BookingRow({
               <SearchHighlight text={booking.guestName} query={searchQuery} />
             </p>
             <p className="text-[10px] text-neutral-500 font-mono">
-              <SearchHighlight text={booking.id} query={searchQuery} />
+              <SearchHighlight text={booking.bookingNumber || booking.id} query={searchQuery} />
             </p>
           </div>
         </div>

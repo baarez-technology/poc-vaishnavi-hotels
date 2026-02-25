@@ -19,6 +19,7 @@ import AssignGuestModal from '../../components/rooms/modals/AssignGuestModal';
 import BlockRoomModal from '../../components/rooms/modals/BlockRoomModal';
 import { ConfirmModal } from '../../components/ui2/Modal';
 import { Button, ButtonGroup } from '../../components/ui2/Button';
+import RequestCleaningModal from '../../components/modals/RequestCleaningModal';
 
 export default function Rooms() {
   // View mode state (grid, calendar)
@@ -121,6 +122,9 @@ export default function Rooms() {
       };
     });
   }, [allBookings, rawRooms]);
+
+  // Request cleaning state
+  const [cleaningRoom, setCleaningRoom] = useState<any>(null);
 
   // Confirmation states
   const [unassignConfirm, setUnassignConfirm] = useState({ isOpen: false, room: null });
@@ -235,6 +239,10 @@ export default function Rooms() {
       toast.success('Room unblocked successfully!');
     }
     setUnblockConfirm({ isOpen: false, room: null });
+  };
+
+  const handleRequestCleaning = (room) => {
+    setCleaningRoom(room);
   };
 
   const handleAddRoom = () => {
@@ -436,6 +444,7 @@ export default function Rooms() {
           onBlockRoom={handleBlockRoom}
           onUnassignGuest={handleUnassignGuest}
           onUnblockRoom={handleUnblockRoom}
+          onRequestCleaning={handleRequestCleaning}
         />
 
         {/* Add Room Modal */}
@@ -476,6 +485,19 @@ export default function Rooms() {
           isOpen={blockRoomModal.isOpen}
           onClose={blockRoomModal.closeModal}
           onBlock={handleBlock}
+        />
+
+        {/* Request Cleaning Modal */}
+        <RequestCleaningModal
+          isOpen={!!cleaningRoom}
+          onClose={() => setCleaningRoom(null)}
+          onSuccess={() => {
+            toast.success('Cleaning request submitted');
+            setCleaningRoom(null);
+          }}
+          roomId={cleaningRoom?.id || 0}
+          roomNumber={cleaningRoom?.roomNumber || ''}
+          guestName={cleaningRoom?.guests?.name}
         />
 
         {/* Unassign Guest Confirmation Modal */}

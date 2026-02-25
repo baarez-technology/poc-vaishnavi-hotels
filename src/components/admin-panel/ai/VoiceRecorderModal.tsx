@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Mic, Square, AlertCircle } from 'lucide-react';
+import { X, Mic, Square, AlertCircle, Trash2 } from 'lucide-react';
 import { adminAIService } from '../../../api/services/admin-ai.service';
 
 interface VoiceRecorderModalProps {
@@ -356,6 +356,17 @@ export default function VoiceRecorderModal({
     startRecording();
   };
 
+  // Delete transcript without closing modal or re-recording
+  const handleDelete = () => {
+    setTranscript('');
+    setError(null);
+    setDuration(0);
+    setHasSpoken(false);
+    hasSpokenRef.current = false;
+    setPeakAudioLevel(0);
+    audioChunksRef.current = [];
+  };
+
   // Format duration as MM:SS
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -508,12 +519,21 @@ export default function VoiceRecorderModal({
               Cancel
             </button>
             {transcript && !isRecording && !isTranscribing && (
-              <button
-                onClick={handleRetry}
-                className="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-lg text-[12px] sm:text-[13px] font-medium text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
-              >
-                Re-record
-              </button>
+              <>
+                <button
+                  onClick={handleDelete}
+                  className="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-rose-200 rounded-lg text-[12px] sm:text-[13px] font-medium text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition-colors flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete
+                </button>
+                <button
+                  onClick={handleRetry}
+                  className="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-lg text-[12px] sm:text-[13px] font-medium text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
+                >
+                  Re-record
+                </button>
+              </>
             )}
             <button
               onClick={handleDone}

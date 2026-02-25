@@ -85,9 +85,13 @@ export const roomTypesService = {
       API_ENDPOINTS.ROOM_TYPES.UPDATE(slug),
       updates
     );
-    // Clear the room-types cache so the /rooms page shows updated prices
     clearApiCache('room-types');
     return response.data.data || response.data;
+  },
+
+  deleteRoomType: async (slug: string): Promise<void> => {
+    await apiClient.delete(API_ENDPOINTS.ROOM_TYPES.DELETE(slug));
+    clearApiCache('room-types');
   },
 };
 

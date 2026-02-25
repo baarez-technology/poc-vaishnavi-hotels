@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, User, Mail, Phone, Briefcase, Calendar, Hash, DollarSign, Shield, Check, Minus, AlertTriangle, ChevronDown } from 'lucide-react';
+import { X, User, Mail, Phone, Briefcase, Calendar, Hash, DollarSign, Shield, Check, Minus, AlertTriangle, ChevronDown, Copy, CheckCircle2, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { Button } from '../../../ui2/Button';
 import { useCurrency } from '@/hooks/useCurrency';
 import {
@@ -18,6 +19,7 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    personalEmail: '',
     phone: '',
     role: 'admin',
     department: 'management',
@@ -59,6 +61,7 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
     setFormData({
       name: '',
       email: '',
+      personalEmail: '',
       phone: '',
       role: 'admin',
       department: 'management',
@@ -134,14 +137,45 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
     );
   }, [formData.role, permissions]);
 
-  const handleSubmit = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [credentials, setCredentials] = useState<{ workEmail: string; personalEmail: string; tempPassword: string; emailSent: boolean; sentTo: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleSubmit = async () => {
     if (!formData.name || !formData.email || !formData.phone) {
-      alert('Please fill in all required fields');
+      toast.error('Please fill in all required fields');
       return;
     }
-    // Include permissions in the form data
-    onAdd({ ...formData, permissions });
-    onClose();
+    setIsSubmitting(true);
+    try {
+      const result = await onAdd({ ...formData, permissions });
+      // If we got temp credentials back, show them
+      if (result?.tempPassword) {
+        const sentTo = formData.personalEmail || formData.email;
+        setCredentials({
+          workEmail: formData.email,
+          personalEmail: formData.personalEmail,
+          tempPassword: result.tempPassword,
+          emailSent: result.emailSent || false,
+          sentTo,
+        });
+      } else {
+        onClose();
+      }
+    } catch {
+      // Error toast is already shown by useStaff hook
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCopyCredentials = () => {
+    if (!credentials) return;
+    const text = `Login Email (Work): ${credentials.workEmail}\nTemporary Password: ${credentials.tempPassword}\n\nPlease change your password on first login. Expires in 72 hours.`;
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success('Credentials copied to clipboard');
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const shifts = [
@@ -177,7 +211,51 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
             <p className="text-sm text-neutral-600">Fill in the details to add a new staff member</p>
           </div>
 
-          {/* Form Content */}
+          {/* Credentials Success Screen */}
+          {credentials ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 text-center">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
+                <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-neutral-900 mb-1">Staff Member Created</h3>
+              <p className="text-sm text-neutral-500 mb-6">
+                {credentials.emailSent
+                  ? `Credentials emailed to ${credentials.sentTo}. You can also copy them below.`
+                  : 'Email could not be sent. Please share these credentials manually.'}
+              </p>
+
+              <div className="w-full max-w-sm bg-amber-50 border border-amber-200 rounded-xl p-5 text-left space-y-3">
+                <div>
+                  <p className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider mb-1">Login Email (Work)</p>
+                  <p className="text-sm font-mono text-neutral-900 select-all">{credentials.workEmail}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider mb-1">Temporary Password</p>
+                  <p className="text-base font-mono font-bold text-neutral-900 select-all tracking-wide">{credentials.tempPassword}</p>
+                </div>
+                {credentials.personalEmail && (
+                  <div className="pt-1 border-t border-amber-200/60">
+                    <p className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider mb-1">Credentials Sent To</p>
+                    <p className="text-sm text-neutral-700">{credentials.personalEmail}</p>
+                  </div>
+                )}
+                <p className="text-[11px] text-amber-600 pt-1">Expires in 72 hours. Must be changed on first login.</p>
+              </div>
+
+              <button
+                onClick={handleCopyCredentials}
+                className="mt-4 flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+              >
+                {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                {copied ? 'Copied!' : 'Copy Credentials'}
+              </button>
+
+              <Button variant="primary" onClick={onClose} className="mt-6">
+                Done
+              </Button>
+            </div>
+          ) : (
+          /* Form Content */
           <div className="overflow-y-auto flex-1 custom-scrollbar p-4 sm:p-6 pb-4 space-y-6">
           {/* Basic Information */}
           <div>
@@ -245,16 +323,33 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
               <div className="col-span-2">
                 <label className="flex items-center gap-2 text-sm font-semibold text-neutral-700 mb-2">
                   <Mail className="w-4 h-4 text-[#4E5840]" />
-                  Email Address <span className="text-red-500">*</span>
+                  Work Email (Login) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="staff@glimmora.com"
+                  placeholder="john.doe@glimmora.com"
                   className="w-full px-4 py-2.5 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#4E5840] focus:border-[#4E5840] transition-all duration-200"
                 />
+                <p className="text-[11px] text-neutral-400 mt-1">Issued by the hotel. Staff will use this to log in.</p>
+              </div>
+
+              <div className="col-span-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-neutral-700 mb-2">
+                  <Mail className="w-4 h-4 text-[#4E5840]" />
+                  Personal Email
+                </label>
+                <input
+                  type="email"
+                  name="personalEmail"
+                  value={formData.personalEmail}
+                  onChange={handleChange}
+                  placeholder="john.doe@gmail.com"
+                  className="w-full px-4 py-2.5 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#4E5840] focus:border-[#4E5840] transition-all duration-200"
+                />
+                <p className="text-[11px] text-neutral-400 mt-1">Login credentials will be sent here. Falls back to work email if empty.</p>
               </div>
 
               <div className="col-span-2">
@@ -443,17 +538,28 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }) {
           </div>
           </div>
 
-          {/* Footer Actions */}
+          )}
+
+          {/* Footer Actions — only shown when form is visible */}
+          {!credentials && (
           <div className="border-t border-neutral-200 p-4 sm:p-6 bg-white flex-shrink-0">
             <div className="flex items-center justify-end gap-3">
-              <Button variant="ghost" onClick={onClose}>
+              <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button variant="primary" onClick={handleSubmit}>
-                Add Staff Member
+              <Button variant="primary" onClick={handleSubmit} disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Creating...
+                  </span>
+                ) : (
+                  'Add Staff Member'
+                )}
               </Button>
             </div>
           </div>
+          )}
         </div>
       </div>
     </>

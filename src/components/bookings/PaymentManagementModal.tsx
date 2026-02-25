@@ -7,9 +7,10 @@
 import { useEffect, useState } from 'react';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
-import { CreditCard, DollarSign, Receipt, RefreshCw, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { CreditCard, DollarSign, Receipt, RefreshCw, CheckCircle, AlertCircle, Clock, Download } from 'lucide-react';
 import { paymentStatusConfig } from '../../data/bookingsData';
 import { useCurrency } from '@/hooks/useCurrency';
+import { bookingService } from '@/api/services/booking.service';
 
 const PAYMENT_STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending', icon: Clock, color: 'text-amber-600' },
@@ -212,15 +213,21 @@ export default function PaymentManagementModal({
           </div>
         </section>
 
-        {/* Current Status Display */}
+        {/* Current Status Display - shows SAVED status, not form edits */}
         <section>
           <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">
             Current Status
           </h3>
-          <div className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold border ${currentPaymentConfig.color}`}>
-            <span className="mr-2">{currentPaymentConfig.icon}</span>
-            {currentPaymentConfig.label}
-          </div>
+          {(() => {
+            const savedStatus = booking.paymentStatus || booking.payment_status || 'pending';
+            const savedConfig = paymentStatusConfig[savedStatus] || paymentStatusConfig['pending'];
+            return (
+              <div className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold border ${savedConfig.color}`}>
+                <span className="mr-2">{savedConfig.icon}</span>
+                {savedConfig.label}
+              </div>
+            );
+          })()}
         </section>
 
         {/* Payment Status Selection */}
@@ -335,6 +342,21 @@ export default function PaymentManagementModal({
               className="px-3 py-1.5 text-[12px] font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg border border-purple-200 transition-colors"
             >
               Process Refund
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await bookingService.downloadInvoice(booking.id || booking.bookingNumber);
+                } catch (err) {
+                  console.error('Failed to download invoice:', err);
+                  alert('Failed to download invoice. Please try again.');
+                }
+              }}
+              className="px-3 py-1.5 text-[12px] font-medium text-terra-700 bg-terra-50 hover:bg-terra-100 rounded-lg border border-terra-200 transition-colors inline-flex items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Download Invoice
             </button>
           </div>
         </section>

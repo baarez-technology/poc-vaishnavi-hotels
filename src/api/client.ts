@@ -65,8 +65,13 @@ const getCacheTTL = (url: string | undefined): number => {
     return CACHE_TTL.dashboard;
   }
 
+  // Room types - short cache so price/availability updates propagate quickly
+  if (url.includes('/room-types')) {
+    return CACHE_TTL.default; // 2s
+  }
+
   // Static data
-  if (url.includes('/room-types') || url.includes('/amenities') || url.includes('/sources')) {
+  if (url.includes('/amenities') || url.includes('/sources')) {
     return CACHE_TTL.static;
   }
 
@@ -369,6 +374,20 @@ apiClient.interceptors.response.use(
     if (originalRequest) {
       const cacheKey = getCacheKey(originalRequest);
       inflightRequests.delete(cacheKey);
+    }
+
+    // Normalize FastAPI validation error detail so it's always a string.
+    // FastAPI 422 responses return detail as [{type, loc, msg, input}, ...] which
+    // crashes React if rendered directly ("Objects are not valid as a React child").
+    if (error.response?.data?.detail) {
+      const detail = error.response.data.detail;
+      if (Array.isArray(detail)) {
+        error.response.data.detail = detail
+          .map((e: any) => (typeof e === 'string' ? e : e?.msg || e?.message || JSON.stringify(e)))
+          .join('. ');
+      } else if (typeof detail === 'object' && detail !== null) {
+        error.response.data.detail = detail.msg || detail.message || JSON.stringify(detail);
+      }
     }
 
     return Promise.reject(error);

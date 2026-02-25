@@ -36,17 +36,16 @@ export default function AssignRoomModal({
     setIsLoadingRooms(true);
     try {
       // Pass booking dates to filter rooms available for the stay period
+      // Fetch ALL room types to support upgrades/overbooking scenarios
       const searchParams: any = {};
       if (booking?.checkIn) searchParams.checkIn = booking.checkIn;
       if (booking?.checkOut) searchParams.checkOut = booking.checkOut;
-      if (booking?.roomType) searchParams.type = booking.roomType;
 
       const rooms = await roomsService.getRooms(searchParams);
       // Handle both array and items wrapper
       const roomsArray = Array.isArray(rooms) ? rooms : (rooms?.items || []);
 
-      // Transform and filter available rooms
-      const assignableStatuses = ['available', 'clean', 'inspected', 'dirty'];
+      // Transform and filter available rooms using backend-computed date-range availability
       const bookingRoomType = (booking?.roomType || '').toLowerCase();
       const transformedRooms = roomsArray
         .map((room: any) => ({
@@ -57,8 +56,14 @@ export default function AssignRoomModal({
           status: (room.status || 'available').toLowerCase(),
           price: room.price || 0,
           maxOccupancy: room.maxGuests || 2,
+          available: room.available,
         }))
-        .filter(room => assignableStatuses.includes(room.status))
+        .filter(room => {
+          // Use backend-computed availability (date-range based) when present
+          if (typeof room.available === 'boolean') return room.available;
+          // Fallback: exclude only truly unavailable statuses
+          return !['occupied', 'maintenance', 'out_of_service'].includes(room.status);
+        })
         .filter(room => !bookingRoomType || room.type.toLowerCase().includes(bookingRoomType) || bookingRoomType.includes(room.type.toLowerCase()));
 
       setRoomsData(transformedRooms);

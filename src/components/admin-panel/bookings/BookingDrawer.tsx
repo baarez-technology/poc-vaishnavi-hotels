@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Crown, Mail, Phone, Calendar, Bed, DollarSign, Globe, Sparkles, Edit, XCircle, CheckCircle } from 'lucide-react';
+import { X, Crown, Mail, Phone, Calendar, Bed, DollarSign, Globe, Sparkles, Edit, XCircle, CheckCircle, LogOut, Undo2 } from 'lucide-react';
 import { statusConfig, sourceConfig } from '@/data/bookingsData';
 import { useCurrency } from '@/hooks/useCurrency';
 import { Button } from '../../ui2/Button';
@@ -13,6 +13,8 @@ export default function BookingDrawer({
   onEditBooking,
   onAssignRoom,
   onCancelBooking,
+  onCancelCheckIn,
+  onCheckOut,
 }) {
   const { formatCurrency } = useCurrency();
   const [showStatusSuccess, setShowStatusSuccess] = useState(false);
@@ -185,26 +187,51 @@ export default function BookingDrawer({
               </div>
             </div>
 
-            {/* Status Dropdown */}
+            {/* Status Dropdown - disabled for checked-in and terminal statuses */}
             <div>
               <label className="block text-xs font-medium text-neutral-600 mb-2">
                 Booking Status
               </label>
-              <select
-                value={booking.status}
-                onChange={(e) => {
-                  onStatusChange(booking.id, e.target.value);
-                  setShowStatusSuccess(true);
-                  setTimeout(() => setShowStatusSuccess(false), 2000);
-                }}
-                className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm font-medium hover:border-neutral-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:ring-offset-2 focus:bg-white transition-all duration-200 cursor-pointer"
-              >
-                <option value="CONFIRMED">✓ Confirmed</option>
-                <option value="PENDING">⏳ Pending</option>
-                <option value="IN_HOUSE">🔑 Checked In</option>
-                <option value="COMPLETED">✅ Checked Out</option>
-                <option value="CANCELLED">❌ Cancelled</option>
-              </select>
+              {(() => {
+                const statusNorm = (booking?.status || '').toUpperCase().replace(/[\s_]/g, '-');
+                const isCheckedInStatus = statusNorm === 'IN-HOUSE' || statusNorm === 'CHECKED-IN';
+                const isTerminalStatus = statusNorm === 'CANCELLED' || statusNorm === 'CHECKED-OUT' || statusNorm === 'COMPLETED' || statusNorm === 'NO-SHOW' || statusNorm === 'NO_SHOW';
+
+                if (isCheckedInStatus || isTerminalStatus) {
+                  const statusLabels = {
+                    'IN-HOUSE': '🔑 Checked In',
+                    'CHECKED-IN': '🔑 Checked In',
+                    'CANCELLED': '❌ Cancelled',
+                    'CHECKED-OUT': '✅ Checked Out',
+                    'COMPLETED': '✅ Checked Out',
+                    'NO-SHOW': '⚠️ No Show',
+                    'NO_SHOW': '⚠️ No Show',
+                  };
+                  return (
+                    <div className="w-full px-4 py-3 bg-neutral-100 border border-neutral-200 rounded-xl text-sm font-medium text-neutral-500 cursor-not-allowed">
+                      {statusLabels[statusNorm] || booking.status}
+                    </div>
+                  );
+                }
+
+                return (
+                  <select
+                    value={booking.status}
+                    onChange={(e) => {
+                      onStatusChange(booking.id, e.target.value);
+                      setShowStatusSuccess(true);
+                      setTimeout(() => setShowStatusSuccess(false), 2000);
+                    }}
+                    className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-xl text-sm font-medium hover:border-neutral-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:ring-offset-2 focus:bg-white transition-all duration-200 cursor-pointer"
+                  >
+                    <option value="CONFIRMED">✓ Confirmed</option>
+                    <option value="PENDING">⏳ Pending</option>
+                    <option value="IN_HOUSE">🔑 Checked In</option>
+                    <option value="COMPLETED">✅ Checked Out</option>
+                    <option value="CANCELLED">❌ Cancelled</option>
+                  </select>
+                );
+              })()}
 
               {/* Success Message */}
               {showStatusSuccess && (
@@ -369,27 +396,58 @@ export default function BookingDrawer({
 
         {/* Actions Footer */}
         <div className="flex-shrink-0 bg-white border-t border-neutral-200 px-6 py-4 space-y-3 shadow-lg">
-          <Button variant="primary" onClick={onEditBooking} icon={Edit} fullWidth>
-            Edit Booking
-          </Button>
+          {(() => {
+            const statusNorm = (booking?.status || '').toUpperCase().replace(/[\s_]/g, '-');
+            const isCheckedInStatus = statusNorm === 'IN-HOUSE' || statusNorm === 'CHECKED-IN';
 
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant={!booking.room ? 'warning' : 'outline-neutral'}
-              onClick={onAssignRoom}
-              icon={Bed}
-            >
-              {!booking.room ? 'Assign Room Now' : 'Reassign Room'}
-            </Button>
-            <Button
-              variant="outline-danger"
-              onClick={() => onCancelBooking && onCancelBooking()}
-              disabled={booking?.status === 'CANCELLED'}
-              icon={XCircle}
-            >
-              {booking?.status === 'CANCELLED' ? 'Cancelled' : 'Cancel'}
-            </Button>
-          </div>
+            // Post check-in: only show Cancel Check-in and Check Out
+            if (isCheckedInStatus) {
+              return (
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    variant="outline-neutral"
+                    onClick={() => onCancelCheckIn && onCancelCheckIn()}
+                    icon={Undo2}
+                  >
+                    Cancel Check-in
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={() => onCheckOut && onCheckOut()}
+                    icon={LogOut}
+                  >
+                    Check Out
+                  </Button>
+                </div>
+              );
+            }
+
+            // Pre check-in: show all standard actions
+            return (
+              <>
+                <Button variant="primary" onClick={onEditBooking} icon={Edit} fullWidth>
+                  Edit Booking
+                </Button>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    variant={!booking.room ? 'warning' : 'outline-neutral'}
+                    onClick={onAssignRoom}
+                    icon={Bed}
+                  >
+                    {!booking.room ? 'Assign Room Now' : 'Reassign Room'}
+                  </Button>
+                  <Button
+                    variant="outline-danger"
+                    onClick={() => onCancelBooking && onCancelBooking()}
+                    disabled={booking?.status === 'CANCELLED'}
+                    icon={XCircle}
+                  >
+                    {booking?.status === 'CANCELLED' ? 'Cancelled' : 'Cancel'}
+                  </Button>
+                </div>
+              </>
+            );
+          })()}
         </div>
       </div>
     </>

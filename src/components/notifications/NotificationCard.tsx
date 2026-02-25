@@ -20,7 +20,9 @@ const colorMap = {
 
 function formatTimestamp(timestamp) {
   const now = new Date();
-  const time = new Date(timestamp);
+  // Backend stores UTC times without Z suffix — append Z so JS interprets as UTC
+  const utcTs = timestamp && !timestamp.endsWith('Z') && !timestamp.includes('+') ? timestamp + 'Z' : timestamp;
+  const time = new Date(utcTs);
   const diffMs = now - time;
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);

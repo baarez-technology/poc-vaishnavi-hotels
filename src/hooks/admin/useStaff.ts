@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import { filterByDepartment, filterStaff } from '@/utils/admin/staffFilter';
 import { searchStaff } from '@/utils/admin/staffSearch';
 import { sortStaff } from '@/utils/admin/staffSort';
@@ -273,55 +274,46 @@ export function useStaff() {
    */
   const addStaff = async (newStaffData) => {
     try {
-      // Call API to create staff
+      // Call API to create staff (password omitted = backend auto-generates temp password)
       const apiResult = await staffService.create({
         email: newStaffData.email,
+        personal_email: newStaffData.personalEmail || undefined,
         full_name: newStaffData.name,
         phone: newStaffData.phone,
         role: newStaffData.role,
         department: newStaffData.department,
-        password: newStaffData.password || 'TempPass123!',
         shift: newStaffData.shift,
-        hourly_rate: newStaffData.hourlyRate
+        hourly_rate: newStaffData.hourlyRate,
+        permissions: newStaffData.permissions || undefined,
       });
 
-      // Transform and add to local state
-      const newStaff = transformApiStaff(apiResult);
-      setStaff(prev => [...prev, newStaff]);
-      return newStaff;
-    } catch (err) {
-      console.error('Failed to add staff via API:', err);
-      // Fallback to local add
-      const newId = `S-${String(staff.length + 1).padStart(3, '0')}`;
-      const newStaff = {
-        id: newId,
-        name: newStaffData.name,
-        role: newStaffData.role,
-        department: newStaffData.department,
-        status: newStaffData.status || 'active',
-        phone: newStaffData.phone,
-        email: newStaffData.email,
-        avatar: newStaffData.avatar || newStaffData.name.split(' ').filter(n => n).map(n => n[0]).join('') || 'G'.toUpperCase(),
-        shift: newStaffData.shift || 'morning',
-        floorAssignment: newStaffData.floorAssignment || null,
-        joinDate: new Date().toISOString().split('T')[0],
-        tasksToday: 0,
-        completedToday: 0,
-        efficiency: 0,
-        rating: 0,
-        performance: {
-          tasksCompleted: 0,
-          avgResponseTime: '0 min',
-          customerRating: 0,
-          punctuality: 100
-        },
-        schedule: [],
-        leaveHistory: [],
-        aiInsights: ['New staff member', 'Training in progress']
-      };
+      // Extract the response data (handles wrapped { data: ... } or raw)
+      const result = apiResult?.data || apiResult;
 
+      // Transform and add to local state
+      const newStaff = transformApiStaff(result);
       setStaff(prev => [...prev, newStaff]);
-      return newStaff;
+
+      // Surface the temp password to the admin
+      const tempPassword = result.temp_password || result.tempPassword;
+      const emailSent = result.email_sent || result.emailSent;
+
+      if (tempPassword) {
+        // Show a persistent toast with the temp password so admin can copy it
+        toast.success(
+          `Staff created! Temp password: ${tempPassword}${emailSent ? ' (email sent)' : ' (email NOT sent — share manually)'}`,
+          { duration: 15000 }
+        );
+      } else {
+        toast.success('Staff member created successfully');
+      }
+
+      return { ...newStaff, tempPassword, emailSent };
+    } catch (err: any) {
+      console.error('Failed to add staff via API:', err);
+      const msg = err?.response?.data?.detail || err?.message || 'Failed to create staff member';
+      toast.error(msg);
+      throw err;
     }
   };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Mic } from 'lucide-react';
+import { X, Mic, Trash2 } from 'lucide-react';
 
 /**
  * Voice Recorder Modal Component
@@ -62,6 +62,13 @@ export default function VoiceRecorderModal({ isOpen, onClose, onTranscriptReady 
       onTranscriptReady(transcript);
     }
     onClose();
+  };
+
+  // Delete transcript without closing modal
+  const handleDelete = () => {
+    setTranscript('');
+    setIsRecording(false);
+    setDuration(0);
   };
 
   // Format duration as MM:SS
@@ -170,6 +177,15 @@ export default function VoiceRecorderModal({ isOpen, onClose, onTranscriptReady 
             >
               Cancel
             </button>
+            {transcript && (
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2.5 bg-white border border-rose-300 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete
+              </button>
+            )}
             <button
               onClick={handleDone}
               disabled={!transcript}

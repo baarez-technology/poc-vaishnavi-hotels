@@ -15,6 +15,7 @@ import BookingDrawer from '../../../components/cbs/BookingDrawer';
 import NewBookingDrawer from '../../../components/cbs/NewBookingDrawer';
 import AssignRoomModal from '../../../components/cbs/AssignRoomModal';
 import { ConfirmModal } from '../../../components/ui2/Modal';
+import CheckInDrawer from '../../../components/bookings/CheckInDrawer';
 import { Button } from '../../../components/ui2/Button';
 import {
   Plus,
@@ -66,6 +67,10 @@ export default function CBSBookings() {
 
   const [loadingStates, setLoadingStates] = useState({});
   const lastActionRef = useRef(null);
+
+  // Check-in drawer state
+  const [checkInBooking, setCheckInBooking] = useState<any>(null);
+  const [isCheckInDrawerOpen, setIsCheckInDrawerOpen] = useState(false);
 
   // SSE Integration - refresh bookings when real-time events arrive
   useBookingsSSE({ refetchBookings: refreshBookings });
@@ -146,25 +151,12 @@ export default function CBSBookings() {
     setIsAssignRoomModalOpen(true);
   }, [getAvailableRooms]);
 
-  // Quick action: Check-in from table
+  // Quick action: Check-in from table — opens drawer
   const handleQuickCheckIn = useCallback((booking) => {
     const bookingData = typeof booking === 'object' ? booking : bookings.find(b => b.id === booking);
-
     if (!bookingData) return;
 
-    // Check for outstanding balance
-    if (bookingData.balance > 0) {
-      setConfirmDialog({
-        isOpen: true,
-        title: 'Outstanding Balance',
-        message: `Guest ${bookingData.guestName} has an outstanding balance of $${bookingData.balance}. Check in anyway?`,
-        variant: 'warning',
-        onConfirm: () => performCheckIn(bookingData.id)
-      });
-      return;
-    }
-
-    // Check if room is assigned
+    // Check if room is assigned first
     if (!bookingData.roomNumber) {
       setConfirmDialog({
         isOpen: true,
@@ -176,10 +168,12 @@ export default function CBSBookings() {
       return;
     }
 
-    performCheckIn(bookingData.id);
+    // Open check-in drawer (balance warning is shown inside the drawer)
+    setCheckInBooking(bookingData);
+    setIsCheckInDrawerOpen(true);
   }, [bookings]);
 
-  const performCheckIn = useCallback((bookingId) => {
+  const handleCheckInComplete = useCallback(async (bookingId: string, _data: any) => {
     const previousStatus = bookings.find(b => b.id === bookingId)?.status;
     lastActionRef.current = { type: 'checkIn', bookingId, previousStatus };
 
@@ -190,6 +184,7 @@ export default function CBSBookings() {
         lastActionRef.current = null;
       }
     });
+    return true;
   }, [bookings, updateBookingStatus, success]);
 
   // Quick action: Check-out from table
@@ -422,6 +417,7 @@ export default function CBSBookings() {
           new Date().toISOString().split('T')[0],
           new Date(Date.now() + 86400000).toISOString().split('T')[0]
         )}
+        getAvailableRooms={getAvailableRoomsForNewBooking}
         getRateForBooking={getRateForBooking}
       />
 
@@ -435,6 +431,17 @@ export default function CBSBookings() {
         onAssign={handleRoomAssignment}
         onNotifyHousekeeping={handleNotifyHousekeeping}
         hideBackdrop={isDrawerOpen}
+      />
+
+      {/* Check-In Drawer */}
+      <CheckInDrawer
+        isOpen={isCheckInDrawerOpen}
+        onClose={() => {
+          setIsCheckInDrawerOpen(false);
+          setCheckInBooking(null);
+        }}
+        booking={checkInBooking}
+        onCheckInComplete={handleCheckInComplete}
       />
 
       {/* Confirm Dialog */}

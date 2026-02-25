@@ -18,7 +18,7 @@ import { DashboardHeader } from '../../../layouts/staff-portal/PageHeader';
 import { StatCard } from '../../../components/staff-portal/ui/Card';
 import { StatusBadge, PriorityBadge } from '../../../components/staff-portal/ui/Badge';
 import Button from '../../../components/staff-portal/ui/Button';
-import { useStaffProfile, useHousekeepingRooms, useMyHousekeepingTasks, useNotifications, useHousekeepingActions } from '@/hooks/staff-portal/useStaffApi';
+import { useStaffProfile, useMyHousekeepingRooms, useMyHousekeepingTasks, useNotifications, useHousekeepingActions } from '@/hooks/staff-portal/useStaffApi';
 import { useProfile } from '@/hooks/staff-portal/useStaffPortal';
 import { ScanDigitalKeyModal } from '@/components/housekeeping/modals/ScanDigitalKeyModal';
 
@@ -81,9 +81,9 @@ const HousekeepingDashboard = () => {
   const [scanModalOpen, setScanModalOpen] = useState(false);
   const { data: profile, refetch: refetchProfile } = useStaffProfile();
   const { profile: contextProfile, clockIn: contextClockIn, clockOut: contextClockOut } = useProfile();
-  const { data: dirtyRooms, loading: dirtyLoading, refetch: refetchDirty } = useHousekeepingRooms('dirty');
-  const { data: inProgressRooms, loading: inProgressRoomLoading, refetch: refetchInProgressRooms } = useHousekeepingRooms('in_progress');
-  const { data: cleanRooms } = useHousekeepingRooms('clean');
+  const { data: dirtyRooms, loading: dirtyLoading, refetch: refetchDirty } = useMyHousekeepingRooms('dirty');
+  const { data: inProgressRooms, loading: inProgressRoomLoading, refetch: refetchInProgressRooms } = useMyHousekeepingRooms('in_progress');
+  const { data: cleanRooms } = useMyHousekeepingRooms('clean');
   const { data: tasks, loading: tasksLoading, refetch: refetchTasks } = useMyHousekeepingTasks();
   const { data: notifications } = useNotifications();
   const { updateRoomStatus, startTask } = useHousekeepingActions();

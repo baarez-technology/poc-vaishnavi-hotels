@@ -11,7 +11,8 @@ interface HotelGuardProps {
  */
 export function HotelGuard({ children }: HotelGuardProps) {
   // If we have a hotel code, render the app
-  if (ENV.HOTEL_CODE) {
+  // In development, skip the guard so devs don't need VITE_HOTEL_CODE
+  if (ENV.HOTEL_CODE || ENV.IS_DEV) {
     return <>{children}</>;
   }
 

@@ -226,6 +226,7 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign, allB
   const [isCheckingGuest, setIsCheckingGuest] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [roomTypeMismatch, setRoomTypeMismatch] = useState<{ bookedType: string; roomType: string } | null>(null);
+  const [mismatchConfirmed, setMismatchConfirmed] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -242,6 +243,7 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign, allB
       setShowDuplicateWarning(false);
       setReassignConfirmed(false);
       setRoomTypeMismatch(null);
+      setMismatchConfirmed(false);
       fetchGuests();
     }
   }, [isOpen]);
@@ -253,6 +255,7 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign, allB
       setShowDuplicateWarning(false);
       setReassignConfirmed(false);
       setRoomTypeMismatch(null);
+      setMismatchConfirmed(false);
       return;
     }
     checkGuestExistingAssignment();
@@ -459,6 +462,12 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign, allB
       return;
     }
 
+    // Block if room type mismatch exists and user hasn't confirmed override
+    if (roomTypeMismatch && !mismatchConfirmed) {
+      toast.warning('Room type does not match the booking. Please confirm the override or choose a matching room.');
+      return;
+    }
+
     const guest = availableGuests.find(g => String(g.id) === String(selectedGuest));
     if (guest) {
       setIsSubmitting(true);
@@ -495,7 +504,7 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign, allB
         type="submit"
         variant="primary"
         form="assign-guest-form"
-        disabled={isSubmitting || (showDuplicateWarning && !reassignConfirmed) || !checkInDate || !checkOutDate || nights <= 0}
+        disabled={isSubmitting || (showDuplicateWarning && !reassignConfirmed) || (roomTypeMismatch && !mismatchConfirmed) || !checkInDate || !checkOutDate || nights <= 0}
         className="px-5 py-2 text-[13px] font-semibold"
       >
         {isSubmitting
@@ -576,21 +585,36 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign, allB
           </div>
         )}
 
-        {/* Room Type Mismatch Warning */}
+        {/* Room Type Mismatch Warning - blocks assignment until confirmed */}
         {roomTypeMismatch && (
-          <div className="p-4 rounded-lg border bg-amber-50 border-amber-300">
+          <div className={`p-4 rounded-lg border ${mismatchConfirmed ? 'bg-amber-50 border-amber-200' : 'bg-rose-50 border-rose-200'}`}>
             <div className="flex items-start gap-2">
-              <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-600" />
+              <AlertTriangle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${mismatchConfirmed ? 'text-amber-600' : 'text-rose-600'}`} />
               <div className="flex-1">
-                <p className="text-[13px] font-semibold text-amber-800">
+                <p className={`text-[13px] font-semibold ${mismatchConfirmed ? 'text-amber-800' : 'text-rose-800'}`}>
                   Room Type Mismatch
                 </p>
-                <p className="text-[12px] mt-1 text-amber-700">
-                  Selected room type does not match the booked room type.
+                <p className={`text-[12px] mt-1 ${mismatchConfirmed ? 'text-amber-700' : 'text-rose-700'}`}>
                   Guest booked <span className="font-semibold">{roomTypeMismatch.bookedType}</span> but
                   this room is <span className="font-semibold">{roomTypeMismatch.roomType}</span>.
-                  Proceed only if upgrading or with guest consent.
+                  This assignment will be blocked by the system unless the room types match.
                 </p>
+                {!mismatchConfirmed ? (
+                  <div className="mt-3 flex items-center gap-2">
+                    <p className="text-[12px] text-rose-600">Override and assign anyway (e.g., upgrade)?</p>
+                    <button
+                      type="button"
+                      onClick={() => setMismatchConfirmed(true)}
+                      className="px-3 py-1 text-[12px] font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-md transition-colors"
+                    >
+                      Yes, Override
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-[12px] text-amber-600 mt-1 font-medium">
+                    Override confirmed. Note: the backend may still reject if strict validation is enforced.
+                  </p>
+                )}
               </div>
             </div>
           </div>

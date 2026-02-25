@@ -31,6 +31,7 @@ import { LoginPage } from './pages/Auth/LoginPage';
 import { SignupPage } from './pages/Auth/SignupPage';
 import { ForgotPasswordPage } from './pages/Auth/ForgotPasswordPage';
 import { ResetPassword } from './pages/Auth/ResetPassword';
+import SetFirstPassword from './pages/Auth/SetFirstPassword';
 import { RoomsPage } from './pages/Rooms/RoomsPage';
 import { RoomDetailPage } from './pages/Rooms/RoomDetailPage';
 import { ContactPage } from './pages/Contact/ContactPage';
@@ -452,6 +453,7 @@ function App() {
                           <Route path="/signup" element={<SignupPage />} />
                           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                           <Route path="/reset-password" element={<ResetPassword />} />
+                          <Route path="/set-password" element={<SetFirstPassword />} />
                           {/* 404 */}
                           <Route path="*" element={<NotFound />} />
                         </Routes>

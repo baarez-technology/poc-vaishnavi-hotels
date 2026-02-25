@@ -5,7 +5,7 @@
  */
 
 import { useState, useMemo, useEffect } from 'react';
-import { Check, Bed, Users, Loader2, Sparkles, Zap, Droplets } from 'lucide-react';
+import { Check, Bed, Users, Loader2, Sparkles, Zap, Droplets, Lock, Unlock } from 'lucide-react';
 import { roomsService } from '../../api/services/rooms.service';
 import { bookingService } from '../../api/services/booking.service';
 import { formatCurrency } from '../../utils/bookings';
@@ -112,6 +112,7 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterFloor, setFilterFloor] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [rooms, setRooms] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -119,6 +120,7 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
   const [isAutoAssigning, setIsAutoAssigning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [guestPreferences, setGuestPreferences] = useState<Record<string, any> | null>(null);
+  const [dnmEnabled, setDnmEnabled] = useState(false);
 
   // Fetch rooms and recommendations when modal opens
   useEffect(() => {
@@ -128,6 +130,8 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
       // Default to booking's room type - only show matching rooms
       setFilterType(booking?.roomType || 'all');
       setFilterFloor('all');
+      setFilterStatus('all');
+      setDnmEnabled(booking?.doNotMove || false);
       setError(null);
       setRecommendations([]);
       setGuestPreferences(null);
@@ -142,10 +146,10 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
     setIsLoading(true);
     try {
       // Pass booking dates to filter rooms available for the stay period
+      // Fetch ALL room types (not just booked type) to support upgrades/overbooking
       const searchParams: any = {};
       if (booking?.checkIn) searchParams.checkIn = booking.checkIn;
       if (booking?.checkOut) searchParams.checkOut = booking.checkOut;
-      if (booking?.roomType) searchParams.type = booking.roomType;
       const fetchedRooms = await roomsService.getRooms(searchParams);
       setRooms(fetchedRooms);
     } catch (err: any) {
@@ -199,10 +203,13 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
     }
   };
 
-  // Helper to check if room is available
+  // Helper to check if room is available — uses backend-computed date-range availability
   const isRoomAvailable = (room: any) => {
+    // Use backend-computed availability (date-range based) when present
+    if (typeof room.available === 'boolean') return room.available;
+    // Fallback: exclude only truly unavailable statuses
     const status = (room.status || '').toLowerCase();
-    return ['available', 'clean', 'inspected'].includes(status);
+    return !['occupied', 'maintenance', 'out_of_service'].includes(status);
   };
 
   // Get available rooms with recommendation scores merged
@@ -283,6 +290,13 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
       filtered = filtered.filter(room => room.floor === parseInt(filterFloor));
     }
 
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(room => {
+        const status = (room.status || '').toLowerCase();
+        return status === filterStatus.toLowerCase();
+      });
+    }
+
     // Sort: recommended first (by score), then by matching type, then by room number
     const bookingType = booking?.roomType || '';
     filtered.sort((a, b) => {
@@ -309,7 +323,7 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
     });
 
     return filtered;
-  }, [availableRooms, searchQuery, filterType, filterFloor, booking?.roomType]);
+  }, [availableRooms, searchQuery, filterType, filterFloor, filterStatus, booking?.roomType]);
 
   // Get unique room types - ensure booking's room type is always included
   const roomTypes = useMemo(() => {
@@ -327,10 +341,44 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
     return Array.from(floorSet).sort((a, b) => a - b);
   }, [availableRooms]);
 
-  const handleSubmit = () => {
+  // Get unique room statuses for filter
+  const roomStatuses = useMemo(() => {
+    const statusSet = new Set(
+      availableRooms.map(r => (r.status || '').toLowerCase()).filter(Boolean)
+    );
+    return Array.from(statusSet).sort();
+  }, [availableRooms]);
+
+  // Status labels for display
+  const statusLabels: Record<string, string> = {
+    available: 'Available',
+    clean: 'Clean',
+    inspected: 'Inspected',
+    dirty: 'Dirty',
+    occupied: 'Occupied',
+  };
+
+  // Determine if this is a room move (checked-in guest) or initial assignment
+  const isRoomMove = (() => {
+    const status = (booking?.status || '').toUpperCase().replace(/[\s_]/g, '-');
+    return status === 'IN-HOUSE' || status === 'CHECKED-IN' || status === 'IN_HOUSE';
+  })();
+
+  const handleSubmit = async () => {
     if (selectedRoom) {
       const roomNumber = selectedRoom.number || selectedRoom.roomNumber;
       const roomType = selectedRoom.room_type?.name || selectedRoom.type || 'Standard';
+
+      // Confirmation dialog when reassigning (booking already has a room)
+      const currentRoom = booking?.room;
+      const hasExistingRoom = currentRoom && currentRoom !== 'Unassigned' && currentRoom !== 'Not assigned';
+      if (hasExistingRoom && String(currentRoom) !== String(roomNumber)) {
+        const confirmed = window.confirm(
+          `This booking already has Room ${currentRoom} assigned.\n\nReassign to Room ${roomNumber} (${roomType})?`
+        );
+        if (!confirmed) return;
+      }
+
       onAssign({
         id: selectedRoom.id,
         roomNumber: roomNumber,
@@ -338,6 +386,16 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
         floor: selectedRoom.floor,
         price: selectedRoom.room_type?.base_price || selectedRoom.price,
       });
+
+      // Toggle DNM if changed
+      if (booking?.id && dnmEnabled !== (booking?.doNotMove || false)) {
+        try {
+          await bookingService.toggleDNM(booking.id, dnmEnabled);
+        } catch (err) {
+          console.error('[AssignRoomModal] DNM toggle failed:', err);
+        }
+      }
+
       setSelectedRoom(null);
     }
   };
@@ -364,7 +422,7 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
           disabled={!selectedRoom}
           loading={isAssigning}
         >
-          Assign Room
+          {isRoomMove ? 'Move Room' : 'Assign Room'}
         </Button>
       </div>
     </div>
@@ -374,8 +432,8 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
     <Drawer
       isOpen={isOpen}
       onClose={onClose}
-      title="Assign Room"
-      subtitle="AI-powered room matching based on guest preferences"
+      title={isRoomMove ? "Room Move" : "Assign Room"}
+      subtitle={isRoomMove ? "Move checked-in guest to a different room" : "AI-powered room matching based on guest preferences"}
       maxWidth="max-w-2xl"
       footer={drawerFooter}
     >
@@ -410,6 +468,33 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
                     <span className="text-[13px] font-semibold text-terra-600">{booking.roomType}</span>
                   </div>
                 )}
+
+                {/* DNM indicator if already locked */}
+                {booking.doNotMove && (
+                  <div className="col-span-2 pt-2 border-t border-terra-100">
+                    <div className="flex items-center gap-1.5 text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-1.5">
+                      <Lock className="w-3.5 h-3.5" />
+                      <span className="text-[12px] font-medium">DNM — Room assignment is locked</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* DNM toggle */}
+                <div className="col-span-2 pt-2 border-t border-terra-100">
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={dnmEnabled}
+                      onChange={(e) => setDnmEnabled(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded border-neutral-300 text-terra-600 focus:ring-terra-500"
+                    />
+                    <span className="flex items-center gap-1 text-[12px] text-neutral-600 group-hover:text-neutral-800">
+                      {dnmEnabled ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                      Do Not Move (DNM)
+                    </span>
+                    <span className="text-[10px] text-neutral-400 ml-auto">Lock room assignment</span>
+                  </label>
+                </div>
               </div>
             </div>
           </section>
@@ -550,6 +635,18 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
                   ...floors.map(floor => ({ value: String(floor), label: `Floor ${floor}` }))
                 ]}
                 placeholder="All Floors"
+              />
+              <CustomSelect
+                value={filterStatus}
+                onChange={setFilterStatus}
+                options={[
+                  { value: 'all', label: 'All Statuses' },
+                  ...roomStatuses.map(s => ({
+                    value: s,
+                    label: statusLabels[s] || s.charAt(0).toUpperCase() + s.slice(1)
+                  }))
+                ]}
+                placeholder="All Statuses"
               />
             </div>
           </div>

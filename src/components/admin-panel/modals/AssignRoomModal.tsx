@@ -37,10 +37,10 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
     setIsLoadingRooms(true);
     try {
       // Pass booking dates to filter rooms available for the stay period
+      // Fetch ALL room types to support upgrades/overbooking scenarios
       const searchParams: any = {};
       if (booking?.checkIn) searchParams.checkIn = booking.checkIn;
       if (booking?.checkOut) searchParams.checkOut = booking.checkOut;
-      if (booking?.roomType) searchParams.type = booking.roomType;
       const rooms = await roomsService.getRooms(searchParams);
       console.log('[AssignRoomModal] Fetched rooms:', rooms);
 
@@ -59,6 +59,7 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
         features: room.amenities || room.features || [],
         bedType: room.bedType || room.bed_type || 'King',
         view: room.view || room.view_type || 'Standard',
+        available: room.available,
       }));
 
       console.log('[AssignRoomModal] Transformed rooms:', transformedRooms);
@@ -87,13 +88,15 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
   const availableRooms = useMemo(() => {
     if (!roomsData || roomsData.length === 0) return [];
 
-    // Statuses that indicate a room can be assigned
-    const assignableStatuses = ['available', 'clean', 'inspected', 'dirty'];
-
     return roomsData.filter(room => {
-      // Only show rooms with assignable status
-      const roomStatus = (room.status || '').toLowerCase();
-      if (!assignableStatuses.includes(roomStatus)) return false;
+      // Use backend-computed availability (date-range based) when present
+      if (typeof room.available === 'boolean') {
+        if (!room.available) return false;
+      } else {
+        // Fallback: exclude only truly unavailable statuses
+        const roomStatus = (room.status || '').toLowerCase();
+        if (['occupied', 'maintenance', 'out_of_service'].includes(roomStatus)) return false;
+      }
 
       // Check for date conflicts if booking has dates
       if (booking?.checkIn && booking?.checkOut && bookings.length > 0) {

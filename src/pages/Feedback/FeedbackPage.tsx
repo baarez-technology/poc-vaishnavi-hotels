@@ -248,9 +248,10 @@ export const FeedbackPage = () => {
       setSubmitted(true);
     } catch (err: unknown) {
       console.error('Failed to submit feedback:', err);
-      const error = err as { response?: { data?: { detail?: string } } };
+      const error = err as { response?: { data?: { detail?: any } } };
       if (error.response?.data?.detail) {
-        setError(error.response.data.detail);
+        const detail = error.response.data.detail;
+        setError(typeof detail === 'string' ? detail : 'Failed to submit feedback');
       } else {
         // For demo, show success anyway
         setSubmitted(true);

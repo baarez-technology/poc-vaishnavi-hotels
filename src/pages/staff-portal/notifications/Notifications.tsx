@@ -106,12 +106,26 @@ const NotificationItem = ({
   getBadgeClass
 }: NotificationItemProps) => {
   const isUnread = !notification.is_read;
-  const hasAction = !!notification.actionUrl;
+
+  const getActionUrl = (): string | null => {
+    if (notification.actionUrl) return notification.actionUrl;
+    const type = notification.notification_type || '';
+    if (type.includes('task') && notification.room_id) {
+      return `/staff/housekeeping/rooms/${notification.room_id}`;
+    }
+    if (notification.room_id) {
+      return `/staff/housekeeping/rooms/${notification.room_id}`;
+    }
+    return null;
+  };
+
+  const hasAction = !!getActionUrl();
 
   const handleClick = () => {
     onRead(notification.id);
-    if (notification.actionUrl) {
-      onNavigate(notification.actionUrl);
+    const url = getActionUrl();
+    if (url) {
+      onNavigate(url);
     }
   };
 
@@ -274,7 +288,9 @@ const Notifications = () => {
 
   // Helper functions
   const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
+    // Backend stores UTC times without Z suffix — append Z so JS interprets as UTC
+    const utcTimestamp = timestamp && !timestamp.endsWith('Z') && !timestamp.includes('+') ? timestamp + 'Z' : timestamp;
+    const date = new Date(utcTimestamp);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);

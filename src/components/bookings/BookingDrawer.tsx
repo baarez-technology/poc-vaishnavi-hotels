@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   X, Crown, Mail, Phone, Bed, Globe,
   Sparkles, Edit, XCircle, CheckCircle, Users,
-  Calendar, ChevronDown, Check
+  Calendar, ChevronDown, Check, Undo2, ArrowRightLeft, LogIn, LogOut, UserX, SprayCan
 } from 'lucide-react';
 import { statusConfig, sourceConfig } from '../../data/bookingsData';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -18,6 +18,11 @@ export default function BookingDrawer({
   onEditBooking,
   onAssignRoom,
   onCancelBooking,
+  onCancelCheckIn,
+  onCheckIn,
+  onCheckOut,
+  onMarkNoShow,
+  onRequestCleaning,
 }) {
   const { formatCurrency } = useCurrency();
   const [showStatusSuccess, setShowStatusSuccess] = useState(false);
@@ -144,7 +149,10 @@ export default function BookingDrawer({
   if (!booking) return null;
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    if (!dateString) return 'N/A';
+    // Append T12:00:00 to date-only strings to prevent UTC midnight timezone shift
+    const safe = dateString.includes('T') ? dateString : `${dateString}T12:00:00`;
+    const date = new Date(safe);
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -169,6 +177,8 @@ export default function BookingDrawer({
       'CHECKED-IN': { bg: 'bg-blue-500', text: 'text-blue-700', label: 'Checked In' },
       'CHECKED-OUT': { bg: 'bg-neutral-400', text: 'text-neutral-600', label: 'Checked Out' },
       'CANCELLED': { bg: 'bg-rose-500', text: 'text-rose-600', label: 'Cancelled' },
+      'NO-SHOW': { bg: 'bg-orange-500', text: 'text-orange-600', label: 'No Show' },
+      'NO_SHOW': { bg: 'bg-orange-500', text: 'text-orange-600', label: 'No Show' },
     };
     return config[statusKey] || config['PENDING'];
   };
@@ -216,7 +226,7 @@ export default function BookingDrawer({
                     <h2 className="text-base sm:text-lg font-semibold text-neutral-900 truncate">{booking.guest}</h2>
                     {booking.vip && <Crown className="w-4 h-4 text-gold-500 flex-shrink-0" />}
                   </div>
-                  <p className="text-xs sm:text-[13px] text-neutral-400 truncate">{booking.id}</p>
+                  <p className="text-xs sm:text-[13px] text-neutral-400 truncate">{booking.bookingNumber || booking.id}</p>
                 </div>
               </div>
               <button
@@ -229,35 +239,56 @@ export default function BookingDrawer({
 
             {/* Status Badge with Dropdown */}
             <div className="mt-4 relative" ref={dropdownRef}>
-              <button
-                onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 hover:bg-neutral-200 transition-colors"
-              >
-                <span className={`w-2 h-2 rounded-full ${statusConf.bg}`}></span>
-                <span className={`text-sm font-medium ${statusConf.text}`}>{statusConf.label}</span>
-                <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
+              {(() => {
+                const statusNorm = (booking?.status || '').toUpperCase().replace(/[\s_]/g, '-');
+                const isCheckedInStatus = statusNorm === 'IN-HOUSE' || statusNorm === 'CHECKED-IN';
+                const isTerminalStatus = statusNorm === 'CANCELLED' || statusNorm === 'CHECKED-OUT' || statusNorm === 'COMPLETED' || statusNorm === 'NO-SHOW' || statusNorm === 'NO_SHOW';
 
-              {/* Dropdown Menu */}
-              {statusDropdownOpen && (
-                <div className="absolute left-0 top-full mt-2 w-48 bg-white rounded-[10px] shadow-lg border border-neutral-200 py-1 z-[60]">
-                  {statusOptions.map((option) => (
+                // Post check-in and terminal statuses: show static badge (no dropdown)
+                if (isCheckedInStatus || isTerminalStatus) {
+                  return (
+                    <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100">
+                      <span className={`w-2 h-2 rounded-full ${statusConf.bg}`}></span>
+                      <span className={`text-sm font-medium ${statusConf.text}`}>{statusConf.label}</span>
+                    </span>
+                  );
+                }
+
+                // Pre check-in statuses: allow status change via dropdown
+                return (
+                  <>
                     <button
-                      key={option.value}
-                      onClick={() => handleStatusChange(option.value)}
-                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-[13px] hover:bg-neutral-50 transition-colors ${
-                        booking.status === option.value ? 'bg-neutral-50' : ''
-                      }`}
+                      onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 hover:bg-neutral-200 transition-colors"
                     >
-                      <span className={`w-2 h-2 rounded-full ${option.bg}`}></span>
-                      <span className={`font-medium ${option.color}`}>{option.label}</span>
-                      {booking.status === option.value && (
-                        <Check className="w-4 h-4 text-terra-500 ml-auto" />
-                      )}
+                      <span className={`w-2 h-2 rounded-full ${statusConf.bg}`}></span>
+                      <span className={`text-sm font-medium ${statusConf.text}`}>{statusConf.label}</span>
+                      <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
-                  ))}
-                </div>
-              )}
+
+                    {/* Dropdown Menu */}
+                    {statusDropdownOpen && (
+                      <div className="absolute left-0 top-full mt-2 w-48 bg-white rounded-[10px] shadow-lg border border-neutral-200 py-1 z-[60]">
+                        {statusOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() => handleStatusChange(option.value)}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-[13px] hover:bg-neutral-50 transition-colors ${
+                              booking.status === option.value ? 'bg-neutral-50' : ''
+                            }`}
+                          >
+                            <span className={`w-2 h-2 rounded-full ${option.bg}`}></span>
+                            <span className={`font-medium ${option.color}`}>{option.label}</span>
+                            {booking.status === option.value && (
+                              <Check className="w-4 h-4 text-terra-500 ml-auto" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
 
               {showStatusSuccess && (
                 <span className="ml-3 text-[13px] text-sage-600 inline-flex items-center gap-1">
@@ -385,32 +416,125 @@ export default function BookingDrawer({
             </div>
           </div>
 
-          {/* Footer */}
+          {/* Footer - Status-aware action buttons with date guards */}
           <div className="flex-shrink-0 border-t border-neutral-100 p-3 sm:p-4 bg-white">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <button
-                onClick={() => onCancelBooking && onCancelBooking()}
-                disabled={booking?.status === 'CANCELLED'}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-neutral-200 text-neutral-600 hover:border-rose-200 hover:text-rose-600 hover:bg-rose-50 rounded-lg text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <XCircle className="w-4 h-4" />
-                Cancel
-              </button>
-              <button
-                onClick={onAssignRoom}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg text-[13px] font-medium transition-colors"
-              >
-                <Bed className="w-4 h-4" />
-                Assign
-              </button>
-              <button
-                onClick={onEditBooking}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-terra-500 hover:bg-terra-600 text-white rounded-lg text-[13px] font-medium transition-colors"
-              >
-                <Edit className="w-4 h-4" />
-                Edit
-              </button>
-            </div>
+            {(() => {
+              const status = (booking?.status || '').toUpperCase().replace(/[\s_]/g, '-');
+              const isCheckedIn = status === 'IN-HOUSE' || status === 'CHECKED-IN';
+              const isCancelled = status === 'CANCELLED';
+              const isCompleted = status === 'CHECKED-OUT' || status === 'COMPLETED';
+              const isNoShowStatus = status === 'NO-SHOW' || status === 'NO_SHOW';
+              const hasRoom = booking?.room && booking.room !== 'Unassigned' && booking.room !== 'Not assigned';
+
+              // Date guards
+              const today = new Date().toISOString().split('T')[0];
+              const checkOut = booking?.checkOut || booking?.departure_date;
+              const checkIn = booking?.checkIn || booking?.arrival_date;
+              const expired = checkOut && checkOut <= today;
+              const arrivalPassed = checkIn && checkIn < today;
+
+              const canDoCheckIn = (status === 'CONFIRMED' || status === 'PENDING' || status === 'BOOKED') && hasRoom && !expired;
+              const canDoNoShow = (status === 'CONFIRMED' || status === 'PENDING' || status === 'BOOKED') && arrivalPassed;
+              const isTerminal = isCancelled || isCompleted || isNoShowStatus;
+
+              // Post check-in: show Edit, Room Move, Cancel Check-in, and Check Out
+              if (isCheckedIn && !expired) {
+                return (
+                  <div className="space-y-2">
+                    <button
+                      onClick={onEditBooking}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-terra-500 hover:bg-terra-600 text-white rounded-lg text-[13px] font-medium transition-colors"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit Booking
+                    </button>
+                    <button
+                      onClick={() => onRequestCleaning && onRequestCleaning()}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-sage-200 text-sage-700 hover:bg-sage-50 rounded-lg text-[13px] font-medium transition-colors"
+                    >
+                      <SprayCan className="w-4 h-4" />
+                      Request Cleaning
+                    </button>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <button
+                        onClick={() => onCancelCheckIn && onCancelCheckIn()}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-amber-200 text-amber-700 hover:bg-amber-50 rounded-lg text-[13px] font-medium transition-colors"
+                      >
+                        <Undo2 className="w-4 h-4" />
+                        Cancel Check-in
+                      </button>
+                      <button
+                        onClick={onAssignRoom}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg text-[13px] font-medium transition-colors"
+                      >
+                        <ArrowRightLeft className="w-4 h-4" />
+                        Room Move
+                      </button>
+                      <button
+                        onClick={() => onCheckOut && onCheckOut()}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-[13px] font-medium transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Check Out
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="flex items-center gap-2 sm:gap-3">
+                  {/* No Show button - for past confirmed bookings where guest never showed up */}
+                  {canDoNoShow ? (
+                    <button
+                      onClick={() => onMarkNoShow && onMarkNoShow()}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-orange-200 text-orange-700 hover:bg-orange-50 rounded-lg text-[13px] font-medium transition-colors"
+                    >
+                      <UserX className="w-4 h-4" />
+                      No Show
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onCancelBooking && onCancelBooking()}
+                      disabled={isTerminal || expired}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-neutral-200 text-neutral-600 hover:border-rose-200 hover:text-rose-600 hover:bg-rose-50 rounded-lg text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      Cancel
+                    </button>
+                  )}
+
+                  {/* Check In / Assign button - hidden for expired */}
+                  {canDoCheckIn ? (
+                    <button
+                      onClick={() => onCheckIn && onCheckIn()}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[13px] font-medium transition-colors"
+                    >
+                      <LogIn className="w-4 h-4" />
+                      Check In
+                    </button>
+                  ) : !expired && !isTerminal ? (
+                    <button
+                      onClick={onAssignRoom}
+                      disabled={isTerminal}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Bed className="w-4 h-4" />
+                      {hasRoom ? 'Reassign' : 'Assign'}
+                    </button>
+                  ) : null}
+
+                  {/* Edit button */}
+                  <button
+                    onClick={onEditBooking}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-terra-500 hover:bg-terra-600 text-white rounded-lg text-[13px] font-medium transition-colors"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>

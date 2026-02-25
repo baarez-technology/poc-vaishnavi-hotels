@@ -938,9 +938,11 @@ export function ChannelManagerProvider({ children }) {
   useEffect(() => {
     // Backend handles auto-sync, but we can refresh data periodically
     const intervalId = setInterval(() => {
-      // Refresh stats and insights periodically
-      fetchChannelStats();
-      fetchAIInsights();
+      // Only refresh when tab is visible to avoid wasted API calls
+      if (document.visibilityState === 'visible') {
+        fetchChannelStats();
+        fetchAIInsights();
+      }
     }, SYNC_INTERVAL);
     syncIntervalRef.current = intervalId;
 

@@ -32,16 +32,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check for existing session on mount
   useEffect(() => {
+    let isMounted = true;
+
     const checkAuth = async () => {
       const token = getAccessToken();
       if (token) {
         try {
           // Validate token by fetching current user
           const currentUser = await authService.getCurrentUser();
+          if (!isMounted) return;
           setUser(currentUser);
           // Store user in localStorage for quick access
           localStorage.setItem('glimmora_user', JSON.stringify(currentUser));
         } catch (error) {
+          if (!isMounted) return;
           // Token invalid or expired, clear everything
           setAccessToken(null);
           setUser(null);
@@ -50,14 +54,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.removeItem('glimmora_access_token');
         }
       } else {
+        if (!isMounted) return;
         // No token found, clear any stale user data
         setUser(null);
         localStorage.removeItem('glimmora_user');
       }
-      setIsLoading(false);
+      if (isMounted) setIsLoading(false);
     };
 
     checkAuth();
+
+    return () => { isMounted = false; };
   }, []);
 
   const login = async (email: string, password: string, remember = false) => {

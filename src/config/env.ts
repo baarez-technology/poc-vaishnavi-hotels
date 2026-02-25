@@ -23,6 +23,11 @@ function getHotelCodeFromSubdomain(): string {
   // Expected format: {hotel_code}.glimmora.com or {hotel_code}.yourdomain.com
   const parts = hostname.split('.');
 
+  // Vercel preview/deployment URLs (e.g., project.vercel.app) — use env fallback
+  if (hostname.endsWith('.vercel.app')) {
+    return import.meta.env.VITE_HOTEL_CODE || '';
+  }
+
   // If we have at least 3 parts (subdomain.domain.tld), first part is hotel code
   // e.g., crownplaza.glimmora.com → ['crownplaza', 'glimmora', 'com']
   if (parts.length >= 3) {

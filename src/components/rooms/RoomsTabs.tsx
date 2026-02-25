@@ -4,7 +4,7 @@
  * Pill style matching Channel Manager Promotions page
  */
 
-import { Home, Check, Users, AlertTriangle, XCircle } from 'lucide-react';
+import { Home, Check, Users, AlertTriangle, XCircle, Ban } from 'lucide-react';
 
 export default function RoomsTabs({ activeTab, onTabChange, counts }) {
   const tabs = [
@@ -12,7 +12,8 @@ export default function RoomsTabs({ activeTab, onTabChange, counts }) {
     { id: 'available', label: 'Available', shortLabel: 'Available', icon: Check, count: counts?.available },
     { id: 'occupied', label: 'Occupied', shortLabel: 'Occupied', icon: Users, count: counts?.occupied },
     { id: 'dirty', label: 'Dirty', shortLabel: 'Dirty', icon: AlertTriangle, count: counts?.dirty },
-    { id: 'out_of_service', label: 'Out of Service', shortLabel: 'OOS', icon: XCircle, count: counts?.out_of_service }
+    { id: 'out_of_service', label: 'Out of Service', shortLabel: 'OOS', icon: XCircle, count: counts?.out_of_service },
+    { id: 'out_of_order', label: 'Out of Order', shortLabel: 'OOO', icon: Ban, count: counts?.out_of_order }
   ];
 
   return (

@@ -41,6 +41,9 @@ function transformApiRoom(apiRoom: any): any {
 
 /**
  * Map backend status to admin panel status
+ * Note: out_of_service (OOS) and out_of_order (OOO) are distinct statuses:
+ * - OOS: Minor issues, room can be sold in emergency
+ * - OOO: Major issues (plumbing, electrical, renovation), room CANNOT be sold
  */
 function mapRoomStatus(status: string): string {
   const statusMap: Record<string, string> = {
@@ -53,7 +56,7 @@ function mapRoomStatus(status: string): string {
     'in_progress': 'dirty',
     'maintenance': 'out_of_service',
     'out_of_service': 'out_of_service',
-    'out_of_order': 'out_of_service',
+    'out_of_order': 'out_of_order',  // Keep OOO as separate status
   };
   return statusMap[status?.toLowerCase()] || 'available';
 }
@@ -240,12 +243,13 @@ export function useRooms() {
   // Update room status
   const updateStatus = async (roomId: number | string, newStatus: string) => {
     // Map frontend status to backend status
-    // Backend supports: available, occupied, clean, dirty, inspected, cleaning, maintenance, out_of_service
+    // Backend supports: available, occupied, clean, dirty, inspected, cleaning, maintenance, out_of_service, out_of_order
     const backendStatusMap: Record<string, string> = {
       'available': 'available',
       'occupied': 'occupied',
       'dirty': 'dirty',
       'out_of_service': 'out_of_service',
+      'out_of_order': 'out_of_order',
     };
     const backendStatus = backendStatusMap[newStatus] || newStatus;
 

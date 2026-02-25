@@ -36,9 +36,9 @@ export default function RateRecommendations({ settings, onRefreshCalendar }: Rat
   // Use local state for rendering
   const recommendations = localRecommendations;
 
-  // Create a unique ID for each recommendation (date_room_type_id to match API and RMSContext)
+  // Composite ID must be room_type_id_YYYY-MM-DD to match backend _resolve_recommendation_id
   const getRecommendationId = (rec: PricingRecommendation): string => {
-    return `${rec.date}_${rec.room_type_id}`;
+    return `${rec.room_type_id}_${rec.date}`;
   };
 
   // Accept single recommendation
@@ -63,7 +63,7 @@ export default function RateRecommendations({ settings, onRefreshCalendar }: Rat
     }
   };
 
-  // Dismiss single recommendation
+  // Dismiss single recommendation (if backend returns 404, still remove from list so UI stays usable)
   const handleDismiss = async (rec: PricingRecommendation) => {
     const id = getRecommendationId(rec);
     setLoadingIds(prev => new Set(prev).add(id));
@@ -72,9 +72,15 @@ export default function RateRecommendations({ settings, onRefreshCalendar }: Rat
       await revenueIntelligenceService.dismissRecommendation(id);
       setLocalRecommendations(prev => prev.filter(r => getRecommendationId(r) !== id));
       success('Recommendation dismissed');
-    } catch (err) {
-      showError('Failed to dismiss recommendation');
-      console.error('Error dismissing recommendation:', err);
+    } catch (err: unknown) {
+      const is404 = typeof err === 'object' && err !== null && 'response' in err && (err as { response?: { status?: number } }).response?.status === 404;
+      if (is404) {
+        setLocalRecommendations(prev => prev.filter(r => getRecommendationId(r) !== id));
+        success('Removed from list');
+      } else {
+        showError('Failed to dismiss recommendation');
+        console.error('Error dismissing recommendation:', err);
+      }
     } finally {
       setLoadingIds(prev => {
         const next = new Set(prev);
@@ -102,7 +108,7 @@ export default function RateRecommendations({ settings, onRefreshCalendar }: Rat
     }
   };
 
-  // Dismiss all recommendations
+  // Dismiss all recommendations (if backend returns 404, still clear list so UI stays usable)
   const handleDismissAll = async () => {
     if (recommendations.length === 0) return;
 
@@ -111,9 +117,15 @@ export default function RateRecommendations({ settings, onRefreshCalendar }: Rat
       await revenueIntelligenceService.dismissAllRecommendations();
       setLocalRecommendations([]);
       success('All recommendations dismissed');
-    } catch (err) {
-      showError('Failed to dismiss all recommendations');
-      console.error('Error dismissing all recommendations:', err);
+    } catch (err: unknown) {
+      const is404 = typeof err === 'object' && err !== null && 'response' in err && (err as { response?: { status?: number } }).response?.status === 404;
+      if (is404) {
+        setLocalRecommendations([]);
+        success('Removed from list');
+      } else {
+        showError('Failed to dismiss all recommendations');
+        console.error('Error dismissing all recommendations:', err);
+      }
     } finally {
       setIsDismissingAll(false);
     }

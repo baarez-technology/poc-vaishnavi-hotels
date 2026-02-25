@@ -427,18 +427,16 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
     if (onDateSelect) onDateSelect(dateStr);
   };
 
-  // Update rate via API
+  // Update rate via API (use backend room type id so persisted rate is returned on refetch)
   const handleUpdateRate = async (date: string, newRate: number, reason?: string) => {
     const rateKey = `${selectedRoomType}_${date}`;
     setUpdatingRates(prev => new Set(prev).add(rateKey));
 
     try {
-      // Get room type ID from name
       const roomType = (roomTypes ?? []).find(r => r.id === selectedRoomType);
-      const roomTypeId = roomType?.id ? parseInt(roomType.id, 10) || 1 : 1;
+      const apiRoomTypeId = roomType?.dbId ?? (roomType?.id != null ? parseInt(String(roomType.id), 10) : undefined) ?? 1;
 
-      // Call API
-      await revenueIntelligenceService.updateRate(roomTypeId, date, newRate, reason);
+      await revenueIntelligenceService.updateRate(apiRoomTypeId, date, { rate: newRate, reason });
 
       // Update local state for immediate feedback
       localUpdateRate(selectedRoomType, date, newRate, reason);
@@ -797,7 +795,7 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
                       roomData={roomData}
                       isSelected={selectedDate === dateStr}
                       onSelect={() => handleDateSelect(date)}
-                      onUpdateRate={(newRate, reason) => handleUpdateRate(dateStr, newRate, reason)}
+                      onUpdateRate={(date, newRate) => handleUpdateRate(date, newRate)}
                       onApplyRestriction={(restriction) => applyRestriction(selectedRoomType, dateStr, restriction)}
                       compact={true}
                       isUpdating={isUpdating}
@@ -813,6 +811,106 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
           </div>
         </div>
       )}
+
+      {/* AI Suggestion Popup - shown when clicking Sparkles icon on a date */}
+      <Modal
+        open={suggestionPopupDate !== null}
+        onClose={() => setSuggestionPopupDate(null)}
+        size="md"
+        showClose={true}
+        closeOnBackdrop={true}
+        closeOnEsc={true}
+      >
+        <div className="p-4 sm:p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="w-5 h-5 text-gold-500" />
+            <h3 className="text-base sm:text-lg font-semibold text-neutral-900">
+              AI Suggestion{suggestionPopupDate ? ` for ${new Date(suggestionPopupDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
+            </h3>
+          </div>
+          {suggestionPopupDate && (() => {
+            const recsForDate = (recommendations ?? []).filter(r => r.date === suggestionPopupDate);
+            if (recsForDate.length === 0) {
+              return (
+                <p className="text-sm text-neutral-500 py-4">No suggestions for this date.</p>
+              );
+            }
+            return (
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+                {recsForDate.map((rec) => {
+                  const recId = `${rec.room_type_id}_${rec.date}`;
+                  const isIncrease = (rec.recommended_rate ?? 0) > (rec.current_rate ?? 0);
+                  return (
+                    <div
+                      key={recId}
+                      className="rounded-lg border border-neutral-200 bg-neutral-50/50 p-4 space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-neutral-800">{rec.room_type_name ?? 'Room'}</span>
+                        <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
+                          rec.priority === 'critical' ? 'bg-rose-100 text-rose-700' :
+                          rec.priority === 'high' ? 'bg-gold-100 text-gold-700' :
+                          'bg-neutral-200 text-neutral-600'
+                        }`}>
+                          {rec.priority}
+                        </span>
+                      </div>
+                      <p className="text-xs sm:text-[13px] text-neutral-600">{rec.reasoning || 'Suggested rate adjustment.'}</p>
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-neutral-500">Current</span>
+                          <span className="text-sm font-semibold text-neutral-800">₹{rec.current_rate ?? '—'}</span>
+                        </div>
+                        <span className="text-neutral-400">→</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-neutral-500">Suggested</span>
+                          <span className={`text-sm font-semibold ${isIncrease ? 'text-sage-600' : 'text-gold-600'}`}>
+                            ₹{rec.recommended_rate ?? '—'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await applyRecommendation(rec);
+                              success('Suggestion applied');
+                              await refreshRecommendations?.();
+                              setSuggestionPopupDate(null);
+                            } catch {
+                              showError('Failed to apply suggestion');
+                            }
+                          }}
+                          className="flex-1 px-3 py-2 text-xs sm:text-[13px] font-medium text-white bg-terra-500 hover:bg-terra-600 rounded-lg transition-colors"
+                        >
+                          Apply
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await dismissRecommendation(recId);
+                              success('Suggestion dismissed');
+                              await refreshRecommendations?.();
+                              setSuggestionPopupDate(null);
+                            } catch {
+                              showError('Failed to dismiss suggestion');
+                            }
+                          }}
+                          className="flex-1 px-3 py-2 text-xs sm:text-[13px] font-medium text-neutral-700 bg-white border border-neutral-200 hover:bg-neutral-50 rounded-lg transition-colors"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </div>
+      </Modal>
 
       {/* Keyboard Help Overlay */}
       {showKeyboardHelp && (
@@ -916,106 +1014,6 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
           </div>
         </div>
       )}
-
-      {/* AI Suggestion Popup - shown when clicking Sparkles icon on a date */}
-      <Modal
-        open={suggestionPopupDate !== null}
-        onClose={() => setSuggestionPopupDate(null)}
-        size="md"
-        showClose={true}
-        closeOnBackdrop={true}
-        closeOnEsc={true}
-      >
-        <div className="p-4 sm:p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-gold-500" />
-            <h3 className="text-base sm:text-lg font-semibold text-neutral-900">
-              AI Suggestion{suggestionPopupDate ? ` for ${new Date(suggestionPopupDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
-            </h3>
-          </div>
-          {suggestionPopupDate && (() => {
-            const recsForDate = (recommendations ?? []).filter(r => r.date === suggestionPopupDate);
-            if (recsForDate.length === 0) {
-              return (
-                <p className="text-sm text-neutral-500 py-4">No suggestions for this date.</p>
-              );
-            }
-            return (
-              <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-                {recsForDate.map((rec) => {
-                  const recId = `${rec.date}_${rec.room_type_id}`;
-                  const isIncrease = (rec.recommended_rate ?? 0) > (rec.current_rate ?? 0);
-                  return (
-                    <div
-                      key={recId}
-                      className="rounded-lg border border-neutral-200 bg-neutral-50/50 p-4 space-y-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-neutral-800">{rec.room_type_name ?? 'Room'}</span>
-                        <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
-                          rec.priority === 'critical' ? 'bg-rose-100 text-rose-700' :
-                          rec.priority === 'high' ? 'bg-gold-100 text-gold-700' :
-                          'bg-neutral-200 text-neutral-600'
-                        }`}>
-                          {rec.priority}
-                        </span>
-                      </div>
-                      <p className="text-xs sm:text-[13px] text-neutral-600">{rec.reasoning || 'Suggested rate adjustment.'}</p>
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-neutral-500">Current</span>
-                          <span className="text-sm font-semibold text-neutral-800">₹{rec.current_rate ?? '—'}</span>
-                        </div>
-                        <span className="text-neutral-400">→</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-neutral-500">Suggested</span>
-                          <span className={`text-sm font-semibold ${isIncrease ? 'text-sage-600' : 'text-gold-600'}`}>
-                            ₹{rec.recommended_rate ?? '—'}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              await applyRecommendation(rec);
-                              success('Suggestion applied');
-                              await refreshRecommendations?.();
-                              setSuggestionPopupDate(null);
-                            } catch {
-                              showError('Failed to apply suggestion');
-                            }
-                          }}
-                          className="flex-1 px-3 py-2 text-xs sm:text-[13px] font-medium text-white bg-terra-500 hover:bg-terra-600 rounded-lg transition-colors"
-                        >
-                          Apply
-                        </button>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              await dismissRecommendation(recId);
-                              success('Suggestion dismissed');
-                              await refreshRecommendations?.();
-                              setSuggestionPopupDate(null);
-                            } catch {
-                              showError('Failed to dismiss suggestion');
-                            }
-                          }}
-                          className="flex-1 px-3 py-2 text-xs sm:text-[13px] font-medium text-neutral-700 bg-white border border-neutral-200 hover:bg-neutral-50 rounded-lg transition-colors"
-                        >
-                          Dismiss
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
-        </div>
-      </Modal>
 
     </div>
   );

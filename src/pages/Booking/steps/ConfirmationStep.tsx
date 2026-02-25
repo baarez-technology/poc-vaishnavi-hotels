@@ -158,6 +158,28 @@ export function ConfirmationStep() {
               </div>
             </div>
 
+            {/* Expected Arrival / Departure Times */}
+            {(bookingData.guestInfo.eta || bookingData.guestInfo.etd) && (
+              <div className="flex gap-2 p-4 bg-neutral-50 rounded-lg border border-neutral-200">
+                <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-6 h-6 text-white" strokeWidth={2} />
+                </div>
+                <div>
+                  <div className="text-xs font-semibold text-neutral-500 uppercase mb-1">Arrival & Departure Times</div>
+                  {bookingData.guestInfo.eta && (
+                    <div className="font-bold text-neutral-900 text-base">
+                      ETA: {bookingData.guestInfo.eta}
+                    </div>
+                  )}
+                  {bookingData.guestInfo.etd && (
+                    <div className="font-bold text-neutral-900 text-base">
+                      ETD: {bookingData.guestInfo.etd}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Guests */}
             <div className="flex gap-2 p-4 bg-neutral-50 rounded-lg border border-neutral-200">
               <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">

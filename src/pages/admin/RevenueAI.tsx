@@ -177,8 +177,11 @@ function RevenueAIContent() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await refresh();
-    setIsRefreshing(false);
+    try {
+      await refresh();
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const handleExportReport = async () => {
@@ -212,9 +215,9 @@ function RevenueAIContent() {
     URL.revokeObjectURL(link.href);
   };
 
-  // Format last updated time
+  // Format last updated time (show "Loading..." only when actually loading; otherwise "--" so we don't look stuck)
   const getLastUpdatedText = () => {
-    if (!lastUpdated) return 'Loading...';
+    if (!lastUpdated) return globalLoading ? 'Loading...' : '--';
     const now = new Date();
     const diffMs = now.getTime() - lastUpdated.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -227,8 +230,8 @@ function RevenueAIContent() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
-        <main className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
+      <div className="min-h-screen w-full min-w-0 flex flex-col" style={{ backgroundColor: '#F9F7F7' }}>
+        <main className="flex-1 w-full min-w-0 px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
           {/* Header */}
           <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <div>

@@ -66,6 +66,12 @@ export default function SyncLogTable({ logs, otas, isDark = false }) {
     });
   };
 
+  const formatLogDate = (log) => {
+    if (log?.date) return log.date;
+    if (log?.timestamp) return new Date(log.timestamp).toISOString().split('T')[0];
+    return '—';
+  };
+
   const getStatusIcon = (status) => {
     switch (status) {
       case 'success': return CheckCircle;
@@ -122,6 +128,9 @@ export default function SyncLogTable({ logs, otas, isDark = false }) {
           <thead>
             <tr className={`border-b ${isDark ? 'border-white/10 bg-white/[0.02]' : 'border-neutral-100 bg-neutral-50/50'}`}>
               <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-white/50' : 'text-neutral-500'}`}>
+                Date
+              </th>
+              <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-white/50' : 'text-neutral-500'}`}>
                 Time
               </th>
               <th className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-white/50' : 'text-neutral-500'}`}>
@@ -143,7 +152,7 @@ export default function SyncLogTable({ logs, otas, isDark = false }) {
           <tbody>
             {paginatedLogs.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-16 text-center">
+                <td colSpan={7} className="px-6 py-16 text-center">
                   <div className="flex flex-col items-center justify-center">
                     <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${isDark ? 'bg-white/10' : 'bg-neutral-100'}`}>
                       <Activity className={`w-8 h-8 ${isDark ? 'text-white/30' : 'text-neutral-300'}`} />
@@ -176,6 +185,11 @@ export default function SyncLogTable({ logs, otas, isDark = false }) {
                       }`}
                       onClick={() => setExpandedLog(isExpanded ? null : log.id)}
                     >
+                      <td className="px-6 py-4">
+                        <span className={`text-sm ${isDark ? 'text-white/70' : 'text-neutral-600'}`}>
+                          {formatLogDate(log)}
+                        </span>
+                      </td>
                       <td className="px-6 py-4">
                         <span className={`text-sm ${isDark ? 'text-white/70' : 'text-neutral-600'}`}>
                           {formatTime(log.timestamp)}
@@ -229,7 +243,7 @@ export default function SyncLogTable({ logs, otas, isDark = false }) {
                     </tr>
                     {isExpanded && log.details && (
                       <tr key={`${log.id}-details`} className={isDark ? 'bg-white/[0.02]' : 'bg-[#FAF7F4]'}>
-                        <td colSpan={6} className="px-6 py-5">
+                        <td colSpan={7} className="px-6 py-5">
                           <div className={`ml-4 pl-5 border-l-2 ${isDark ? 'border-[#A57865]/30' : 'border-[#A57865]/20'}`}>
                             <div className="flex items-center gap-2 mb-4">
                               <div className={`w-6 h-6 rounded-md flex items-center justify-center ${isDark ? 'bg-[#A57865]/20' : 'bg-[#A57865]/10'}`}>

@@ -10,7 +10,7 @@ import { ConfirmModal } from '../../../components/ui2/Modal';
 
 const PricingRules = () => {
   const { showToast } = useToast();
-  const { runAllRules: runAllRulesFromContext, refreshAll } = useRMS();
+  const { runAllRules: runAllRulesFromContext, refreshAll, refreshRules, roomTypes: rmsRoomTypes } = useRMS();
 
   // State for API data
   const [rules, setRules] = useState<PricingRule[]>([]);
@@ -145,6 +145,14 @@ const PricingRules = () => {
     setIsDrawerOpen(false);
     setEditingRule(null);
     await fetchRules();
+    await refreshRules();
+    // Run pricing rules and refresh rate calendar so the saved rule's effect (e.g. increase) is reflected on room price view
+    try {
+      await runAllRulesFromContext();
+    } catch (err) {
+      console.error('Failed to apply rules after save:', err);
+      // Don't block or toast here; rule was saved, rates will apply on next Run All or when user opens room price
+    }
     // Success toast is shown by RuleEditorDrawer to avoid duplicate popups
   };
 
@@ -370,6 +378,7 @@ const PricingRules = () => {
                   onRuleUpdated={fetchRules}
                   isSelected={selectedRule === rule.id}
                   onClick={() => setSelectedRule(selectedRule === rule.id ? null : rule.id)}
+                  roomTypeList={rmsRoomTypes?.length ? rmsRoomTypes.map((r) => ({ id: r.id, name: r.name, dbId: r.dbId })) : undefined}
                 />
               ))}
             </div>

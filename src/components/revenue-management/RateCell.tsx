@@ -9,7 +9,7 @@ type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
 
 interface RateCellProps {
   date: string;
-  roomTypeId: string;
+  roomTypeId?: string;
   roomData: {
     dynamicRate: number;
     baseRate: number;
@@ -136,19 +136,12 @@ const RateCell = ({
     setSaveStatus('saving');
 
     try {
-      // Call API to save the rate
-      await revenueIntelligenceService.updateRate(roomTypeId, date, {
-        rate: newRate,
-        reason: 'Manual override',
-      });
+      // When parent provides onUpdateRate, let parent handle API (so correct room type id is used and rate persists)
+      const maybePromise = onUpdateRate(date, newRate);
+      await Promise.resolve(maybePromise);
 
-      // Update local state via parent callback
-      onUpdateRate(date, newRate);
-
-      // Show success state
       setSaveStatus('success');
 
-      // Show success toast
       const oldRate = dynamicRate;
       const change = newRate - oldRate;
       const changeText = change > 0 ? `+$${change}` : `-$${Math.abs(change)}`;
@@ -159,12 +152,11 @@ const RateCell = ({
 
       setIsEditing(false);
     } catch (err) {
-      // Show error state
       setSaveStatus('error');
       showError('Failed to update rate. Please try again.');
       setShowValidationError('Save failed. Please try again.');
     }
-  }, [date, roomTypeId, dynamicRate, onUpdateRate, success, showError]);
+  }, [date, dynamicRate, onUpdateRate, success, showError]);
 
   const handleCancel = (e: React.MouseEvent) => {
     e.stopPropagation();

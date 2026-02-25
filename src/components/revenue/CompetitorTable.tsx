@@ -24,16 +24,20 @@ export default function CompetitorTable({ yourRate = 150 }: CompetitorTableProps
     }
   };
 
-  // Transform API data to display format
+  // Transform API data to display format (normalize: API may return array or { competitors: [] })
   const displayData = useMemo(() => {
-    if (!competitors) return [];
-    return competitors.map(c => ({
-      id: c.id,
-      hotel: c.name,
-      rating: c.rating,
-      distance: c.distance,
-      today: c.todayRate,
-      next7: c.avgRate7Day,
+    const list = Array.isArray(competitors)
+      ? competitors
+      : (competitors && typeof competitors === 'object' && Array.isArray((competitors as { competitors?: unknown }).competitors))
+        ? (competitors as { competitors: Competitor[] }).competitors
+        : [];
+    return list.map(c => ({
+      id: c?.id,
+      hotel: c?.name,
+      rating: c?.rating,
+      distance: c?.distance,
+      today: c?.todayRate,
+      next7: c?.avgRate7Day,
     }));
   }, [competitors]);
 
@@ -167,7 +171,7 @@ export default function CompetitorTable({ yourRate = 150 }: CompetitorTableProps
       {/* Competitor List */}
       <div className="divide-y divide-neutral-100">
         {displayData.map((competitor) => {
-          const position = getPositionInfo(competitor.next7);
+          const position = getPositionInfo(competitor.next7 ?? 0);
 
           return (
             <div
@@ -178,12 +182,12 @@ export default function CompetitorTable({ yourRate = 150 }: CompetitorTableProps
                 {/* Hotel Info */}
                 <div className="w-9 h-9 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
                   <span className="text-[13px] font-bold text-neutral-500">
-                    {competitor.hotel.charAt(0)}
+                    {(competitor.hotel ?? '?').charAt(0)}
                   </span>
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold text-neutral-900">{competitor.hotel}</p>
+                  <p className="text-[13px] font-semibold text-neutral-900">{competitor.hotel ?? '—'}</p>
                   <div className="flex items-center gap-3 mt-0.5">
                     <div className="flex items-center gap-1 text-[11px] text-neutral-500">
                       <Star className="w-3 h-3 text-gold-500 fill-gold-500" />
@@ -202,11 +206,11 @@ export default function CompetitorTable({ yourRate = 150 }: CompetitorTableProps
                 <div className="flex items-center gap-6">
                   <div className="text-center">
                     <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-wider">Today</p>
-                    <p className="text-[15px] font-bold text-neutral-900 mt-0.5">${competitor.today.toLocaleString()}</p>
+                    <p className="text-[15px] font-bold text-neutral-900 mt-0.5">${(competitor.today ?? 0).toLocaleString()}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-wider">7-Day Avg</p>
-                    <p className="text-[15px] font-bold text-neutral-600 mt-0.5">${competitor.next7.toLocaleString()}</p>
+                    <p className="text-[15px] font-bold text-neutral-600 mt-0.5">${(competitor.next7 ?? 0).toLocaleString()}</p>
                   </div>
                 </div>
 

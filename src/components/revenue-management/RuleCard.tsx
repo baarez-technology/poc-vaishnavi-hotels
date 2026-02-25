@@ -47,9 +47,10 @@ interface PricingRule {
   timesTriggered?: number;
   executionStatus?: 'success' | 'error' | 'pending' | 'running';
   lastExecutionMessage?: string;
+  room_type_id?: number | null;
   // Support for API snake_case fields
   rule_name?: string;
-  room_types?: string[];
+  room_types?: string[] | number[];
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;
@@ -57,6 +58,13 @@ interface PricingRule {
   times_triggered?: number;
   execution_status?: 'success' | 'error' | 'pending' | 'running';
   last_execution_message?: string;
+}
+
+/** Used to resolve room type ids to display names (e.g. from RMS context) */
+export interface RoomTypeDisplayOption {
+  id: string;
+  name: string;
+  dbId?: number;
 }
 
 interface RuleCardProps {
@@ -67,6 +75,8 @@ interface RuleCardProps {
   onRuleUpdated?: () => void;
   isSelected?: boolean;
   onClick?: () => void;
+  /** Optional list to show "Applies to All Room Types" or resolved room type names */
+  roomTypeList?: RoomTypeDisplayOption[];
 }
 
 const RuleCard = ({
@@ -77,12 +87,42 @@ const RuleCard = ({
   onRuleUpdated,
   isSelected = false,
   onClick,
+  roomTypeList,
 }: RuleCardProps) => {
   const { success, error: showError } = useToast();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  /** Resolve rule room types to display labels: "All Room Types" or list of names */
+  const getRoomTypesDisplay = (): string[] => {
+    const rts = rule.roomTypes ?? rule.room_types;
+    const isAllRoomTypes =
+      (Array.isArray(rts) && (rts as string[]).includes('ALL')) ||
+      (rule.room_type_id == null && (!Array.isArray(rts) || rts.length === 0));
+    if (isAllRoomTypes) return ['All Room Types'];
+    if (Array.isArray(rts) && rts.length > 0) {
+      const ids = rts as (string | number)[];
+      if (!roomTypeList?.length) {
+        return ids.map((id) => (id === 'ALL' ? 'All Room Types' : String(id)));
+      }
+      return ids
+        .map((id) => {
+          if (id === 'ALL') return 'All Room Types';
+          const byId = roomTypeList.find((r) => r.id === String(id));
+          if (byId) return byId.name;
+          const byDbId = typeof id === 'number' ? roomTypeList.find((r) => r.dbId === id) : null;
+          return byDbId ? byDbId.name : String(id);
+        })
+        .filter(Boolean);
+    }
+    if (rule.room_type_id != null && roomTypeList?.length) {
+      const r = roomTypeList.find((x) => x.dbId === rule.room_type_id);
+      return r ? [r.name] : [`Room type #${rule.room_type_id}`];
+    }
+    return ['All Room Types'];
+  };
 
   const getPriorityColor = (priority: number) => {
     switch (priority) {
@@ -102,48 +142,55 @@ const RuleCard = ({
   };
 
   const formatCondition = (condition: PricingRuleCondition) => {
-    const { type, value } = condition;
+    const type = condition.type ?? (condition as { type?: string }).type;
+    const value = condition.value ?? (condition as { val?: unknown }).val ?? (condition as Record<string, unknown>).value;
+    const num = typeof value === 'number' ? value : Number(value);
     switch (type) {
       case 'occupancy_above':
-        return `Occupancy > ${value}%`;
+        return `Occupancy > ${Number.isNaN(num) ? value : num}%`;
       case 'occupancy_below':
-        return `Occupancy < ${value}%`;
+        return `Occupancy < ${Number.isNaN(num) ? value : num}%`;
       case 'pickup_above':
-        return `Pickup > ${value}%`;
+        return `Pickup > ${Number.isNaN(num) ? value : num}%`;
       case 'pickup_below':
-        return `Pickup < ${value}%`;
+        return `Pickup < ${Number.isNaN(num) ? value : num}%`;
       case 'competitor_higher':
-        return `Comp +${value}%`;
+        return `Comp +${Number.isNaN(num) ? value : num}%`;
       case 'competitor_lower':
-        return `Comp -${value}%`;
+        return `Comp -${Number.isNaN(num) ? value : num}%`;
       case 'days_to_arrival':
-        return `${(value as { min: number; max: number }).min}-${(value as { min: number; max: number }).max} days`;
+        const range = value as { min?: number; max?: number } | undefined;
+        if (range && typeof range === 'object' && ('min' in range || 'max' in range))
+          return `${range.min ?? 0}-${range.max ?? 0} days`;
+        return String(value ?? '—');
       case 'day_of_week':
-        return Array.isArray(value) ? value.join(', ') : String(value);
+        return Array.isArray(value) ? value.join(', ') : String(value ?? '—');
       case 'demand_level':
-        return `${value} demand`;
+        return `${value ?? '—'} demand`;
       case 'event_active':
         return value ? 'Event active' : 'No event';
       default:
-        return type;
+        return value != null ? `${type}: ${String(value)}` : type;
     }
   };
 
   const formatAction = (action: PricingRuleAction) => {
-    const { type, value } = action;
+    const type = action.type ?? (action as { type?: string }).type;
+    const value = action.value ?? (action as { val?: number | boolean }).val ?? (action as Record<string, unknown>).value;
+    const num = typeof value === 'number' ? value : Number(value);
     switch (type) {
       case 'increase_percent':
-        return `+${value}%`;
+        return `+${Number.isNaN(num) ? value : num}%`;
       case 'decrease_percent':
-        return `-${value}%`;
+        return `-${Number.isNaN(num) ? value : num}%`;
       case 'set_rate':
-        return `$${value}`;
+        return `$${Number.isNaN(num) ? value : num}`;
       case 'set_min_rate':
-        return `Min $${value}`;
+        return `Min $${Number.isNaN(num) ? value : num}`;
       case 'set_max_rate':
-        return `Max $${value}`;
+        return `Max $${Number.isNaN(num) ? value : num}`;
       case 'apply_min_stay':
-        return `${value}N min`;
+        return `${Number.isNaN(num) ? value : num}N min`;
       case 'apply_cta':
         return value ? 'CTA' : 'Open';
       case 'apply_ctd':
@@ -151,7 +198,7 @@ const RuleCard = ({
       case 'apply_stop_sell':
         return value ? 'Stop' : 'Open';
       default:
-        return type;
+        return value != null ? `${type}: ${String(value)}` : type;
     }
   };
 
@@ -259,7 +306,7 @@ const RuleCard = ({
     try {
       await revenueIntelligenceService.deletePricingRule(Number(rule.id));
 
-      success(`Rule "${ruleName}" has been deleted`, { duration: 3000 });
+      success(`Rule "${rule.name || rule.rule_name || 'Rule'}" has been deleted`, { duration: 3000 });
 
       // Close the modal after successful deletion
       setShowDeleteConfirm(false);
@@ -355,6 +402,13 @@ const RuleCard = ({
               {getExecutionStatusBadge()}
             </div>
             <p className="text-[11px] sm:text-[12px] text-neutral-500 line-clamp-1 sm:line-clamp-none">{rule.description}</p>
+            <p className="text-[10px] sm:text-[11px] text-neutral-400 mt-0.5 line-clamp-2">
+              IF {(rule.conditions || []).length ? (rule.conditions || []).map((c) => formatCondition(c)).join(' and ') : '—'}
+              {' → '}
+              THEN {(rule.actions || []).length ? (rule.actions || []).map((a) => formatAction(a)).join(', ') : '—'}
+              {' · '}
+              Applies to {getRoomTypesDisplay().join(', ')}
+            </p>
           </div>
 
           {/* Quick Stats - Hidden on mobile, visible on larger screens */}
@@ -507,17 +561,14 @@ const RuleCard = ({
                   Applies to
                 </p>
                 <div className="flex flex-wrap gap-1 sm:gap-1.5">
-                  {(rule.roomTypes || []).map((roomType) => (
+                  {getRoomTypesDisplay().map((label) => (
                     <span
-                      key={roomType}
+                      key={label}
                       className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-medium bg-neutral-100 text-neutral-600 rounded"
                     >
-                      {roomType === 'ALL' ? 'All Rooms' : roomType}
+                      {label}
                     </span>
                   ))}
-                  {(!rule.roomTypes || rule.roomTypes.length === 0) && (
-                    <span className="text-[10px] sm:text-[11px] text-neutral-400 italic">No room types</span>
-                  )}
                 </div>
               </div>
             </div>

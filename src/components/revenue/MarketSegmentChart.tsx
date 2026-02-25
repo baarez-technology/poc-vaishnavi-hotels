@@ -93,23 +93,28 @@ function ErrorDisplay({ error, onRetry }: { error: string; onRetry: () => void }
 export default function MarketSegmentChart() {
   const { data: apiSegments, loading, error, refresh } = useSegments();
 
-  // Transform API data to chart format
+  // Transform API data to chart format (normalize: API may return array or { segments: [] })
   const segmentsData: SegmentData[] = useMemo(() => {
-    if (!apiSegments || apiSegments.length === 0) {
+    const list = Array.isArray(apiSegments)
+      ? apiSegments
+      : (apiSegments && typeof apiSegments === 'object' && Array.isArray((apiSegments as { segments?: unknown }).segments))
+        ? (apiSegments as { segments: SegmentPerformance[] }).segments
+        : [];
+    if (list.length === 0) {
       return FALLBACK_SEGMENTS;
     }
 
-    const totalRevenue = apiSegments.reduce((sum, s) => sum + s.revenue, 0);
+    const totalRevenue = list.reduce((sum, s) => sum + (s?.revenue ?? 0), 0);
 
-    return apiSegments.map((segment, index) => ({
-      id: segment.segmentId,
-      name: segment.segmentName,
-      revenue: segment.revenue,
-      rooms: segment.bookings,
-      adr: segment.adr,
-      percentage: totalRevenue > 0 ? parseFloat(((segment.revenue / totalRevenue) * 100).toFixed(1)) : 0,
+    return list.map((segment, index) => ({
+      id: segment?.segmentId ?? `seg-${index}`,
+      name: segment?.segmentName ?? 'Unknown',
+      revenue: segment?.revenue ?? 0,
+      rooms: segment?.bookings ?? 0,
+      adr: segment?.adr ?? 0,
+      percentage: totalRevenue > 0 ? parseFloat((((segment?.revenue ?? 0) / totalRevenue) * 100).toFixed(1)) : 0,
       color: SEGMENT_COLORS[index % SEGMENT_COLORS.length],
-      trend: segment.trend,
+      trend: segment?.trend ?? 0,
     }));
   }, [apiSegments]);
 

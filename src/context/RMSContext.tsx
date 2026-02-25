@@ -69,7 +69,7 @@ interface RMSContextType {
   // Rate Calendar functions
   getRateForDate: (roomTypeId: string, date: string | Date) => any;
   updateRate: (roomTypeId: string, date: string | Date, newRate: number, reason?: string) => Promise<void>;
-  bulkUpdateRates: (updates: Array<{ roomTypeId: string; date: string; rate: number }>) => Promise<void>;
+  bulkUpdateRates: (updates: Array<{ roomTypeId: string; room_type_id?: number; date: string; rate: number }>, options?: { reason?: string }) => Promise<{ updated_count: number; failed_count: number }>;
   applyRestriction: (roomTypeId: string, date: string | Date, restriction: any) => void;
   applyPromotion: (roomTypeId: string, date: string | Date, promo: any) => void;
 
@@ -182,6 +182,22 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
   // Room types state - fetched from API
   const [roomTypes, setRoomTypes] = useState<RMSRoomType[]>([]);
 
+  // Rules with roomTypes resolved from room_type_id / numeric room_types so engine applies to correct room types
+  const normalizedRules = useMemo(() => {
+    return rules.map((r) => {
+      const raw = r.roomTypes;
+      if (Array.isArray(raw) && raw.length > 0) {
+        const asStrings = raw.map((v) =>
+          typeof v === 'number' ? (roomTypes.find((rt) => rt.dbId === v)?.id ?? String(v)) : String(v)
+        );
+        return { ...r, roomTypes: asStrings };
+      }
+      if (r.room_type_id == null) return { ...r, roomTypes: ['ALL'] as string[] };
+      const room = roomTypes.find((rt) => rt.dbId === r.room_type_id);
+      return { ...r, roomTypes: room ? [room.id] : ['ALL'] };
+    });
+  }, [rules, roomTypes]);
+
   // Undo/Redo state
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -211,8 +227,7 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const loadRoomTypes = useCallback(async () => {
-    // Convert sample room types to RMSRoomType format for fallback
+  const loadRoomTypes = useCallback(async (): Promise<RMSRoomType[]> => {
     const fallbackRoomTypes: RMSRoomType[] = sampleRoomTypes.map((room, index) => ({
       id: room.id,
       name: room.name,
@@ -227,17 +242,16 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
       const response = await revenueIntelligenceService.getRoomTypes();
       if (response?.roomTypes && response.roomTypes.length > 0) {
         setRoomTypes(response.roomTypes);
-      } else {
-        // API returned empty, use fallback
-        setRoomTypes(fallbackRoomTypes);
+        return response.roomTypes;
       }
+      setRoomTypes(fallbackRoomTypes);
+      return fallbackRoomTypes;
     } catch (err: any) {
-      // Only log non-404 errors (404 means endpoint doesn't exist yet, which is expected)
       if (err?.response?.status !== 404) {
         console.error('Failed to load room types:', err);
       }
-      // Use sample data fallback when API fails
       setRoomTypes(fallbackRoomTypes);
+      return fallbackRoomTypes;
     }
   }, []);
 
@@ -419,7 +433,8 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const loadRateCalendar = useCallback(async () => {
+  const loadRateCalendar = useCallback(async (roomTypesOverride?: RMSRoomType[]) => {
+    const rts = roomTypesOverride ?? roomTypes;
     try {
       const today = new Date();
       const endDate = new Date(today);
@@ -433,12 +448,15 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
       if (calendarData?.days) {
         const calendarMap: any = {};
         calendarData.days.forEach((day: any) => {
-          // Transform API data to match frontend expectations
           const transformedRooms: any = {};
 
           if (day.rooms) {
             Object.entries(day.rooms).forEach(([roomTypeId, room]: [string, any]) => {
-              transformedRooms[roomTypeId] = {
+              const frontendKey =
+                rts?.find(
+                  (r) => r.dbId === Number(roomTypeId) || String(r.id) === String(roomTypeId)
+                )?.id ?? roomTypeId;
+              transformedRooms[frontendKey] = {
                 roomTypeId: room.roomTypeId,
                 roomTypeName: room.roomTypeName,
                 dynamicRate: room.dynamicRate,
@@ -447,7 +465,7 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
                 maxRate: room.maxRate || room.baseRate * 2.0,
                 available: room.available,
                 occupancy: room.occupancy,
-                overrideRate: null,  // Will be set when user manually overrides
+                overrideRate: room.overrideRate ?? null,
                 restrictions: {
                   stopSell: room.restrictions?.stopSell || false,
                   CTA: room.restrictions?.cta || false,
@@ -455,7 +473,6 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
                   minStay: room.restrictions?.minStay || 1,
                   maxStay: room.restrictions?.maxStay || null,
                 },
-                // Derive rate codes from dynamic rate
                 rates: {
                   BAR: room.dynamicRate,
                   OTA: Math.round(room.dynamicRate * 1.15),
@@ -480,7 +497,7 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error('Failed to load rate calendar:', err);
     }
-  }, []);
+  }, [roomTypes]);
 
   // Load initial data from APIs - only when on revenue-intelligence page
   useEffect(() => {
@@ -493,8 +510,7 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
       setError(null);
 
       try {
-        // Load room types first as they're needed for calendar display
-        await loadRoomTypes();
+        const rts = await loadRoomTypes();
         await Promise.all([
           loadRules(),
           loadRecommendations(),
@@ -504,7 +520,7 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
           loadSegments(),
           loadKPIs(),
           loadEvents(),
-          loadRateCalendar(),
+          loadRateCalendar(rts),
         ]);
       } catch (err) {
         console.error('Failed to load initial data:', err);
@@ -684,21 +700,20 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
       `Updated ${roomTypeId} rate for ${dateStr}: $${oldRate} -> $${newRate}`
     );
 
-    // Sync to API
+    // Sync to API then refetch calendar so persisted rate is shown when user returns to the page
     try {
       await revenueIntelligenceService.updateRate(roomTypeId, dateStr, { rate: newRate, reason });
+      await loadRateCalendar();
     } catch (err) {
       console.error('Failed to sync rate update to API:', err);
-      // Optionally rollback on error
-      // setRateCalendar(beforeState);
-      // setHistoryIndex(prev => prev - 1);
       throw err;
     }
-  }, [rateCalendar, addToHistory]);
+  }, [rateCalendar, addToHistory, loadRateCalendar]);
 
   const bulkUpdateRates = useCallback(async (
-    updates: Array<{ roomTypeId: string; date: string; rate: number }>
-  ) => {
+    updates: Array<{ roomTypeId: string; room_type_id?: number; date: string; rate: number }>,
+    options?: { reason?: string }
+  ): Promise<{ updated_count: number; failed_count: number }> => {
     const beforeState = { ...rateCalendar };
     const changes: Array<{ roomTypeId: string; date: string; oldRate: number; newRate: number }> = [];
 
@@ -740,16 +755,18 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
       `Bulk updated ${updates.length} rates`
     );
 
-    // Sync to API
-    try {
-      await revenueIntelligenceService.bulkUpdateRates(
-        updates.map(u => ({ roomTypeId: parseInt(u.roomTypeId) || 0, date: u.date, rate: u.rate }))
-      );
-    } catch (err) {
-      console.error('Failed to sync bulk rate update to API:', err);
-      throw err;
-    }
-  }, [rateCalendar, addToHistory]);
+    // Sync to API (use room_type_id when provided, else parse roomTypeId for backward compatibility)
+    const apiUpdates = updates.map((u) => ({
+      room_type_id: u.room_type_id ?? (typeof u.roomTypeId === 'number' ? u.roomTypeId : parseInt(String(u.roomTypeId), 10)),
+      date: u.date,
+      rate: u.rate,
+    })).filter((u) => !Number.isNaN(u.room_type_id) && u.rate > 0);
+
+    const result = await revenueIntelligenceService.bulkUpdateRates(apiUpdates, { reason: options?.reason });
+    // Re-fetch calendar so grid shows new effective_rate for all updated cells
+    await loadRateCalendar();
+    return { updated_count: result.updated_count, failed_count: result.failed_count };
+  }, [rateCalendar, addToHistory, loadRateCalendar]);
 
   const applyRestriction = useCallback((roomTypeId: string, date: string | Date, restriction: any) => {
     const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
@@ -897,7 +914,7 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
         hasEvent: !!calendarData.event,
       };
 
-      const ruleResult = calculateRuleBasedRate(rules, roomData.baseRate, context);
+      const ruleResult = calculateRuleBasedRate(normalizedRules, roomData.baseRate, context);
 
       if (ruleResult.appliedRules.length > 0) {
         results.push({
@@ -914,7 +931,7 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
     });
 
     return results;
-  }, [rateCalendar, pickup, competitorsData, forecast, rules, updateRate]);
+  }, [rateCalendar, pickup, competitorsData, forecast, normalizedRules, updateRate]);
 
   const runAllRules = useCallback(async () => {
     setIsSyncing(true);
@@ -1258,50 +1275,54 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
   // ============================================
 
   const applyRecommendation = useCallback(async (recommendation: PricingRecommendation) => {
-    const recId = `${recommendation.date}_${recommendation.room_type_id}`;
+    const recId = `${recommendation.room_type_id}_${recommendation.date}`;
 
-    // Optimistic update - remove from list
-    const oldRecommendations = [...recommendations];
+    // 1. Apply the rate via rate-update API (always works; backend may not have accept endpoint)
+    await updateRate(
+      recommendation.room_type_id.toString(),
+      recommendation.date,
+      recommendation.recommended_rate,
+      `AI Recommendation: ${recommendation.reasoning}`
+    );
+
+    // 2. Notify backend accept if endpoint exists (404 is ignored)
+    try {
+      await revenueIntelligenceService.acceptRecommendation(recId);
+    } catch (err: any) {
+      if (err?.response?.status !== 404) {
+        console.error('Failed to accept recommendation:', err);
+        throw err;
+      }
+      // 404 = backend has no accept endpoint; rate was already applied above
+    }
+
+    // 3. Remove from local list
     setRecommendations(prev => prev.filter(r =>
       !(r.date === recommendation.date && r.room_type_id === recommendation.room_type_id)
     ));
-
-    try {
-      await revenueIntelligenceService.acceptRecommendation(recId);
-
-      // Apply the rate change
-      await updateRate(
-        recommendation.room_type_id.toString(),
-        recommendation.date,
-        recommendation.recommended_rate,
-        `AI Recommendation: ${recommendation.reasoning}`
-      );
-    } catch (err) {
-      console.error('Failed to apply recommendation:', err);
-      // Rollback on error
-      setRecommendations(oldRecommendations);
-      throw err;
-    }
-  }, [recommendations, updateRate]);
+  }, [updateRate]);
 
   const dismissRecommendation = useCallback(async (id: string) => {
-    const [date, roomTypeId] = id.split('_');
+    // ID format: room_type_id_YYYY-MM-DD (matches backend _resolve_recommendation_id)
+    const underscoreIdx = id.indexOf('_');
+    const roomTypeId = underscoreIdx >= 0 ? id.slice(0, underscoreIdx) : '';
+    const date = underscoreIdx >= 0 ? id.slice(underscoreIdx + 1) : '';
 
-    // Optimistic update
-    const oldRecommendations = [...recommendations];
+    // Remove from local list first
     setRecommendations(prev => prev.filter(r =>
       !(r.date === date && r.room_type_id.toString() === roomTypeId)
     ));
 
+    // Notify backend if endpoint exists (404 ignored)
     try {
       await revenueIntelligenceService.dismissRecommendation(id);
-    } catch (err) {
-      console.error('Failed to dismiss recommendation:', err);
-      // Rollback on error
-      setRecommendations(oldRecommendations);
-      throw err;
+    } catch (err: any) {
+      if (err?.response?.status !== 404) {
+        console.error('Failed to dismiss recommendation:', err);
+        throw err;
+      }
     }
-  }, [recommendations]);
+  }, []);
 
   const generateRecommendations = useCallback(async () => {
     try {

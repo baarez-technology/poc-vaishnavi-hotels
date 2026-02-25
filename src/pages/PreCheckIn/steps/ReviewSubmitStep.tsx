@@ -24,6 +24,14 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
     }
   };
 
+  if (!preCheckInData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-6 h-6 animate-spin text-terra-500" />
+      </div>
+    );
+  }
+
   const handleSubmit = async () => {
     if (!preCheckInData?.reservationId) {
       toast.error('Reservation not found. Please restart pre-check-in.');
@@ -169,11 +177,10 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: index * 0.05 }}
-                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
-                      step.active
-                        ? 'bg-terra-500 text-white'
-                        : 'bg-transparent text-neutral-400 border border-neutral-300'
-                    }`}
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all ${step.active
+                      ? 'bg-terra-500 text-white'
+                      : 'bg-transparent text-neutral-400 border border-neutral-300'
+                      }`}
                   >
                     {step.active ? <div className="w-2 h-2 bg-white rounded-full" /> : step.number}
                   </motion.div>
@@ -192,9 +199,8 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
                   className="pt-1 pb-8"
                 >
                   <div
-                    className={`text-sm font-medium mb-1 ${
-                      step.active ? 'text-neutral-800' : 'text-neutral-500'
-                    }`}
+                    className={`text-sm font-medium mb-1 ${step.active ? 'text-neutral-800' : 'text-neutral-500'
+                      }`}
                   >
                     {step.label}
                   </div>
@@ -295,6 +301,12 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
                     </span>
                   </div>
                   <div className="flex justify-between text-[13px]">
+                    <span className="text-neutral-500">Departure Time</span>
+                    <span className="text-neutral-800 font-medium">
+                      {preCheckInData.travelDetails.departureTime || 'Not provided'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[13px]">
                     <span className="text-neutral-500">Transportation</span>
                     <span className="text-neutral-800 font-medium">
                       {preCheckInData.travelDetails.transportationNeeded ? 'Requested' : 'Not needed'}
@@ -329,11 +341,10 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className={`w-full h-10 text-white font-semibold rounded-lg transition-all text-[13px] mt-6 flex items-center justify-center gap-2 ${
-                isSubmitting
-                  ? 'bg-neutral-400 cursor-not-allowed'
-                  : 'bg-terra-500 hover:bg-terra-600 active:scale-[0.98]'
-              }`}
+              className={`w-full h-10 text-white font-semibold rounded-lg transition-all text-[13px] mt-6 flex items-center justify-center gap-2 ${isSubmitting
+                ? 'bg-neutral-400 cursor-not-allowed'
+                : 'bg-terra-500 hover:bg-terra-600 active:scale-[0.98]'
+                }`}
             >
               {isSubmitting ? (
                 <>

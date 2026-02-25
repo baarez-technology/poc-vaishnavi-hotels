@@ -814,7 +814,7 @@ const RateCalendarView = ({ onDateSelect, onOpenDrawer, bulkEditMode = false, se
             return (
               <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                 {recsForDate.map((rec) => {
-                  const recId = `${rec.date}_${rec.room_type_id}`;
+                  const recId = `${rec.room_type_id}_${rec.date}`;
                   const isIncrease = (rec.recommended_rate ?? 0) > (rec.current_rate ?? 0);
                   return (
                     <div

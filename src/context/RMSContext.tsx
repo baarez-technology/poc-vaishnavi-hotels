@@ -1275,7 +1275,7 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
   // ============================================
 
   const applyRecommendation = useCallback(async (recommendation: PricingRecommendation) => {
-    const recId = `${recommendation.date}_${recommendation.room_type_id}`;
+    const recId = `${recommendation.room_type_id}_${recommendation.date}`;
 
     // 1. Apply the rate via rate-update API (always works; backend may not have accept endpoint)
     await updateRate(
@@ -1303,7 +1303,10 @@ export function RMSProvider({ children }: { children: React.ReactNode }) {
   }, [updateRate]);
 
   const dismissRecommendation = useCallback(async (id: string) => {
-    const [date, roomTypeId] = id.split('_');
+    // ID format: room_type_id_YYYY-MM-DD (matches backend _resolve_recommendation_id)
+    const underscoreIdx = id.indexOf('_');
+    const roomTypeId = underscoreIdx >= 0 ? id.slice(0, underscoreIdx) : '';
+    const date = underscoreIdx >= 0 ? id.slice(underscoreIdx + 1) : '';
 
     // Remove from local list first
     setRecommendations(prev => prev.filter(r =>

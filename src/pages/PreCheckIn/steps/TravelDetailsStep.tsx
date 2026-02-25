@@ -2,13 +2,14 @@ import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Clock, Plane, Briefcase, Car, ArrowLeft } from 'lucide-react';
+import { Clock, Plane, Briefcase, Car, ArrowLeft, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePreCheckIn } from '@/contexts/PreCheckInContext';
 import logo from '@/assets/logo.png';
 
 const travelSchema = z.object({
   arrivalTime: z.string().min(1, 'Arrival time required'),
+  departureTime: z.string().min(1, 'Departure time required'),
   flightNumber: z.string().optional(),
   purpose: z.enum(['business', 'leisure', 'event', 'other']),
   transportationNeeded: z.boolean(),
@@ -29,6 +30,14 @@ export function TravelDetailsStep({ onNext, onPrevious }: TravelDetailsStepProps
       navigate('/');
     }
   };
+
+  if (!preCheckInData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-6 h-6 animate-spin text-terra-500" />
+      </div>
+    );
+  }
 
   const {
     register,
@@ -90,11 +99,10 @@ export function TravelDetailsStep({ onNext, onPrevious }: TravelDetailsStepProps
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: index * 0.05 }}
-                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
-                      step.active
-                        ? 'bg-terra-500 text-white'
-                        : 'bg-transparent text-neutral-400 border border-neutral-300'
-                    }`}
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all ${step.active
+                      ? 'bg-terra-500 text-white'
+                      : 'bg-transparent text-neutral-400 border border-neutral-300'
+                      }`}
                   >
                     {step.active ? <div className="w-2 h-2 bg-white rounded-full" /> : step.number}
                   </motion.div>
@@ -113,9 +121,8 @@ export function TravelDetailsStep({ onNext, onPrevious }: TravelDetailsStepProps
                   className="pt-1 pb-8"
                 >
                   <div
-                    className={`text-sm font-medium mb-1 ${
-                      step.active ? 'text-neutral-800' : 'text-neutral-500'
-                    }`}
+                    className={`text-sm font-medium mb-1 ${step.active ? 'text-neutral-800' : 'text-neutral-500'
+                      }`}
                   >
                     {step.label}
                   </div>
@@ -193,15 +200,35 @@ export function TravelDetailsStep({ onNext, onPrevious }: TravelDetailsStepProps
                   <input
                     type="time"
                     {...register('arrivalTime')}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${
-                      errors.arrivalTime
-                        ? 'border-rose-500 focus:ring-rose-500/20'
-                        : 'border-neutral-200 focus:ring-terra-500/20'
-                    }`}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${errors.arrivalTime
+                      ? 'border-rose-500 focus:ring-rose-500/20'
+                      : 'border-neutral-200 focus:ring-terra-500/20'
+                      }`}
                   />
                 </div>
                 {errors.arrivalTime && (
                   <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.arrivalTime.message}</p>
+                )}
+              </div>
+
+              {/* Departure Time */}
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                  Expected Departure Time
+                </label>
+                <div className="relative">
+                  <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                  <input
+                    type="time"
+                    {...register('departureTime')}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${errors.departureTime
+                      ? 'border-rose-500 focus:ring-rose-500/20'
+                      : 'border-neutral-200 focus:ring-terra-500/20'
+                      }`}
+                  />
+                </div>
+                {errors.departureTime && (
+                  <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.departureTime.message}</p>
                 )}
               </div>
 
@@ -237,11 +264,10 @@ export function TravelDetailsStep({ onNext, onPrevious }: TravelDetailsStepProps
                     return (
                       <label
                         key={purpose.value}
-                        className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                          isSelected
-                            ? 'border-terra-500 bg-terra-50'
-                            : 'border-neutral-200 hover:border-neutral-300'
-                        }`}
+                        className={`p-4 border rounded-lg cursor-pointer transition-all ${isSelected
+                          ? 'border-terra-500 bg-terra-50'
+                          : 'border-neutral-200 hover:border-neutral-300'
+                          }`}
                       >
                         <input
                           type="radio"
@@ -260,11 +286,10 @@ export function TravelDetailsStep({ onNext, onPrevious }: TravelDetailsStepProps
 
               {/* Transportation */}
               <div>
-                <label className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-all ${
-                  transportationNeeded
-                    ? 'border-terra-500 bg-terra-50'
-                    : 'border-neutral-200 hover:border-neutral-300'
-                }`}>
+                <label className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-all ${transportationNeeded
+                  ? 'border-terra-500 bg-terra-50'
+                  : 'border-neutral-200 hover:border-neutral-300'
+                  }`}>
                   <input
                     type="checkbox"
                     {...register('transportationNeeded')}

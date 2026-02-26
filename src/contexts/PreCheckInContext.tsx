@@ -36,6 +36,7 @@ export interface PreCheckInData {
   };
   travelDetails: {
     arrivalTime: string;
+    departureTime: string;
     flightNumber: string;
     purpose: 'business' | 'leisure' | 'event' | 'other';
     transportationNeeded: boolean;
@@ -101,6 +102,7 @@ const initialData: PreCheckInData = {
   },
   travelDetails: {
     arrivalTime: '',
+    departureTime: '',
     flightNumber: '',
     purpose: 'leisure',
     transportationNeeded: false,
@@ -130,15 +132,15 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
     mutationFn: async (reservationId: number) => {
       // First, try to get existing pre-checkin
       const existing = await precheckinService.getByReservation(reservationId);
-      
+
       if (existing) {
         // Load existing data
         const booking = await bookingService.getBooking(String(reservationId));
-        
+
         return {
           bookingNumber: booking.bookingNumber,
           reservationId: existing.reservation_id,
-          guestName: `${booking.guestInfo.firstName} ${booking.guestInfo.lastName}`,
+          guestName: `${booking.guestInfo?.firstName || ''} ${booking.guestInfo?.lastName || ''}`.trim() || 'Unknown Guest',
           roomType: booking.room?.name || '',
           checkInDate: booking.checkIn,
           checkOutDate: booking.checkOut,
@@ -166,6 +168,7 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
           } : undefined,
           travelDetails: {
             arrivalTime: existing.arrival_time || '',
+            departureTime: existing.departure_time || '',
             flightNumber: existing.flight_number || '',
             purpose: (existing.purpose as any) || 'leisure',
             transportationNeeded: existing.transportation_needed,
@@ -196,13 +199,13 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
         // Load from booking
         const booking = await bookingService.getBooking(String(reservationId));
         return {
+          ...initialData,
           bookingNumber: booking.bookingNumber,
           reservationId: Number(booking.id),
-          guestName: `${booking.guestInfo.firstName} ${booking.guestInfo.lastName}`,
+          guestName: `${booking.guestInfo?.firstName || ''} ${booking.guestInfo?.lastName || ''}`.trim() || 'Unknown Guest',
           roomType: booking.room?.name || '',
           checkInDate: booking.checkIn,
           checkOutDate: booking.checkOut,
-          ...initialData,
         } as PreCheckInData;
       }
     },
@@ -239,6 +242,7 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
         bed_type_preference: data.roomPreferences.bedType === 'any' ? undefined : data.roomPreferences.bedType,
         quietness_preference: data.roomPreferences.quietness === 'any' ? undefined : data.roomPreferences.quietness,
         arrival_time: data.travelDetails.arrivalTime,
+        departure_time: data.travelDetails.departureTime,
         flight_number: data.travelDetails.flightNumber,
         purpose: data.travelDetails.purpose,
         transportation_needed: data.travelDetails.transportationNeeded,
@@ -253,7 +257,7 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
 
       // Check if pre-checkin exists
       const existing = await precheckinService.getByReservation(data.reservationId);
-      
+
       // Prepare update payload (only fields allowed in PreCheckInUpdate)
       // Note: selected_room_id should be the room.id (database ID), not room number
       const updatePayload: any = {
@@ -267,6 +271,9 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
         digital_key_activated: data.digitalKey?.activated || false,
         qr_code: data.digitalKey?.qrCode,
         status: 'completed',
+        // ETA/ETD: keep pre-check-in arrival_time and departure_time in sync on update
+        arrival_time: data.travelDetails.arrivalTime || undefined,
+        departure_time: data.travelDetails.departureTime || undefined,
       };
 
       if (existing) {

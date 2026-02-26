@@ -107,6 +107,8 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
     checkOut: '',
     notes: '',
     source: 'Website',
+    eta: '',
+    etd: '',
   });
 
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -122,6 +124,8 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
         checkOut: booking.checkOut || '',
         notes: booking.specialRequests || '',
         source: booking.source || 'Website',
+        eta: booking.eta || '',
+        etd: booking.etd || '',
       });
       setErrors({});
       setTouched({});
@@ -207,6 +211,8 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
       nights,
       specialRequests: formState.notes.trim(),
       source: formState.source,
+      eta: formState.eta.trim() || undefined,
+      etd: formState.etd.trim() || undefined,
     });
   };
 
@@ -374,6 +380,36 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
                 <div className="h-9 px-3.5 bg-neutral-50 border border-neutral-200/80 rounded-lg text-neutral-700 font-medium flex items-center text-[13px]">
                   {nights > 0 ? `${nights} night${nights > 1 ? 's' : ''}` : '—'}
                 </div>
+              </div>
+            </div>
+
+            {/* ETA / ETD - Expected arrival and departure times (e.g. 14:30 or 2:30 PM) */}
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="space-y-2">
+                <label className="block text-[13px] font-medium text-neutral-700">
+                  ETA (Expected arrival time)
+                </label>
+                <input
+                  name="eta"
+                  type="text"
+                  value={formState.eta}
+                  onChange={handleChange}
+                  placeholder="e.g. 14:30 or 2:30 PM"
+                  className={inputNormal}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-[13px] font-medium text-neutral-700">
+                  ETD (Expected departure time)
+                </label>
+                <input
+                  name="etd"
+                  type="text"
+                  value={formState.etd}
+                  onChange={handleChange}
+                  placeholder="e.g. 11:00 or 11:00 AM"
+                  className={inputNormal}
+                />
               </div>
             </div>
           </div>

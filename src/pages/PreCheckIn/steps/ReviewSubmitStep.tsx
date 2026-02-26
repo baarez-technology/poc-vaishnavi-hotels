@@ -73,6 +73,7 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
           bed_type_preference: preCheckInData.roomPreferences.bedType,
           quietness_preference: preCheckInData.roomPreferences.quietness,
           arrival_time: preCheckInData.travelDetails.arrivalTime,
+          departure_time: preCheckInData.travelDetails.departureTime,
           flight_number: preCheckInData.travelDetails.flightNumber,
           purpose: preCheckInData.travelDetails.purpose,
           transportation_needed: preCheckInData.travelDetails.transportationNeeded,
@@ -84,6 +85,12 @@ export function ReviewSubmitStep({ onNext, onPrevious }: ReviewSubmitStepProps) 
           early_check_in: preCheckInData.specialRequests.earlyCheckIn,
           late_check_out: preCheckInData.specialRequests.lateCheckOut,
         });
+      } else {
+        // Existing precheckin: ensure ETA/ETD (arrival_time, departure_time) from travel details are saved
+        await precheckinService.update(precheckin.id, {
+          arrival_time: preCheckInData.travelDetails.arrivalTime || undefined,
+          departure_time: preCheckInData.travelDetails.departureTime || undefined,
+        } as any);
       }
 
       // Update precheckin with ID verification status if not already set

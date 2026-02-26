@@ -3,10 +3,12 @@ import { createPortal } from 'react-dom';
 import {
   X, Crown, Mail, Phone, Bed, Globe,
   Sparkles, Edit, XCircle, CheckCircle, Users,
-  Calendar, ChevronDown, Check
+  Calendar, ChevronDown, Check, Clock
 } from 'lucide-react';
 import { statusConfig, sourceConfig } from '../../data/bookingsData';
 import { useCurrency } from '@/hooks/useCurrency';
+import { precheckinService } from '@/api/services/precheckin.service';
+import { bookingService } from '@/api/services/booking.service';
 
 export default function BookingDrawer({
   booking,
@@ -21,6 +23,52 @@ export default function BookingDrawer({
   const [showStatusSuccess, setShowStatusSuccess] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const [precheckin, setPrecheckin] = useState(null);
+
+  // Fetch pre-check-in data for this booking to get ETA / ETD
+  useEffect(() => {
+    if (!booking?.id || !isOpen) {
+      setPrecheckin(null);
+      return;
+    }
+    let reservationId = Number(booking.id);
+    // If id is not numeric (e.g. booking number "GLM-KLYDZD"), resolve to numeric id via API
+    if (Number.isNaN(reservationId)) {
+      const lookupId = booking.bookingNumber || booking.id;
+      bookingService.getBooking(String(lookupId))
+        .then((b) => {
+          const numId = b?.id != null ? Number(b.id) : NaN;
+          if (!Number.isNaN(numId)) {
+            return precheckinService.getByReservation(numId).then(setPrecheckin);
+          }
+          setPrecheckin(null);
+        })
+        .catch(() => setPrecheckin(null));
+      return;
+    }
+    precheckinService.getByReservation(reservationId)
+      .then(data => setPrecheckin(data))
+      .catch(() => setPrecheckin(null));
+  }, [booking?.id, booking?.bookingNumber, isOpen]);
+
+  // ETA = pre-check-in arrival (arrival_time). ETD = pre-check-in departure (departure_time).
+  // Use same fallback as All Bookings / In House: precheckin first, then booking.eta/etd from list API.
+  const eta = precheckin?.arrival_time ?? (precheckin && (precheckin).arrivalTime) ?? booking?.eta ?? '—';
+  const etd = precheckin?.departure_time ?? (precheckin && (precheckin).departureTime) ?? booking?.etd ?? '—';
+
+  // Same formatting as BookingsTable so ETA/ETD show identically from any tab (All, In House, Arrivals Today, Departures Today).
+  const formatTimeDisplay = (timeStr) => {
+    if (!timeStr || typeof timeStr !== 'string') return '—';
+    const trimmed = String(timeStr).trim();
+    if (!trimmed || trimmed === '—') return '—';
+    const parts = trimmed.split(':');
+    const h = parseInt(parts[0], 10);
+    const m = parts[1] ? parseInt(parts[1], 10) : 0;
+    if (isNaN(h)) return trimmed;
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour = h % 12 || 12;
+    return `${hour}:${String(m).padStart(2, '0')} ${period}`;
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -284,6 +332,33 @@ export default function BookingDrawer({
                       ? `${booking.children} Child${booking.children !== 1 ? 'ren' : ''}`
                       : 'No children'}
                   </p>
+                </div>
+              </div>
+
+              {/* ETA / ETD from Pre-Check-In - above Contact (always visible) */}
+              <div className="space-y-2 sm:space-y-3">
+                <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">Arrival & Departure Times</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 sm:p-4 bg-neutral-50 rounded-[10px]">
+                    <div className="flex items-center gap-2 text-neutral-500 mb-2">
+                      <Clock className="w-4 h-4" />
+                      <span className="text-[10px] sm:text-[11px] font-medium">ETA</span>
+                    </div>
+                    <p className="text-sm sm:text-base font-semibold text-neutral-900">
+                      {formatTimeDisplay(eta)}
+                    </p>
+                    <p className="text-xs sm:text-[13px] text-neutral-500">Expected Arrival</p>
+                  </div>
+                  <div className="p-3 sm:p-4 bg-neutral-50 rounded-[10px]">
+                    <div className="flex items-center gap-2 text-neutral-500 mb-2">
+                      <Clock className="w-4 h-4" />
+                      <span className="text-[10px] sm:text-[11px] font-medium">ETD</span>
+                    </div>
+                    <p className="text-sm sm:text-base font-semibold text-neutral-900">
+                      {formatTimeDisplay(etd)}
+                    </p>
+                    <p className="text-xs sm:text-[13px] text-neutral-500">Expected Departure</p>
+                  </div>
                 </div>
               </div>
 

@@ -56,6 +56,7 @@ export interface PreCheckInData {
   bed_type_preference?: string;
   quietness_preference?: string;
   arrival_time?: string;
+  departure_time?: string;
   flight_number?: string;
   purpose?: string;
   transportation_needed?: boolean;
@@ -87,6 +88,7 @@ export interface PreCheckInResponse {
   ai_score?: number;
   ai_reasoning?: string;
   arrival_time?: string;
+  departure_time?: string;
   flight_number?: string;
   purpose?: string;
   transportation_needed: boolean;

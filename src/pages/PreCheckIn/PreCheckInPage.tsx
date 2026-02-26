@@ -26,7 +26,7 @@ const steps = [
 
 export function PreCheckInPage() {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(4);
 
   const CurrentStepComponent = steps.find(s => s.id === currentStep)?.component;
 

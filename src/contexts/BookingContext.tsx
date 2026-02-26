@@ -35,6 +35,7 @@ interface BookingData {
     city: string;
     zipCode: string;
     country: string;
+    paymentMethod?: string;
   };
   bookingNumber?: string;
   datesFromUrl?: boolean; // Track if dates came from URL parameters
@@ -76,6 +77,7 @@ const initialBookingData: BookingData = {
     city: '',
     zipCode: '',
     country: '',
+    paymentMethod: 'card',
   },
   datesFromUrl: false,
   isModifyMode: false,

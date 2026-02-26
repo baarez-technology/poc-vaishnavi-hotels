@@ -112,4 +112,5 @@ export interface CreateBookingData {
   guestInfo: GuestInformation;
   paymentMethodId: string;
   saveCard?: boolean;
+  payment_method?: string;
 }

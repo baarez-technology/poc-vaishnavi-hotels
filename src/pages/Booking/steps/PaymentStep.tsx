@@ -3,7 +3,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { CreditCard, Lock, MapPin, Shield, CheckCircle, Calendar, User, Building2, ArrowRight, ChevronDown, Mail, KeyRound, Globe, Landmark, Hash, Search } from 'lucide-react';
+import { CreditCard, Lock, MapPin, Shield, CheckCircle, Calendar, User, Building2, ArrowRight, ChevronDown, Mail, KeyRound, Globe, Landmark, Hash, Search, Banknote, Smartphone, Wallet } from 'lucide-react';
 import { useBooking } from '@/contexts/BookingContext';
 import { paymentMethodsService } from '@/api/services/payment-methods.service';
 import { bookingService } from '@/api/services/booking.service';
@@ -42,6 +42,15 @@ interface SavedCard {
   isDefault: boolean;
   cardholderName?: string;
 }
+
+const GUEST_PAYMENT_METHODS = [
+  { value: 'card', label: 'Card', icon: CreditCard, desc: 'Credit or Debit Card', color: '#A57865' },
+  { value: 'upi', label: 'UPI', icon: Smartphone, desc: 'Google Pay, PhonePe', color: '#5C9BA4' },
+  { value: 'cash', label: 'Cash', icon: Banknote, desc: 'Pay at hotel', color: '#4E5840' },
+  { value: 'bank_transfer', label: 'Bank Transfer', icon: Landmark, desc: 'Wire / NEFT / RTGS', color: '#CDB261' },
+  { value: 'online', label: 'Online', icon: Globe, desc: 'Net Banking / Wallet', color: '#8B7355' },
+  { value: 'pay_at_hotel', label: 'Pay at Hotel', icon: Building2, desc: 'Pay during check-in', color: '#C8B29D' },
+];
 
 /* Searchable select styled to match the form's input pattern (pl-12 pr-12 py-4 rounded-lg) */
 function PaymentSearchSelect({
@@ -184,6 +193,8 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
   const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string>('');
   const [showCardDropdown, setShowCardDropdown] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<string>(bookingData.payment?.paymentMethod || 'card');
+  const [upiId, setUpiId] = useState('');
   
   // OTP verification state
   const [otpVerified, setOtpVerified] = useState(false);
@@ -410,7 +421,8 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
             specialRequests: bookingData.guestInfo.specialRequests || '',
           },
           paymentMethodId: selectedCardId ? String(selectedCardId) : 'new',
-          saveCard: false, // Can be set based on user preference
+          saveCard: false,
+          payment_method: 'card',
         });
 
         // Update booking data with response
@@ -443,6 +455,94 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
 
   const isFieldValid = (fieldName: string, value: any) => {
     return value && value.length > 0 && !errors[fieldName as keyof typeof errors];
+  };
+
+  // Non-card payment submission
+  const handleNonCardSubmit = async () => {
+    setIsProcessing(true);
+    try {
+      if (!bookingData.room || !bookingData.checkIn || !bookingData.checkOut) {
+        toast.error('Missing booking information. Please go back and complete all steps.');
+        setIsProcessing(false);
+        return;
+      }
+      if (!bookingData.guestInfo.firstName || !bookingData.guestInfo.lastName || !bookingData.guestInfo.email || !bookingData.guestInfo.phone) {
+        toast.error('Missing guest information. Please go back and complete your details.');
+        setIsProcessing(false);
+        return;
+      }
+      if (paymentMethod === 'upi' && !upiId.trim()) {
+        toast.error('Please enter your UPI ID');
+        setIsProcessing(false);
+        return;
+      }
+
+      let bookingResponse;
+
+      if (bookingData.isModifyMode && bookingData.originalBooking?.id) {
+        bookingResponse = await bookingService.updateBooking(
+          bookingData.originalBooking.id,
+          {
+            roomId: String(bookingData.room.id),
+            checkIn: bookingData.checkIn,
+            checkOut: bookingData.checkOut,
+            guests: {
+              adults: bookingData.guests.adults,
+              children: bookingData.guests.children,
+              infants: 0,
+            },
+            guestInfo: {
+              firstName: bookingData.guestInfo.firstName,
+              lastName: bookingData.guestInfo.lastName,
+              email: bookingData.guestInfo.email,
+              phone: bookingData.guestInfo.phone,
+              country: bookingData.guestInfo.country || 'US',
+              specialRequests: bookingData.guestInfo.specialRequests || '',
+            },
+          }
+        );
+        updateBookingData({
+          payment: { ...bookingData.payment, paymentMethod },
+          bookingNumber: bookingResponse.bookingNumber || bookingData.originalBooking.bookingNumber,
+        });
+        toast.success('Booking modified successfully!');
+      } else {
+        bookingResponse = await bookingService.createBooking({
+          roomId: String(bookingData.room.id),
+          checkIn: bookingData.checkIn,
+          checkOut: bookingData.checkOut,
+          guests: {
+            adults: bookingData.guests.adults,
+            children: bookingData.guests.children,
+            infants: 0,
+          },
+          guestInfo: {
+            firstName: bookingData.guestInfo.firstName,
+            lastName: bookingData.guestInfo.lastName,
+            email: bookingData.guestInfo.email,
+            phone: bookingData.guestInfo.phone,
+            country: bookingData.guestInfo.country || 'US',
+            specialRequests: bookingData.guestInfo.specialRequests || '',
+          },
+          paymentMethodId: 'none',
+          payment_method: paymentMethod,
+        });
+        updateBookingData({
+          payment: { ...bookingData.payment, paymentMethod },
+          bookingNumber: bookingResponse.bookingNumber || bookingResponse.id || `RES-${bookingResponse.id}`,
+        });
+        toast.success('Booking created successfully!');
+      }
+      onNext();
+    } catch (error: any) {
+      console.error('Booking error:', error);
+      const defaultErrorMsg = bookingData.isModifyMode
+        ? 'Failed to modify booking. Please try again.'
+        : 'Failed to create booking. Please try again.';
+      toast.error(error.response?.data?.detail || error.message || defaultErrorMsg);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // Auto-send OTP when component mounts if email is available
@@ -649,6 +749,52 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
         </motion.div>
       </div>
 
+      {/* Payment Method Selector */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="mb-8"
+      >
+        <h3 className="text-base font-bold text-neutral-900 mb-4">Choose Payment Method</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {GUEST_PAYMENT_METHODS.map((method) => {
+            const Icon = method.icon;
+            const isSelected = paymentMethod === method.value;
+            return (
+              <button
+                key={method.value}
+                type="button"
+                onClick={() => setPaymentMethod(method.value)}
+                className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
+                  isSelected
+                    ? 'border-primary-500 bg-primary-50 shadow-md'
+                    : 'border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-sm'
+                }`}
+              >
+                {isSelected && (
+                  <div className="absolute top-2 right-2">
+                    <CheckCircle className="w-4 h-4 text-primary-600" strokeWidth={2.5} />
+                  </div>
+                )}
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: `${method.color}15` }}
+                >
+                  <Icon className="w-5 h-5" style={{ color: method.color }} strokeWidth={2} />
+                </div>
+                <span className={`text-sm font-semibold ${isSelected ? 'text-primary-700' : 'text-neutral-800'}`}>
+                  {method.label}
+                </span>
+                <span className="text-[11px] text-neutral-500 text-center leading-tight">{method.desc}</span>
+              </button>
+            );
+          })}
+        </div>
+      </motion.div>
+
+      {/* Card Payment Form */}
+      {paymentMethod === 'card' ? (
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Saved Cards Dropdown */}
         {savedCards.length > 0 && (
@@ -1227,6 +1373,170 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
           </p>
         </motion.div>
       </form>
+      ) : (
+      /* Non-Card Payment Methods */
+      <div className="space-y-6">
+        {/* UPI Payment */}
+        {paymentMethod === 'upi' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-4"
+          >
+            <div className="bg-gradient-to-br from-ocean-50 to-blue-50 border border-ocean-200 rounded-xl p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <Smartphone className="w-5 h-5 text-ocean-600" strokeWidth={2} />
+                <h4 className="text-sm font-bold text-ocean-900">UPI Payment</h4>
+              </div>
+              <p className="text-xs text-ocean-700 mb-4">
+                Enter your UPI ID to pay. Supports Google Pay, PhonePe, Paytm, and other UPI apps.
+              </p>
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <Smartphone className={`w-5 h-5 transition-colors ${
+                    upiId.includes('@') ? 'text-green-500' : 'text-neutral-400 group-focus-within:text-primary-600'
+                  }`} strokeWidth={2} />
+                </div>
+                <input
+                  type="text"
+                  value={upiId}
+                  onChange={(e) => setUpiId(e.target.value)}
+                  placeholder="yourname@upi"
+                  className={`w-full pl-12 pr-12 py-4 border rounded-lg focus:outline-none focus:ring-2 transition-all font-medium ${
+                    upiId.includes('@')
+                      ? 'border-green-300 focus:border-green-500 focus:ring-green-500/20 bg-green-50'
+                      : 'border-neutral-200 focus:border-primary-500 focus:ring-primary-500/20 bg-neutral-50'
+                  }`}
+                />
+                {upiId.includes('@') && (
+                  <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" strokeWidth={2} />
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Cash Payment */}
+        {paymentMethod === 'cash' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-br from-sage-50 to-green-50 border border-sage-200 rounded-xl p-5"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <Banknote className="w-5 h-5 text-sage-600" strokeWidth={2} />
+              <h4 className="text-sm font-bold text-sage-900">Cash Payment</h4>
+            </div>
+            <p className="text-sm text-sage-700">
+              You can pay in cash at the hotel reception during check-in. Please have the exact amount ready.
+            </p>
+            <div className="mt-4 flex items-center gap-2 text-xs text-sage-600 bg-white/60 rounded-lg px-3 py-2">
+              <Shield className="w-4 h-4 flex-shrink-0" />
+              <span>Your booking will be confirmed and held. Payment is collected at the property.</span>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Bank Transfer */}
+        {paymentMethod === 'bank_transfer' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-5"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <Landmark className="w-5 h-5 text-amber-700" strokeWidth={2} />
+              <h4 className="text-sm font-bold text-amber-900">Bank Transfer</h4>
+            </div>
+            <p className="text-sm text-amber-700 mb-3">
+              Bank transfer details will be sent to your email after booking confirmation.
+            </p>
+            <div className="bg-white/60 rounded-lg p-3 text-xs text-amber-700 space-y-1">
+              <p>Supported methods: NEFT, RTGS, IMPS, Wire Transfer</p>
+              <p>Please complete the transfer within 24 hours to confirm your booking.</p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Online Payment */}
+        {paymentMethod === 'online' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-br from-neutral-50 to-stone-50 border border-neutral-200 rounded-xl p-5"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <Globe className="w-5 h-5 text-neutral-700" strokeWidth={2} />
+              <h4 className="text-sm font-bold text-neutral-900">Online Payment</h4>
+            </div>
+            <p className="text-sm text-neutral-600">
+              You will be redirected to a secure payment gateway after booking confirmation. Supports Net Banking and digital wallets.
+            </p>
+            <div className="mt-4 flex items-center gap-2 text-xs text-neutral-500 bg-white/60 rounded-lg px-3 py-2">
+              <Shield className="w-4 h-4 flex-shrink-0" />
+              <span>Secure 256-bit encrypted payment processing</span>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Pay at Hotel */}
+        {paymentMethod === 'pay_at_hotel' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-br from-stone-50 to-neutral-50 border border-stone-200 rounded-xl p-5"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <Building2 className="w-5 h-5 text-stone-700" strokeWidth={2} />
+              <h4 className="text-sm font-bold text-stone-900">Pay at Hotel</h4>
+            </div>
+            <p className="text-sm text-stone-600">
+              No payment required now. Pay at the hotel reception during check-in using any available payment method (Card, Cash, UPI).
+            </p>
+            <div className="mt-4 flex items-center gap-2 text-xs text-stone-500 bg-white/60 rounded-lg px-3 py-2">
+              <CheckCircle className="w-4 h-4 flex-shrink-0" />
+              <span>Your booking is guaranteed. No cancellation charges up to 24 hours before check-in.</span>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Submit Button for non-card methods */}
+        <motion.button
+          type="button"
+          onClick={handleNonCardSubmit}
+          disabled={isProcessing || (paymentMethod === 'upi' && !upiId.includes('@'))}
+          whileHover={{ scale: isProcessing ? 1 : 1.01 }}
+          whileTap={{ scale: isProcessing ? 1 : 0.99 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className={`w-full py-5 bg-primary-600 hover:bg-primary-700 text-white font-bold text-lg rounded-lg transition-all shadow-lg flex items-center justify-center gap-3 group ${
+            isProcessing ? 'opacity-75 cursor-not-allowed' : ''
+          }`}
+        >
+          {isProcessing ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <span>{bookingData.isModifyMode ? 'Updating Booking...' : 'Confirming Booking...'}</span>
+            </>
+          ) : (
+            <>
+              <Lock className="w-5 h-5 group-hover:scale-110 transition-transform" strokeWidth={2.5} />
+              <span>{bookingData.isModifyMode ? 'Confirm Modification' : 'Confirm Booking'}</span>
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
+            </>
+          )}
+        </motion.button>
+
+        {/* Terms */}
+        <div className="text-center">
+          <p className="text-sm text-neutral-600 font-medium">
+            By completing this booking, you agree to our{' '}
+            <span className="text-primary-600 font-semibold">Terms & Conditions</span>
+          </p>
+        </div>
+      </div>
+      )}
     </motion.div>
   );
 }

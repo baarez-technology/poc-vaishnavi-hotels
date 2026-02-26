@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BarChart3,
@@ -11,9 +11,10 @@ import {
   AlertTriangle,
   Download,
   FileText,
+  CreditCard,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { revenueIntelligenceService, DashboardResponse, PricingRecommendation, PricingRule } from '../../../api/services/revenue-intelligence.service';
 import { useToast } from '../../../contexts/ToastContext';
 import { DemandLevelBadge } from '../../../components/revenue-management/DemandChart';
@@ -21,6 +22,10 @@ import { Modal, ModalHeader, ModalTitle, ModalContent, ModalFooter, ConfirmModal
 import { Button } from '../../../components/ui2/Button';
 import { DropdownMenu, DropdownMenuItem } from '../../../components/ui2/DropdownMenu';
 import { useBookingsSSE } from '../../../hooks/useBookingsSSE';
+import { bookingService } from '../../../api/services/booking.service';
+import { dashboardsService, FinanceDashboard } from '../../../api/services/dashboards.service';
+import { useCurrency } from '../../../hooks/useCurrency';
+import { DatePicker } from '../../../components/ui2/DatePicker';
 
 // Skeleton Loader Component
 function SkeletonLoader({ className = '' }: { className?: string }) {
@@ -103,8 +108,19 @@ function KPICard({ title, value, trendValue, icon: Icon, accentColor = 'terra', 
   );
 }
 
+const PAYMENT_MODE_COLORS: Record<string, string> = {
+  Card: '#4E5840',
+  Cash: '#A57865',
+  UPI: '#5C9BA4',
+  Online: '#CDB261',
+  'Bank Transfer': '#C8B29D',
+  'Pay at Hotel': '#8B7355',
+};
+const PAYMENT_COLOR_LIST = ['#4E5840', '#A57865', '#5C9BA4', '#CDB261', '#C8B29D', '#8B7355'];
+
 const RevenueDashboard = () => {
   const toast = useToast();
+  const { symbol } = useCurrency();
 
   // State for API data
   const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null);
@@ -128,6 +144,14 @@ const RevenueDashboard = () => {
     end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
   });
   const [exportLoading, setExportLoading] = useState(false);
+
+  // Payment mode analysis state
+  const [allBookingsRaw, setAllBookingsRaw] = useState<any[]>([]);
+  const [financeData, setFinanceData] = useState<FinanceDashboard | null>(null);
+  const [paymentModeFilter, setPaymentModeFilter] = useState<string>('all');
+  const [paymentLoading, setPaymentLoading] = useState(true);
+  const [paymentDateFrom, setPaymentDateFrom] = useState<string>('');
+  const [paymentDateTo, setPaymentDateTo] = useState<string>('');
 
   // Fetch dashboard data from API
   const fetchDashboardData = useCallback(async () => {
@@ -167,6 +191,27 @@ const RevenueDashboard = () => {
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
+
+  // Fetch payment mode data (bookings + finance)
+  useEffect(() => {
+    const fetchPaymentData = async () => {
+      setPaymentLoading(true);
+      try {
+        const [finance, bookingsRes] = await Promise.all([
+          dashboardsService.getFinanceDashboard().catch(() => null),
+          bookingService.getBookings(1, 200).catch(() => null),
+        ]);
+        setFinanceData(finance);
+        const rawBookings = bookingsRes?.items || (Array.isArray(bookingsRes) ? bookingsRes : []);
+        setAllBookingsRaw(rawBookings);
+      } catch (err) {
+        console.error('Failed to fetch payment data:', err);
+      } finally {
+        setPaymentLoading(false);
+      }
+    };
+    fetchPaymentData();
+  }, []);
 
   // SSE Integration for real-time booking updates (affects revenue dashboard)
   useBookingsSSE({
@@ -498,6 +543,130 @@ const RevenueDashboard = () => {
         { name: 'Direct', value: 10, color: '#CDB261' },
         { name: 'Group', value: 5, color: '#C8B29D' },
       ];
+
+  // ── Payment Mode Analysis ──
+  const normalizePaymentMethod = (method: string): string => {
+    const lower = (method || '').toLowerCase().trim();
+    if (!lower) return '';
+    if (lower === 'cash') return 'Cash';
+    if (['card', 'credit_card', 'debit_card', 'credit card', 'debit card'].includes(lower)) return 'Card';
+    if (lower === 'upi') return 'UPI';
+    if (['online', 'net_banking', 'net banking', 'wallet'].includes(lower)) return 'Online';
+    if (['bank_transfer', 'bank transfer'].includes(lower)) return 'Bank Transfer';
+    if (['pay_at_hotel', 'pay at hotel'].includes(lower)) return 'Pay at Hotel';
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+  };
+
+  const paymentModeData = useMemo(() => {
+    let modeMap: Record<string, number> = {};
+
+    // Primary: Finance Dashboard's pre-aggregated payment_methods
+    if (financeData?.payment_methods && Object.keys(financeData.payment_methods).length > 0) {
+      for (const [method, amount] of Object.entries(financeData.payment_methods)) {
+        const mode = normalizePaymentMethod(method);
+        if (mode) modeMap[mode] = (modeMap[mode] || 0) + (amount || 0);
+      }
+    }
+    // Secondary: All bookings from bookings API
+    else if (allBookingsRaw.length > 0) {
+      for (const b of allBookingsRaw) {
+        const method = b.paymentMethod || b.payment_method || '';
+        const amount = b.totalPrice || b.total_price || b.total_amount || b.amount || 0;
+        const mode = normalizePaymentMethod(method);
+        if (mode) modeMap[mode] = (modeMap[mode] || 0) + amount;
+      }
+    }
+
+    const total = Object.values(modeMap).reduce((s, v) => s + v, 0);
+    const entries = Object.entries(modeMap)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, amount], index) => ({
+        name,
+        amount: Math.round(amount),
+        percent: total > 0 ? parseFloat(((amount / total) * 100).toFixed(1)) : 0,
+        color: PAYMENT_MODE_COLORS[name] || PAYMENT_COLOR_LIST[index % PAYMENT_COLOR_LIST.length],
+      }));
+
+    if (entries.length === 0) {
+      return [
+        { name: 'Cash', amount: 0, percent: 0, color: '#A57865' },
+        { name: 'Card', amount: 0, percent: 0, color: '#4E5840' },
+        { name: 'UPI', amount: 0, percent: 0, color: '#5C9BA4' },
+        { name: 'Online', amount: 0, percent: 0, color: '#CDB261' },
+      ];
+    }
+    return entries;
+  }, [financeData, allBookingsRaw]);
+
+  const totalPaymentRevenue = paymentModeData.reduce((s, d) => s + d.amount, 0);
+
+  // Payment trends over time (group bookings by date + method, filtered by date range)
+  const paymentTrendData = useMemo(() => {
+    if (allBookingsRaw.length === 0) return [];
+
+    const dayMap: Record<string, Record<string, number>> = {};
+    for (const b of allBookingsRaw) {
+      const dateStr = (b.checkIn || b.check_in || b.created_at || '').slice(0, 10);
+      if (!dateStr) continue;
+      // Apply date range filter
+      if (paymentDateFrom && dateStr < paymentDateFrom) continue;
+      if (paymentDateTo && dateStr > paymentDateTo) continue;
+      const method = normalizePaymentMethod(b.paymentMethod || b.payment_method || '');
+      if (!method) continue;
+      const amount = b.totalPrice || b.total_price || b.total_amount || b.amount || 0;
+      if (!dayMap[dateStr]) dayMap[dateStr] = {};
+      dayMap[dateStr][method] = (dayMap[dateStr][method] || 0) + amount;
+    }
+
+    const methods = paymentModeData.map(d => d.name);
+    const sorted = Object.entries(dayMap).sort(([a], [b]) => a.localeCompare(b));
+    // If no date range set, show last 30 days
+    const sliced = (!paymentDateFrom && !paymentDateTo) ? sorted.slice(-30) : sorted;
+    return sliced.map(([date, modes]) => {
+        const entry: any = {
+          date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          rawDate: date,
+        };
+        for (const m of methods) {
+          entry[m] = Math.round(modes[m] || 0);
+        }
+        return entry;
+      });
+  }, [allBookingsRaw, paymentModeData, paymentDateFrom, paymentDateTo]);
+
+  // Filtered payment data respecting date range
+  const filteredPaymentModeData = useMemo(() => {
+    if (!paymentDateFrom && !paymentDateTo) return paymentModeData;
+    // Recompute from bookings with date filter
+    const modeMap: Record<string, number> = {};
+    for (const b of allBookingsRaw) {
+      const dateStr = (b.checkIn || b.check_in || b.created_at || '').slice(0, 10);
+      if (!dateStr) continue;
+      if (paymentDateFrom && dateStr < paymentDateFrom) continue;
+      if (paymentDateTo && dateStr > paymentDateTo) continue;
+      const method = normalizePaymentMethod(b.paymentMethod || b.payment_method || '');
+      if (!method) continue;
+      const amount = b.totalPrice || b.total_price || b.total_amount || b.amount || 0;
+      modeMap[method] = (modeMap[method] || 0) + amount;
+    }
+    const total = Object.values(modeMap).reduce((s, v) => s + v, 0);
+    const entries = Object.entries(modeMap)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, amount], index) => ({
+        name,
+        amount: Math.round(amount),
+        percent: total > 0 ? parseFloat(((amount / total) * 100).toFixed(1)) : 0,
+        color: PAYMENT_MODE_COLORS[name] || PAYMENT_COLOR_LIST[index % PAYMENT_COLOR_LIST.length],
+      }));
+    return entries.length > 0 ? entries : paymentModeData;
+  }, [paymentModeData, allBookingsRaw, paymentDateFrom, paymentDateTo]);
+
+  const filteredTotalRevenue = filteredPaymentModeData.reduce((s, d) => s + d.amount, 0);
+
+  // Filter payment mode for focused view
+  const filteredPaymentModes = paymentModeFilter === 'all'
+    ? filteredPaymentModeData
+    : filteredPaymentModeData.filter(d => d.name === paymentModeFilter);
 
   if (error && !dashboardData) {
     return (
@@ -843,6 +1012,182 @@ const RevenueDashboard = () => {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
+          )}
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* REVENUE BY PAYMENT MODE — Graph with filters */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        <section className="rounded-[10px] bg-white overflow-hidden">
+          {/* Header: Title + Filters */}
+          <div className="px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-terra-600" />
+                <div>
+                  <h3 className="text-xs sm:text-sm font-semibold text-neutral-800">Revenue by Payment Mode</h3>
+                  <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">Daily revenue breakdown by payment method</p>
+                </div>
+              </div>
+
+              {/* Date Range Filter */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <DatePicker
+                  value={paymentDateFrom}
+                  onChange={(val) => setPaymentDateFrom(val)}
+                  placeholder="From date"
+                  maxDate={paymentDateTo || undefined}
+                  className="w-[150px]"
+                />
+                <span className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">to</span>
+                <DatePicker
+                  value={paymentDateTo}
+                  onChange={(val) => setPaymentDateTo(val)}
+                  placeholder="To date"
+                  minDate={paymentDateFrom || undefined}
+                  className="w-[150px]"
+                />
+              </div>
+            </div>
+
+            {/* Payment Mode Filter Pills */}
+            <div className="flex items-center gap-1 p-0.5 sm:p-1 rounded-lg bg-neutral-100 overflow-x-auto w-fit">
+              <button
+                onClick={() => setPaymentModeFilter('all')}
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-[10px] sm:text-[11px] font-semibold transition-all whitespace-nowrap ${
+                  paymentModeFilter === 'all'
+                    ? 'bg-white text-neutral-900 shadow-sm'
+                    : 'text-neutral-500 hover:text-neutral-700'
+                }`}
+              >
+                All Methods
+              </button>
+              {filteredPaymentModeData.filter(d => d.amount > 0).map(mode => (
+                <button
+                  key={mode.name}
+                  onClick={() => setPaymentModeFilter(mode.name)}
+                  className={`flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-[10px] sm:text-[11px] font-semibold transition-all whitespace-nowrap ${
+                    paymentModeFilter === mode.name
+                      ? 'bg-white text-neutral-900 shadow-sm'
+                      : 'text-neutral-500 hover:text-neutral-700'
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: mode.color }} />
+                  {mode.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {paymentLoading ? (
+            <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+              <SkeletonLoader className="h-72 sm:h-80 w-full rounded-lg" />
+            </div>
+          ) : (
+            <>
+              {/* Summary Stats */}
+              <div className="px-4 sm:px-6 pb-3 sm:pb-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+                <div className="p-2.5 sm:p-3 rounded-lg bg-neutral-50">
+                  <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Total Revenue</p>
+                  <p className="text-base sm:text-lg font-semibold text-neutral-800">
+                    {symbol}{filteredTotalRevenue >= 1000 ? `${(filteredTotalRevenue / 1000).toFixed(1)}K` : filteredTotalRevenue.toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-2.5 sm:p-3 rounded-lg bg-neutral-50">
+                  <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Payment Methods</p>
+                  <p className="text-base sm:text-lg font-semibold text-neutral-800">
+                    {filteredPaymentModeData.filter(d => d.amount > 0).length}
+                  </p>
+                </div>
+                <div className="p-2.5 sm:p-3 rounded-lg bg-neutral-50">
+                  <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Top Method</p>
+                  <p className="text-base sm:text-lg font-semibold text-neutral-800">
+                    {filteredPaymentModeData[0]?.name || '-'}
+                  </p>
+                </div>
+                <div className="p-2.5 sm:p-3 rounded-lg bg-neutral-50">
+                  <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Top Method Share</p>
+                  <p className="text-base sm:text-lg font-semibold text-neutral-800">
+                    {filteredPaymentModeData[0]?.percent || 0}%
+                  </p>
+                </div>
+              </div>
+
+              {/* Full-width Stacked Bar Chart */}
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[11px] sm:text-xs font-semibold text-neutral-600">Revenue Trend by Payment Mode</p>
+                  <p className="text-[10px] text-neutral-400">
+                    {paymentDateFrom || paymentDateTo
+                      ? `${paymentDateFrom ? new Date(paymentDateFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Start'} — ${paymentDateTo ? new Date(paymentDateTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Now'}`
+                      : `Last ${paymentTrendData.length} days`
+                    }
+                  </p>
+                </div>
+                {paymentTrendData.length === 0 ? (
+                  <div className="h-72 sm:h-80 flex items-center justify-center bg-neutral-50 rounded-lg">
+                    <p className="text-[11px] sm:text-xs text-neutral-400">No trend data available for selected range</p>
+                  </div>
+                ) : (
+                  <div className="h-72 sm:h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={paymentTrendData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E5E4E0" vertical={false} />
+                        <XAxis
+                          dataKey="date"
+                          tick={{ fontSize: 10, fill: '#9ca3af' }}
+                          axisLine={{ stroke: '#E5E4E0' }}
+                          tickLine={false}
+                          dy={8}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 10, fill: '#9ca3af' }}
+                          axisLine={false}
+                          tickLine={false}
+                          tickFormatter={(value) => `${symbol}${value >= 1000 ? `${(value/1000).toFixed(0)}K` : value}`}
+                          dx={-5}
+                        />
+                        <ChartTooltip
+                          contentStyle={{
+                            backgroundColor: '#ffffff',
+                            border: '1px solid #E5E4E0',
+                            borderRadius: '10px',
+                            padding: '10px 14px',
+                            fontSize: '11px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                          }}
+                          formatter={(value: number, name: string) => [`${symbol}${value.toLocaleString()}`, name]}
+                          labelStyle={{ fontWeight: 600, marginBottom: 4 }}
+                        />
+                        {(paymentModeFilter === 'all' ? filteredPaymentModeData : filteredPaymentModes).map((mode) => (
+                          <Bar
+                            key={mode.name}
+                            dataKey={mode.name}
+                            stackId="payment"
+                            fill={mode.color}
+                            radius={[2, 2, 0, 0]}
+                          />
+                        ))}
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {/* Legend */}
+                <div className="flex items-center justify-center gap-4 sm:gap-6 mt-3 flex-wrap">
+                  {(paymentModeFilter === 'all' ? filteredPaymentModeData : filteredPaymentModes).map((mode) => (
+                    <div key={mode.name} className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: mode.color }} />
+                      <span className="text-[10px] sm:text-[11px] text-neutral-600">{mode.name}</span>
+                      <span className="text-[10px] sm:text-[11px] font-semibold text-neutral-800">
+                        {symbol}{mode.amount.toLocaleString()}
+                      </span>
+                      <span className="text-[9px] sm:text-[10px] text-neutral-400">({mode.percent}%)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
           )}
         </section>
 

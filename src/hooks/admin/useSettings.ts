@@ -7,22 +7,23 @@ import { useState, useEffect, useCallback } from 'react';
 import { loadGeneralSettings, saveGeneralSettings, loadBilling, saveBilling } from '@/utils/admin/settingsStorage';
 
 const defaultGeneralSettings = {
-  hotelName: 'Glimmora Hotel & Suites',
-  tagline: 'Your Luxury Escape',
+  hotelName: 'Glimmora International Pvt Limited',
+  tagline: 'Grounded in Luxury',
   currency: 'USD',
-  timezone: 'America/New_York',
-  dateFormat: 'MM/DD/YYYY',
+  timezone: 'Asia/Kolkata',
+  dateFormat: 'DD/MM/YYYY',
   timeFormat: '12h',
   language: 'en',
-  contactEmail: 'contact@glimmora.com',
-  contactPhone: '+1 (555) 123-4567',
-  website: 'https://glimmora.com',
+  contactEmail: 'info@glimmora.ai',
+  contactPhone: '+971 501371105',
+  contactPhone2: '+91-6300275340',
+  website: 'https://glimmora.ai',
   address: {
-    street: '123 Luxury Avenue',
-    city: 'New York',
-    state: 'NY',
-    zip: '10001',
-    country: 'United States'
+    street: '503 Orchid Sadashivpuram, Moriwali Pada',
+    city: 'Ambernath, Kalyan, Thane',
+    state: 'Maharashtra',
+    zip: '421501',
+    country: 'India'
   },
   branding: {
     primaryColor: '#8B5CF6',

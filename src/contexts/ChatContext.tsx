@@ -531,7 +531,7 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       case 'front_desk':
         addMessage({
           type: 'assistant',
-          content: 'You can reach our front desk at:\n\n• Phone: Extension 0 from your room\n• Direct Line: +1 (555) 123-4567\n• Available 24/7\n\nWould you like me to help with anything else?',
+          content: 'You can reach our front desk at:\n\n• Phone: Extension 0 from your room\n• Direct Line: +971 501371105\n• India: +91-6300275340\n• Available 24/7\n\nWould you like me to help with anything else?',
         });
         break;
       case 'enter_booking':

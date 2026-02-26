@@ -5,21 +5,21 @@
 
 // General Settings
 export const generalSettings = {
-  hotelName: "Glimmora Grand Hotel",
+  hotelName: "Glimmora International Pvt Limited",
   logo: "/logo.png",
-  timezone: "America/New_York",
+  timezone: "Asia/Kolkata",
   currency: "USD",
   primaryContact: {
-    name: "Sarah Johnson",
-    email: "sarah@glimmora.com",
-    phone: "+1 (555) 123-4567"
+    name: "Glimmora Support",
+    email: "info@glimmora.ai",
+    phone: "+971 501371105"
   },
   address: {
-    street: "1234 Luxury Avenue",
-    city: "New York",
-    state: "NY",
-    zipCode: "10001",
-    country: "United States"
+    street: "503 Orchid Sadashivpuram, Moriwali Pada",
+    city: "Ambernath, Kalyan, Thane",
+    state: "Maharashtra",
+    zipCode: "421501",
+    country: "India"
   },
   brandColors: {
     primary: "#8B5CF6",

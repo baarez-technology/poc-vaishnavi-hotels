@@ -12,10 +12,13 @@ import {
   Download,
   FileText,
   CreditCard,
+  Building2,
+  CalendarClock,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { revenueIntelligenceService, DashboardResponse, PricingRecommendation, PricingRule } from '../../../api/services/revenue-intelligence.service';
+import { revenueIntelligenceService, DashboardResponse, PricingRecommendation, PricingRule, KPISummary } from '../../../api/services/revenue-intelligence.service';
+import { reportsService, RevenueByRoomType } from '../../../api/services/reports.service';
 import { useToast } from '../../../contexts/ToastContext';
 import { DemandLevelBadge } from '../../../components/revenue-management/DemandChart';
 import { Modal, ModalHeader, ModalTitle, ModalContent, ModalFooter, ConfirmModal } from '../../../components/ui2/Modal';
@@ -145,13 +148,18 @@ const RevenueDashboard = () => {
   });
   const [exportLoading, setExportLoading] = useState(false);
 
+  // Future Revenue / KPI Summary state
+  const [kpiSummary, setKpiSummary] = useState<KPISummary | null>(null);
+  const [kpiLoading, setKpiLoading] = useState(true);
+
+  // Revenue by Room Type state
+  const [roomTypeData, setRoomTypeData] = useState<RevenueByRoomType[]>([]);
+  const [roomTypeLoading, setRoomTypeLoading] = useState(true);
+
   // Payment mode analysis state
   const [allBookingsRaw, setAllBookingsRaw] = useState<any[]>([]);
   const [financeData, setFinanceData] = useState<FinanceDashboard | null>(null);
-  const [paymentModeFilter, setPaymentModeFilter] = useState<string>('all');
   const [paymentLoading, setPaymentLoading] = useState(true);
-  const [paymentDateFrom, setPaymentDateFrom] = useState<string>('');
-  const [paymentDateTo, setPaymentDateTo] = useState<string>('');
 
   // Fetch dashboard data from API
   const fetchDashboardData = useCallback(async () => {
@@ -211,6 +219,38 @@ const RevenueDashboard = () => {
       }
     };
     fetchPaymentData();
+  }, []);
+
+  // Fetch KPI Summary (future revenue projections)
+  useEffect(() => {
+    const fetchKpiSummary = async () => {
+      setKpiLoading(true);
+      try {
+        const summary = await revenueIntelligenceService.getKPISummary();
+        setKpiSummary(summary);
+      } catch (err) {
+        console.error('Failed to fetch KPI summary:', err);
+      } finally {
+        setKpiLoading(false);
+      }
+    };
+    fetchKpiSummary();
+  }, []);
+
+  // Fetch Revenue by Room Type
+  useEffect(() => {
+    const fetchRoomTypeRevenue = async () => {
+      setRoomTypeLoading(true);
+      try {
+        const report = await reportsService.getRevenueSnapshotReport('last_30_days');
+        setRoomTypeData(report?.revenue_by_room_type || []);
+      } catch (err) {
+        console.error('Failed to fetch room type revenue:', err);
+      } finally {
+        setRoomTypeLoading(false);
+      }
+    };
+    fetchRoomTypeRevenue();
   }, []);
 
   // SSE Integration for real-time booking updates (affects revenue dashboard)
@@ -600,73 +640,130 @@ const RevenueDashboard = () => {
 
   const totalPaymentRevenue = paymentModeData.reduce((s, d) => s + d.amount, 0);
 
-  // Payment trends over time (group bookings by date + method, filtered by date range)
-  const paymentTrendData = useMemo(() => {
-    if (allBookingsRaw.length === 0) return [];
+  // ── Future Revenue computations (EN-1 + EN-14) ──
+  const futureRevenueData = useMemo(() => {
+    const next7 = kpiSummary?.next_7_days;
+    const next30 = kpiSummary?.next_30_days;
+    const currentWeek = kpiSummary?.week;
+    const currentMonth = kpiSummary?.month;
 
-    const dayMap: Record<string, Record<string, number>> = {};
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+
+    // Step 1: Aggregate future bookings by calendar month
+    const monthlyMap: Record<string, { confirmed: number; count: number }> = {};
+    let totalFutureRevenue = 0;
+    let totalFutureCount = 0;
+
     for (const b of allBookingsRaw) {
-      const dateStr = (b.checkIn || b.check_in || b.created_at || '').slice(0, 10);
-      if (!dateStr) continue;
-      // Apply date range filter
-      if (paymentDateFrom && dateStr < paymentDateFrom) continue;
-      if (paymentDateTo && dateStr > paymentDateTo) continue;
-      const method = normalizePaymentMethod(b.paymentMethod || b.payment_method || '');
-      if (!method) continue;
-      const amount = b.totalPrice || b.total_price || b.total_amount || b.amount || 0;
-      if (!dayMap[dateStr]) dayMap[dateStr] = {};
-      dayMap[dateStr][method] = (dayMap[dateStr][method] || 0) + amount;
-    }
-
-    const methods = paymentModeData.map(d => d.name);
-    const sorted = Object.entries(dayMap).sort(([a], [b]) => a.localeCompare(b));
-    // If no date range set, show last 30 days
-    const sliced = (!paymentDateFrom && !paymentDateTo) ? sorted.slice(-30) : sorted;
-    return sliced.map(([date, modes]) => {
-        const entry: any = {
-          date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          rawDate: date,
-        };
-        for (const m of methods) {
-          entry[m] = Math.round(modes[m] || 0);
+      const checkIn = (b.checkIn || b.check_in || '').slice(0, 10);
+      if (checkIn > todayStr) {
+        const amount = b.totalPrice || b.total_price || b.total_amount || b.amount || 0;
+        const monthKey = checkIn.slice(0, 7); // "YYYY-MM"
+        if (!monthlyMap[monthKey]) {
+          monthlyMap[monthKey] = { confirmed: 0, count: 0 };
         }
-        return entry;
-      });
-  }, [allBookingsRaw, paymentModeData, paymentDateFrom, paymentDateTo]);
-
-  // Filtered payment data respecting date range
-  const filteredPaymentModeData = useMemo(() => {
-    if (!paymentDateFrom && !paymentDateTo) return paymentModeData;
-    // Recompute from bookings with date filter
-    const modeMap: Record<string, number> = {};
-    for (const b of allBookingsRaw) {
-      const dateStr = (b.checkIn || b.check_in || b.created_at || '').slice(0, 10);
-      if (!dateStr) continue;
-      if (paymentDateFrom && dateStr < paymentDateFrom) continue;
-      if (paymentDateTo && dateStr > paymentDateTo) continue;
-      const method = normalizePaymentMethod(b.paymentMethod || b.payment_method || '');
-      if (!method) continue;
-      const amount = b.totalPrice || b.total_price || b.total_amount || b.amount || 0;
-      modeMap[method] = (modeMap[method] || 0) + amount;
+        monthlyMap[monthKey].confirmed += amount;
+        monthlyMap[monthKey].count++;
+        totalFutureRevenue += amount;
+        totalFutureCount++;
+      }
     }
-    const total = Object.values(modeMap).reduce((s, v) => s + v, 0);
-    const entries = Object.entries(modeMap)
-      .sort((a, b) => b[1] - a[1])
-      .map(([name, amount], index) => ({
-        name,
-        amount: Math.round(amount),
-        percent: total > 0 ? parseFloat(((amount / total) * 100).toFixed(1)) : 0,
-        color: PAYMENT_MODE_COLORS[name] || PAYMENT_COLOR_LIST[index % PAYMENT_COLOR_LIST.length],
+
+    // Step 2: Build next-3-months breakdown
+    const dailyForecast = next30?.total_revenue && next30?.period?.days
+      ? next30.total_revenue / next30.period.days
+      : 0;
+
+    const monthBreakdown: Array<{
+      monthKey: string;
+      label: string;
+      shortLabel: string;
+      confirmed: number;
+      forecast: number;
+      total: number;
+      bookingCount: number;
+      daysInMonth: number;
+      daysRemaining: number;
+    }> = [];
+
+    for (let i = 0; i < 3; i++) {
+      const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+      const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      const shortLabel = d.toLocaleDateString('en-US', { month: 'short' });
+
+      const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      const daysRemaining = i === 0
+        ? Math.max(0, lastDay - today.getDate())
+        : lastDay;
+
+      const confirmed = Math.round(monthlyMap[monthKey]?.confirmed || 0);
+      const bookingCount = monthlyMap[monthKey]?.count || 0;
+
+      // Decay factor for months further out
+      const decayFactor = i === 0 ? 1.0 : i === 1 ? 0.9 : 0.8;
+      const forecastForMonth = Math.round(dailyForecast * daysRemaining * decayFactor);
+      const forecast = Math.max(0, forecastForMonth - confirmed);
+
+      monthBreakdown.push({
+        monthKey,
+        label,
+        shortLabel,
+        confirmed,
+        forecast,
+        total: confirmed + forecast,
+        bookingCount,
+        daysInMonth: lastDay,
+        daysRemaining,
+      });
+    }
+
+    // Step 3: Monthly Projection (EN-14) — booking-based
+    const currentMonthData = monthBreakdown[0];
+    const monthlyProjectedFromBookings = currentMonthData
+      ? currentMonthData.confirmed + currentMonthData.forecast
+      : 0;
+
+    return {
+      next7Revenue: next7?.total_revenue || 0,
+      next7Trend: next7?.revenue_trend || 0,
+      next7Occupancy: next7?.occupancy || 0,
+      next7Adr: next7?.adr || 0,
+      next30Revenue: next30?.total_revenue || 0,
+      next30Trend: next30?.revenue_trend || 0,
+      next30Occupancy: next30?.occupancy || 0,
+      next30Adr: next30?.adr || 0,
+      currentWeekRevenue: currentWeek?.total_revenue || 0,
+      currentMonthRevenue: currentMonth?.total_revenue || 0,
+      futureBookingRevenue: Math.round(totalFutureRevenue),
+      futureBookingCount: totalFutureCount,
+      monthlyProjected: Math.round(monthlyProjectedFromBookings),
+      avgDailyProjected: Math.round(dailyForecast),
+      monthBreakdown,
+    };
+  }, [kpiSummary, allBookingsRaw]);
+
+  // ── Room Type chart colors ──
+  const ROOM_TYPE_COLORS = ['#4E5840', '#A57865', '#5C9BA4', '#CDB261', '#C8B29D', '#8B7355', '#7C9885', '#D4A574'];
+
+  const roomTypeChartData = useMemo(() => {
+    if (!roomTypeData.length) return [];
+    const total = roomTypeData.reduce((s, r) => s + r.revenue, 0);
+    return roomTypeData
+      .sort((a, b) => b.revenue - a.revenue)
+      .map((rt, i) => ({
+        name: rt.name,
+        revenue: Math.round(rt.revenue),
+        rooms: rt.rooms,
+        adr: Math.round(rt.adr),
+        percent: total > 0 ? parseFloat(((rt.revenue / total) * 100).toFixed(1)) : 0,
+        color: ROOM_TYPE_COLORS[i % ROOM_TYPE_COLORS.length],
       }));
-    return entries.length > 0 ? entries : paymentModeData;
-  }, [paymentModeData, allBookingsRaw, paymentDateFrom, paymentDateTo]);
+  }, [roomTypeData]);
 
-  const filteredTotalRevenue = filteredPaymentModeData.reduce((s, d) => s + d.amount, 0);
-
-  // Filter payment mode for focused view
-  const filteredPaymentModes = paymentModeFilter === 'all'
-    ? filteredPaymentModeData
-    : filteredPaymentModeData.filter(d => d.name === paymentModeFilter);
+  const totalRoomTypeRevenue = roomTypeChartData.reduce((s, r) => s + r.revenue, 0);
+  const topRoomType = roomTypeChartData[0];
 
   if (error && !dashboardData) {
     return (
@@ -1016,180 +1113,390 @@ const RevenueDashboard = () => {
         </section>
 
         {/* ═══════════════════════════════════════════════════════════════════ */}
-        {/* REVENUE BY PAYMENT MODE — Graph with filters */}
+        {/* FUTURE REVENUE OUTLOOK — EN-1 + EN-14 */}
         {/* ═══════════════════════════════════════════════════════════════════ */}
         <section className="rounded-[10px] bg-white overflow-hidden">
-          {/* Header: Title + Filters */}
-          <div className="px-4 sm:px-6 py-4 sm:py-5 flex flex-col gap-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-terra-600" />
-                <div>
-                  <h3 className="text-xs sm:text-sm font-semibold text-neutral-800">Revenue by Payment Mode</h3>
-                  <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">Daily revenue breakdown by payment method</p>
-                </div>
+          <div className="px-4 sm:px-6 py-4 sm:py-5">
+            <div className="flex items-center gap-2">
+              <CalendarClock className="w-4 h-4 text-sage-600" />
+              <div>
+                <h3 className="text-xs sm:text-sm font-semibold text-neutral-800">Future Revenue Outlook</h3>
+                <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">Projected revenue from upcoming bookings & forecasts</p>
               </div>
-
-              {/* Date Range Filter */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <DatePicker
-                  value={paymentDateFrom}
-                  onChange={(val) => setPaymentDateFrom(val)}
-                  placeholder="From date"
-                  maxDate={paymentDateTo || undefined}
-                  className="w-[150px]"
-                />
-                <span className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">to</span>
-                <DatePicker
-                  value={paymentDateTo}
-                  onChange={(val) => setPaymentDateTo(val)}
-                  placeholder="To date"
-                  minDate={paymentDateFrom || undefined}
-                  className="w-[150px]"
-                />
-              </div>
-            </div>
-
-            {/* Payment Mode Filter Pills */}
-            <div className="flex items-center gap-1 p-0.5 sm:p-1 rounded-lg bg-neutral-100 overflow-x-auto w-fit">
-              <button
-                onClick={() => setPaymentModeFilter('all')}
-                className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-[10px] sm:text-[11px] font-semibold transition-all whitespace-nowrap ${
-                  paymentModeFilter === 'all'
-                    ? 'bg-white text-neutral-900 shadow-sm'
-                    : 'text-neutral-500 hover:text-neutral-700'
-                }`}
-              >
-                All Methods
-              </button>
-              {filteredPaymentModeData.filter(d => d.amount > 0).map(mode => (
-                <button
-                  key={mode.name}
-                  onClick={() => setPaymentModeFilter(mode.name)}
-                  className={`flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-[10px] sm:text-[11px] font-semibold transition-all whitespace-nowrap ${
-                    paymentModeFilter === mode.name
-                      ? 'bg-white text-neutral-900 shadow-sm'
-                      : 'text-neutral-500 hover:text-neutral-700'
-                  }`}
-                >
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: mode.color }} />
-                  {mode.name}
-                </button>
-              ))}
             </div>
           </div>
 
-          {paymentLoading ? (
+          {kpiLoading ? (
             <div className="px-4 sm:px-6 pb-4 sm:pb-6">
-              <SkeletonLoader className="h-72 sm:h-80 w-full rounded-lg" />
+              <SkeletonLoader className="h-48 w-full rounded-lg" />
             </div>
           ) : (
-            <>
-              {/* Summary Stats */}
-              <div className="px-4 sm:px-6 pb-3 sm:pb-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-                <div className="p-2.5 sm:p-3 rounded-lg bg-neutral-50">
-                  <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Total Revenue</p>
-                  <p className="text-base sm:text-lg font-semibold text-neutral-800">
-                    {symbol}{filteredTotalRevenue >= 1000 ? `${(filteredTotalRevenue / 1000).toFixed(1)}K` : filteredTotalRevenue.toLocaleString()}
+            <div className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-4">
+              {/* Future Revenue KPI Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {/* Next 7 Days Projected */}
+                <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-br from-sage-50 to-white border border-sage-100">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <p className="text-[10px] sm:text-[11px] text-neutral-500 font-medium">Next 7 Days</p>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-semibold bg-ocean-50 text-ocean-600 border border-ocean-100">AI Forecast</span>
+                  </div>
+                  <p className="text-lg sm:text-xl font-bold text-neutral-900">
+                    {symbol}{futureRevenueData.next7Revenue >= 1000 ? `${(futureRevenueData.next7Revenue / 1000).toFixed(1)}K` : futureRevenueData.next7Revenue.toLocaleString()}
+                  </p>
+                  <div className="flex items-center gap-1 mt-1.5">
+                    {futureRevenueData.next7Trend >= 0 ? (
+                      <TrendingUp className="w-3 h-3 text-sage-600" />
+                    ) : (
+                      <TrendingDown className="w-3 h-3 text-rose-500" />
+                    )}
+                    <span className={`text-[10px] font-semibold ${futureRevenueData.next7Trend >= 0 ? 'text-sage-600' : 'text-rose-500'}`}>
+                      {futureRevenueData.next7Trend >= 0 ? '+' : ''}{futureRevenueData.next7Trend.toFixed(1)}%
+                    </span>
+                    <span className="text-[9px] text-neutral-400">vs last week</span>
+                  </div>
+                </div>
+
+                {/* Next 30 Days Projected */}
+                <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-br from-terra-50 to-white border border-terra-100">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <p className="text-[10px] sm:text-[11px] text-neutral-500 font-medium">Next 30 Days</p>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-semibold bg-ocean-50 text-ocean-600 border border-ocean-100">AI Forecast</span>
+                  </div>
+                  <p className="text-lg sm:text-xl font-bold text-neutral-900">
+                    {symbol}{futureRevenueData.next30Revenue >= 1000 ? `${(futureRevenueData.next30Revenue / 1000).toFixed(1)}K` : futureRevenueData.next30Revenue.toLocaleString()}
+                  </p>
+                  <div className="flex items-center gap-1 mt-1.5">
+                    {futureRevenueData.next30Trend >= 0 ? (
+                      <TrendingUp className="w-3 h-3 text-sage-600" />
+                    ) : (
+                      <TrendingDown className="w-3 h-3 text-rose-500" />
+                    )}
+                    <span className={`text-[10px] font-semibold ${futureRevenueData.next30Trend >= 0 ? 'text-sage-600' : 'text-rose-500'}`}>
+                      {futureRevenueData.next30Trend >= 0 ? '+' : ''}{futureRevenueData.next30Trend.toFixed(1)}%
+                    </span>
+                    <span className="text-[9px] text-neutral-400">vs last month</span>
+                  </div>
+                </div>
+
+                {/* Confirmed Future Bookings Revenue */}
+                <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-br from-ocean-50 to-white border border-ocean-100">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <p className="text-[10px] sm:text-[11px] text-neutral-500 font-medium">Confirmed Bookings</p>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-semibold bg-sage-50 text-sage-600 border border-sage-100">Confirmed</span>
+                  </div>
+                  <p className="text-lg sm:text-xl font-bold text-neutral-900">
+                    {symbol}{futureRevenueData.futureBookingRevenue >= 1000 ? `${(futureRevenueData.futureBookingRevenue / 1000).toFixed(1)}K` : futureRevenueData.futureBookingRevenue.toLocaleString()}
+                  </p>
+                  <p className="text-[10px] text-neutral-400 mt-1.5">
+                    {futureRevenueData.futureBookingCount} upcoming bookings
                   </p>
                 </div>
-                <div className="p-2.5 sm:p-3 rounded-lg bg-neutral-50">
-                  <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Payment Methods</p>
-                  <p className="text-base sm:text-lg font-semibold text-neutral-800">
-                    {filteredPaymentModeData.filter(d => d.amount > 0).length}
+
+                {/* This Month Outlook (EN-14: booking-based projection) */}
+                <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-br from-gold-50 to-white border border-gold-100">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <p className="text-[10px] sm:text-[11px] text-neutral-500 font-medium">This Month Outlook</p>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-semibold bg-gold-50 text-gold-600 border border-gold-100">Bookings + AI</span>
+                  </div>
+                  <p className="text-lg sm:text-xl font-bold text-neutral-900">
+                    {symbol}{futureRevenueData.monthlyProjected >= 1000 ? `${(futureRevenueData.monthlyProjected / 1000).toFixed(1)}K` : futureRevenueData.monthlyProjected.toLocaleString()}
                   </p>
-                </div>
-                <div className="p-2.5 sm:p-3 rounded-lg bg-neutral-50">
-                  <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Top Method</p>
-                  <p className="text-base sm:text-lg font-semibold text-neutral-800">
-                    {filteredPaymentModeData[0]?.name || '-'}
-                  </p>
-                </div>
-                <div className="p-2.5 sm:p-3 rounded-lg bg-neutral-50">
-                  <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Top Method Share</p>
-                  <p className="text-base sm:text-lg font-semibold text-neutral-800">
-                    {filteredPaymentModeData[0]?.percent || 0}%
+                  <p className="text-[10px] text-neutral-400 mt-1.5">
+                    {symbol}{(futureRevenueData.monthBreakdown[0]?.confirmed || 0).toLocaleString()} confirmed + {symbol}{(futureRevenueData.monthBreakdown[0]?.forecast || 0).toLocaleString()} forecast
                   </p>
                 </div>
               </div>
 
-              {/* Full-width Stacked Bar Chart */}
-              <div className="px-4 sm:px-6 pb-4 sm:pb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-[11px] sm:text-xs font-semibold text-neutral-600">Revenue Trend by Payment Mode</p>
-                  <p className="text-[10px] text-neutral-400">
-                    {paymentDateFrom || paymentDateTo
-                      ? `${paymentDateFrom ? new Date(paymentDateFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Start'} — ${paymentDateTo ? new Date(paymentDateTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Now'}`
-                      : `Last ${paymentTrendData.length} days`
-                    }
-                  </p>
+              {/* Detail Metrics Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                <div className="p-2.5 rounded-lg bg-neutral-50">
+                  <p className="text-[10px] text-neutral-400 font-medium">7-Day Occupancy</p>
+                  <p className="text-sm font-semibold text-neutral-800">{futureRevenueData.next7Occupancy.toFixed(1)}%</p>
                 </div>
-                {paymentTrendData.length === 0 ? (
-                  <div className="h-72 sm:h-80 flex items-center justify-center bg-neutral-50 rounded-lg">
-                    <p className="text-[11px] sm:text-xs text-neutral-400">No trend data available for selected range</p>
-                  </div>
-                ) : (
-                  <div className="h-72 sm:h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={paymentTrendData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#E5E4E0" vertical={false} />
-                        <XAxis
-                          dataKey="date"
-                          tick={{ fontSize: 10, fill: '#9ca3af' }}
-                          axisLine={{ stroke: '#E5E4E0' }}
-                          tickLine={false}
-                          dy={8}
-                        />
-                        <YAxis
-                          tick={{ fontSize: 10, fill: '#9ca3af' }}
-                          axisLine={false}
-                          tickLine={false}
-                          tickFormatter={(value) => `${symbol}${value >= 1000 ? `${(value/1000).toFixed(0)}K` : value}`}
-                          dx={-5}
-                        />
-                        <ChartTooltip
-                          contentStyle={{
-                            backgroundColor: '#ffffff',
-                            border: '1px solid #E5E4E0',
-                            borderRadius: '10px',
-                            padding: '10px 14px',
-                            fontSize: '11px',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                          }}
-                          formatter={(value: number, name: string) => [`${symbol}${value.toLocaleString()}`, name]}
-                          labelStyle={{ fontWeight: 600, marginBottom: 4 }}
-                        />
-                        {(paymentModeFilter === 'all' ? filteredPaymentModeData : filteredPaymentModes).map((mode) => (
-                          <Bar
-                            key={mode.name}
-                            dataKey={mode.name}
-                            stackId="payment"
-                            fill={mode.color}
-                            radius={[2, 2, 0, 0]}
-                          />
-                        ))}
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
+                <div className="p-2.5 rounded-lg bg-neutral-50">
+                  <p className="text-[10px] text-neutral-400 font-medium">7-Day ADR</p>
+                  <p className="text-sm font-semibold text-neutral-800">{symbol}{futureRevenueData.next7Adr.toFixed(0)}</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-neutral-50">
+                  <p className="text-[10px] text-neutral-400 font-medium">30-Day Occupancy</p>
+                  <p className="text-sm font-semibold text-neutral-800">{futureRevenueData.next30Occupancy.toFixed(1)}%</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-neutral-50">
+                  <p className="text-[10px] text-neutral-400 font-medium">30-Day ADR</p>
+                  <p className="text-sm font-semibold text-neutral-800">{symbol}{futureRevenueData.next30Adr.toFixed(0)}</p>
+                </div>
+              </div>
 
-                {/* Legend */}
-                <div className="flex items-center justify-center gap-4 sm:gap-6 mt-3 flex-wrap">
-                  {(paymentModeFilter === 'all' ? filteredPaymentModeData : filteredPaymentModes).map((mode) => (
-                    <div key={mode.name} className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: mode.color }} />
-                      <span className="text-[10px] sm:text-[11px] text-neutral-600">{mode.name}</span>
-                      <span className="text-[10px] sm:text-[11px] font-semibold text-neutral-800">
-                        {symbol}{mode.amount.toLocaleString()}
-                      </span>
-                      <span className="text-[9px] sm:text-[10px] text-neutral-400">({mode.percent}%)</span>
+              {/* Monthly Revenue Breakdown — EN-14 */}
+              <div className="p-3 sm:p-4 rounded-xl bg-neutral-50 border border-neutral-100">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[11px] font-semibold text-neutral-600">Monthly Revenue Breakdown</p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-sm bg-sage-500" />
+                      <span className="text-[10px] text-neutral-500">Confirmed</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-sm bg-ocean-300 opacity-60" />
+                      <span className="text-[10px] text-neutral-500">AI Forecast</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stacked Horizontal Bar Chart */}
+                <div className="h-36 sm:h-40">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={futureRevenueData.monthBreakdown}
+                      layout="vertical"
+                      margin={{ top: 0, right: 10, left: 0, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" horizontal={false} vertical={true} />
+                      <XAxis
+                        type="number"
+                        tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(v: number) => `${symbol}${v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v}`}
+                      />
+                      <YAxis
+                        dataKey="shortLabel"
+                        type="category"
+                        tick={{ fontSize: 11, fill: '#6B7280', fontWeight: 500 }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={40}
+                      />
+                      <ChartTooltip
+                        content={({ active, payload }: { active?: boolean; payload?: Array<{ payload: typeof futureRevenueData.monthBreakdown[0] }> }) => {
+                          if (!active || !payload?.length) return null;
+                          const data = payload[0]?.payload;
+                          if (!data) return null;
+                          return (
+                            <div className="bg-white border border-neutral-200 rounded-xl p-3 shadow-lg text-xs">
+                              <p className="font-semibold text-neutral-800 mb-1.5">{data.label}</p>
+                              <p className="text-sage-600">Confirmed: {symbol}{data.confirmed.toLocaleString()} ({data.bookingCount} bookings)</p>
+                              <p className="text-ocean-500">AI Forecast: {symbol}{data.forecast.toLocaleString()}</p>
+                              <p className="font-semibold text-neutral-700 mt-1 pt-1 border-t border-neutral-100">Total: {symbol}{data.total.toLocaleString()}</p>
+                            </div>
+                          );
+                        }}
+                      />
+                      <Bar dataKey="confirmed" stackId="revenue" fill="#4E5840" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="forecast" stackId="revenue" fill="#5C9BA4" fillOpacity={0.5} radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Inline Month Summaries */}
+                <div className="grid grid-cols-3 gap-2 mt-3">
+                  {futureRevenueData.monthBreakdown.map((m) => (
+                    <div key={m.monthKey} className="text-center p-2 rounded-lg bg-white">
+                      <p className="text-[10px] text-neutral-400 font-medium">{m.label}</p>
+                      <p className="text-sm font-semibold text-neutral-800 mt-0.5">
+                        {symbol}{m.total >= 1000 ? `${(m.total / 1000).toFixed(1)}K` : m.total.toLocaleString()}
+                      </p>
+                      <p className="text-[9px] text-neutral-400 mt-0.5">
+                        {m.bookingCount} booking{m.bookingCount !== 1 ? 's' : ''} confirmed
+                      </p>
                     </div>
                   ))}
                 </div>
               </div>
-            </>
+
+              {/* Current vs Projected Comparison Bar */}
+              <div className="p-3 sm:p-4 rounded-xl bg-neutral-50 border border-neutral-100">
+                <p className="text-[11px] font-semibold text-neutral-600 mb-3">Current Period vs Future Projection</p>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] text-neutral-500">This Week (Actual)</span>
+                      <span className="text-[11px] font-semibold text-neutral-800">
+                        {symbol}{futureRevenueData.currentWeekRevenue >= 1000 ? `${(futureRevenueData.currentWeekRevenue / 1000).toFixed(1)}K` : futureRevenueData.currentWeekRevenue.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-sage-500 transition-all duration-700"
+                        style={{ width: `${Math.min(100, futureRevenueData.next7Revenue > 0 ? (futureRevenueData.currentWeekRevenue / Math.max(futureRevenueData.next7Revenue, futureRevenueData.currentWeekRevenue)) * 100 : 0)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] text-neutral-500">Next 7 Days (Projected)</span>
+                      <span className="text-[11px] font-semibold text-terra-700">
+                        {symbol}{futureRevenueData.next7Revenue >= 1000 ? `${(futureRevenueData.next7Revenue / 1000).toFixed(1)}K` : futureRevenueData.next7Revenue.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-terra-500 transition-all duration-700"
+                        style={{ width: `${Math.min(100, futureRevenueData.currentWeekRevenue > 0 ? (futureRevenueData.next7Revenue / Math.max(futureRevenueData.next7Revenue, futureRevenueData.currentWeekRevenue)) * 100 : 0)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </section>
+
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* REVENUE OVERVIEW — Payment Modes + Room Types (side by side) */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+
+          {/* Payment Mode Overview */}
+          <section className="rounded-[10px] bg-white overflow-hidden">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-terra-600" />
+                <div>
+                  <h3 className="text-xs sm:text-sm font-semibold text-neutral-800">Revenue by Payment Mode</h3>
+                  <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">Breakdown by method</p>
+                </div>
+              </div>
+              <Link to="/admin/revenue/payment-analytics">
+                <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
+                  <span className="hidden sm:inline">View Details</span>
+                  <span className="sm:hidden">Details</span>
+                  <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
+
+            {paymentLoading ? (
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                <SkeletonLoader className="h-52 w-full rounded-lg" />
+              </div>
+            ) : (
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                {/* Donut Chart */}
+                <div className="h-44 sm:h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={paymentModeData.filter(d => d.amount > 0)}
+                        cx="50%" cy="50%"
+                        innerRadius={42} outerRadius={66}
+                        paddingAngle={3} dataKey="amount"
+                      >
+                        {paymentModeData.filter(d => d.amount > 0).map((entry, i) => (
+                          <Cell key={i} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <ChartTooltip
+                        formatter={(v: number, n: string) => [`${symbol}${v.toLocaleString()}`, n]}
+                        contentStyle={{ backgroundColor: '#fff', border: '1px solid #E5E4E0', borderRadius: '10px', padding: '10px 14px', fontSize: '11px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                      />
+                      <text x="50%" y="47%" textAnchor="middle" dominantBaseline="central" className="fill-neutral-800 text-sm sm:text-base font-semibold">
+                        {symbol}{totalPaymentRevenue >= 1000 ? `${(totalPaymentRevenue / 1000).toFixed(1)}K` : totalPaymentRevenue.toLocaleString()}
+                      </text>
+                      <text x="50%" y="57%" textAnchor="middle" dominantBaseline="central" className="fill-neutral-400 text-[9px] sm:text-[10px]">
+                        Total
+                      </text>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Legend */}
+                <div className="space-y-2 mt-3 pt-3 border-t border-neutral-100">
+                  {paymentModeData.filter(d => d.amount > 0).map(mode => (
+                    <div key={mode.name} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: mode.color }} />
+                        <span className="text-[11px] sm:text-xs text-neutral-700 font-medium">{mode.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] sm:text-xs font-semibold text-neutral-800">{symbol}{mode.amount.toLocaleString()}</span>
+                        <span className="text-[9px] sm:text-[10px] text-neutral-400 w-9 text-right">{mode.percent}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* Room Type Overview */}
+          <section className="rounded-[10px] bg-white overflow-hidden">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-ocean-600" />
+                <div>
+                  <h3 className="text-xs sm:text-sm font-semibold text-neutral-800">Revenue by Room Type</h3>
+                  <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium mt-0.5">Last 30 days</p>
+                </div>
+              </div>
+              <Link to="/admin/revenue/payment-analytics?tab=roomtype">
+                <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
+                  <span className="hidden sm:inline">View Details</span>
+                  <span className="sm:hidden">Details</span>
+                  <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
+
+            {roomTypeLoading ? (
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                <SkeletonLoader className="h-52 w-full rounded-lg" />
+              </div>
+            ) : roomTypeChartData.length === 0 ? (
+              <div className="px-4 sm:px-6 pb-6">
+                <div className="h-40 flex items-center justify-center bg-neutral-50 rounded-lg">
+                  <p className="text-[11px] sm:text-xs text-neutral-400">No room type data available</p>
+                </div>
+              </div>
+            ) : (
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                {/* Donut Chart */}
+                <div className="h-44 sm:h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={roomTypeChartData}
+                        cx="50%" cy="50%"
+                        innerRadius={42} outerRadius={66}
+                        paddingAngle={3} dataKey="revenue"
+                      >
+                        {roomTypeChartData.map((entry, i) => (
+                          <Cell key={i} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <ChartTooltip
+                        formatter={(v: number, n: string) => [`${symbol}${v.toLocaleString()}`, n]}
+                        contentStyle={{ backgroundColor: '#fff', border: '1px solid #E5E4E0', borderRadius: '10px', padding: '10px 14px', fontSize: '11px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                      />
+                      <text x="50%" y="47%" textAnchor="middle" dominantBaseline="central" className="fill-neutral-800 text-sm sm:text-base font-semibold">
+                        {symbol}{totalRoomTypeRevenue >= 1000 ? `${(totalRoomTypeRevenue / 1000).toFixed(1)}K` : totalRoomTypeRevenue.toLocaleString()}
+                      </text>
+                      <text x="50%" y="57%" textAnchor="middle" dominantBaseline="central" className="fill-neutral-400 text-[9px] sm:text-[10px]">
+                        Total
+                      </text>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Legend */}
+                <div className="space-y-2 mt-3 pt-3 border-t border-neutral-100">
+                  {roomTypeChartData.map(rt => (
+                    <div key={rt.name} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: rt.color }} />
+                        <span className="text-[11px] sm:text-xs text-neutral-700 font-medium truncate max-w-[120px] sm:max-w-[160px]">{rt.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] sm:text-xs font-semibold text-neutral-800">{symbol}{rt.revenue.toLocaleString()}</span>
+                        <span className="text-[9px] sm:text-[10px] text-neutral-400 w-9 text-right">{rt.percent}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
 
         {/* High Demand Days - Full Width */}
         <section className="rounded-[10px] bg-white overflow-hidden">

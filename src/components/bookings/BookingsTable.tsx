@@ -16,6 +16,7 @@ export default function BookingsTable({
   bookings,
   sortConfig,
   onSort,
+  highlightId,
   onViewBooking,
   onEditBooking,
   onAssignRoom,
@@ -25,6 +26,7 @@ export default function BookingsTable({
   bookings: BookingLike[];
   sortConfig: SortConfigLike;
   onSort: (field: string) => void;
+  highlightId?: string | null;
   onViewBooking?: (booking: BookingLike) => void;
   onEditBooking?: (booking: BookingLike) => void;
   onAssignRoom?: (booking: BookingLike) => void;
@@ -85,6 +87,18 @@ export default function BookingsTable({
       window.removeEventListener('resize', updatePosition);
     };
   }, [openDropdownId]);
+
+  // Scroll to highlighted booking row
+  useEffect(() => {
+    if (!highlightId) return;
+    const timer = setTimeout(() => {
+      const row = document.querySelector(`[data-booking-id="${highlightId}"]`);
+      if (row) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100); // small delay to let the page render
+    return () => clearTimeout(timer);
+  }, [highlightId]);
 
   const handleViewClick = (e: any, booking: BookingLike) => {
     e.stopPropagation();
@@ -284,7 +298,15 @@ export default function BookingsTable({
                 });
 
             return (
-                <tr key={booking.id} className="group bg-white hover:bg-neutral-50/30 transition-colors duration-100">
+                <tr
+                  key={booking.id}
+                  data-booking-id={booking.id}
+                  className={`group bg-white hover:bg-neutral-50/30 transition-all duration-500 ${
+                    String(booking.id) === String(highlightId)
+                      ? 'ring-2 ring-terra-400 bg-terra-50/50'
+                      : ''
+                  }`}
+                >
                   {/* Guest Name */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">

@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import Tabs from '../../components/bookings/Tabs';
 import SearchBar from '../../components/bookings/SearchBar';
@@ -60,6 +61,8 @@ function QuickActions({ onNewBooking }) {
 
 export default function Bookings() {
   const { isDark } = useTheme();
+  const location = useLocation();
+  const nav = useNavigate();
 
   // Use admin bookings hook for API integration
   const {
@@ -107,6 +110,9 @@ export default function Bookings() {
 
   // Toast state
   const [toast, setToast] = useState<{ message: string } | null>(null);
+
+  // Highlight booking from notification navigation
+  const [highlightBookingId, setHighlightBookingId] = useState<string | null>(null);
 
   // Handle filter changes
   const handleFilterChange = (key, value) => {
@@ -424,6 +430,33 @@ export default function Bookings() {
     setRowsPerPage,
   } = usePagination(sortedData, 10);
 
+  // Highlight booking from notification click — navigate to correct page
+  useEffect(() => {
+    const bookingId = (location.state as any)?.bookingId;
+    if (!bookingId || !sortedData.length) return;
+
+    setHighlightBookingId(String(bookingId));
+
+    // Find which page the booking is on
+    const index = sortedData.findIndex(
+      (b: any) => String(b.id) === String(bookingId) || String(b.bookingNumber) === String(bookingId)
+    );
+    if (index >= 0) {
+      const targetPage = Math.floor(index / rowsPerPage) + 1;
+      if (targetPage !== currentPage) {
+        goToPage(targetPage);
+      }
+    }
+
+    // Clear navigation state so refresh doesn't re-trigger
+    nav(location.pathname, { replace: true, state: {} });
+
+    // Auto-clear highlight after 3s
+    const timer = setTimeout(() => setHighlightBookingId(null), 3000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state, sortedData.length]);
+
   return (
     <div className={cn(
       "min-h-screen transition-colors",
@@ -470,6 +503,7 @@ export default function Bookings() {
           bookings={currentPageData}
           sortConfig={sortConfig}
           onSort={handleSort}
+          highlightId={highlightBookingId}
           onViewBooking={handleViewBooking}
           onEditBooking={handleEditFromAction}
           onAssignRoom={handleAssignRoomFromAction}

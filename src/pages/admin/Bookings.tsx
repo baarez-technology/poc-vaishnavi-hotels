@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import Tabs from '../../components/bookings/Tabs';
@@ -12,7 +12,9 @@ import EditBookingModal from '../../components/bookings/EditBookingModal';
 import AssignRoomModal from '../../components/modals/AssignRoomModal';
 import CancelBookingModal from '../../components/bookings/CancelBookingModal';
 import PaymentManagementModal from '../../components/bookings/PaymentManagementModal';
+import CheckoutEmotionModal from '../../components/cbs/CheckoutEmotionModal';
 import { useBookings } from '../../hooks/admin/useBookings';
+import { guestsService } from '../../api/services/guests.service';
 import { useSort } from '../../hooks/useSort';
 import { usePagination } from '../../hooks/usePagination';
 import { CANCELLATION_REASONS } from '../../utils/bookings';
@@ -113,6 +115,11 @@ export default function Bookings() {
 
   // Highlight booking from notification navigation
   const [highlightBookingId, setHighlightBookingId] = useState<string | null>(null);
+  const pendingBookingIdRef = useRef<string | null>(null);
+
+  // Checkout emotion modal state
+  const [checkoutBooking, setCheckoutBooking] = useState<any>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   // Handle filter changes
   const handleFilterChange = (key, value) => {
@@ -190,10 +197,17 @@ export default function Bookings() {
     }
   };
 
-  // Handle status change
-  const handleStatusChange = (bookingId, newStatus) => {
+  // Handle status change — intercept CHECKED-OUT to show emotion modal
+  const handleStatusChange = (bookingId: string, newStatus: string) => {
+    if (newStatus === 'CHECKED-OUT') {
+      // Find the booking to get guestId and guestName
+      const booking = bookingsData.find((b: any) => String(b.id) === String(bookingId));
+      setCheckoutBooking(booking || { id: bookingId, guest: 'Guest' });
+      return;
+    }
+
     updateStatus(bookingId, newStatus);
-    setSelectedBooking((prev) => {
+    setSelectedBooking((prev: any) => {
       if (prev && prev.id === bookingId) {
         return { ...prev, status: newStatus };
       }
@@ -201,6 +215,36 @@ export default function Bookings() {
     });
     triggerToast('Status updated successfully');
   };
+
+  // Handle checkout with emotion from modal
+  const handleCheckoutWithEmotion = useCallback(async (emotion?: string, _notes?: string) => {
+    if (!checkoutBooking) return;
+
+    setCheckoutLoading(true);
+    try {
+      // Save guest emotion if provided and guestId is available
+      if (emotion && checkoutBooking.guestId) {
+        try {
+          await guestsService.update(checkoutBooking.guestId, { emotion });
+        } catch (err) {
+          console.error('Failed to update guest emotion:', err);
+        }
+      }
+
+      // Perform the actual checkout
+      updateStatus(checkoutBooking.id, 'CHECKED-OUT');
+      setSelectedBooking((prev: any) => {
+        if (prev && prev.id === checkoutBooking.id) {
+          return { ...prev, status: 'CHECKED-OUT' };
+        }
+        return prev;
+      });
+      triggerToast('Guest checked out successfully');
+    } finally {
+      setCheckoutLoading(false);
+      setCheckoutBooking(null);
+    }
+  }, [checkoutBooking, updateStatus]);
 
   // Toast helper
   const triggerToast = (message) => {
@@ -430,16 +474,31 @@ export default function Bookings() {
     setRowsPerPage,
   } = usePagination(sortedData, 10);
 
-  // Highlight booking from notification click — navigate to correct page
+  // Capture bookingId from notification navigation state into a ref immediately
   useEffect(() => {
     const bookingId = (location.state as any)?.bookingId;
+    if (bookingId) {
+      pendingBookingIdRef.current = String(bookingId);
+      // Clear navigation state so refresh doesn't re-trigger
+      nav(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, nav, location.pathname]);
+
+  // Highlight the booking row once data is loaded
+  useEffect(() => {
+    const bookingId = pendingBookingIdRef.current;
     if (!bookingId || !sortedData.length) return;
 
-    setHighlightBookingId(String(bookingId));
+    // Consume the pending ID
+    pendingBookingIdRef.current = null;
 
-    // Find which page the booking is on
+    setHighlightBookingId(bookingId);
+
+    // Find which page the booking is on (match against id, bookingNumber, or bookingNumber without prefix)
     const index = sortedData.findIndex(
-      (b: any) => String(b.id) === String(bookingId) || String(b.bookingNumber) === String(bookingId)
+      (b: any) => String(b.id) === bookingId
+        || String(b.bookingNumber) === bookingId
+        || String(b.bookingNumber).replace(/^BK-/i, '') === bookingId
     );
     if (index >= 0) {
       const targetPage = Math.floor(index / rowsPerPage) + 1;
@@ -448,14 +507,11 @@ export default function Bookings() {
       }
     }
 
-    // Clear navigation state so refresh doesn't re-trigger
-    nav(location.pathname, { replace: true, state: {} });
-
     // Auto-clear highlight after 3s
     const timer = setTimeout(() => setHighlightBookingId(null), 3000);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state, sortedData.length]);
+  }, [sortedData.length, location.key]);
 
   return (
     <div className={cn(
@@ -582,6 +638,15 @@ export default function Bookings() {
         onClose={closePaymentModal}
         onSave={handlePaymentSave}
         isSaving={isSavingPayment}
+      />
+
+      {/* Checkout Emotion Modal */}
+      <CheckoutEmotionModal
+        open={!!checkoutBooking}
+        onClose={() => setCheckoutBooking(null)}
+        onConfirm={handleCheckoutWithEmotion}
+        guestName={checkoutBooking?.guest || checkoutBooking?.guestName || ''}
+        loading={checkoutLoading}
       />
 
       {/* Toast Notification */}

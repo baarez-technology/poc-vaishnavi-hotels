@@ -775,12 +775,24 @@ export const revenueIntelligenceService = {
 
   /**
    * Get room types for RMS
+   * Uses the main /api/v1/room-types endpoint and transforms to RMS format
    * Cached for 5 minutes since room types rarely change
    */
   async getRoomTypes(): Promise<RMSRoomTypesResponse> {
     return requestCache.get('rms-room-types', async () => {
-      const response = await apiClient.get<RMSRoomTypesResponse>(`${BASE_URL}/room-types`);
-      return response.data;
+      const response = await apiClient.get('/api/v1/room-types');
+      const data = response.data?.data || response.data;
+      const items = data?.items || (Array.isArray(data) ? data : []);
+      const roomTypes: RMSRoomType[] = items.map((rt: any, index: number) => ({
+        id: rt.slug || rt.id?.toString() || `room-${index}`,
+        name: rt.name || 'Unknown',
+        baseRate: rt.base_price || rt.baseRate || 0,
+        maxOccupancy: rt.max_guests || rt.maxOccupancy || 2,
+        category: rt.category || 'standard',
+        slug: rt.slug || rt.id?.toString() || '',
+        dbId: rt.id || index + 1,
+      }));
+      return { roomTypes };
     }, 300000); // 5 minute cache
   },
 

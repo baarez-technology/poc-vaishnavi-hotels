@@ -34,6 +34,12 @@ export default function RoomCard({ room, onClick }) {
       dot: 'bg-rose-500',
       text: 'text-rose-600',
       bg: 'bg-rose-50'
+    },
+    out_of_order: {
+      label: 'Out of Order',
+      dot: 'bg-gray-500',
+      text: 'text-gray-700',
+      bg: 'bg-gray-100'
     }
   };
 
@@ -148,7 +154,7 @@ export default function RoomCard({ room, onClick }) {
         </div>
 
         {/* Blocked Info */}
-        {room.status === 'out_of_service' && room.blockedReason && (
+        {(room.status === 'out_of_service' || room.status === 'out_of_order') && room.blockedReason && (
           <div className="mt-4 p-3 bg-rose-50 rounded-lg">
             <p className="text-[10px] uppercase tracking-wider text-rose-500 font-semibold mb-1">Blocked</p>
             <p className="text-[12px] text-rose-600">{room.blockedReason}</p>

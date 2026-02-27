@@ -11,6 +11,7 @@ interface SelectContextValue {
   setOpen: (open: boolean) => void
   disabled: boolean
   triggerRef: React.RefObject<HTMLButtonElement>
+  contentRef: React.RefObject<HTMLDivElement>
 }
 
 const SelectContext = createContext<SelectContextValue | null>(null)
@@ -45,6 +46,7 @@ const Select: React.FC<SelectProps> = ({
   const [open, setOpen] = useState(false)
   const selectRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   const isControlled = controlledValue !== undefined
   const value = isControlled ? controlledValue : internalValue
@@ -57,10 +59,13 @@ const Select: React.FC<SelectProps> = ({
     setOpen(false)
   }
 
-  // Close on click outside
+  // Close on click outside (check both the select container and the portal content)
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      const isInsideSelect = selectRef.current?.contains(target)
+      const isInsideContent = contentRef.current?.contains(target)
+      if (!isInsideSelect && !isInsideContent) {
         setOpen(false)
       }
     }
@@ -92,7 +97,7 @@ const Select: React.FC<SelectProps> = ({
   }, [open])
 
   return (
-    <SelectContext.Provider value={{ value, onValueChange: handleValueChange, open, setOpen, disabled, triggerRef }}>
+    <SelectContext.Provider value={{ value, onValueChange: handleValueChange, open, setOpen, disabled, triggerRef, contentRef }}>
       <div ref={selectRef} className={cn('relative w-full', className)}>
         {children}
       </div>
@@ -152,7 +157,7 @@ interface SelectContentProps {
 }
 
 const SelectContent: React.FC<SelectContentProps> = ({ children, className = '', position = 'bottom' }) => {
-  const { open, triggerRef } = useSelectContext()
+  const { open, triggerRef, contentRef } = useSelectContext()
   const [style, setStyle] = useState<React.CSSProperties>({})
 
   useEffect(() => {
@@ -172,6 +177,7 @@ const SelectContent: React.FC<SelectContentProps> = ({ children, className = '',
 
   return createPortal(
     <div
+      ref={contentRef}
       style={style}
       className={cn(
         'z-[9999] bg-white border border-neutral-200 rounded-lg shadow-lg overflow-hidden',

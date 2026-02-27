@@ -302,7 +302,11 @@ export default function BookingsTable({
                   key={booking.id}
                   data-booking-id={booking.id}
                   className={`group bg-white hover:bg-neutral-50/30 transition-all duration-500 ${
-                    String(booking.id) === String(highlightId)
+                    highlightId && (
+                      String(booking.id) === String(highlightId)
+                      || String(booking.bookingNumber) === String(highlightId)
+                      || String(booking.bookingNumber).replace(/^BK-/i, '') === String(highlightId)
+                    )
                       ? 'ring-2 ring-terra-400 bg-terra-50/50'
                       : ''
                   }`}

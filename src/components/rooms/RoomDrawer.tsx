@@ -18,7 +18,8 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
     available: { label: 'Available', dot: 'bg-sage-500', text: 'text-sage-700', bg: 'bg-sage-50' },
     occupied: { label: 'Occupied', dot: 'bg-terra-500', text: 'text-terra-700', bg: 'bg-terra-50' },
     dirty: { label: 'Dirty', dot: 'bg-gold-500', text: 'text-gold-700', bg: 'bg-gold-50' },
-    out_of_service: { label: 'Out of Service', dot: 'bg-rose-500', text: 'text-rose-600', bg: 'bg-rose-50' }
+    out_of_service: { label: 'Out of Service', dot: 'bg-rose-500', text: 'text-rose-600', bg: 'bg-rose-50' },
+    out_of_order: { label: 'Out of Order', dot: 'bg-gray-500', text: 'text-gray-700', bg: 'bg-gray-100' }
   };
 
   const status = statusConfig[room.status] || statusConfig.available;
@@ -94,15 +95,18 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
         )}
 
         {/* Blocked Info */}
-        {room.status === 'out_of_service' && room.blockedReason && (
+        {(room.status === 'out_of_service' || room.status === 'out_of_order') && room.blockedReason && (
           <div>
             <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
               Block Information
             </h4>
-            <div className="p-4 rounded-lg bg-rose-50 border border-rose-100">
-              <p className="text-[13px] font-semibold text-rose-700 mb-1">{room.blockedReason}</p>
+            <div className={`p-4 rounded-lg ${room.status === 'out_of_order' ? 'bg-gray-100 border border-gray-200' : 'bg-rose-50 border border-rose-100'}`}>
+              <p className={`text-[11px] font-semibold uppercase tracking-wider mb-1 ${room.status === 'out_of_order' ? 'text-gray-500' : 'text-rose-500'}`}>
+                {room.status === 'out_of_order' ? 'Out of Order' : 'Out of Service'}
+              </p>
+              <p className={`text-[13px] font-semibold mb-1 ${room.status === 'out_of_order' ? 'text-gray-700' : 'text-rose-700'}`}>{room.blockedReason}</p>
               {room.blockedUntil && (
-                <p className="text-[11px] text-rose-500">Until: {room.blockedUntil}</p>
+                <p className={`text-[11px] ${room.status === 'out_of_order' ? 'text-gray-500' : 'text-rose-500'}`}>Until: {room.blockedUntil}</p>
               )}
             </div>
           </div>
@@ -187,10 +191,10 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
               <div>
                 <p className="text-[13px] font-semibold text-neutral-900">Room Access</p>
                 <p className="text-[11px] text-neutral-500 mt-0.5">
-                  {room.status === 'out_of_service' ? 'Room is currently blocked' : 'Room is accessible'}
+                  {(room.status === 'out_of_service' || room.status === 'out_of_order') ? 'Room is currently blocked' : 'Room is accessible'}
                 </p>
               </div>
-              {room.status === 'out_of_service' ? (
+              {(room.status === 'out_of_service' || room.status === 'out_of_order') ? (
                 <Button variant="outline" size="sm" onClick={() => onUnblockRoom(room)}>
                   Unblock
                 </Button>

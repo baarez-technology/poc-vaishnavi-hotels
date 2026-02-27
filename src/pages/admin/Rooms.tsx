@@ -132,7 +132,8 @@ export default function Rooms() {
     available: rawRooms.filter(r => r.status === 'available').length,
     occupied: rawRooms.filter(r => r.status === 'occupied').length,
     dirty: rawRooms.filter(r => r.status === 'dirty').length,
-    out_of_service: rawRooms.filter(r => r.status === 'out_of_service').length
+    out_of_service: rawRooms.filter(r => r.status === 'out_of_service').length,
+    out_of_order: rawRooms.filter(r => r.status === 'out_of_order').length
   };
 
   // Extract unique room types and floors from actual API data
@@ -217,10 +218,10 @@ export default function Rooms() {
     blockRoomModal.openModal(room);
   };
 
-  const handleBlock = (roomId, reason, until) => {
-    blockRoom(roomId, reason, until);
+  const handleBlock = (roomId, reason, until, statusType = 'out_of_service') => {
+    blockRoom(roomId, reason, until, statusType);
     drawer.closeDrawer();
-    toast.success('Room blocked successfully!');
+    toast.success(statusType === 'out_of_order' ? 'Room set to Out of Order!' : 'Room blocked successfully!');
   };
 
   const handleUnblockRoom = (room) => {

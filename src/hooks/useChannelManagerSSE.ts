@@ -49,25 +49,18 @@ export function useChannelManagerSSE(options: UseChannelManagerSSEOptions = {}) 
   const reconnectDelayRef = useRef<number>(reconnectDelay);
   const isConnectingRef = useRef<boolean>(false);
   const isConnectedRef = useRef<boolean>(false);
+  const retriesRef = useRef<number>(0);
+  const MAX_RETRIES = 5;
 
   const connect = useCallback(async () => {
-    if (!enabled || isConnectingRef.current) {
-      console.log('[SSE] Connection skipped - enabled:', enabled, 'isConnecting:', isConnectingRef.current);
-      return;
-    }
+    if (!enabled || isConnectingRef.current) return;
 
     const token = getAccessToken();
-    if (!token) {
-      console.warn('[SSE] ❌ No access token available for SSE connection');
-      return;
-    }
+    if (!token) return;
 
-    const url = `${ENV.API_URL}/api/v1/webhooks/channel-manager/sse`;
-    console.log('[SSE] 🔌 Attempting to connect to SSE endpoint:');
-    console.log('[SSE]   URL:', url);
-    console.log('[SSE]   Method: GET');
-    console.log('[SSE]   Headers: Authorization: Bearer <token>');
-    console.log('[SSE]   Accept: text/event-stream');
+    const baseUrl = ENV.API_URL.replace(/\/+$/, ''); // strip trailing slashes
+    const url = `${baseUrl}/api/v1/webhooks/channel-manager/sse`;
+    console.log('[SSE] Connecting to:', url);
 
     // Clean up previous connection
     if (abortControllerRef.current) {
@@ -90,7 +83,6 @@ export function useChannelManagerSSE(options: UseChannelManagerSSEOptions = {}) 
     isConnectingRef.current = true;
 
     try {
-      console.log('[SSE] 📡 Sending fetch request...');
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -101,49 +93,37 @@ export function useChannelManagerSSE(options: UseChannelManagerSSEOptions = {}) 
         signal: abortControllerRef.current.signal,
       });
 
-      console.log('[SSE] 📥 Response received:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries()),
-        ok: response.ok,
-      });
-
       if (!response.ok) {
         if (response.status === 401) {
-          console.error('[SSE] ❌ Authentication failed - 401 Unauthorized');
+          console.warn('[SSE] Authentication failed (401)');
           isConnectingRef.current = false;
           isConnectedRef.current = false;
           onError?.(new Error('Authentication failed'));
           return;
         }
-        console.error('[SSE] ❌ Connection failed:', response.status, response.statusText);
         throw new Error(`SSE connection failed: ${response.status} ${response.statusText}`);
       }
 
       const reader = response.body?.getReader();
       if (!reader) {
-        console.error('[SSE] ❌ Response body is not readable');
         throw new Error('Response body is not readable');
       }
       readerRef.current = reader;
       const decoder = new TextDecoder();
 
-      console.log('[SSE] ✅ Response body is readable, starting to read stream...');
       let buffer = '';
       reconnectDelayRef.current = reconnectDelay; // Reset delay on successful connection
+      retriesRef.current = 0; // Reset retries on successful connection
       isConnectingRef.current = false;
-      // Don't set connected yet - wait for "connected" message from server
 
       while (true) {
         const { done, value } = await readerRef.current.read();
 
         if (done) {
-          console.log('[SSE] 🔌 Connection closed by server (done=true)');
+          console.log('[SSE] Connection closed by server');
           isConnectedRef.current = false;
-          // Reconnect with exponential backoff
           if (enabled) {
             reconnectDelayRef.current = Math.min(reconnectDelayRef.current * 2, maxReconnectDelay);
-            console.log(`[SSE] 🔄 Will reconnect in ${reconnectDelayRef.current}ms`);
             reconnectTimeoutRef.current = setTimeout(connect, reconnectDelayRef.current);
           }
           break;
@@ -161,47 +141,27 @@ export function useChannelManagerSSE(options: UseChannelManagerSSEOptions = {}) 
 
           // Handle keepalive pings
           if (line.trim() === ': keepalive' || line.startsWith(': keepalive')) {
-            console.log('[SSE] 💓 Keepalive ping received');
             continue;
           }
 
           // Handle data lines
           if (line.startsWith('data: ')) {
             try {
-              const rawData = line.slice(6);
-              console.log('[SSE] 📨 Raw SSE data line received:', rawData.substring(0, 100) + (rawData.length > 100 ? '...' : ''));
-              
-              const data: SSEEvent = JSON.parse(rawData);
-              console.log('[SSE] 📦 Parsed SSE event:', {
-                type: data.type,
-                timestamp: data.timestamp,
-                dataKeys: Object.keys(data.data || {}),
-                fullData: data,
-              });
+              const data: SSEEvent = JSON.parse(line.slice(6));
 
               // Handle initial connection message
               if (data.type === 'connected') {
-                console.log('[SSE] ✅✅✅ SSE CONNECTION SUCCESSFULLY ESTABLISHED ✅✅✅');
-                console.log('[SSE]   Message:', (data as any).message || 'Connection established');
-                console.log('[SSE]   Timestamp:', data.timestamp);
+                console.log('[SSE] Connected successfully');
                 isConnectedRef.current = true;
                 onConnect?.();
                 continue;
               }
 
               // Handle regular events
-              console.log('[SSE] 🎯 DISPATCHING EVENT:', data.type);
-              console.log('[SSE]   Event data:', JSON.stringify(data.data, null, 2));
-              console.log('[SSE]   Event timestamp:', data.timestamp);
               onEvent?.(data);
             } catch (error) {
-              console.error('[SSE] ❌ Error parsing SSE data:', error);
-              console.error('[SSE]   Problematic line:', line);
-              console.error('[SSE]   Line length:', line.length);
+              console.warn('[SSE] Failed to parse SSE data:', line.substring(0, 80));
             }
-          } else {
-            // Log other lines for debugging
-            console.log('[SSE] 📝 Other SSE line (not data):', line.substring(0, 50));
           }
         }
       }
@@ -210,21 +170,19 @@ export function useChannelManagerSSE(options: UseChannelManagerSSEOptions = {}) 
       isConnectedRef.current = false;
 
       if (error.name === 'AbortError') {
-        console.log('[SSE] 🛑 Connection aborted (intentional)');
         return;
       }
 
-      console.error('[SSE] ❌ Connection error:', error);
-      console.error('[SSE]   Error name:', error.name);
-      console.error('[SSE]   Error message:', error.message);
-      console.error('[SSE]   Error stack:', error.stack);
+      retriesRef.current += 1;
+      console.warn(`[SSE] Connection failed (attempt ${retriesRef.current}/${MAX_RETRIES}):`, error.message);
       onError?.(error);
 
-      // Reconnect with exponential backoff
-      if (enabled) {
+      // Reconnect with exponential backoff, but stop after MAX_RETRIES
+      if (enabled && retriesRef.current < MAX_RETRIES) {
         reconnectDelayRef.current = Math.min(reconnectDelayRef.current * 2, maxReconnectDelay);
-        console.log(`[SSE] 🔄 Will attempt reconnection in ${reconnectDelayRef.current}ms`);
         reconnectTimeoutRef.current = setTimeout(connect, reconnectDelayRef.current);
+      } else if (retriesRef.current >= MAX_RETRIES) {
+        console.warn('[SSE] Max retries reached. SSE connection disabled until page reload.');
       }
     }
   }, [enabled, onEvent, onError, onConnect, reconnectDelay, maxReconnectDelay]);
@@ -254,20 +212,12 @@ export function useChannelManagerSSE(options: UseChannelManagerSSEOptions = {}) 
 
   // Setup connection on mount or when enabled changes
   useEffect(() => {
-    console.log('[SSE] 🚀 useChannelManagerSSE effect triggered, enabled:', enabled);
     if (enabled) {
-      console.log('[SSE] 🔌 Initiating SSE connection...');
       connect();
     } else {
-      console.log('[SSE] 🔌 Disabling SSE connection...');
       disconnect();
     }
-
-    // Cleanup on unmount
-    return () => {
-      console.log('[SSE] 🧹 Cleaning up SSE connection on unmount');
-      disconnect();
-    };
+    return () => disconnect();
   }, [enabled, connect, disconnect]);
 
   return {

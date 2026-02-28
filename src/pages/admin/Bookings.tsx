@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import Tabs from '../../components/bookings/Tabs';
@@ -113,9 +113,6 @@ export default function Bookings() {
   // Toast state
   const [toast, setToast] = useState<{ message: string } | null>(null);
 
-  // Highlight booking from notification navigation
-  const [highlightBookingId, setHighlightBookingId] = useState<string | null>(null);
-  const pendingBookingIdRef = useRef<string | null>(null);
 
   // Checkout emotion modal state
   const [checkoutBooking, setCheckoutBooking] = useState<any>(null);
@@ -474,44 +471,24 @@ export default function Bookings() {
     setRowsPerPage,
   } = usePagination(sortedData, 10);
 
-  // Capture bookingId from notification navigation state into a ref immediately
+  // Auto-open booking drawer when navigating from a notification with bookingId
   useEffect(() => {
-    const bookingId = (location.state as any)?.bookingId;
-    if (bookingId) {
-      pendingBookingIdRef.current = String(bookingId);
+    const state = location.state as { bookingId?: string } | null;
+    if (state?.bookingId && sortedData.length > 0) {
+      const bookingId = String(state.bookingId);
+      const booking = sortedData.find(
+        (b: any) => String(b.id) === bookingId
+          || String(b.bookingNumber) === bookingId
+          || String(b.bookingNumber).replace(/^BK-/i, '') === bookingId
+      );
+      if (booking) {
+        setSelectedBooking(booking);
+        setIsDrawerOpen(true);
+      }
       // Clear navigation state so refresh doesn't re-trigger
       nav(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state, nav, location.pathname]);
-
-  // Highlight the booking row once data is loaded
-  useEffect(() => {
-    const bookingId = pendingBookingIdRef.current;
-    if (!bookingId || !sortedData.length) return;
-
-    // Consume the pending ID
-    pendingBookingIdRef.current = null;
-
-    setHighlightBookingId(bookingId);
-
-    // Find which page the booking is on (match against id, bookingNumber, or bookingNumber without prefix)
-    const index = sortedData.findIndex(
-      (b: any) => String(b.id) === bookingId
-        || String(b.bookingNumber) === bookingId
-        || String(b.bookingNumber).replace(/^BK-/i, '') === bookingId
-    );
-    if (index >= 0) {
-      const targetPage = Math.floor(index / rowsPerPage) + 1;
-      if (targetPage !== currentPage) {
-        goToPage(targetPage);
-      }
-    }
-
-    // Auto-clear highlight after 3s
-    const timer = setTimeout(() => setHighlightBookingId(null), 3000);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortedData.length, location.key]);
+  }, [location.state, sortedData]);
 
   return (
     <div className={cn(
@@ -559,7 +536,6 @@ export default function Bookings() {
           bookings={currentPageData}
           sortConfig={sortConfig}
           onSort={handleSort}
-          highlightId={highlightBookingId}
           onViewBooking={handleViewBooking}
           onEditBooking={handleEditFromAction}
           onAssignRoom={handleAssignRoomFromAction}

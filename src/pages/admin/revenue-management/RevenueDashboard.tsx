@@ -142,9 +142,11 @@ const RevenueDashboard = () => {
   const [timePeriod, setTimePeriod] = useState('7d');
   const [showRefreshConfirm, setShowRefreshConfirm] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [customDateRange, setCustomDateRange] = useState({
-    start: new Date(),
-    end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  const [customDateRange, setCustomDateRange] = useState(() => {
+    const today = new Date();
+    const end = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return { start: fmt(today), end: fmt(end) };
   });
   const [exportLoading, setExportLoading] = useState(false);
 
@@ -503,7 +505,7 @@ const RevenueDashboard = () => {
         return (dashboardData.kpis.next_30_days?.total_revenue || 0) * 3;
       case 'custom': {
         // Calculate based on custom date range
-        const days = Math.ceil((customDateRange.end.getTime() - customDateRange.start.getTime()) / (1000 * 60 * 60 * 24));
+        const days = Math.ceil((new Date(customDateRange.end).getTime() - new Date(customDateRange.start).getTime()) / (1000 * 60 * 60 * 24));
         const dailyAvg = (dashboardData.kpis.next_30_days?.total_revenue || 0) / 30;
         return Math.round(dailyAvg * days);
       }
@@ -518,7 +520,7 @@ const RevenueDashboard = () => {
       case '30d': return 30;
       case '90d': return 90;
       case 'custom': {
-        const days = Math.ceil((customDateRange.end.getTime() - customDateRange.start.getTime()) / (1000 * 60 * 60 * 24));
+        const days = Math.ceil((new Date(customDateRange.end).getTime() - new Date(customDateRange.start).getTime()) / (1000 * 60 * 60 * 24));
         return days;
       }
       case '7d':
@@ -1819,29 +1821,23 @@ const RevenueDashboard = () => {
               <label className="block text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-neutral-400 mb-1.5 sm:mb-2">
                 Start Date
               </label>
-              <input
-                type="date"
-                value={customDateRange.start.toISOString().split('T')[0]}
-                onChange={(e) => setCustomDateRange({
-                  ...customDateRange,
-                  start: new Date(e.target.value)
-                })}
-                className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-neutral-200 text-xs sm:text-[13px] text-neutral-800 focus:border-terra-400 focus:outline-none focus:ring-2 focus:ring-terra-100 transition-colors appearance-none cursor-pointer hover:border-neutral-300 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+              <DatePicker
+                value={customDateRange.start}
+                onChange={(val) => setCustomDateRange(prev => ({ ...prev, start: val }))}
+                placeholder="Select start date"
+                className="w-full"
               />
             </div>
             <div>
               <label className="block text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-neutral-400 mb-1.5 sm:mb-2">
                 End Date
               </label>
-              <input
-                type="date"
-                value={customDateRange.end.toISOString().split('T')[0]}
-                onChange={(e) => setCustomDateRange({
-                  ...customDateRange,
-                  end: new Date(e.target.value)
-                })}
-                min={customDateRange.start.toISOString().split('T')[0]}
-                className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-neutral-200 text-xs sm:text-[13px] text-neutral-800 focus:border-terra-400 focus:outline-none focus:ring-2 focus:ring-terra-100 transition-colors appearance-none cursor-pointer hover:border-neutral-300 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+              <DatePicker
+                value={customDateRange.end}
+                onChange={(val) => setCustomDateRange(prev => ({ ...prev, end: val }))}
+                placeholder="Select end date"
+                minDate={customDateRange.start}
+                className="w-full"
               />
             </div>
             <div className="p-2.5 sm:p-3 rounded-lg bg-terra-50">

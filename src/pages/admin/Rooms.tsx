@@ -222,10 +222,10 @@ export default function Rooms() {
     blockRoomModal.openModal(room);
   };
 
-  const handleBlock = (roomId, reason, until) => {
-    blockRoom(roomId, reason, until);
+  const handleBlock = (roomId, reason, until, statusType = 'out_of_service') => {
+    blockRoom(roomId, reason, until, statusType);
     drawer.closeDrawer();
-    toast.success('Room blocked successfully!');
+    toast.success(statusType === 'out_of_order' ? 'Room set to Out of Order!' : 'Room blocked successfully!');
   };
 
   const handleUnblockRoom = (room) => {

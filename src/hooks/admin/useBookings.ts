@@ -8,6 +8,7 @@ import { clearApiCache } from '@/api/client';
 export interface AdminBooking {
   id: string;
   bookingNumber: string;
+  guestId?: string | number | null;
   guest: string;
   guestEmail?: string;
   guestPhone?: string;
@@ -166,6 +167,7 @@ function transformBooking(apiBooking: any): AdminBooking {
   return {
     id: String(apiBooking.id),
     bookingNumber: apiBooking.bookingNumber || apiBooking.booking_number || `BK-${apiBooking.id}`,
+    guestId: apiBooking.guest_id || apiBooking.guestId || null,
     guest: guestName,
     guestEmail: guestEmail || apiBooking.guest_email || apiBooking.guestEmail || '',
     guestPhone: guestPhone || apiBooking.guest_phone || apiBooking.guestPhone || '',

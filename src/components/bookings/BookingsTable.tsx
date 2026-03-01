@@ -99,6 +99,7 @@ export default function BookingsTable({
     };
   }, [openDropdownId]);
 
+
   const handleViewClick = (e: any, booking: BookingLike) => {
     e.stopPropagation();
     setOpenDropdownId(null);
@@ -379,7 +380,10 @@ export default function BookingsTable({
                 });
 
             return (
-                <tr key={booking.id} className="group bg-white hover:bg-neutral-50/30 transition-colors duration-100">
+                <tr
+                  key={booking.id}
+                  className="group bg-white hover:bg-neutral-50/30 transition-all duration-500"
+                >
                   {/* Guest Name */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">

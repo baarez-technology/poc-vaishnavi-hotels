@@ -101,6 +101,9 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
               {room.status === 'out_of_order' ? 'Out of Order Info' : 'Out of Service Info'}
             </h4>
             <div className={`p-4 rounded-lg border ${room.status === 'out_of_order' ? 'bg-rose-50 border-rose-100' : 'bg-amber-50 border-amber-100'}`}>
+              <p className={`text-[11px] font-semibold uppercase tracking-wider mb-1 ${room.status === 'out_of_order' ? 'text-rose-500' : 'text-amber-500'}`}>
+                {room.status === 'out_of_order' ? 'Out of Order' : 'Out of Service'}
+              </p>
               <p className={`text-[13px] font-semibold mb-1 ${room.status === 'out_of_order' ? 'text-rose-700' : 'text-amber-700'}`}>{room.blockedReason}</p>
               {room.blockedUntil && (
                 <p className={`text-[11px] ${room.status === 'out_of_order' ? 'text-rose-500' : 'text-amber-500'}`}>Until: {room.blockedUntil}</p>

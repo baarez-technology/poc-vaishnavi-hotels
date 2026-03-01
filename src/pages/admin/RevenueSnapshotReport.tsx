@@ -147,22 +147,10 @@ export default function RevenueSnapshotReport() {
     );
   }
 
-  const { summary, comparisons, daily_data, revenue_by_source, revenue_by_payment_mode, revenue_by_room_type, weekly_summary, ai_insights } = reportData;
+  const { summary, comparisons, daily_data, revenue_by_source, revenue_by_room_type, weekly_summary, ai_insights } = reportData;
 
   // Calculate total for pie chart percentages
   const totalSourceRevenue = revenue_by_source.reduce((sum, s) => sum + s.value, 0);
-
-  // Payment mode data — use API data or derive fallback
-  const PAYMENT_COLORS = ['#4E5840', '#A57865', '#5C9BA4', '#CDB261', '#C8B29D'];
-  const paymentModeData = revenue_by_payment_mode && revenue_by_payment_mode.length > 0
-    ? revenue_by_payment_mode
-    : [
-        { name: 'Cash', value: Math.round(summary.total_revenue * 0.30) },
-        { name: 'Card', value: Math.round(summary.total_revenue * 0.35) },
-        { name: 'UPI', value: Math.round(summary.total_revenue * 0.20) },
-        { name: 'Online', value: Math.round(summary.total_revenue * 0.15) },
-      ];
-  const totalPaymentRevenue = paymentModeData.reduce((sum, s) => sum + s.value, 0);
 
   // Get last 14 days for daily bar chart
   const dailyRevenueData = daily_data.slice(-14);
@@ -497,92 +485,6 @@ export default function RevenueSnapshotReport() {
                   <Bar dataKey="revenue" fill="#4E5840" radius={[3, 3, 0, 0]} maxBarSize={24} />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-          </div>
-        </section>
-
-        {/* Revenue by Payment Mode */}
-        <section className="grid grid-cols-1 xl:grid-cols-5 gap-4 sm:gap-6">
-          {/* Payment Mode Donut */}
-          <div className="xl:col-span-2 bg-white rounded-xl p-4 sm:p-6">
-            <h3 className="text-sm font-semibold text-neutral-900 mb-1">Revenue by Payment Mode</h3>
-            <p className="text-[12px] text-neutral-500 mb-4">Payment method breakdown</p>
-
-            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-              <div className="w-32 h-32 sm:w-40 sm:h-40 flex-shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={paymentModeData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={35}
-                      outerRadius={55}
-                      paddingAngle={2}
-                      dataKey="value"
-                    >
-                      {paymentModeData.map((entry, index) => (
-                        <Cell key={`pm-${index}`} fill={PAYMENT_COLORS[index % PAYMENT_COLORS.length]} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-
-              <div className="flex-1 space-y-2 sm:space-y-2.5 w-full">
-                {paymentModeData.map((item, index) => (
-                  <div key={item.name} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: PAYMENT_COLORS[index % PAYMENT_COLORS.length] }} />
-                      <span className="text-[11px] sm:text-[12px] text-neutral-600">{item.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] sm:text-[12px] font-medium text-neutral-900">{formatCurrency(item.value)}</span>
-                      <span className="text-[10px] text-neutral-400 w-8 text-right">
-                        {totalPaymentRevenue > 0 ? ((item.value / totalPaymentRevenue) * 100).toFixed(0) : 0}%
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Payment Mode Breakdown Bars */}
-          <div className="xl:col-span-3 bg-white rounded-xl p-4 sm:p-6">
-            <h3 className="text-sm font-semibold text-neutral-900 mb-1">Payment Mode Breakdown</h3>
-            <p className="text-[12px] text-neutral-500 mb-4">Revenue distribution by method</p>
-
-            <div className="space-y-4">
-              {paymentModeData.map((item, index) => {
-                const pct = totalPaymentRevenue > 0 ? (item.value / totalPaymentRevenue) * 100 : 0;
-                return (
-                  <div key={item.name}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[13px] font-medium text-neutral-700">{item.name}</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[13px] font-semibold text-neutral-900">{formatCurrency(item.value)}</span>
-                        <span className="text-[11px] text-neutral-400 w-10 text-right">{pct.toFixed(1)}%</span>
-                      </div>
-                    </div>
-                    <div className="w-full h-2.5 bg-neutral-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${pct}%`,
-                          backgroundColor: PAYMENT_COLORS[index % PAYMENT_COLORS.length],
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Total */}
-            <div className="mt-6 pt-4 border-t border-neutral-100 flex items-center justify-between">
-              <span className="text-[13px] font-semibold text-neutral-900">Total</span>
-              <span className="text-[15px] font-bold text-neutral-900">{formatCurrency(totalPaymentRevenue)}</span>
             </div>
           </div>
         </section>

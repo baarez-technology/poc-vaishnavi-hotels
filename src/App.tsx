@@ -144,6 +144,7 @@ const PickupAnalysis = lazyWithRetry(() => import('./pages/admin/revenue-managem
 const CompetitorRates = lazyWithRetry(() => import('./pages/admin/revenue-management/CompetitorRates'));
 const Segmentation = lazyWithRetry(() => import('./pages/admin/revenue-management/Segmentation'));
 const PricingRules = lazyWithRetry(() => import('./pages/admin/revenue-management/PricingRules'));
+const PaymentAnalytics = lazyWithRetry(() => import('./pages/admin/revenue-management/PaymentAnalytics'));
 // Placeholder for pages under construction
 const PlaceholderPage = lazyWithRetry(() => import('./pages/admin/PlaceholderPage'));
 // Lazy load staff portal pages
@@ -354,6 +355,7 @@ function App() {
                                                     <Route path="revenue/competitors" element={<CompetitorRates />} />
                                                     <Route path="revenue/segments" element={<Segmentation />} />
                                                     <Route path="revenue/pricing" element={<PricingRules />} />
+                                                    <Route path="revenue/payment-analytics" element={<PaymentAnalytics />} />
                                                     <Route path="revenue/ai" element={<RevenueAI />} />
                                                     {/* AI Routes */}
                                                     <Route path="ai/reputation" element={<ReputationAI />} />

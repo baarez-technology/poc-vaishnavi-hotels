@@ -35,6 +35,12 @@ export const ROOM_STATUS_CONFIG = {
     textColor: 'text-[#5C9BA4]',
     borderColor: 'border-[#5C9BA4]/30',
   },
+  'out_of_service': {
+    label: 'Out of Service',
+    bgColor: 'bg-rose-100',
+    textColor: 'text-rose-700',
+    borderColor: 'border-rose-200',
+  },
   'out_of_order': {
     label: 'Out of Order',
     bgColor: 'bg-gray-200',

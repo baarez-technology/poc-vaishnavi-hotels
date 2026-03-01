@@ -71,10 +71,18 @@ export const ContactPage = () => {
                         <h3 className="text-sm sm:text-base font-semibold text-neutral-800 mb-1">Phone</h3>
                         <a
                           href={`tel:${hotelInfo.phone}`}
-                          className="text-neutral-700 hover:text-primary-600 font-medium transition-colors text-sm sm:text-base"
+                          className="text-neutral-700 hover:text-primary-600 font-medium transition-colors text-sm sm:text-base block"
                         >
                           {hotelInfo.phone}
                         </a>
+                        {hotelInfo.phone2 && (
+                          <a
+                            href={`tel:${hotelInfo.phone2}`}
+                            className="text-neutral-700 hover:text-primary-600 font-medium transition-colors text-sm sm:text-base block mt-0.5"
+                          >
+                            {hotelInfo.phone2}
+                          </a>
+                        )}
                         <p className="text-xs text-neutral-400 mt-1">
                           Available 24/7
                         </p>

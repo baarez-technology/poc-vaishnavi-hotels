@@ -551,11 +551,14 @@ export function useRooms() {
     await refetchBookings();
   };
 
-  // Block room
-  const blockRoom = async (roomId: number | string, reason: string, until?: string) => {
+  // Block room (OOS or OOO)
+  const blockRoom = async (roomId: number | string, reason: string, until?: string, statusType: 'out_of_service' | 'out_of_order' = 'out_of_service') => {
     try {
-      await roomsService.blockRoom(roomId, reason);
-      console.log('[useRooms] Room blocked via API');
+      if (statusType === 'out_of_order') {
+        await roomsService.blockRoomOOO(roomId, reason);
+      } else {
+        await roomsService.blockRoom(roomId, reason);
+      }
     } catch (err) {
       console.error('[useRooms] Failed to block room via API:', err);
     }
@@ -564,7 +567,7 @@ export function useRooms() {
       if (r.id === roomId || String(r.id) === String(roomId)) {
         return {
           ...r,
-          status: 'out_of_service',
+          status: statusType,
           guests: null,
           blockedReason: reason,
           blockedUntil: until || null
@@ -574,17 +577,16 @@ export function useRooms() {
     }));
   };
 
-  // Unblock room
+  // Unblock room (handles both OOS and OOO)
   const unblockRoom = async (roomId: number | string) => {
     try {
       await roomsService.unblockRoom(roomId);
-      console.log('[useRooms] Room unblocked via API');
     } catch (err) {
       console.error('[useRooms] Failed to unblock room via API:', err);
     }
     // Update local state
     setRooms(prev => prev.map(r => {
-      if ((r.id === roomId || String(r.id) === String(roomId)) && r.status === 'out_of_service') {
+      if ((r.id === roomId || String(r.id) === String(roomId)) && (r.status === 'out_of_service' || r.status === 'out_of_order')) {
         return {
           ...r,
           status: 'available',

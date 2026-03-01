@@ -22,6 +22,7 @@ const PAYMENT_STATUS_OPTIONS = [
 
 const PAYMENT_METHOD_OPTIONS = [
   { value: 'card', label: 'Credit/Debit Card' },
+  { value: 'upi', label: 'UPI' },
   { value: 'cash', label: 'Cash' },
   { value: 'bank_transfer', label: 'Bank Transfer' },
   { value: 'pay_at_hotel', label: 'Pay at Hotel' },

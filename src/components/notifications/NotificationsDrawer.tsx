@@ -94,11 +94,19 @@ const formatTimeAgo = (dateStr: string): string => {
   return `${diffDays} days ago`;
 };
 
+// Extract booking ID from notification title/message as fallback (e.g., "#155" or "BK-155")
+function extractBookingIdFromText(title?: string, message?: string): string | undefined {
+  const text = `${title || ''} ${message || ''}`;
+  const match = text.match(/#(\d+)/);
+  return match ? match[1] : undefined;
+}
+
 // Transform API notification to local format
 const transformNotification = (apiNotification: StaffNotification): Notification => {
+  const type = resolveNotificationType(apiNotification.notification_type);
   return {
     id: String(apiNotification.id),
-    type: resolveNotificationType(apiNotification.notification_type),
+    type,
     title: apiNotification.title,
     description: apiNotification.message,
     time: formatTimeAgo(apiNotification.created_at),
@@ -108,7 +116,9 @@ const transformNotification = (apiNotification: StaffNotification): Notification
               apiNotification.task?.priority === 'medium' ? 'medium' : 'low',
     link: resolveNotificationRoute(apiNotification.notification_type),
     guestId: apiNotification.guest_id != null ? String(apiNotification.guest_id) : undefined,
-    bookingId: apiNotification.booking_id != null ? String(apiNotification.booking_id) : undefined,
+    bookingId: apiNotification.booking_id != null
+      ? String(apiNotification.booking_id)
+      : (type === 'booking' ? extractBookingIdFromText(apiNotification.title, apiNotification.message) : undefined),
   };
 };
 

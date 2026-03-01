@@ -220,6 +220,7 @@ export function CBSProvider({ children }) {
             return {
               id: b.bookingNumber || b.id,
               dbId: b.id, // Store original database ID for API calls
+              guestId: b.guest_id || b.guestId || null,
               guestName: guestName,
               guestEmail: guest?.email || '',
               guestPhone: guest?.phone || '',
@@ -436,6 +437,7 @@ export function CBSProvider({ children }) {
           return {
             id: b.bookingNumber || b.id,
             dbId: b.id,
+            guestId: b.guest_id || b.guestId || null,
             guestName: guestName,
             guestEmail: guest?.email || '',
             guestPhone: guest?.phone || '',
@@ -535,6 +537,7 @@ export function CBSProvider({ children }) {
 
         const newBooking = {
           id: apiBooking.bookingNumber || apiBooking.id,
+          guestId: apiBooking.guest_id || apiBooking.guestId || null,
           guestName: guestName,
           guestEmail: guest?.email || '',
           guestPhone: guest?.phone || '',

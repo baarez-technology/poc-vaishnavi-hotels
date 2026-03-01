@@ -14,8 +14,10 @@ import BookingList from '../../../components/cbs/BookingList';
 import BookingDrawer from '../../../components/cbs/BookingDrawer';
 import NewBookingDrawer from '../../../components/cbs/NewBookingDrawer';
 import AssignRoomModal from '../../../components/cbs/AssignRoomModal';
+import CheckoutEmotionModal from '../../../components/cbs/CheckoutEmotionModal';
 import { ConfirmModal } from '../../../components/ui2/Modal';
 import CheckInDrawer from '../../../components/bookings/CheckInDrawer';
+import { guestsService } from '../../../api/services/guests.service';
 import { Button } from '../../../components/ui2/Button';
 import {
   Plus,
@@ -66,6 +68,8 @@ export default function CBSBookings() {
   });
 
   const [loadingStates, setLoadingStates] = useState({});
+  const [checkoutBooking, setCheckoutBooking] = useState<any>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const lastActionRef = useRef(null);
 
   // Check-in drawer state
@@ -187,28 +191,29 @@ export default function CBSBookings() {
     return true;
   }, [bookings, updateBookingStatus, success]);
 
-  // Quick action: Check-out from table
+  // Quick action: Check-out from table — shows emotion modal
   const handleQuickCheckOut = useCallback((booking) => {
     const bookingData = typeof booking === 'object' ? booking : bookings.find(b => b.id === booking);
 
     if (!bookingData) return;
 
-    // Warn if there's an outstanding balance
+    // Warn if there's an outstanding balance first
     if (bookingData.balance > 0) {
       setConfirmDialog({
         isOpen: true,
         title: 'Outstanding Balance',
         message: `Guest ${bookingData.guestName} has an outstanding balance of $${bookingData.balance}. Complete checkout anyway?`,
         variant: 'danger',
-        onConfirm: () => performCheckOut(bookingData.id)
+        onConfirm: () => setCheckoutBooking(bookingData)
       });
       return;
     }
 
-    performCheckOut(bookingData.id);
+    // Show emotion modal directly
+    setCheckoutBooking(bookingData);
   }, [bookings]);
 
-  const performCheckOut = useCallback((bookingId) => {
+  const performCheckOut = useCallback((bookingId: string) => {
     const previousStatus = bookings.find(b => b.id === bookingId)?.status;
     lastActionRef.current = { type: 'checkOut', bookingId, previousStatus };
 
@@ -220,6 +225,30 @@ export default function CBSBookings() {
       }
     });
   }, [bookings, updateBookingStatus, success]);
+
+  // Handle checkout with emotion from modal
+  const handleCheckoutWithEmotion = useCallback(async (emotion?: string, notes?: string) => {
+    if (!checkoutBooking) return;
+
+    setCheckoutLoading(true);
+    try {
+      // Save guest emotion if provided and guestId is available
+      if (emotion && checkoutBooking.guestId) {
+        try {
+          await guestsService.update(checkoutBooking.guestId, { emotion });
+        } catch (err) {
+          console.error('Failed to update guest emotion:', err);
+          // Don't block checkout if emotion save fails
+        }
+      }
+
+      // Perform the actual checkout
+      performCheckOut(checkoutBooking.id);
+    } finally {
+      setCheckoutLoading(false);
+      setCheckoutBooking(null);
+    }
+  }, [checkoutBooking, performCheckOut]);
 
   // Quick action: Cancel from table
   const handleQuickCancel = useCallback((booking) => {
@@ -457,6 +486,15 @@ export default function CBSBookings() {
         variant={confirmDialog.variant}
         confirmText="Confirm"
         cancelText="Cancel"
+      />
+
+      {/* Checkout Emotion Modal */}
+      <CheckoutEmotionModal
+        open={!!checkoutBooking}
+        onClose={() => setCheckoutBooking(null)}
+        onConfirm={handleCheckoutWithEmotion}
+        guestName={checkoutBooking?.guestName || ''}
+        loading={checkoutLoading}
       />
     </div>
   );

@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import Tabs from '../../components/bookings/Tabs';
 import SearchBar from '../../components/bookings/SearchBar';
@@ -13,7 +14,9 @@ import CancelBookingModal from '../../components/bookings/CancelBookingModal';
 import PaymentManagementModal from '../../components/bookings/PaymentManagementModal';
 import RequestCleaningModal from '../../components/modals/RequestCleaningModal';
 import CheckInDrawer from '../../components/bookings/CheckInDrawer';
+import CheckoutEmotionModal from '../../components/cbs/CheckoutEmotionModal';
 import { useBookings } from '../../hooks/admin/useBookings';
+import { guestsService } from '../../api/services/guests.service';
 import { useSort } from '../../hooks/useSort';
 import { usePagination } from '../../hooks/usePagination';
 import { CANCELLATION_REASONS } from '../../utils/bookings';
@@ -63,6 +66,8 @@ function QuickActions({ onNewBooking }) {
 
 export default function Bookings() {
   const { isDark } = useTheme();
+  const location = useLocation();
+  const nav = useNavigate();
 
   // Use admin bookings hook for API integration
   const {
@@ -126,6 +131,11 @@ export default function Bookings() {
 
   // Toast state
   const [toast, setToast] = useState<{ message: string } | null>(null);
+
+
+  // Checkout emotion modal state
+  const [checkoutBooking, setCheckoutBooking] = useState<any>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   // Handle filter changes
   const handleFilterChange = (key, value) => {
@@ -316,10 +326,17 @@ export default function Bookings() {
     }
   };
 
-  // Handle status change
-  const handleStatusChange = (bookingId, newStatus) => {
+  // Handle status change — intercept CHECKED-OUT to show emotion modal
+  const handleStatusChange = (bookingId: string, newStatus: string) => {
+    if (newStatus === 'CHECKED-OUT') {
+      // Find the booking to get guestId and guestName
+      const booking = bookingsData.find((b: any) => String(b.id) === String(bookingId));
+      setCheckoutBooking(booking || { id: bookingId, guest: 'Guest' });
+      return;
+    }
+
     updateStatus(bookingId, newStatus);
-    setSelectedBooking((prev) => {
+    setSelectedBooking((prev: any) => {
       if (prev && prev.id === bookingId) {
         return { ...prev, status: newStatus };
       }
@@ -327,6 +344,36 @@ export default function Bookings() {
     });
     triggerToast('Status updated successfully');
   };
+
+  // Handle checkout with emotion from modal
+  const handleCheckoutWithEmotion = useCallback(async (emotion?: string, _notes?: string) => {
+    if (!checkoutBooking) return;
+
+    setCheckoutLoading(true);
+    try {
+      // Save guest emotion if provided and guestId is available
+      if (emotion && checkoutBooking.guestId) {
+        try {
+          await guestsService.update(checkoutBooking.guestId, { emotion });
+        } catch (err) {
+          console.error('Failed to update guest emotion:', err);
+        }
+      }
+
+      // Perform the actual checkout
+      updateStatus(checkoutBooking.id, 'CHECKED-OUT');
+      setSelectedBooking((prev: any) => {
+        if (prev && prev.id === checkoutBooking.id) {
+          return { ...prev, status: 'CHECKED-OUT' };
+        }
+        return prev;
+      });
+      triggerToast('Guest checked out successfully');
+    } finally {
+      setCheckoutLoading(false);
+      setCheckoutBooking(null);
+    }
+  }, [checkoutBooking, updateStatus]);
 
   // Toast helper
   const triggerToast = (message) => {
@@ -592,6 +639,25 @@ export default function Bookings() {
     setRowsPerPage,
   } = usePagination(sortedData, 10);
 
+  // Auto-open booking drawer when navigating from a notification with bookingId
+  useEffect(() => {
+    const state = location.state as { bookingId?: string } | null;
+    if (state?.bookingId && sortedData.length > 0) {
+      const bookingId = String(state.bookingId);
+      const booking = sortedData.find(
+        (b: any) => String(b.id) === bookingId
+          || String(b.bookingNumber) === bookingId
+          || String(b.bookingNumber).replace(/^BK-/i, '') === bookingId
+      );
+      if (booking) {
+        setSelectedBooking(booking);
+        setIsDrawerOpen(true);
+      }
+      // Clear navigation state so refresh doesn't re-trigger
+      nav(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, sortedData]);
+
   return (
     <div className={cn(
       "min-h-screen transition-colors",
@@ -749,6 +815,15 @@ export default function Bookings() {
         }}
         booking={checkInBooking}
         onCheckInComplete={handleCheckInComplete}
+      />
+
+      {/* Checkout Emotion Modal */}
+      <CheckoutEmotionModal
+        open={!!checkoutBooking}
+        onClose={() => setCheckoutBooking(null)}
+        onConfirm={handleCheckoutWithEmotion}
+        guestName={checkoutBooking?.guest || checkoutBooking?.guestName || ''}
+        loading={checkoutLoading}
       />
 
       {/* Toast Notification */}

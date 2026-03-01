@@ -123,12 +123,23 @@ export const roomsService = {
   },
 
   /**
-   * Block a room (set to out_of_service/maintenance)
+   * Block a room — Out of Service (OOS)
    */
   blockRoom: async (roomId: number | string, reason: string): Promise<any> => {
     const response = await apiClient.patch(
       `/api/v1/housekeeping/rooms/${roomId}/status`,
       { status: 'maintenance', notes: reason }
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Block a room — Out of Order (OOO)
+   */
+  blockRoomOOO: async (roomId: number | string, reason: string): Promise<any> => {
+    const response = await apiClient.patch(
+      `/api/v1/housekeeping/rooms/${roomId}/status`,
+      { status: 'out_of_order', notes: reason }
     );
     return response.data.data || response.data;
   },

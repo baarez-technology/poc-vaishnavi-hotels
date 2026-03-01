@@ -39,6 +39,7 @@ export interface PreCheckInData {
   };
   travelDetails: {
     arrivalTime: string;
+    departureTime: string;
     flightNumber: string;
     purpose: 'business' | 'leisure' | 'event' | 'other';
     transportationNeeded: boolean;
@@ -105,6 +106,7 @@ const initialData: PreCheckInData = {
   },
   travelDetails: {
     arrivalTime: '',
+    departureTime: '',
     flightNumber: '',
     purpose: 'leisure',
     transportationNeeded: false,
@@ -171,6 +173,7 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
           } : undefined,
           travelDetails: {
             arrivalTime: existing.arrival_time || '',
+            departureTime: (existing as any).departure_time || '',
             flightNumber: existing.flight_number || '',
             purpose: (existing.purpose as any) || 'leisure',
             transportationNeeded: existing.transportation_needed,
@@ -244,6 +247,7 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
         bed_type_preference: data.roomPreferences.bedType === 'any' ? undefined : data.roomPreferences.bedType,
         quietness_preference: data.roomPreferences.quietness === 'any' ? undefined : data.roomPreferences.quietness,
         arrival_time: data.travelDetails.arrivalTime,
+        departure_time: data.travelDetails.departureTime,
         flight_number: data.travelDetails.flightNumber,
         purpose: data.travelDetails.purpose,
         transportation_needed: data.travelDetails.transportationNeeded,

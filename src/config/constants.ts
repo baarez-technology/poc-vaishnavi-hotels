@@ -161,15 +161,16 @@ export const QUERY_KEYS = {
 // Fallback defaults — dynamic values come from useHotelInfo() hook via SettingsContext
 export const CONTACT_INFO = {
   address: {
-    street: '123 Luxury Avenue',
-    city: 'New York',
-    state: 'NY',
-    zip: '10001',
-    country: 'United States',
+    street: '503 Orchid Sadashivpuram, Moriwali Pada',
+    city: 'Ambernath, Kalyan, Thane',
+    state: 'Maharashtra',
+    zip: '421501',
+    country: 'India',
   },
-  phone: '+1 (555) 123-4567',
-  email: 'contact@glimmora.com',
-  website: 'https://glimmora.com',
+  phone: '+971 501371105',
+  phone2: '+91-6300275340',
+  email: 'info@glimmora.ai',
+  website: 'https://glimmora.ai',
   hours: {
     frontDesk: '24/7',
     checkIn: '3:00 PM',

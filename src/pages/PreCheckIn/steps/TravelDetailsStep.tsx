@@ -8,8 +8,8 @@ import { usePreCheckIn } from '@/contexts/PreCheckInContext';
 import logo from '@/assets/logo.png';
 
 const travelSchema = z.object({
-  arrivalTime: z.string().min(1, 'Arrival time required'),
-  departureTime: z.string().min(1, 'Departure time required'),
+  arrivalTime: z.string().min(1, 'Expected arrival time is required'),
+  departureTime: z.string().optional(),
   flightNumber: z.string().optional(),
   purpose: z.enum(['business', 'leisure', 'event', 'other']),
   transportationNeeded: z.boolean(),
@@ -191,46 +191,44 @@ export function TravelDetailsStep({ onNext, onPrevious }: TravelDetailsStepProps
 
             {/* Form */}
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              {/* Arrival Time */}
-              <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
-                  Expected Arrival Time
-                </label>
-                <div className="relative">
-                  <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                  <input
-                    type="time"
-                    {...register('arrivalTime')}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${errors.arrivalTime
-                      ? 'border-rose-500 focus:ring-rose-500/20'
-                      : 'border-neutral-200 focus:ring-terra-500/20'
+              {/* ETA & ETD Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* ETA - Expected Time of Arrival */}
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                    ETA <span className="normal-case font-medium">(Arrival Time)</span>
+                  </label>
+                  <div className="relative">
+                    <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                    <input
+                      type="time"
+                      {...register('arrivalTime')}
+                      className={`w-full pl-10 pr-4 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${
+                        errors.arrivalTime
+                          ? 'border-rose-500 focus:ring-rose-500/20'
+                          : 'border-neutral-200 focus:ring-terra-500/20'
                       }`}
-                  />
+                    />
+                  </div>
+                  {errors.arrivalTime && (
+                    <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.arrivalTime.message}</p>
+                  )}
                 </div>
-                {errors.arrivalTime && (
-                  <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.arrivalTime.message}</p>
-                )}
-              </div>
 
-              {/* Departure Time */}
-              <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
-                  Expected Departure Time
-                </label>
-                <div className="relative">
-                  <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                  <input
-                    type="time"
-                    {...register('departureTime')}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-[10px] focus:outline-none focus:ring-2 focus:border-terra-500 transition-all text-[13px] bg-white ${errors.departureTime
-                      ? 'border-rose-500 focus:ring-rose-500/20'
-                      : 'border-neutral-200 focus:ring-terra-500/20'
-                      }`}
-                  />
+                {/* ETD - Expected Time of Departure */}
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+                    ETD <span className="normal-case font-medium">(Departure Time)</span> <span className="text-neutral-300 normal-case">(Optional)</span>
+                  </label>
+                  <div className="relative">
+                    <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                    <input
+                      type="time"
+                      {...register('departureTime')}
+                      className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-[10px] focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500 transition-all text-[13px] bg-white"
+                    />
+                  </div>
                 </div>
-                {errors.departureTime && (
-                  <p className="mt-1.5 text-[11px] text-rose-600 font-medium">{errors.departureTime.message}</p>
-                )}
               </div>
 
               {/* Flight Number */}

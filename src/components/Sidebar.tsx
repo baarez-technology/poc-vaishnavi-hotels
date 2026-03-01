@@ -33,6 +33,7 @@ import {
   Layers,
   Radio,
   BarChart2,
+  CreditCard,
   Cpu,
   FileBarChart,
   Cog,
@@ -110,6 +111,7 @@ const navCategories = [
       { name: 'Competitors', icon: Globe, to: '/admin/revenue/competitors' },
       { name: 'Segmentation', icon: PieChart, to: '/admin/revenue/segments' },
       { name: 'Pricing Rules', icon: Settings, to: '/admin/revenue/pricing' },
+      { name: 'Revenue Analytics', icon: CreditCard, to: '/admin/revenue/payment-analytics' },
       { name: 'Revenue AI', icon: Brain, to: '/admin/revenue/ai' },
     ]
   },

@@ -46,6 +46,8 @@ import {
   sourceConfig
 } from '../../../data/bookingsData';
 import NewBookingDrawer from '../../../components/cbs/NewBookingDrawer';
+import { precheckinService } from '@/api/services/precheckin.service';
+import { bookingService } from '@/api/services/booking.service';
 import { apiClient, clearApiCache } from '../../../api/client';
 import { useBookingsSSE } from '../../../hooks/useBookingsSSE';
 
@@ -607,6 +609,58 @@ function BookingTableRow({ booking, onClick, index, onCheckIn }: { booking: any;
 function BookingDetailDrawer({ booking, isOpen, onClose, onStatusChange }) {
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const statusMenuRef = useRef(null);
+  const [precheckin, setPrecheckin] = useState(null);
+
+  // Fetch pre-check-in for ETA/ETD when drawer opens
+  useEffect(() => {
+    if (!booking?.id || !isOpen) {
+      setPrecheckin(null);
+      return;
+    }
+    let reservationId = Number(booking.id);
+    if (Number.isNaN(reservationId)) {
+      const lookupId = booking.bookingNumber || booking.id;
+      bookingService.getBooking(String(lookupId))
+        .then((b) => {
+          const numId = b?.id != null ? Number(b.id) : NaN;
+          if (!Number.isNaN(numId)) {
+            return precheckinService.getByReservation(numId).then(setPrecheckin);
+          }
+          setPrecheckin(null);
+        })
+        .catch(() => setPrecheckin(null));
+      return;
+    }
+    precheckinService.getByReservation(reservationId)
+      .then((data) => setPrecheckin(data))
+      .catch(() => setPrecheckin(null));
+  }, [booking?.id, booking?.bookingNumber, isOpen]);
+
+  // ETA = pre-check-in arrival (arrival_time). ETD = pre-check-in departure (departure_time). Fallback to booking when API already set them from same source.
+  const eta = precheckin?.arrival_time ?? (precheckin && precheckin.arrivalTime) ?? booking?.eta ?? '';
+  const etd = precheckin?.departure_time ?? (precheckin && precheckin.departureTime) ?? booking?.etd ?? '';
+
+  const formatTimeDisplay = (timeStr) => {
+    if (!timeStr || typeof timeStr !== 'string') return '—';
+    const trimmed = timeStr.trim();
+    if (!trimmed) return '—';
+    // 24h "HH:MM" from pre-check-in or already "h:MM AM/PM"
+    const match = trimmed.match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);
+    if (match) {
+      let h = parseInt(match[1], 10);
+      const m = match[2];
+      const period = match[3];
+      if (period) {
+        if (period.toUpperCase() === 'PM' && h !== 12) h += 12;
+        if (period.toUpperCase() === 'AM' && h === 12) h = 0;
+      }
+      // else: 24h format (0-23)
+      const h12 = h % 12 || 12;
+      const ampm = h < 12 ? 'AM' : 'PM';
+      return `${h12}:${m} ${ampm}`;
+    }
+    return trimmed;
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -782,6 +836,35 @@ function BookingDetailDrawer({ booking, isOpen, onClose, onStatusChange }) {
               <p className="text-[10px] sm:text-[11px] text-neutral-500">
                 {(booking.children || 0) > 0 ? `${booking.children} Child${booking.children !== 1 ? 'ren' : ''}` : 'No children'}
               </p>
+            </div>
+          </div>
+
+          {/* Arrival & Departure Times (from pre-check-in) */}
+          <div className="space-y-3 p-4 rounded-lg bg-neutral-50">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">
+              Arrival & Departure Times
+            </p>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              <div className="p-3 sm:p-4 rounded-lg bg-white">
+                <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400" />
+                  <span className="text-[10px] sm:text-[11px] font-medium text-neutral-400">ETA</span>
+                </div>
+                <p className="text-base sm:text-lg font-semibold text-neutral-900">
+                  {formatTimeDisplay(eta)}
+                </p>
+                <p className="text-[10px] sm:text-[11px] text-neutral-500">Expected Arrival</p>
+              </div>
+              <div className="p-3 sm:p-4 rounded-lg bg-white">
+                <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400" />
+                  <span className="text-[10px] sm:text-[11px] font-medium text-neutral-400">ETD</span>
+                </div>
+                <p className="text-base sm:text-lg font-semibold text-neutral-900">
+                  {formatTimeDisplay(etd)}
+                </p>
+                <p className="text-[10px] sm:text-[11px] text-neutral-500">Expected Departure</p>
+              </div>
             </div>
           </div>
 
@@ -1034,6 +1117,8 @@ function transformApiBooking(apiBooking: any, index?: number) {
     guests: (apiBooking.guests?.adults || apiBooking.adults || 1) + (apiBooking.guests?.children || apiBooking.children || 0),
     specialRequests: guest?.specialRequests || apiBooking.special_requests || '',
     createdAt: apiBooking.createdAt || apiBooking.created_at,
+    eta: apiBooking.eta ?? '',
+    etd: apiBooking.etd ?? '',
   };
 }
 

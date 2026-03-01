@@ -25,6 +25,8 @@ interface BookingData {
     email: string;
     phone: string;
     specialRequests?: string;
+    eta?: string;
+    etd?: string;
   };
   payment: {
     cardNumber: string;
@@ -67,6 +69,8 @@ const initialBookingData: BookingData = {
     email: '',
     phone: '',
     specialRequests: '',
+    eta: '',
+    etd: '',
   },
   payment: {
     cardNumber: '',

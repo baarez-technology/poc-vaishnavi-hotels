@@ -13,6 +13,7 @@ type BookingLike = any;
 type SortConfigLike = { field?: string; direction?: 'asc' | 'desc' } | any;
 
 export default function BookingsTable({
+  activeTab = 'all',
   bookings,
   sortConfig,
   onSort,
@@ -27,6 +28,7 @@ export default function BookingsTable({
   onMarkNoShow,
   onRequestCleaning,
 }: {
+  activeTab?: string;
   bookings: BookingLike[];
   sortConfig: SortConfigLike;
   onSort: (field: string) => void;
@@ -51,6 +53,23 @@ export default function BookingsTable({
     const date = new Date(safe);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
+
+  const formatTimeDisplay = (timeStr: string | undefined) => {
+    if (!timeStr || !String(timeStr).trim()) return '—';
+    const parts = String(timeStr).trim().split(':');
+    const h = parseInt(parts[0], 10);
+    const m = parts[1] ? parseInt(parts[1], 10) : 0;
+    if (isNaN(h)) return timeStr;
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour = h % 12 || 12;
+    return `${hour}:${String(m).padStart(2, '0')} ${period}`;
+  };
+
+  const showEta = activeTab === 'arrivals';
+  const showEtd = activeTab === 'departures';
+  const showEtaEtdColumn = showEta || showEtd;
+  const showEtaOnly = activeTab === 'arrivals';
+  const showEtdOnly = activeTab === 'departures';
 
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
@@ -256,6 +275,7 @@ export default function BookingsTable({
           <col style={{ width: '150px' }} />
           <col style={{ width: '140px' }} />
           <col style={{ width: '90px' }} />
+          {showEtaEtdColumn && <col style={{ width: '90px' }} />}
           <col style={{ width: '190px' }} />
           <col style={{ width: '130px' }} />
           <col style={{ width: '110px' }} />
@@ -299,6 +319,11 @@ export default function BookingsTable({
                 Nights <SortIndicator field="nights" />
               </span>
             </th>
+            {showEtaEtdColumn && (
+              <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
+                {showEtaOnly ? 'ETA' : 'ETD'}
+              </th>
+            )}
             <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
               Room
             </th>
@@ -346,7 +371,7 @@ export default function BookingsTable({
         <tbody className="divide-y divide-neutral-100">
           {bookings.length === 0 ? (
             <tr>
-              <td colSpan={11} className="px-4 py-12 text-center">
+              <td colSpan={showEtaEtdColumn ? 13 : 12} className="px-4 py-12 text-center">
                 <div className="flex flex-col items-center">
                   <div className="w-12 h-12 rounded-lg bg-terra-50 flex items-center justify-center mb-4">
                     <CalendarX className="w-5 h-5 text-terra-500" />
@@ -418,6 +443,15 @@ export default function BookingsTable({
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm text-neutral-600">{booking.nights}n</span>
                   </td>
+
+                  {/* Arrivals Today: ETA only. Departures Today: ETD only. */}
+                  {showEtaEtdColumn && (
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-neutral-700 font-medium">
+                        {showEtaOnly ? formatTimeDisplay(booking.eta) : formatTimeDisplay(booking.etd)}
+                      </span>
+                    </td>
+                  )}
 
                   {/* Room */}
                   <td className="px-6 py-4 whitespace-nowrap">

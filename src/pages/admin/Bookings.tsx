@@ -701,6 +701,7 @@ export default function Bookings() {
 
         {/* Bookings Table */}
         <BookingsTable
+          activeTab={activeTab}
           bookings={currentPageData}
           sortConfig={sortConfig}
           onSort={handleSort}

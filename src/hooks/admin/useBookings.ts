@@ -44,6 +44,8 @@ export interface AdminBooking {
   amountPaid?: number;
   amount_paid?: number;
   paymentNotes?: string;
+  eta?: string;
+  etd?: string;
 }
 
 // Transform API booking to admin format
@@ -202,6 +204,8 @@ function transformBooking(apiBooking: any): AdminBooking {
     dnmSetBy: apiBooking.dnmSetBy || apiBooking.dnm_set_by || null,
     checkedInAt: apiBooking.checkedInAt || apiBooking.checked_in_at || null,
     checkedOutAt: apiBooking.checkedOutAt || apiBooking.checked_out_at || null,
+    eta: apiBooking.eta || apiBooking.arrival_time || '',
+    etd: apiBooking.etd || apiBooking.departure_time || '',
   };
 }
 
@@ -280,14 +284,25 @@ export function useBookings() {
       let total = 0;
       let totalPages = 1;
 
-      if (response.items) {
-        bookingsData = response.items;
-        total = response.total || response.items.length;
-        totalPages = response.totalPages || Math.ceil(total / pageSize);
-      } else if (Array.isArray(response)) {
+      console.log('[useBookings.fetchBookings] Raw API response:', response);
+
+      if (Array.isArray(response)) {
         bookingsData = response;
         total = response.length;
         totalPages = 1;
+      } else if (response && typeof response === 'object') {
+        // Try common paginated response keys
+        const list = response.items ?? response.results ?? response.bookings ?? response.data;
+        if (Array.isArray(list)) {
+          bookingsData = list;
+          total = response.total ?? response.count ?? response.totalCount ?? list.length;
+          totalPages = response.totalPages ?? response.total_pages ?? Math.ceil(total / pageSize);
+        } else if (Array.isArray(response.data?.items)) {
+          // Nested: { data: { items: [...], total: N } }
+          bookingsData = response.data.items;
+          total = response.data.total ?? response.data.count ?? bookingsData.length;
+          totalPages = response.data.totalPages ?? Math.ceil(total / pageSize);
+        }
       }
 
       const transformedBookings = bookingsData.map(transformBooking);
@@ -348,6 +363,14 @@ export function useBookings() {
         },
       };
 
+      // Optional arrival/departure times (ETA/ETD) for operational planning
+      if (bookingData.eta) {
+        apiData.eta = bookingData.eta;
+      }
+      if (bookingData.etd) {
+        apiData.etd = bookingData.etd;
+      }
+
       // Include booking source if provided
       if (bookingData.source) {
         apiData.source = bookingData.source;
@@ -378,6 +401,8 @@ export function useBookings() {
     if (updates.paymentNotes !== undefined) localUpdates.paymentNotes = updates.paymentNotes;
     if (updates.status !== undefined) localUpdates.status = updates.status;
     if (updates.specialRequests !== undefined) localUpdates.specialRequests = updates.specialRequests;
+    if (updates.eta !== undefined) localUpdates.eta = updates.eta;
+    if (updates.etd !== undefined) localUpdates.etd = updates.etd;
 
     // Apply optimistic update immediately for better UX
     if (Object.keys(localUpdates).length > 0) {
@@ -451,6 +476,9 @@ export function useBookings() {
       if (updates.paymentMethod) apiUpdates.paymentMethod = updates.paymentMethod;
       if (updates.amountPaid !== undefined) apiUpdates.amountPaid = updates.amountPaid;
       if (updates.paymentNotes !== undefined) apiUpdates.paymentNotes = updates.paymentNotes;
+
+      if (updates.eta !== undefined) apiUpdates.eta = updates.eta;
+      if (updates.etd !== undefined) apiUpdates.etd = updates.etd;
 
       const result = await bookingService.updateBooking(bookingId, apiUpdates);
       const updatedBooking = transformBooking(result);

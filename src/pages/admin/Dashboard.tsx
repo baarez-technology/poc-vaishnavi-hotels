@@ -435,8 +435,8 @@ function HousekeepingChart({ summary }) {
                 data={chartData}
                 cx="50%"
                 cy="50%"
-                innerRadius={35}
-                outerRadius={50}
+                innerRadius="60%"
+                outerRadius="90%"
                 paddingAngle={3}
                 dataKey="value"
                 strokeWidth={0}
@@ -448,10 +448,10 @@ function HousekeepingChart({ summary }) {
             </PieChart>
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xl sm:text-[28px] font-semibold text-neutral-900 tracking-tight">
+            <span className="text-lg sm:text-2xl font-semibold text-neutral-900 tracking-tight">
               {cleanPercentage}%
             </span>
-            <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mt-0.5 sm:mt-1">
+            <span className="text-[8px] sm:text-[9px] font-semibold uppercase tracking-widest text-neutral-400 mt-0.5">
               Clean
             </span>
           </div>
@@ -502,60 +502,78 @@ function HousekeepingChart({ summary }) {
 function ChannelDistribution({ data }) {
   const COLORS = ['#A57865', '#BFA793', '#8B6450', '#D4C4B4', '#B49A82'];
 
+  // Find the top channel for the center label
+  const topChannel = data.reduce((max, ch) => (ch.value > max.value ? ch : max), data[0] || { name: 'N/A', value: 0 });
+
   return (
-    <div className="flex flex-col items-center gap-4 sm:gap-6">
-      <div className="relative w-32 h-32 sm:w-44 sm:h-44 flex-shrink-0">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <defs>
-              <filter id="shadow">
-                <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.1"/>
-              </filter>
-            </defs>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={35}
-              outerRadius={50}
-              paddingAngle={3}
-              dataKey="value"
-              strokeWidth={0}
+    <div className="h-full flex flex-col">
+      {/* Donut Chart */}
+      <div className="flex-1 flex flex-col items-center justify-center py-2">
+        <div className="relative w-32 h-32 sm:w-40 sm:h-40">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                innerRadius="60%"
+                outerRadius="90%"
+                paddingAngle={3}
+                dataKey="value"
+                strokeWidth={0}
+              >
+                {data.map((entry, index) => (
+                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-lg sm:text-2xl font-semibold text-neutral-900 tracking-tight">
+              {topChannel.value}%
+            </span>
+            <span className="text-[8px] sm:text-[9px] font-semibold uppercase tracking-widest text-neutral-400 mt-0.5">
+              {topChannel.name}
+            </span>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="w-full flex flex-col gap-1.5 sm:gap-2 mt-3 sm:mt-4">
+          {data.slice(0, 4).map((channel, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-neutral-50/50 hover:bg-neutral-50 transition-colors"
             >
-              {data.map((entry, index) => (
-                <Cell
-                  key={index}
-                  fill={COLORS[index % COLORS.length]}
-                  style={{ filter: 'url(#shadow)' }}
-                />
-              ))}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-xl sm:text-[28px] font-semibold text-neutral-900 tracking-tight">
-            {data[0]?.value}%
-          </span>
-          <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mt-0.5 sm:mt-1">
-            Direct
-          </span>
+              <div
+                className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0"
+                style={{ backgroundColor: COLORS[i] }}
+              />
+              <span className="text-xs sm:text-[13px] font-medium text-neutral-600 flex-1">{channel.name}</span>
+              <span className="text-xs sm:text-[13px] font-semibold text-neutral-900">{channel.value}%</span>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="w-full flex flex-col gap-2 sm:gap-3">
-        {data.slice(0, 4).map((channel, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-neutral-50/50 hover:bg-neutral-50 transition-colors"
-          >
-            <div
-              className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0"
-              style={{ backgroundColor: COLORS[i] }}
-            />
-            <span className="text-xs sm:text-[13px] font-medium text-neutral-600 flex-1">{channel.name}</span>
-            <span className="text-xs sm:text-[13px] font-semibold text-neutral-900">{channel.value}%</span>
-          </div>
-        ))}
+      {/* Stats — mirrors Housekeeping bottom row */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 mt-2 border-t border-neutral-100">
+        <div className="text-center">
+          <p className="text-lg sm:text-2xl font-semibold text-neutral-900 mb-0.5">
+            {data.length}
+          </p>
+          <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+            Channels
+          </p>
+        </div>
+        <div className="text-center">
+          <p className="text-lg sm:text-2xl font-semibold text-neutral-900 mb-0.5">
+            {topChannel.value}<span className="text-xs sm:text-sm text-neutral-400 font-medium ml-0.5">%</span>
+          </p>
+          <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+            Top Channel
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -1166,9 +1184,11 @@ export default function Dashboard() {
             <LuxurySectionCard
               title="Booking Channels"
               subtitle="Distribution breakdown"
-              className="h-full"
+              className="h-full flex flex-col"
             >
-              <ChannelDistribution data={channelMix} />
+              <div className="flex-1 flex flex-col justify-between">
+                <ChannelDistribution data={channelMix} />
+              </div>
             </LuxurySectionCard>
           </div>
 

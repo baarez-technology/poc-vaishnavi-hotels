@@ -3,6 +3,7 @@ import { Globe, CreditCard, Mail, MessageSquare, Link2, Lock, Check, Eye, EyeOff
 import { INTEGRATION_PROVIDERS, defaultSettings, deepMerge } from '../../utils/settings';
 import { Button } from '../ui2/Button';
 import { SelectDropdown } from '../ui2/Input';
+import { Badge } from '../ui2/Badge';
 
 const STORAGE_KEY = 'glimmora_integrations';
 
@@ -58,8 +59,8 @@ export default function IntegrationsTab() {
     setShowSecrets((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const inputClass = "w-full h-10 px-3 rounded-lg border border-neutral-200 text-sm text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus:border-terra-500 focus:ring-2 focus:ring-terra-500/20 focus:outline-none transition-colors";
-  const labelClass = "block text-[13px] font-medium text-neutral-600 mb-1.5";
+  const inputClass = "w-full px-4 py-2.5 text-sm bg-white border border-neutral-200 rounded-xl text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400 transition-colors";
+  const labelClass = "block text-[12px] font-semibold text-neutral-600 mb-1.5";
 
   // Toggle Switch Component
   const ToggleSwitch = ({ checked, onChange }) => (
@@ -112,13 +113,14 @@ export default function IntegrationsTab() {
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-medium hidden sm:inline ${
-                integrations.channelManager.enabled
-                  ? 'bg-sage-50 text-sage-600'
-                  : 'bg-neutral-100 text-neutral-500'
-              }`}>
+              <Badge
+                variant={integrations.channelManager.enabled ? 'success' : 'neutral'}
+                size="xs"
+                dot={integrations.channelManager.enabled}
+                className="hidden sm:inline-flex"
+              >
                 {integrations.channelManager.enabled ? 'Connected' : 'Disconnected'}
-              </span>
+              </Badge>
               <ToggleSwitch
                 checked={integrations.channelManager.enabled}
                 onChange={(checked) => updateSection('channelManager', { enabled: checked })}
@@ -182,13 +184,14 @@ export default function IntegrationsTab() {
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-medium hidden sm:inline ${
-                integrations.paymentGateway.enabled
-                  ? 'bg-sage-50 text-sage-600'
-                  : 'bg-neutral-100 text-neutral-500'
-              }`}>
+              <Badge
+                variant={integrations.paymentGateway.enabled ? 'success' : 'neutral'}
+                size="xs"
+                dot={integrations.paymentGateway.enabled}
+                className="hidden sm:inline-flex"
+              >
                 {integrations.paymentGateway.enabled ? 'Connected' : 'Disconnected'}
-              </span>
+              </Badge>
               <ToggleSwitch
                 checked={integrations.paymentGateway.enabled}
                 onChange={(checked) => updateSection('paymentGateway', { enabled: checked })}
@@ -270,13 +273,14 @@ export default function IntegrationsTab() {
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-medium hidden sm:inline ${
-                integrations.emailProvider.enabled
-                  ? 'bg-sage-50 text-sage-600'
-                  : 'bg-neutral-100 text-neutral-500'
-              }`}>
+              <Badge
+                variant={integrations.emailProvider.enabled ? 'success' : 'neutral'}
+                size="xs"
+                dot={integrations.emailProvider.enabled}
+                className="hidden sm:inline-flex"
+              >
                 {integrations.emailProvider.enabled ? 'Connected' : 'Disconnected'}
-              </span>
+              </Badge>
               <ToggleSwitch
                 checked={integrations.emailProvider.enabled}
                 onChange={(checked) => updateSection('emailProvider', { enabled: checked })}
@@ -349,13 +353,14 @@ export default function IntegrationsTab() {
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-medium hidden sm:inline ${
-                integrations.smsProvider.enabled
-                  ? 'bg-sage-50 text-sage-600'
-                  : 'bg-neutral-100 text-neutral-500'
-              }`}>
+              <Badge
+                variant={integrations.smsProvider.enabled ? 'success' : 'neutral'}
+                size="xs"
+                dot={integrations.smsProvider.enabled}
+                className="hidden sm:inline-flex"
+              >
                 {integrations.smsProvider.enabled ? 'Connected' : 'Disconnected'}
-              </span>
+              </Badge>
               <ToggleSwitch
                 checked={integrations.smsProvider.enabled}
                 onChange={(checked) => updateSection('smsProvider', { enabled: checked })}
@@ -446,13 +451,13 @@ export default function IntegrationsTab() {
                     <span className="text-[12px] sm:text-sm font-medium text-neutral-900">
                       {ota === 'bookingCom' ? 'Booking.com' : ota === 'mmt' ? 'MakeMyTrip' : ota.charAt(0).toUpperCase() + ota.slice(1)}
                     </span>
-                    <span className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium ${
-                      config.enabled
-                        ? 'bg-sage-50 text-sage-600'
-                        : 'bg-neutral-100 text-neutral-500'
-                    }`}>
+                    <Badge
+                      variant={config.enabled ? 'success' : 'neutral'}
+                      size="xs"
+                      dot={config.enabled}
+                    >
                       {config.enabled ? 'Active' : 'Inactive'}
-                    </span>
+                    </Badge>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 ml-6 sm:ml-0">
@@ -463,7 +468,7 @@ export default function IntegrationsTab() {
                     onChange={(e) => updateOTA(ota, { syncInterval: parseInt(e.target.value) })}
                     min="5"
                     max="120"
-                    className="w-14 sm:w-16 h-8 sm:h-10 px-2 rounded-lg border border-neutral-200 text-[12px] sm:text-sm text-center hover:border-neutral-300 focus:border-terra-500 focus:ring-2 focus:ring-terra-500/20 focus:ring-0 focus:outline-none transition-colors"
+                    className="w-14 sm:w-16 px-2 py-2 rounded-xl border border-neutral-200 bg-white text-[12px] sm:text-sm text-center focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400 transition-colors"
                   />
                   <span className="text-[10px] sm:text-xs text-neutral-500">min</span>
                 </div>
@@ -514,13 +519,14 @@ export default function IntegrationsTab() {
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-medium hidden sm:inline ${
-                integrations.encryption
-                  ? 'bg-sage-50 text-sage-600'
-                  : 'bg-neutral-100 text-neutral-500'
-              }`}>
+              <Badge
+                variant={integrations.encryption ? 'success' : 'neutral'}
+                size="xs"
+                dot={integrations.encryption}
+                className="hidden sm:inline-flex"
+              >
                 {integrations.encryption ? 'Enabled' : 'Disabled'}
-              </span>
+              </Badge>
               <ToggleSwitch
                 checked={integrations.encryption}
                 onChange={(checked) => saveIntegrations({ ...integrations, encryption: checked })}

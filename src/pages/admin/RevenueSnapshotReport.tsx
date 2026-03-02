@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { ArrowLeft, Download, RefreshCw, ChevronDown, AlertTriangle, Lightbulb, Info, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Button, IconButton } from '@/components/ui2/Button';
 import {
   LineChart,
   Line,
@@ -136,12 +137,9 @@ export default function RevenueSnapshotReport() {
         <div className="flex flex-col items-center gap-4 text-center">
           <AlertTriangle className="w-12 h-12 text-amber-500" />
           <p className="text-neutral-600">{error || 'Failed to load report'}</p>
-          <button
-            onClick={handleRefresh}
-            className="px-4 py-2 bg-terra-500 text-white rounded-lg text-sm font-medium"
-          >
+          <Button variant="primary" onClick={handleRefresh}>
             Try Again
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -161,14 +159,15 @@ export default function RevenueSnapshotReport() {
         {/* Header */}
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3 sm:gap-4">
-            <button
+            <IconButton
+              icon={ArrowLeft}
+              variant="outline"
+              size="sm"
+              label="Back to Reports"
               onClick={() => navigate('/admin/reports')}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center bg-white border border-neutral-200 flex-shrink-0"
-            >
-              <ArrowLeft className="w-4 h-4 text-neutral-600" />
-            </button>
+            />
             <div>
-              <h1 className="text-lg sm:text-xl font-semibold text-neutral-900">Revenue Snapshot</h1>
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">Revenue Snapshot</h1>
               <p className="text-[12px] sm:text-[13px] text-neutral-500">Comprehensive revenue analysis and forecasting</p>
             </div>
           </div>
@@ -207,13 +206,15 @@ export default function RevenueSnapshotReport() {
                 </>
               )}
             </div>
-            <button
+            <IconButton
+              icon={RefreshCw}
+              variant="outline"
+              size="sm"
+              label="Refresh"
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center bg-white border border-neutral-200 disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 text-neutral-500 ${isRefreshing ? 'animate-spin' : ''}`} />
-            </button>
+              className={isRefreshing ? '[&_svg]:animate-spin' : ''}
+            />
             <div className="relative">
               <button
                 onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
@@ -247,40 +248,40 @@ export default function RevenueSnapshotReport() {
 
         {/* Stats Grid */}
         <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          <div className="bg-white rounded-xl p-4 sm:p-5">
+          <div className="bg-white rounded-[10px] border border-neutral-100 p-4 sm:p-5">
             <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Total Revenue</p>
             <p className="text-xl sm:text-2xl font-semibold text-neutral-900">{formatCurrency(summary.total_revenue)}</p>
             <p className={`text-[10px] sm:text-[11px] font-medium mt-1 ${comparisons.revenue_change >= 0 ? 'text-sage-600' : 'text-red-500'}`}>
               {comparisons.revenue_change >= 0 ? '+' : ''}{comparisons.revenue_change.toFixed(1)}% vs last period
             </p>
           </div>
-          <div className="bg-white rounded-xl p-4 sm:p-5">
+          <div className="bg-white rounded-[10px] border border-neutral-100 p-4 sm:p-5">
             <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Avg ADR</p>
             <p className="text-xl sm:text-2xl font-semibold text-neutral-900">{symbol}{summary.avg_adr.toLocaleString()}</p>
             <p className={`text-[10px] sm:text-[11px] font-medium mt-1 ${comparisons.adr_change >= 0 ? 'text-sage-600' : 'text-red-500'}`}>
               {comparisons.adr_change >= 0 ? '+' : ''}{comparisons.adr_change.toFixed(1)}% vs last period
             </p>
           </div>
-          <div className="bg-white rounded-xl p-4 sm:p-5">
+          <div className="bg-white rounded-[10px] border border-neutral-100 p-4 sm:p-5">
             <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Avg RevPAR</p>
             <p className="text-xl sm:text-2xl font-semibold text-neutral-900">{symbol}{summary.avg_revpar.toLocaleString()}</p>
             <p className={`text-[10px] sm:text-[11px] font-medium mt-1 ${comparisons.revpar_change >= 0 ? 'text-sage-600' : 'text-red-500'}`}>
               {comparisons.revpar_change >= 0 ? '+' : ''}{comparisons.revpar_change.toFixed(1)}% vs last period
             </p>
           </div>
-          <div className="bg-white rounded-xl p-4 sm:p-5">
+          <div className="bg-white rounded-[10px] border border-neutral-100 p-4 sm:p-5">
             <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Avg Occupancy</p>
             <p className="text-xl sm:text-2xl font-semibold text-neutral-900">{summary.avg_occupancy}%</p>
             <p className={`text-[10px] sm:text-[11px] font-medium mt-1 ${comparisons.occupancy_change >= 0 ? 'text-sage-600' : 'text-red-500'}`}>
               {comparisons.occupancy_change >= 0 ? '+' : ''}{comparisons.occupancy_change.toFixed(1)}% vs last period
             </p>
           </div>
-          <div className="bg-white rounded-xl p-4 sm:p-5">
+          <div className="bg-white rounded-[10px] border border-neutral-100 p-4 sm:p-5">
             <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Peak Day Revenue</p>
             <p className="text-xl sm:text-2xl font-semibold text-neutral-900">{formatCurrency(summary.peak_revenue)}</p>
             <p className="text-[10px] sm:text-[11px] text-neutral-500 font-medium mt-1">Best performing day</p>
           </div>
-          <div className="bg-white rounded-xl p-4 sm:p-5">
+          <div className="bg-white rounded-[10px] border border-neutral-100 p-4 sm:p-5">
             <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Target Progress</p>
             <p className="text-xl sm:text-2xl font-semibold text-neutral-900">{summary.target_progress}%</p>
             <p className={`text-[10px] sm:text-[11px] font-medium mt-1 ${summary.target_progress >= 80 ? 'text-sage-600' : 'text-amber-500'}`}>
@@ -292,7 +293,7 @@ export default function RevenueSnapshotReport() {
         {/* Charts Row 1 - Line Charts */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Revenue Trend */}
-          <div className="bg-white rounded-xl p-4 sm:p-6">
+          <div className="bg-white rounded-[10px] border border-neutral-100 p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1">Revenue Trend</h3>
             <p className="text-[12px] text-neutral-500 mb-4">Daily revenue over time</p>
 
@@ -344,7 +345,7 @@ export default function RevenueSnapshotReport() {
           </div>
 
           {/* ADR vs RevPAR */}
-          <div className="bg-white rounded-xl p-4 sm:p-6">
+          <div className="bg-white rounded-[10px] border border-neutral-100 p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1">ADR vs RevPAR</h3>
             <p className="text-[12px] text-neutral-500 mb-4">Rate performance metrics</p>
 
@@ -399,7 +400,7 @@ export default function RevenueSnapshotReport() {
         {/* Charts Row 2 */}
         <section className="grid grid-cols-1 xl:grid-cols-5 gap-4 sm:gap-6">
           {/* Revenue by Source Pie Chart */}
-          <div className="xl:col-span-2 bg-white rounded-xl p-4 sm:p-6">
+          <div className="xl:col-span-2 bg-white rounded-[10px] border border-neutral-100 p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1">Revenue by Source</h3>
             <p className="text-[12px] text-neutral-500 mb-4">Revenue distribution</p>
 
@@ -444,7 +445,7 @@ export default function RevenueSnapshotReport() {
           </div>
 
           {/* Daily Revenue Bar Chart */}
-          <div className="xl:col-span-3 bg-white rounded-xl p-4 sm:p-6">
+          <div className="xl:col-span-3 bg-white rounded-[10px] border border-neutral-100 p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1">Daily Revenue (Last 14 Days)</h3>
             <p className="text-[12px] text-neutral-500 mb-4">Revenue performance</p>
 
@@ -492,7 +493,7 @@ export default function RevenueSnapshotReport() {
         {/* Tables Row */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Revenue by Room Type */}
-          <div className="bg-white rounded-xl p-4 sm:p-6">
+          <div className="bg-white rounded-[10px] border border-neutral-100 p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1">Revenue by Room Type</h3>
             <p className="text-[12px] text-neutral-500 mb-3 sm:mb-4">Performance by category</p>
 
@@ -521,7 +522,7 @@ export default function RevenueSnapshotReport() {
           </div>
 
           {/* Weekly Summary */}
-          <div className="bg-white rounded-xl p-4 sm:p-6">
+          <div className="bg-white rounded-[10px] border border-neutral-100 p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1">Weekly Summary</h3>
             <p className="text-[12px] text-neutral-500 mb-3 sm:mb-4">Week-over-week performance</p>
 
@@ -556,7 +557,7 @@ export default function RevenueSnapshotReport() {
 
         {/* AI Insights Section */}
         {ai_insights && ai_insights.length > 0 && (
-          <section className="bg-white rounded-xl p-4 sm:p-6">
+          <section className="bg-white rounded-[10px] border border-neutral-100 p-4 sm:p-6">
             <h3 className="text-sm font-semibold text-neutral-900 mb-1">AI Insights</h3>
             <p className="text-[12px] text-neutral-500 mb-4">Intelligent recommendations based on your revenue data</p>
 

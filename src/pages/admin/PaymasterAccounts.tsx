@@ -5,34 +5,97 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  Wallet, Plus, X, ChevronLeft, ChevronRight, ArrowRight, Trash2,
+  Wallet, Plus, ArrowRight, Trash2, Search,
 } from 'lucide-react';
 import {
   paymasterService, type PaymasterAccount, type PaymasterPosting,
 } from '@/api/services/paymaster.service';
-import toast from 'react-hot-toast';
+import { useToast } from '@/contexts/ToastContext';
+import { useCurrency } from '@/hooks/useCurrency';
+import {
+  Modal, ModalHeader, ModalTitle, ModalDescription, ModalContent, ModalFooter,
+} from '@/components/ui2/Modal';
+import { Drawer } from '@/components/ui2/Drawer';
+import { Button } from '@/components/ui2/Button';
+import { Badge } from '@/components/ui2/Badge';
+import { SearchBar } from '@/components/ui2/SearchBar';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+  TableEmpty, TableSkeleton, Pagination,
+} from '@/components/ui2/Table';
 
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    closed: 'bg-neutral-100 text-neutral-500 border-neutral-200',
-  };
+/* ── FilterSelect (matches Bookings pattern) ─────────────────────────────── */
+function FilterSelect({ value, onChange, options, placeholder }: {
+  value: string; onChange: (v: string) => void;
+  options: { value: string; label: string }[]; placeholder: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption = options.find(opt => opt.value === value);
+  const displayLabel = !value || value === 'all' ? placeholder : selectedOption?.label;
   return (
-    <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium border ${colors[status] || colors.closed}`}>
-      {status}
-    </span>
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`h-9 px-2.5 sm:px-3.5 rounded-lg text-xs sm:text-[13px] bg-white border transition-all duration-150 flex items-center gap-1.5 sm:gap-2 focus:outline-none w-full sm:min-w-[140px] ${
+          isOpen
+            ? 'border-terra-400 ring-2 ring-terra-500/10'
+            : value && value !== 'all'
+              ? 'border-terra-300 bg-terra-50'
+              : 'border-neutral-200 hover:border-neutral-300'
+        }`}
+      >
+        <span className={value && value !== 'all' ? 'text-terra-700 font-medium' : 'text-neutral-500'}>
+          {displayLabel}
+        </span>
+        <svg className={`w-4 h-4 ml-auto transition-transform ${isOpen ? 'rotate-180' : ''} ${value && value !== 'all' ? 'text-terra-500' : 'text-neutral-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="absolute z-50 w-full mt-1 bg-white rounded-lg border border-neutral-200 shadow-lg overflow-hidden min-w-[160px]">
+            {options.map(option => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => { onChange(option.value); setIsOpen(false); }}
+                className={`w-full px-3.5 py-2.5 text-[13px] text-left hover:bg-neutral-50 transition-colors flex items-center justify-between ${
+                  value === option.value ? 'bg-terra-50 text-terra-700' : 'text-neutral-700'
+                }`}
+              >
+                {option.label}
+                {value === option.value && (
+                  <svg className="w-4 h-4 text-terra-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
-// ── Create Modal ────────────────────────────────────────────────────────────
+/* ── Status variant helper ───────────────────────────────────────────────── */
+function statusVariant(status: string): 'success' | 'neutral' {
+  return status === 'active' ? 'success' : 'neutral';
+}
+
+/* ── Create Modal ────────────────────────────────────────────────────────── */
 function CreateModal({ isOpen, onClose, onSave }: {
   isOpen: boolean; onClose: () => void;
   onSave: (data: { account_name?: string; account_code?: string; notes?: string }) => Promise<void>;
 }) {
   const [form, setForm] = useState({ account_name: '', account_code: '', notes: '' });
   const [saving, setSaving] = useState(false);
+  const { error } = useToast();
 
-  if (!isOpen) return null;
+  const inputCls = 'w-full px-4 py-2.5 text-sm bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400';
+  const labelCls = 'block text-[12px] font-semibold text-neutral-600 mb-1.5';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,52 +109,53 @@ function CreateModal({ isOpen, onClose, onSave }: {
       onClose();
       setForm({ account_name: '', account_code: '', notes: '' });
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Failed to create');
+      error(err?.response?.data?.detail || 'Failed to create');
     }
     setSaving(false);
   };
 
-  const inputCls = 'w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/30';
-  const labelCls = 'block text-[12px] font-medium text-neutral-600 mb-1';
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
-          <h2 className="text-[15px] font-semibold text-neutral-900">New Paymaster Account</h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-neutral-100"><X size={18} /></button>
-        </div>
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          <div>
-            <label className={labelCls}>Account Name</label>
-            <input className={inputCls} value={form.account_name}
-              onChange={e => setForm(f => ({ ...f, account_name: e.target.value }))} placeholder="e.g. Disputed Charges Pool" />
+    <Modal isOpen={isOpen} onClose={onClose} size="md">
+      <form onSubmit={handleSubmit}>
+        <ModalHeader>
+          <ModalTitle>New Paymaster Account</ModalTitle>
+          <ModalDescription>Create a holding account for disputed charges</ModalDescription>
+        </ModalHeader>
+        <ModalContent>
+          <div className="space-y-4">
+            <div>
+              <label className={labelCls}>Account Name</label>
+              <input className={inputCls} value={form.account_name}
+                onChange={e => setForm(f => ({ ...f, account_name: e.target.value }))}
+                placeholder="e.g. Disputed Charges Pool" />
+            </div>
+            <div>
+              <label className={labelCls}>Account Code</label>
+              <input className={inputCls} value={form.account_code}
+                onChange={e => setForm(f => ({ ...f, account_code: e.target.value }))}
+                placeholder="Optional code" />
+            </div>
+            <div>
+              <label className={labelCls}>Notes</label>
+              <textarea className={`${inputCls} min-h-[60px]`} value={form.notes}
+                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+            </div>
           </div>
-          <div>
-            <label className={labelCls}>Account Code</label>
-            <input className={inputCls} value={form.account_code}
-              onChange={e => setForm(f => ({ ...f, account_code: e.target.value }))} placeholder="Optional code" />
-          </div>
-          <div>
-            <label className={labelCls}>Notes</label>
-            <textarea className={`${inputCls} min-h-[60px]`} value={form.notes}
-              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
-          </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-[13px] text-neutral-600 border border-neutral-200 rounded-lg hover:bg-neutral-50">Cancel</button>
-            <button type="submit" disabled={saving} className="px-4 py-2 text-[13px] text-white bg-terra-600 rounded-lg hover:bg-terra-700 disabled:opacity-50">
-              {saving ? 'Creating...' : 'Create Account'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </ModalContent>
+        <ModalFooter>
+          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="primary" disabled={saving} loading={saving}>
+            {saving ? 'Creating...' : 'Create Account'}
+          </Button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 }
 
-// ── Transfer Modal ─────────────────────────────────────────────────────────
-function TransferModal({ isOpen, onClose, accountId, postings, onSave }: {
-  isOpen: boolean; onClose: () => void; accountId: number;
+/* ── Transfer Modal ──────────────────────────────────────────────────────── */
+function TransferModal({ isOpen, onClose, postings, onSave }: {
+  isOpen: boolean; onClose: () => void;
   postings: PaymasterPosting[];
   onSave: (data: { posting_ids: number[]; target_booking_id: number; notes?: string }) => Promise<void>;
 }) {
@@ -99,14 +163,17 @@ function TransferModal({ isOpen, onClose, accountId, postings, onSave }: {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
-
-  if (!isOpen) return null;
+  const { error } = useToast();
+  const { formatSimple } = useCurrency();
 
   const chargePostings = postings.filter(p => p.posting_type === 'charge_in');
 
   const togglePosting = (id: number) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
+
+  const inputCls = 'w-full px-4 py-2.5 text-sm bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400';
+  const labelCls = 'block text-[12px] font-semibold text-neutral-600 mb-1.5';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,67 +186,76 @@ function TransferModal({ isOpen, onClose, accountId, postings, onSave }: {
       setSelectedIds([]);
       setNotes('');
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Transfer failed');
+      error(err?.response?.data?.detail || 'Transfer failed');
     }
     setSaving(false);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[80vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
-          <h2 className="text-[15px] font-semibold text-neutral-900">Transfer to Booking</h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-neutral-100"><X size={18} /></button>
-        </div>
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          <div>
-            <label className="block text-[12px] font-medium text-neutral-600 mb-1">Target Booking ID *</label>
-            <input type="number" value={bookingId} onChange={e => setBookingId(e.target.value)}
-              className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/30" required />
+    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      <form onSubmit={handleSubmit}>
+        <ModalHeader>
+          <ModalTitle>Transfer to Booking</ModalTitle>
+          <ModalDescription>Select postings and transfer them to a guest booking</ModalDescription>
+        </ModalHeader>
+        <ModalContent>
+          <div className="space-y-4">
+            <div>
+              <label className={labelCls}>Target Booking ID *</label>
+              <input type="number" value={bookingId} onChange={e => setBookingId(e.target.value)}
+                className={inputCls} required />
+            </div>
+            <div>
+              <label className={labelCls}>Select Postings to Transfer</label>
+              {chargePostings.length === 0 ? (
+                <p className="text-[12px] text-neutral-400 mt-1">No charge postings available</p>
+              ) : (
+                <div className="space-y-2 max-h-[200px] overflow-y-auto mt-1">
+                  {chargePostings.map(p => (
+                    <label key={p.id} className="flex items-center gap-3 px-3 py-2.5 bg-neutral-50 rounded-xl cursor-pointer hover:bg-neutral-100 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(p.id)}
+                        onChange={() => togglePosting(p.id)}
+                        className="w-4 h-4 rounded border-neutral-300 text-terra-600 focus:ring-terra-500"
+                      />
+                      <span className="text-[12px] text-neutral-700 flex-1">{p.description}</span>
+                      <span className="text-[12px] font-medium text-neutral-900">{formatSimple(p.amount)}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className={labelCls}>Notes</label>
+              <textarea value={notes} onChange={e => setNotes(e.target.value)}
+                className={`${inputCls} min-h-[50px]`} />
+            </div>
           </div>
-          <div>
-            <label className="block text-[12px] font-medium text-neutral-600 mb-2">Select Postings to Transfer</label>
-            {chargePostings.length === 0 ? (
-              <p className="text-[12px] text-neutral-400">No charge postings available</p>
-            ) : (
-              <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                {chargePostings.map(p => (
-                  <label key={p.id} className="flex items-center gap-2 px-3 py-2 bg-neutral-50 rounded-lg cursor-pointer hover:bg-neutral-100">
-                    <input type="checkbox" checked={selectedIds.includes(p.id)} onChange={() => togglePosting(p.id)} />
-                    <span className="text-[12px] text-neutral-700 flex-1">{p.description}</span>
-                    <span className="text-[12px] font-medium text-neutral-900">{p.amount.toFixed(2)}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
-          <div>
-            <label className="block text-[12px] font-medium text-neutral-600 mb-1">Notes</label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)}
-              className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/30 min-h-[50px]" />
-          </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-[13px] text-neutral-600 border border-neutral-200 rounded-lg hover:bg-neutral-50">Cancel</button>
-            <button type="submit" disabled={saving || selectedIds.length === 0} className="px-4 py-2 text-[13px] text-white bg-terra-600 rounded-lg hover:bg-terra-700 disabled:opacity-50">
-              {saving ? 'Transferring...' : 'Transfer'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </ModalContent>
+        <ModalFooter>
+          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="primary" disabled={saving || selectedIds.length === 0} loading={saving}>
+            {saving ? 'Transferring...' : 'Transfer'}
+          </Button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 }
 
-// ── Write Off Modal ─────────────────────────────────────────────────────────
-function WriteOffModal({ isOpen, onClose, accountId, onSave }: {
-  isOpen: boolean; onClose: () => void; accountId: number;
+/* ── Write Off Modal ─────────────────────────────────────────────────────── */
+function WriteOffModal({ isOpen, onClose, onSave }: {
+  isOpen: boolean; onClose: () => void;
   onSave: (amount: number, reason: string) => Promise<void>;
 }) {
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
   const [saving, setSaving] = useState(false);
+  const { error } = useToast();
 
-  if (!isOpen) return null;
+  const inputCls = 'w-full px-4 py-2.5 text-sm bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400';
+  const labelCls = 'block text-[12px] font-semibold text-neutral-600 mb-1.5';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,42 +267,44 @@ function WriteOffModal({ isOpen, onClose, accountId, onSave }: {
       setAmount('');
       setReason('');
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Write-off failed');
+      error(err?.response?.data?.detail || 'Write-off failed');
     }
     setSaving(false);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
-          <h2 className="text-[15px] font-semibold text-neutral-900">Write Off</h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-neutral-100"><X size={18} /></button>
-        </div>
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          <div>
-            <label className="block text-[12px] font-medium text-neutral-600 mb-1">Amount *</label>
-            <input type="number" min={0} step={0.01} value={amount} onChange={e => setAmount(e.target.value)}
-              className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/30" required />
+    <Modal isOpen={isOpen} onClose={onClose} size="md">
+      <form onSubmit={handleSubmit}>
+        <ModalHeader>
+          <ModalTitle>Write Off</ModalTitle>
+          <ModalDescription>Write off an amount from this paymaster account</ModalDescription>
+        </ModalHeader>
+        <ModalContent>
+          <div className="space-y-4">
+            <div>
+              <label className={labelCls}>Amount *</label>
+              <input type="number" min={0} step={0.01} value={amount}
+                onChange={e => setAmount(e.target.value)} className={inputCls} required />
+            </div>
+            <div>
+              <label className={labelCls}>Reason *</label>
+              <textarea value={reason} onChange={e => setReason(e.target.value)}
+                className={`${inputCls} min-h-[60px]`} required />
+            </div>
           </div>
-          <div>
-            <label className="block text-[12px] font-medium text-neutral-600 mb-1">Reason *</label>
-            <textarea value={reason} onChange={e => setReason(e.target.value)}
-              className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/30 min-h-[60px]" required />
-          </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-[13px] text-neutral-600 border border-neutral-200 rounded-lg hover:bg-neutral-50">Cancel</button>
-            <button type="submit" disabled={saving} className="px-4 py-2 text-[13px] text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50">
-              {saving ? 'Writing off...' : 'Write Off'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </ModalContent>
+        <ModalFooter>
+          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="danger" disabled={saving} loading={saving}>
+            {saving ? 'Writing off...' : 'Write Off'}
+          </Button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 }
 
-// ── Detail Drawer ──────────────────────────────────────────────────────────
+/* ── Detail Drawer ───────────────────────────────────────────────────────── */
 function DetailDrawer({ account, onClose, onRefresh }: {
   account: PaymasterAccount; onClose: () => void; onRefresh: () => void;
 }) {
@@ -234,6 +312,8 @@ function DetailDrawer({ account, onClose, onRefresh }: {
   const [loadingPostings, setLoadingPostings] = useState(true);
   const [transferOpen, setTransferOpen] = useState(false);
   const [writeOffOpen, setWriteOffOpen] = useState(false);
+  const { success } = useToast();
+  const { formatSimple } = useCurrency();
 
   useEffect(() => {
     setLoadingPostings(true);
@@ -245,136 +325,136 @@ function DetailDrawer({ account, onClose, onRefresh }: {
 
   const handleTransfer = async (data: any) => {
     await paymasterService.transferToBooking(account.id, data);
-    toast.success('Transfer completed');
+    success('Transfer completed');
     onRefresh();
   };
 
   const handleWriteOff = async (amount: number, reason: string) => {
     await paymasterService.writeOff(account.id, amount, reason);
-    toast.success('Write-off recorded');
+    success('Write-off recorded');
     onRefresh();
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-40 w-full max-w-lg bg-white shadow-xl border-l border-neutral-200 flex flex-col">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
-        <div>
-          <h2 className="text-[15px] font-semibold text-neutral-900">{account.account_name || 'Paymaster Account'}</h2>
-          <p className="text-[12px] text-neutral-500">{account.account_code || `#${account.id}`}</p>
-        </div>
-        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-neutral-100"><X size={18} /></button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-        {/* Summary */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-neutral-50 rounded-lg p-3 text-center">
-            <p className="text-[11px] text-neutral-500">Total Charges</p>
-            <p className="text-[14px] font-bold text-neutral-900">{account.total_charges.toFixed(2)}</p>
-          </div>
-          <div className="bg-neutral-50 rounded-lg p-3 text-center">
-            <p className="text-[11px] text-neutral-500">Transferred</p>
-            <p className="text-[14px] font-bold text-neutral-900">{account.total_transferred.toFixed(2)}</p>
-          </div>
-          <div className="bg-neutral-50 rounded-lg p-3 text-center">
-            <p className="text-[11px] text-neutral-500">Balance</p>
-            <p className={`text-[14px] font-bold ${account.current_balance > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-              {account.current_balance.toFixed(2)}
-            </p>
-          </div>
-        </div>
-
-        {account.notes && (
-          <div className="text-[12px] text-neutral-600 bg-neutral-50 rounded-lg p-3">{account.notes}</div>
-        )}
-
-        {/* Postings */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[12px] font-semibold text-neutral-400 uppercase tracking-wider">Postings</h3>
-            <span className="text-[11px] text-neutral-400">{Array.isArray(postings) ? postings.length : 0} items</span>
-          </div>
-          {loadingPostings ? (
-            <div className="flex justify-center py-6"><div className="w-5 h-5 border-2 border-neutral-200 border-t-terra-500 rounded-full animate-spin" /></div>
-          ) : !Array.isArray(postings) || postings.length === 0 ? (
-            <p className="text-[13px] text-neutral-400">No postings yet</p>
-          ) : (
-            <div className="space-y-2 max-h-[300px] overflow-y-auto">
-              {postings.map((p: PaymasterPosting) => (
-                <div key={p.id} className="flex items-center justify-between px-3 py-2 bg-neutral-50 rounded-lg">
-                  <div>
-                    <p className="text-[12px] font-medium text-neutral-800">{p.description}</p>
-                    <p className="text-[10px] text-neutral-400">
-                      {p.posting_type} — {new Date(p.posted_at).toLocaleDateString()}
-                      {p.source_booking_id ? ` — Booking #${p.source_booking_id}` : ''}
-                    </p>
-                  </div>
-                  <span className={`text-[12px] font-medium ${
-                    p.posting_type === 'charge_in' ? 'text-red-600' : 'text-emerald-600'
-                  }`}>
-                    {p.posting_type === 'charge_in' ? '+' : '-'}{p.amount.toFixed(2)}
-                  </span>
-                </div>
-              ))}
+    <>
+      <Drawer
+        isOpen={true}
+        onClose={onClose}
+        title={account.account_name || 'Paymaster Account'}
+        subtitle={account.account_code || `#${account.id}`}
+        maxWidth="max-w-lg"
+        footer={
+          account.status === 'active' ? (
+            <div className="flex gap-3 w-full">
+              <Button variant="outline" className="flex-1" onClick={() => setTransferOpen(true)}>
+                <ArrowRight size={15} className="mr-2" />
+                Transfer to Booking
+              </Button>
+              <Button variant="danger" className="flex-1" onClick={() => setWriteOffOpen(true)}>
+                <Trash2 size={15} className="mr-2" />
+                Write Off
+              </Button>
             </div>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        {account.status === 'active' && (
-          <div className="flex gap-3">
-            <button
-              onClick={() => setTransferOpen(true)}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-[13px] font-medium text-terra-700 bg-terra-50 border border-terra-200 rounded-lg hover:bg-terra-100"
-            >
-              <ArrowRight size={15} />
-              Transfer to Booking
-            </button>
-            <button
-              onClick={() => setWriteOffOpen(true)}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-[13px] font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
-            >
-              <Trash2 size={15} />
-              Write Off
-            </button>
+          ) : undefined
+        }
+      >
+        <div className="space-y-5">
+          {/* Summary */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-neutral-50 rounded-xl p-3 text-center">
+              <p className="text-[11px] text-neutral-500">Total Charges</p>
+              <p className="text-[14px] font-bold text-neutral-900">{formatSimple(account.total_charges)}</p>
+            </div>
+            <div className="bg-neutral-50 rounded-xl p-3 text-center">
+              <p className="text-[11px] text-neutral-500">Transferred</p>
+              <p className="text-[14px] font-bold text-neutral-900">{formatSimple(account.total_transferred)}</p>
+            </div>
+            <div className="bg-neutral-50 rounded-xl p-3 text-center">
+              <p className="text-[11px] text-neutral-500">Balance</p>
+              <p className={`text-[14px] font-bold ${account.current_balance > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                {formatSimple(account.current_balance)}
+              </p>
+            </div>
           </div>
-        )}
-      </div>
+
+          {account.notes && (
+            <div className="text-[12px] text-neutral-600 bg-neutral-50 rounded-xl p-3">{account.notes}</div>
+          )}
+
+          {/* Postings */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest">Postings</h3>
+              <span className="text-[11px] text-neutral-400">{Array.isArray(postings) ? postings.length : 0} items</span>
+            </div>
+            {loadingPostings ? (
+              <div className="flex justify-center py-6">
+                <div className="w-5 h-5 border-2 border-neutral-200 border-t-terra-500 rounded-full animate-spin" />
+              </div>
+            ) : !Array.isArray(postings) || postings.length === 0 ? (
+              <p className="text-[13px] text-neutral-400 text-center py-6">No postings yet</p>
+            ) : (
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {postings.map((p: PaymasterPosting) => (
+                  <div key={p.id} className="flex items-center justify-between px-3 py-2.5 bg-neutral-50 rounded-xl">
+                    <div>
+                      <p className="text-[12px] font-medium text-neutral-800">{p.description}</p>
+                      <p className="text-[10px] text-neutral-400">
+                        {p.posting_type} — {new Date(p.posted_at).toLocaleDateString()}
+                        {p.source_booking_id ? ` — Booking #${p.source_booking_id}` : ''}
+                      </p>
+                    </div>
+                    <span className={`text-[12px] font-medium ${
+                      p.posting_type === 'charge_in' ? 'text-red-600' : 'text-emerald-600'
+                    }`}>
+                      {p.posting_type === 'charge_in' ? '+' : '-'}{formatSimple(p.amount)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </Drawer>
 
       <TransferModal
         isOpen={transferOpen}
         onClose={() => setTransferOpen(false)}
-        accountId={account.id}
         postings={Array.isArray(postings) ? postings : []}
         onSave={handleTransfer}
       />
       <WriteOffModal
         isOpen={writeOffOpen}
         onClose={() => setWriteOffOpen(false)}
-        accountId={account.id}
         onSave={handleWriteOff}
       />
-    </div>
+    </>
   );
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────────
+/* ── Main Page ───────────────────────────────────────────────────────────── */
 export default function PaymasterAccounts() {
   const [accounts, setAccounts] = useState<PaymasterAccount[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<PaymasterAccount | null>(null);
   const perPage = 15;
+  const { success, error } = useToast();
+  const { formatSimple } = useCurrency();
 
   const fetchAccounts = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await paymasterService.listAccounts({ status: statusFilter || undefined, limit: 200 });
+      const data = await paymasterService.listAccounts({
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        limit: 200,
+      });
       setAccounts(Array.isArray(data) ? data : []);
     } catch {
-      toast.error('Failed to load paymaster accounts');
+      error('Failed to load paymaster accounts');
     }
     setLoading(false);
   }, [statusFilter]);
@@ -383,15 +463,25 @@ export default function PaymasterAccounts() {
     fetchAccounts();
   }, [fetchAccounts]);
 
+  const filtered = useMemo(() => {
+    if (!search.trim()) return accounts;
+    const q = search.toLowerCase();
+    return accounts.filter(a =>
+      (a.account_name || '').toLowerCase().includes(q) ||
+      (a.account_code || '').toLowerCase().includes(q) ||
+      String(a.id).includes(q)
+    );
+  }, [accounts, search]);
+
   const paged = useMemo(() => {
     const start = (page - 1) * perPage;
-    return accounts.slice(start, start + perPage);
-  }, [accounts, page]);
-  const totalPages = Math.ceil(accounts.length / perPage);
+    return filtered.slice(start, start + perPage);
+  }, [filtered, page]);
+  const totalPages = Math.ceil(filtered.length / perPage);
 
   const handleCreate = async (data: any) => {
     await paymasterService.createAccount(data);
-    toast.success('Account created');
+    success('Account created');
     fetchAccounts();
   };
 
@@ -400,108 +490,125 @@ export default function PaymasterAccounts() {
     setSelectedAccount(null);
   };
 
+  const statusOptions = [
+    { value: 'all', label: 'All Status' },
+    { value: 'active', label: 'Active' },
+    { value: 'closed', label: 'Closed' },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-terra-50 rounded-xl flex items-center justify-center">
-            <Wallet size={20} className="text-terra-600" />
-          </div>
+    <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[18px] font-bold text-neutral-900">Paymaster Accounts</h1>
-            <p className="text-[12px] text-neutral-500">{accounts.length} accounts</p>
-          </div>
-        </div>
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-terra-600 rounded-lg hover:bg-terra-700 transition-colors"
-        >
-          <Plus size={16} />
-          New Account
-        </button>
-      </div>
-
-      {/* Filter */}
-      <div className="flex items-center gap-3">
-        <select
-          className="px-3 py-2 text-[13px] border border-neutral-200 rounded-lg bg-white focus:outline-none"
-          value={statusFilter}
-          onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-        >
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="closed">Closed</option>
-        </select>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-neutral-200 bg-neutral-50/50">
-                {['Code', 'Account Name', 'Total Charges', 'Transferred', 'Balance', 'Status', 'Created'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold text-neutral-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={7} className="px-4 py-12 text-center text-[13px] text-neutral-400">
-                  <div className="flex justify-center"><div className="w-6 h-6 border-2 border-neutral-200 border-t-terra-500 rounded-full animate-spin" /></div>
-                </td></tr>
-              ) : paged.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-12 text-center text-[13px] text-neutral-400">No paymaster accounts found</td></tr>
-              ) : paged.map(acct => (
-                <tr
-                  key={acct.id}
-                  className="border-b border-neutral-100 hover:bg-neutral-50/50 cursor-pointer transition-colors"
-                  onClick={() => setSelectedAccount(acct)}
-                >
-                  <td className="px-4 py-3 text-[12px] font-mono text-neutral-600">{acct.account_code || `#${acct.id}`}</td>
-                  <td className="px-4 py-3 text-[13px] font-medium text-neutral-900">{acct.account_name || '—'}</td>
-                  <td className="px-4 py-3 text-[12px] text-neutral-700">{acct.total_charges.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-[12px] text-neutral-700">{acct.total_transferred.toFixed(2)}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-[12px] font-medium ${acct.current_balance > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                      {acct.current_balance.toFixed(2)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3"><StatusBadge status={acct.status} /></td>
-                  <td className="px-4 py-3 text-[11px] text-neutral-500">{new Date(acct.created_at).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-200">
-            <p className="text-[12px] text-neutral-500">
-              Showing {(page - 1) * perPage + 1}–{Math.min(page * perPage, accounts.length)} of {accounts.length}
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">Paymaster Accounts</h1>
+            <p className="text-[12px] sm:text-[13px] text-neutral-500 mt-1">
+              {accounts.length} account{accounts.length !== 1 ? 's' : ''} total
             </p>
-            <div className="flex items-center gap-1">
-              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="p-1.5 rounded-lg hover:bg-neutral-100 disabled:opacity-30">
-                <ChevronLeft size={16} />
-              </button>
-              <span className="px-2 text-[12px] text-neutral-600">{page}/{totalPages}</span>
-              <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="p-1.5 rounded-lg hover:bg-neutral-100 disabled:opacity-30">
-                <ChevronRight size={16} />
-              </button>
+          </div>
+          <Button variant="primary" icon={Plus} onClick={() => setCreateOpen(true)}>
+            New Account
+          </Button>
+        </div>
+
+        {/* Card */}
+        <div className="bg-white rounded-[10px] overflow-hidden">
+          {/* Filter bar */}
+          <div className="px-4 sm:px-6 py-3 sm:py-4 bg-neutral-50/30 border-b border-neutral-100">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <div className="sm:flex-1 sm:max-w-md w-full">
+                <SearchBar
+                  value={search}
+                  onChange={setSearch}
+                  onClear={() => setSearch('')}
+                  placeholder="Search accounts..."
+                  size="sm"
+                />
+              </div>
+              <div className="hidden sm:block sm:flex-1" />
+              <FilterSelect
+                value={statusFilter}
+                onChange={v => { setStatusFilter(v); setPage(1); }}
+                options={statusOptions}
+                placeholder="Status"
+              />
             </div>
           </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Account Name</TableHead>
+                  <TableHead>Total Charges</TableHead>
+                  <TableHead>Transferred</TableHead>
+                  <TableHead>Balance</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableSkeleton columns={7} rows={5} />
+                ) : paged.length === 0 ? (
+                  <TableEmpty
+                    colSpan={7}
+                    icon={Wallet}
+                    title="No paymaster accounts found"
+                    description={search ? 'Try adjusting your search or filters' : 'Create a new account to get started'}
+                  />
+                ) : paged.map(acct => (
+                  <TableRow
+                    key={acct.id}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedAccount(acct)}
+                  >
+                    <TableCell className="font-mono text-neutral-600">{acct.account_code || `#${acct.id}`}</TableCell>
+                    <TableCell className="font-medium text-neutral-900">{acct.account_name || '—'}</TableCell>
+                    <TableCell>{formatSimple(acct.total_charges)}</TableCell>
+                    <TableCell>{formatSimple(acct.total_transferred)}</TableCell>
+                    <TableCell>
+                      <span className={`font-medium ${acct.current_balance > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                        {formatSimple(acct.current_balance)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusVariant(acct.status)}>{acct.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-neutral-500">{new Date(acct.created_at).toLocaleDateString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          {!loading && totalPages > 0 && (
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 bg-neutral-50/30">
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                totalItems={filtered.length}
+                itemsPerPage={perPage}
+                onPageChange={setPage}
+              />
+            </div>
+          )}
+        </div>
+
+        <CreateModal isOpen={createOpen} onClose={() => setCreateOpen(false)} onSave={handleCreate} />
+
+        {selectedAccount && (
+          <DetailDrawer
+            account={selectedAccount}
+            onClose={() => setSelectedAccount(null)}
+            onRefresh={handleRefreshFromDrawer}
+          />
         )}
       </div>
-
-      <CreateModal isOpen={createOpen} onClose={() => setCreateOpen(false)} onSave={handleCreate} />
-
-      {selectedAccount && (
-        <>
-          <div className="fixed inset-0 z-30 bg-black/10" onClick={() => setSelectedAccount(null)} />
-          <DetailDrawer account={selectedAccount} onClose={() => setSelectedAccount(null)} onRefresh={handleRefreshFromDrawer} />
-        </>
-      )}
     </div>
   );
 }

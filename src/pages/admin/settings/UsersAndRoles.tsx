@@ -3,6 +3,15 @@ import { useSettingsContext } from '../../../contexts/SettingsContext';
 import { useToast } from '../../../contexts/ToastContext';
 import FormSection from '../../../components/settings/FormSection';
 import UsersTable from '../../../components/settings/UsersTable';
+import { Button } from '../../../components/ui2/Button';
+import {
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalContent,
+  ModalFooter,
+} from '../../../components/ui2/Modal';
 import { UserPlus, Users as UsersIcon } from 'lucide-react';
 
 /**
@@ -48,13 +57,13 @@ export default function UsersAndRoles() {
             Manage team members and their roles
           </p>
         </div>
-        <button
+        <Button
+          variant="primary"
+          icon={UserPlus}
           onClick={handleInviteUser}
-          className="px-4 py-2 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-lg hover:shadow transition-all flex items-center gap-2 text-sm font-medium"
         >
-          <UserPlus className="w-4 h-4" />
           Invite User
-        </button>
+        </Button>
       </div>
 
       {/* Users Table */}
@@ -78,10 +87,10 @@ export default function UsersAndRoles() {
           {roles.map((role) => (
             <div
               key={role.id}
-              className="p-4 bg-[#FAF8F6] border border-neutral-200 rounded-lg hover:border-primary-300 hover:shadow-sm transition-all"
+              className="p-4 bg-[#FAF8F6] border border-neutral-100 rounded-[10px] hover:border-primary-300 hover:shadow-sm transition-all"
             >
               <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
+                className="w-10 h-10 rounded-[10px] flex items-center justify-center mb-3"
                 style={{ backgroundColor: role.color + '20' }}
               >
                 <UsersIcon className="w-5 h-5" style={{ color: role.color }} />
@@ -100,58 +109,57 @@ export default function UsersAndRoles() {
         </div>
       </FormSection>
 
-      {/* Invite User Modal (Simple Version) */}
-      {showInviteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-xl font-semibold text-neutral-800 mb-4">
-              Invite New User
-            </h3>
+      {/* Invite User Modal */}
+      <Modal open={showInviteModal} onClose={() => setShowInviteModal(false)} size="sm">
+        <ModalHeader icon={UserPlus}>
+          <ModalTitle>Invite New User</ModalTitle>
+          <ModalDescription>Send an invitation to join your team</ModalDescription>
+        </ModalHeader>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  placeholder="user@example.com"
-                  className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Role
-                </label>
-                <select className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent">
-                  {rolesData.map(role => (
-                    <option key={role.id} value={role.name}>{role.name}</option>
-                  ))}
-                </select>
-              </div>
+        <ModalContent>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-[12px] font-semibold text-neutral-600 mb-1.5">
+                Email Address
+              </label>
+              <input
+                type="email"
+                placeholder="user@example.com"
+                className="w-full px-4 py-2.5 text-sm bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400"
+              />
             </div>
 
-            <div className="flex items-center gap-3 mt-6">
-              <button
-                onClick={() => setShowInviteModal(false)}
-                className="flex-1 px-4 py-2 bg-neutral-100 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  setShowInviteModal(false);
-                  alert('User invited!');
-                }}
-                className="flex-1 px-4 py-2 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-lg hover:shadow transition-all text-sm font-medium"
-              >
-                Send Invite
-              </button>
+            <div>
+              <label className="block text-[12px] font-semibold text-neutral-600 mb-1.5">
+                Role
+              </label>
+              <select className="w-full px-4 py-2.5 text-sm bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400">
+                {roles.map(role => (
+                  <option key={role.id} value={role.name}>{role.name}</option>
+                ))}
+              </select>
             </div>
           </div>
-        </div>
-      )}
+        </ModalContent>
+
+        <ModalFooter>
+          <Button
+            variant="outline"
+            onClick={() => setShowInviteModal(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => {
+              setShowInviteModal(false);
+              success('User invited!');
+            }}
+          >
+            Send Invite
+          </Button>
+        </ModalFooter>
+      </Modal>
     </div>
   );
 }

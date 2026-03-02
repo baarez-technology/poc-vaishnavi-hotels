@@ -3,6 +3,7 @@ import { useSettingsContext } from '../../../contexts/SettingsContext';
 import { useToast } from '../../../contexts/ToastContext';
 import FormSection, { FormField } from '../../../components/settings/FormSection';
 import { Upload, Save } from 'lucide-react';
+import { Button } from '@/components/ui2/Button';
 
 /**
  * General Settings Page
@@ -31,13 +32,9 @@ export default function GeneralSettings() {
         title="Hotel Profile"
         description="Basic information about your hotel"
         actions={
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-terra-500 hover:bg-terra-600 text-white border border-terra-600 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
-          >
-            <Save className="w-4 h-4" />
+          <Button variant="primary" icon={Save} onClick={handleSave}>
             Save Changes
-          </button>
+          </Button>
         }
       >
         <FormField label="Hotel Name" required>
@@ -45,7 +42,7 @@ export default function GeneralSettings() {
             type="text"
             value={settings.hotelName || ''}
             onChange={(e) => setSettings({ ...settings, hotelName: e.target.value })}
-            className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent"
+            className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400"
           />
         </FormField>
 
@@ -54,7 +51,7 @@ export default function GeneralSettings() {
             type="text"
             value={settings.tagline || ''}
             onChange={(e) => setSettings({ ...settings, tagline: e.target.value })}
-            className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent"
+            className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400"
             placeholder="Your Luxury Escape"
           />
         </FormField>
@@ -81,7 +78,7 @@ export default function GeneralSettings() {
             <select
               value={settings.timezone || 'America/New_York'}
               onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent"
+              className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400"
             >
               <option value="America/New_York">Eastern Time (ET)</option>
               <option value="America/Chicago">Central Time (CT)</option>
@@ -97,7 +94,7 @@ export default function GeneralSettings() {
             <select
               value={settings.currency || 'INR'}
               onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent"
+              className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400"
             >
               <option value="INR">INR - Indian Rupee</option>
               <option value="USD">USD - US Dollar</option>
@@ -113,7 +110,7 @@ export default function GeneralSettings() {
             <select
               value={settings.language || 'en'}
               onChange={(e) => setSettings({ ...settings, language: e.target.value })}
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent"
+              className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400"
             >
               <option value="en">English</option>
               <option value="es">Spanish</option>
@@ -136,7 +133,7 @@ export default function GeneralSettings() {
               type="email"
               value={settings.contactEmail || ''}
               onChange={(e) => setSettings({ ...settings, contactEmail: e.target.value })}
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent"
+              className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400"
               placeholder="contact@glimmora.com"
             />
           </FormField>
@@ -146,7 +143,7 @@ export default function GeneralSettings() {
               type="tel"
               value={settings.contactPhone || ''}
               onChange={(e) => setSettings({ ...settings, contactPhone: e.target.value })}
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent"
+              className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400"
               placeholder="+1 (555) 123-4567"
             />
           </FormField>
@@ -157,7 +154,7 @@ export default function GeneralSettings() {
             type="url"
             value={settings.website || ''}
             onChange={(e) => setSettings({ ...settings, website: e.target.value })}
-            className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent"
+            className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400"
             placeholder="https://glimmora.com"
           />
         </FormField>
@@ -178,7 +175,7 @@ export default function GeneralSettings() {
                 address: { ...settings.address, street: e.target.value }
               })
             }
-            className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent"
+            className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400"
             placeholder="123 Luxury Avenue"
           />
         </FormField>
@@ -194,7 +191,7 @@ export default function GeneralSettings() {
                   address: { ...settings.address, city: e.target.value }
                 })
               }
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent"
+              className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400"
               placeholder="New York"
             />
           </FormField>
@@ -209,7 +206,7 @@ export default function GeneralSettings() {
                   address: { ...settings.address, state: e.target.value }
                 })
               }
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent"
+              className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400"
               placeholder="NY"
             />
           </FormField>
@@ -224,7 +221,7 @@ export default function GeneralSettings() {
                   address: { ...settings.address, zip: e.target.value }
                 })
               }
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent"
+              className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400"
               placeholder="10001"
             />
           </FormField>
@@ -239,7 +236,7 @@ export default function GeneralSettings() {
                   address: { ...settings.address, country: e.target.value }
                 })
               }
-              className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent"
+              className="w-full px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400"
               placeholder="United States"
             />
           </FormField>
@@ -274,7 +271,7 @@ export default function GeneralSettings() {
                     branding: { ...settings.branding, primaryColor: e.target.value }
                   })
                 }
-                className="flex-1 px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent font-mono text-sm"
+                className="flex-1 px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400 font-mono text-sm"
               />
             </div>
           </FormField>
@@ -301,7 +298,7 @@ export default function GeneralSettings() {
                     branding: { ...settings.branding, secondaryColor: e.target.value }
                   })
                 }
-                className="flex-1 px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent font-mono text-sm"
+                className="flex-1 px-4 py-3 bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400 font-mono text-sm"
               />
             </div>
           </FormField>

@@ -1,29 +1,103 @@
 /**
  * TransactionCodes — CRUD admin page for Opera-style numeric transaction codes.
+ * Glimmora Design System v5.0
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  Hash, Plus, Search, Edit2, Trash2, X, ChevronLeft, ChevronRight, Download,
-} from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Hash, Plus, Edit2, Trash2, Download } from 'lucide-react';
 import { transactionCodesService, type TransactionCode } from '@/api/services/transaction-codes.service';
-import toast from 'react-hot-toast';
+import { useToast } from '@/contexts/ToastContext';
 
-function TypeBadge({ type }: { type: string }) {
-  const colors: Record<string, string> = {
-    charge: 'bg-blue-50 text-blue-700 border-blue-200',
-    payment: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    adjustment: 'bg-amber-50 text-amber-700 border-amber-200',
-    tax: 'bg-purple-50 text-purple-700 border-purple-200',
-  };
+// UI2 Components
+import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalContent, ModalFooter, ConfirmModal } from '@/components/ui2/Modal';
+import { Button, IconButton } from '@/components/ui2/Button';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+  TableActions, TableEmpty, TableSkeleton, Pagination,
+} from '@/components/ui2/Table';
+import { Badge } from '@/components/ui2/Badge';
+import { SearchBar } from '@/components/ui2/SearchBar';
+
+// ── Type badge mapping ──────────────────────────────────────────────────────
+const TYPE_VARIANT: Record<string, 'info' | 'success' | 'warning' | 'secondary'> = {
+  charge: 'info',
+  payment: 'success',
+  adjustment: 'warning',
+  tax: 'secondary',
+};
+
+// ── Filter options ──────────────────────────────────────────────────────────
+const TYPE_OPTIONS = [
+  { value: '', label: 'All Types' },
+  { value: 'charge', label: 'Charge' },
+  { value: 'payment', label: 'Payment' },
+  { value: 'adjustment', label: 'Adjustment' },
+  { value: 'tax', label: 'Tax' },
+];
+
+// ── FilterSelect ────────────────────────────────────────────────────────────
+function FilterSelect({ value, onChange, options, placeholder }: {
+  value: string; onChange: (val: string) => void;
+  options: { value: string; label: string }[]; placeholder: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selectedOption = options.find(opt => opt.value === value);
+  const displayLabel = !value ? placeholder : selectedOption?.label || placeholder;
+  const hasValue = !!value;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [isOpen]);
+
   return (
-    <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium border ${colors[type] || colors.charge}`}>
-      {type}
-    </span>
+    <div className="relative" ref={ref}>
+      <button type="button" onClick={() => setIsOpen(!isOpen)}
+        className={`h-9 px-2.5 sm:px-3.5 rounded-lg text-xs sm:text-[13px] bg-white border transition-all duration-150 flex items-center gap-1.5 sm:gap-2 focus:outline-none w-full sm:min-w-[140px] ${
+          isOpen ? 'border-terra-400 ring-2 ring-terra-500/10'
+            : hasValue ? 'border-terra-300 bg-terra-50'
+            : 'border-neutral-200 hover:border-neutral-300'
+        }`}>
+        <span className={hasValue ? 'text-terra-700 font-medium' : 'text-neutral-500'}>{displayLabel}</span>
+        <svg className={`w-4 h-4 ml-auto transition-transform ${isOpen ? 'rotate-180' : ''} ${hasValue ? 'text-terra-500' : 'text-neutral-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="absolute right-0 z-50 w-full mt-1 bg-white rounded-lg border border-neutral-200 shadow-lg overflow-hidden min-w-[160px]">
+            {options.map((option) => (
+              <button key={option.value} type="button"
+                onClick={() => { onChange(option.value); setIsOpen(false); }}
+                className={`w-full px-3.5 py-2.5 text-[13px] text-left hover:bg-neutral-50 transition-colors flex items-center justify-between ${
+                  value === option.value ? 'bg-terra-50 text-terra-700' : 'text-neutral-700'
+                }`}>
+                {option.label}
+                {value === option.value && (
+                  <svg className="w-4 h-4 text-terra-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
-// ── Create/Edit Modal ───────────────────────────────────────────────────
+// ── Input styles ────────────────────────────────────────────────────────────
+const inputCls = 'w-full px-4 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-terra-500/10 focus:border-terra-400 hover:border-neutral-300 transition-all duration-150';
+const labelCls = 'block text-[12px] font-semibold text-neutral-600 mb-1.5';
+
+// ── Create/Edit Modal ───────────────────────────────────────────────────────
 function CodeModal({ isOpen, onClose, onSave, initial }: {
   isOpen: boolean; onClose: () => void;
   onSave: (data: Partial<TransactionCode>) => Promise<void>;
@@ -31,24 +105,19 @@ function CodeModal({ isOpen, onClose, onSave, initial }: {
 }) {
   const [form, setForm] = useState({ code: '', name: '', category: '', code_type: 'charge', adjustment_code: '', department: '', sort_order: '0' });
   const [saving, setSaving] = useState(false);
+  const { error: showError } = useToast();
 
   useEffect(() => {
     if (initial) {
       setForm({
-        code: initial.code || '',
-        name: initial.name || '',
-        category: initial.category || '',
-        code_type: initial.code_type || 'charge',
-        adjustment_code: initial.adjustment_code || '',
-        department: initial.department || '',
-        sort_order: String(initial.sort_order || 0),
+        code: initial.code || '', name: initial.name || '', category: initial.category || '',
+        code_type: initial.code_type || 'charge', adjustment_code: initial.adjustment_code || '',
+        department: initial.department || '', sort_order: String(initial.sort_order || 0),
       });
     } else {
       setForm({ code: '', name: '', category: '', code_type: 'charge', adjustment_code: '', department: '', sort_order: '0' });
     }
   }, [initial, isOpen]);
-
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,85 +125,81 @@ function CodeModal({ isOpen, onClose, onSave, initial }: {
     setSaving(true);
     try {
       await onSave({
-        code: form.code,
-        name: form.name,
-        category: form.category || undefined,
-        code_type: form.code_type as any,
-        adjustment_code: form.adjustment_code || undefined,
-        department: form.department || undefined,
-        sort_order: parseInt(form.sort_order) || 0,
+        code: form.code, name: form.name, category: form.category || undefined,
+        code_type: form.code_type as any, adjustment_code: form.adjustment_code || undefined,
+        department: form.department || undefined, sort_order: parseInt(form.sort_order) || 0,
       });
       onClose();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Failed to save');
+      showError(err?.response?.data?.detail || 'Failed to save');
     }
     setSaving(false);
   };
 
-  const inputCls = 'w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/30';
-  const labelCls = 'block text-[12px] font-medium text-neutral-600 mb-1';
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
-          <h2 className="text-[15px] font-semibold text-neutral-900">{initial ? 'Edit Transaction Code' : 'New Transaction Code'}</h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-neutral-100"><X size={18} /></button>
-        </div>
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelCls}>Code *</label>
-              <input className={inputCls} value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} placeholder="e.g. 1000" required />
+    <Modal open={isOpen} onClose={onClose} size="md">
+      <ModalHeader>
+        <ModalTitle>{initial ? 'Edit Transaction Code' : 'New Transaction Code'}</ModalTitle>
+        <ModalDescription>{initial ? 'Update code details' : 'Create a new transaction code'}</ModalDescription>
+      </ModalHeader>
+      <form onSubmit={handleSubmit}>
+        <ModalContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Code *</label>
+                <input className={inputCls} value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} placeholder="e.g. 1000" required />
+              </div>
+              <div>
+                <label className={labelCls}>Type *</label>
+                <select className={inputCls} value={form.code_type} onChange={e => setForm(f => ({ ...f, code_type: e.target.value }))}>
+                  <option value="charge">Charge</option>
+                  <option value="payment">Payment</option>
+                  <option value="adjustment">Adjustment</option>
+                  <option value="tax">Tax</option>
+                </select>
+              </div>
             </div>
             <div>
-              <label className={labelCls}>Type *</label>
-              <select className={inputCls} value={form.code_type} onChange={e => setForm(f => ({ ...f, code_type: e.target.value }))}>
-                <option value="charge">Charge</option>
-                <option value="payment">Payment</option>
-                <option value="adjustment">Adjustment</option>
-                <option value="tax">Tax</option>
-              </select>
+              <label className={labelCls}>Name *</label>
+              <input className={inputCls} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Room Charge" required />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Category</label>
+                <input className={inputCls} value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="e.g. room_charge" />
+              </div>
+              <div>
+                <label className={labelCls}>Department</label>
+                <input className={inputCls} value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} placeholder="e.g. Front Office" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Adjustment Code</label>
+                <input className={inputCls} value={form.adjustment_code} onChange={e => setForm(f => ({ ...f, adjustment_code: e.target.value }))} placeholder="e.g. 1001" />
+              </div>
+              <div>
+                <label className={labelCls}>Sort Order</label>
+                <input type="number" className={inputCls} value={form.sort_order} onChange={e => setForm(f => ({ ...f, sort_order: e.target.value }))} />
+              </div>
             </div>
           </div>
-          <div>
-            <label className={labelCls}>Name *</label>
-            <input className={inputCls} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Room Charge" required />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelCls}>Category</label>
-              <input className={inputCls} value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="e.g. room_charge" />
-            </div>
-            <div>
-              <label className={labelCls}>Department</label>
-              <input className={inputCls} value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} placeholder="e.g. Front Office" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelCls}>Adjustment Code</label>
-              <input className={inputCls} value={form.adjustment_code} onChange={e => setForm(f => ({ ...f, adjustment_code: e.target.value }))} placeholder="e.g. 1001" />
-            </div>
-            <div>
-              <label className={labelCls}>Sort Order</label>
-              <input type="number" className={inputCls} value={form.sort_order} onChange={e => setForm(f => ({ ...f, sort_order: e.target.value }))} />
-            </div>
-          </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-[13px] text-neutral-600 border border-neutral-200 rounded-lg hover:bg-neutral-50">Cancel</button>
-            <button type="submit" disabled={saving} className="px-4 py-2 text-[13px] text-white bg-terra-600 rounded-lg hover:bg-terra-700 disabled:opacity-50">
-              {saving ? 'Saving...' : initial ? 'Update' : 'Create'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </ModalContent>
+        <ModalFooter>
+          <Button variant="ghost" type="button" onClick={onClose} className="px-5 py-2 text-[13px] font-semibold">Cancel</Button>
+          <Button variant="primary" type="submit" loading={saving} className="px-5 py-2 text-[13px] font-semibold">
+            {initial ? 'Update' : 'Create'}
+          </Button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 }
 
 // ── Main Page ──────────────────────────────────────────────────────────────
 export default function TransactionCodes() {
+  const { success, error: showError } = useToast();
   const [codes, setCodes] = useState<TransactionCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -142,6 +207,7 @@ export default function TransactionCodes() {
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editCode, setEditCode] = useState<TransactionCode | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TransactionCode | null>(null);
   const [seeding, setSeeding] = useState(false);
   const perPage = 20;
 
@@ -151,7 +217,7 @@ export default function TransactionCodes() {
       const data = await transactionCodesService.list({ code_type: typeFilter || undefined });
       setCodes(Array.isArray(data) ? data : []);
     } catch {
-      toast.error('Failed to load transaction codes');
+      showError('Failed to load transaction codes');
     }
     setLoading(false);
   }, [typeFilter]);
@@ -162,10 +228,8 @@ export default function TransactionCodes() {
     if (!search.trim()) return codes;
     const q = search.toLowerCase();
     return codes.filter(c =>
-      c.code?.toLowerCase().includes(q) ||
-      c.name?.toLowerCase().includes(q) ||
-      c.category?.toLowerCase().includes(q) ||
-      c.department?.toLowerCase().includes(q)
+      c.code?.toLowerCase().includes(q) || c.name?.toLowerCase().includes(q) ||
+      c.category?.toLowerCase().includes(q) || c.department?.toLowerCase().includes(q)
     );
   }, [codes, search]);
 
@@ -174,136 +238,158 @@ export default function TransactionCodes() {
 
   const handleCreate = async (data: Partial<TransactionCode>) => {
     await transactionCodesService.create(data);
-    toast.success('Transaction code created');
+    success('Transaction code created');
     fetchCodes();
   };
 
   const handleUpdate = async (data: Partial<TransactionCode>) => {
     if (!editCode) return;
     await transactionCodesService.update(editCode.id, data);
-    toast.success('Transaction code updated');
+    success('Transaction code updated');
     setEditCode(null);
     fetchCodes();
   };
 
-  const handleDelete = async (code: TransactionCode) => {
-    if (!window.confirm(`Delete "${code.code} - ${code.name}"?`)) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await transactionCodesService.delete(code.id);
-      toast.success('Transaction code deleted');
+      await transactionCodesService.delete(deleteTarget.id);
+      success('Transaction code deleted');
       fetchCodes();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Delete failed');
+      showError(err?.response?.data?.detail || 'Delete failed');
     }
+    setDeleteTarget(null);
   };
 
   const handleSeed = async () => {
     setSeeding(true);
     try {
       await transactionCodesService.seed();
-      toast.success('Default codes seeded');
+      success('Default codes seeded');
       fetchCodes();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Seed failed');
+      showError(err?.response?.data?.detail || 'Seed failed');
     }
     setSeeding(false);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-terra-50 rounded-xl flex items-center justify-center">
-            <Hash size={20} className="text-terra-600" />
-          </div>
+    <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
+
+        {/* Header */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-[18px] font-bold text-neutral-900">Transaction Codes</h1>
-            <p className="text-[12px] text-neutral-500">{filtered.length} codes</p>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">Transaction Codes</h1>
+            <p className="text-[12px] sm:text-[13px] text-neutral-500 mt-1">{filtered.length} codes</p>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={handleSeed} disabled={seeding}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 disabled:opacity-50">
-            <Download size={16} />
-            {seeding ? 'Seeding...' : 'Seed Defaults'}
-          </button>
-          <button onClick={() => { setEditCode(null); setModalOpen(true); }}
-            className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-terra-600 rounded-lg hover:bg-terra-700">
-            <Plus size={16} /> Add Code
-          </button>
-        </div>
-      </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" icon={Download} onClick={handleSeed} loading={seeding}>
+              Seed Defaults
+            </Button>
+            <Button variant="primary" icon={Plus} onClick={() => { setEditCode(null); setModalOpen(true); }}>
+              Add Code
+            </Button>
+          </div>
+        </header>
 
-      {/* Search & Filter */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-          <input placeholder="Search codes..." className="w-full pl-9 pr-4 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/30"
-            value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
-        </div>
-        <select className="px-3 py-2 text-[13px] border border-neutral-200 rounded-lg bg-white focus:outline-none"
-          value={typeFilter} onChange={e => { setTypeFilter(e.target.value); setPage(1); }}>
-          <option value="">All Types</option>
-          <option value="charge">Charge</option>
-          <option value="payment">Payment</option>
-          <option value="adjustment">Adjustment</option>
-          <option value="tax">Tax</option>
-        </select>
-      </div>
+        {/* Main Card */}
+        <div className="bg-white rounded-[10px] overflow-hidden">
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-neutral-200 bg-neutral-50/50">
-                {['Code', 'Name', 'Type', 'Category', 'Department', 'Adj. Code', 'Active', 'Sort', ''].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold text-neutral-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={9} className="px-4 py-12 text-center"><div className="flex justify-center"><div className="w-6 h-6 border-2 border-neutral-200 border-t-terra-500 rounded-full animate-spin" /></div></td></tr>
-              ) : paged.length === 0 ? (
-                <tr><td colSpan={9} className="px-4 py-12 text-center text-[13px] text-neutral-400">No transaction codes found</td></tr>
-              ) : paged.map(tc => (
-                <tr key={tc.id} className="border-b border-neutral-100 hover:bg-neutral-50/50">
-                  <td className="px-4 py-3 text-[13px] font-mono font-bold text-neutral-900">{tc.code}</td>
-                  <td className="px-4 py-3 text-[13px] text-neutral-700">{tc.name}</td>
-                  <td className="px-4 py-3"><TypeBadge type={tc.code_type} /></td>
-                  <td className="px-4 py-3 text-[12px] text-neutral-600">{tc.category || '—'}</td>
-                  <td className="px-4 py-3 text-[12px] text-neutral-600">{tc.department || '—'}</td>
-                  <td className="px-4 py-3 text-[12px] font-mono text-neutral-500">{tc.adjustment_code || '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`w-2 h-2 rounded-full inline-block ${tc.is_active ? 'bg-emerald-500' : 'bg-neutral-300'}`} />
-                  </td>
-                  <td className="px-4 py-3 text-[12px] text-neutral-500">{tc.sort_order}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => { setEditCode(tc); setModalOpen(true); }} className="p-1.5 rounded-lg hover:bg-neutral-100"><Edit2 size={14} className="text-neutral-400" /></button>
-                      <button onClick={() => handleDelete(tc)} className="p-1.5 rounded-lg hover:bg-red-50"><Trash2 size={14} className="text-neutral-400 hover:text-red-500" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-200">
-            <p className="text-[12px] text-neutral-500">Showing {(page - 1) * perPage + 1}–{Math.min(page * perPage, filtered.length)} of {filtered.length}</p>
-            <div className="flex items-center gap-1">
-              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="p-1.5 rounded-lg hover:bg-neutral-100 disabled:opacity-30"><ChevronLeft size={16} /></button>
-              <span className="px-2 text-[12px] text-neutral-600">{page}/{totalPages}</span>
-              <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="p-1.5 rounded-lg hover:bg-neutral-100 disabled:opacity-30"><ChevronRight size={16} /></button>
+          {/* Search & Filter Bar */}
+          <div className="px-4 sm:px-6 py-3 sm:py-4 bg-neutral-50/30 border-b border-neutral-100">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="w-full sm:flex-1 sm:max-w-md">
+                <SearchBar
+                  value={search}
+                  onChange={(val) => { setSearch(val); setPage(1); }}
+                  onClear={() => { setSearch(''); setPage(1); }}
+                  placeholder="Search codes..."
+                  size="md"
+                  className="w-full"
+                />
+              </div>
+              <div className="hidden sm:block sm:flex-1" />
+              <div className="w-full sm:w-auto">
+                <FilterSelect
+                  value={typeFilter}
+                  onChange={(val) => { setTypeFilter(val); setPage(1); }}
+                  options={TYPE_OPTIONS}
+                  placeholder="All Types"
+                />
+              </div>
             </div>
           </div>
-        )}
+
+          {/* Table */}
+          <Table className="w-full">
+            <TableHeader>
+              <tr>
+                <TableHead>Code</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Adj. Code</TableHead>
+                <TableHead>Active</TableHead>
+                <TableHead>Sort</TableHead>
+                <TableHead align="right">Actions</TableHead>
+              </tr>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableSkeleton columns={9} rows={5} />
+              ) : paged.length === 0 ? (
+                <TableEmpty
+                  icon={Hash}
+                  title="No transaction codes found"
+                  description="Add a transaction code or seed defaults"
+                />
+              ) : paged.map(tc => (
+                <TableRow key={tc.id}>
+                  <TableCell className="font-mono font-bold text-neutral-900">{tc.code}</TableCell>
+                  <TableCell>{tc.name}</TableCell>
+                  <TableCell>
+                    <Badge variant={TYPE_VARIANT[tc.code_type] || 'neutral'} size="sm">{tc.code_type}</Badge>
+                  </TableCell>
+                  <TableCell className="text-neutral-600">{tc.category || '—'}</TableCell>
+                  <TableCell className="text-neutral-600">{tc.department || '—'}</TableCell>
+                  <TableCell className="font-mono text-neutral-500">{tc.adjustment_code || '—'}</TableCell>
+                  <TableCell>
+                    <span className={`w-2 h-2 rounded-full inline-block ${tc.is_active ? 'bg-emerald-500' : 'bg-neutral-300'}`} />
+                  </TableCell>
+                  <TableCell className="text-neutral-500">{tc.sort_order}</TableCell>
+                  <TableActions>
+                    <IconButton icon={Edit2} label="Edit" variant="ghost" size="sm" onClick={() => { setEditCode(tc); setModalOpen(true); }} />
+                    <IconButton icon={Trash2} label="Delete" variant="ghost" size="sm" onClick={() => setDeleteTarget(tc)} />
+                  </TableActions>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 bg-neutral-50/30">
+              <Pagination currentPage={page} totalPages={totalPages} totalItems={filtered.length} itemsPerPage={perPage} onPageChange={setPage} />
+            </div>
+          )}
+        </div>
       </div>
 
       <CodeModal isOpen={modalOpen} onClose={() => { setModalOpen(false); setEditCode(null); }} onSave={editCode ? handleUpdate : handleCreate} initial={editCode} />
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title={`Delete "${deleteTarget?.code} - ${deleteTarget?.name}"?`}
+        description="This transaction code will be permanently deleted."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 }

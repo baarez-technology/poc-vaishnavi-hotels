@@ -3,11 +3,75 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { ScrollText, Search, Download, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ScrollText, Download, X } from 'lucide-react';
 import { auditLogService, type AuditLogEntry } from '@/api/services/audit-log.service';
 import { apiClient } from '@/api/client';
-import toast from 'react-hot-toast';
+import { useToast } from '@/contexts/ToastContext';
+import { Button } from '@/components/ui2/Button';
+import { Badge } from '@/components/ui2/Badge';
+import { SearchBar } from '@/components/ui2/SearchBar';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+  TableEmpty, TableSkeleton, Pagination,
+} from '@/components/ui2/Table';
 
+/* ── FilterSelect (matches Bookings pattern) ─────────────────────────────── */
+function FilterSelect({ value, onChange, options, placeholder }: {
+  value: string; onChange: (v: string) => void;
+  options: { value: string; label: string }[]; placeholder: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption = options.find(opt => opt.value === value);
+  const displayLabel = !value || value === 'all' ? placeholder : selectedOption?.label;
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`h-9 px-2.5 sm:px-3.5 rounded-lg text-xs sm:text-[13px] bg-white border transition-all duration-150 flex items-center gap-1.5 sm:gap-2 focus:outline-none w-full sm:min-w-[140px] ${
+          isOpen
+            ? 'border-terra-400 ring-2 ring-terra-500/10'
+            : value && value !== 'all'
+              ? 'border-terra-300 bg-terra-50'
+              : 'border-neutral-200 hover:border-neutral-300'
+        }`}
+      >
+        <span className={value && value !== 'all' ? 'text-terra-700 font-medium' : 'text-neutral-500'}>
+          {displayLabel}
+        </span>
+        <svg className={`w-4 h-4 ml-auto transition-transform ${isOpen ? 'rotate-180' : ''} ${value && value !== 'all' ? 'text-terra-500' : 'text-neutral-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="absolute z-50 w-full mt-1 bg-white rounded-lg border border-neutral-200 shadow-lg overflow-hidden min-w-[160px] max-h-[240px] overflow-y-auto">
+            {options.map(option => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => { onChange(option.value); setIsOpen(false); }}
+                className={`w-full px-3.5 py-2.5 text-[13px] text-left hover:bg-neutral-50 transition-colors flex items-center justify-between ${
+                  value === option.value ? 'bg-terra-50 text-terra-700' : 'text-neutral-700'
+                }`}
+              >
+                {option.label}
+                {value === option.value && (
+                  <svg className="w-4 h-4 text-terra-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ── JSON Cell (expandable) ──────────────────────────────────────────────── */
 function JsonCell({ value }: { value: any }) {
   const [expanded, setExpanded] = useState(false);
   if (!value) return <span className="text-neutral-300">—</span>;
@@ -19,7 +83,7 @@ function JsonCell({ value }: { value: any }) {
         {expanded ? 'Collapse' : 'View JSON'}
       </button>
       {expanded && (
-        <pre className="mt-1 p-2 bg-neutral-50 rounded text-[10px] font-mono text-neutral-700 max-h-[200px] overflow-auto whitespace-pre-wrap break-all">
+        <pre className="mt-1 p-2 bg-neutral-50 rounded-xl text-[10px] font-mono text-neutral-700 max-h-[200px] overflow-auto whitespace-pre-wrap break-all">
           {str}
         </pre>
       )}
@@ -27,26 +91,36 @@ function JsonCell({ value }: { value: any }) {
   );
 }
 
+/* ── Action badge variant ────────────────────────────────────────────────── */
+function actionVariant(action: string): 'info' | 'success' | 'danger' | 'warning' | 'neutral' {
+  if (action?.includes('create') || action?.includes('add')) return 'success';
+  if (action?.includes('delete') || action?.includes('remove')) return 'danger';
+  if (action?.includes('update') || action?.includes('edit')) return 'warning';
+  return 'info';
+}
+
+/* ── Main Page ───────────────────────────────────────────────────────────── */
 export default function AuditLogs() {
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [entityType, setEntityType] = useState('');
-  const [actionFilter, setActionFilter] = useState('');
+  const [entityType, setEntityType] = useState('all');
+  const [actionFilter, setActionFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [exporting, setExporting] = useState(false);
   const perPage = 20;
+  const { success, error } = useToast();
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
       const params: any = { limit: 500 };
-      if (entityType) params.entity_type = entityType;
-      if (actionFilter) params.action = actionFilter;
+      if (entityType !== 'all') params.entity_type = entityType;
+      if (actionFilter !== 'all') params.action = actionFilter;
       const data = await auditLogService.list(params);
       setLogs(Array.isArray(data) ? data : []);
     } catch {
-      toast.error('Failed to load audit logs');
+      error('Failed to load audit logs');
     }
     setLoading(false);
   }, [entityType, actionFilter]);
@@ -83,9 +157,9 @@ export default function AuditLogs() {
       a.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       window.URL.revokeObjectURL(url);
-      toast.success('CSV exported');
+      success('CSV exported');
     } catch {
-      toast.error('Export failed');
+      error('Export failed');
     }
     setExporting(false);
   };
@@ -93,121 +167,132 @@ export default function AuditLogs() {
   const entityTypes = useMemo(() => [...new Set(logs.map(l => l.entity_type).filter(Boolean))], [logs]);
   const actions = useMemo(() => [...new Set(logs.map(l => l.action).filter(Boolean))], [logs]);
 
+  const entityOptions = [{ value: 'all', label: 'All Entities' }, ...entityTypes.map(t => ({ value: t, label: t }))];
+  const actionOptions = [{ value: 'all', label: 'All Actions' }, ...actions.map(a => ({ value: a, label: a }))];
+
+  const hasActiveFilters = search || entityType !== 'all' || actionFilter !== 'all';
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-terra-50 rounded-xl flex items-center justify-center">
-            <ScrollText size={20} className="text-terra-600" />
-          </div>
+    <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
+      <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[18px] font-bold text-neutral-900">Audit Logs</h1>
-            <p className="text-[12px] text-neutral-500">{filtered.length} entries</p>
-          </div>
-        </div>
-        <button
-          onClick={handleExportCSV}
-          disabled={exporting}
-          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 disabled:opacity-50"
-        >
-          <Download size={16} />
-          {exporting ? 'Exporting...' : 'Export CSV'}
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 max-w-sm">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-          <input
-            placeholder="Search logs..."
-            className="w-full pl-9 pr-4 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/30"
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }}
-          />
-        </div>
-        <select
-          className="px-3 py-2 text-[13px] border border-neutral-200 rounded-lg bg-white focus:outline-none"
-          value={entityType}
-          onChange={e => { setEntityType(e.target.value); setPage(1); }}
-        >
-          <option value="">All Entities</option>
-          {entityTypes.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <select
-          className="px-3 py-2 text-[13px] border border-neutral-200 rounded-lg bg-white focus:outline-none"
-          value={actionFilter}
-          onChange={e => { setActionFilter(e.target.value); setPage(1); }}
-        >
-          <option value="">All Actions</option>
-          {actions.map(a => <option key={a} value={a}>{a}</option>)}
-        </select>
-        {(search || entityType || actionFilter) && (
-          <button onClick={() => { setSearch(''); setEntityType(''); setActionFilter(''); setPage(1); }} className="p-2 rounded-lg hover:bg-neutral-100">
-            <X size={16} className="text-neutral-400" />
-          </button>
-        )}
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-neutral-200 bg-neutral-50/50">
-                {['Timestamp', 'User ID', 'Action', 'Entity Type', 'Entity ID', 'Description', 'Old Value', 'New Value', 'IP'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold text-neutral-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={9} className="px-4 py-12 text-center text-[13px] text-neutral-400">
-                  <div className="flex justify-center"><div className="w-6 h-6 border-2 border-neutral-200 border-t-terra-500 rounded-full animate-spin" /></div>
-                </td></tr>
-              ) : paged.length === 0 ? (
-                <tr><td colSpan={9} className="px-4 py-12 text-center text-[13px] text-neutral-400">No audit logs found</td></tr>
-              ) : paged.map(log => (
-                <tr key={log.id} className="border-b border-neutral-100 hover:bg-neutral-50/50">
-                  <td className="px-4 py-3 text-[11px] text-neutral-500 whitespace-nowrap">
-                    {new Date(log.created_at).toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 text-[12px] text-neutral-600">{log.user_id ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                      {log.action}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-[12px] text-neutral-700 font-medium">{log.entity_type}</td>
-                  <td className="px-4 py-3 text-[12px] text-neutral-600 font-mono">{log.entity_id ?? '—'}</td>
-                  <td className="px-4 py-3 text-[12px] text-neutral-600 max-w-[200px] truncate">{log.description || '—'}</td>
-                  <td className="px-4 py-3"><JsonCell value={log.old_value} /></td>
-                  <td className="px-4 py-3"><JsonCell value={log.new_value} /></td>
-                  <td className="px-4 py-3 text-[11px] text-neutral-400 font-mono">{log.ip_address || '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-200">
-            <p className="text-[12px] text-neutral-500">
-              Showing {(page - 1) * perPage + 1}–{Math.min(page * perPage, filtered.length)} of {filtered.length}
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">Audit Logs</h1>
+            <p className="text-[12px] sm:text-[13px] text-neutral-500 mt-1">
+              {filtered.length} entr{filtered.length !== 1 ? 'ies' : 'y'} total
             </p>
-            <div className="flex items-center gap-1">
-              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="p-1.5 rounded-lg hover:bg-neutral-100 disabled:opacity-30">
-                <ChevronLeft size={16} />
-              </button>
-              <span className="px-2 text-[12px] text-neutral-600">{page}/{totalPages}</span>
-              <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="p-1.5 rounded-lg hover:bg-neutral-100 disabled:opacity-30">
-                <ChevronRight size={16} />
-              </button>
+          </div>
+          <Button
+            variant="outline"
+            icon={Download}
+            onClick={handleExportCSV}
+            disabled={exporting}
+            loading={exporting}
+          >
+            {exporting ? 'Exporting...' : 'Export CSV'}
+          </Button>
+        </div>
+
+        {/* Card */}
+        <div className="bg-white rounded-[10px] overflow-hidden">
+          {/* Filter bar */}
+          <div className="px-4 sm:px-6 py-3 sm:py-4 bg-neutral-50/30 border-b border-neutral-100">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <div className="sm:flex-1 sm:max-w-md w-full">
+                <SearchBar
+                  value={search}
+                  onChange={v => { setSearch(v); setPage(1); }}
+                  onClear={() => setSearch('')}
+                  placeholder="Search logs..."
+                  size="sm"
+                />
+              </div>
+              <div className="hidden sm:block sm:flex-1" />
+              <FilterSelect
+                value={entityType}
+                onChange={v => { setEntityType(v); setPage(1); }}
+                options={entityOptions}
+                placeholder="Entity"
+              />
+              <FilterSelect
+                value={actionFilter}
+                onChange={v => { setActionFilter(v); setPage(1); }}
+                options={actionOptions}
+                placeholder="Action"
+              />
+              {hasActiveFilters && (
+                <button
+                  onClick={() => { setSearch(''); setEntityType('all'); setActionFilter('all'); setPage(1); }}
+                  className="h-9 px-2 sm:px-3 flex items-center gap-1 sm:gap-1.5 text-xs sm:text-[13px] font-medium text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors"
+                >
+                  <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Clear</span>
+                </button>
+              )}
             </div>
           </div>
-        )}
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Timestamp</TableHead>
+                  <TableHead>User ID</TableHead>
+                  <TableHead>Action</TableHead>
+                  <TableHead>Entity Type</TableHead>
+                  <TableHead>Entity ID</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Old Value</TableHead>
+                  <TableHead>New Value</TableHead>
+                  <TableHead>IP</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableSkeleton columns={9} rows={5} />
+                ) : paged.length === 0 ? (
+                  <TableEmpty
+                    colSpan={9}
+                    icon={ScrollText}
+                    title="No audit logs found"
+                    description={hasActiveFilters ? 'Try adjusting your search or filters' : 'Audit logs will appear here as actions are performed'}
+                  />
+                ) : paged.map(log => (
+                  <TableRow key={log.id}>
+                    <TableCell className="text-neutral-500 whitespace-nowrap text-[11px]">
+                      {new Date(log.created_at).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-neutral-600">{log.user_id ?? '—'}</TableCell>
+                    <TableCell>
+                      <Badge variant={actionVariant(log.action)}>{log.action}</Badge>
+                    </TableCell>
+                    <TableCell className="font-medium text-neutral-700">{log.entity_type}</TableCell>
+                    <TableCell className="font-mono text-neutral-600">{log.entity_id ?? '—'}</TableCell>
+                    <TableCell className="text-neutral-600 max-w-[200px] truncate">{log.description || '—'}</TableCell>
+                    <TableCell><JsonCell value={log.old_value} /></TableCell>
+                    <TableCell><JsonCell value={log.new_value} /></TableCell>
+                    <TableCell className="text-neutral-400 font-mono text-[11px]">{log.ip_address || '—'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          {!loading && totalPages > 0 && (
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 bg-neutral-50/30">
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                totalItems={filtered.length}
+                itemsPerPage={perPage}
+                onPageChange={setPage}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

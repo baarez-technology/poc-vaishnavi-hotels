@@ -4,6 +4,7 @@ import FormSection from '../../../components/settings/FormSection';
 import RolePermissions from '../../../components/settings/RolePermissions';
 import { permissionsData, rolesData } from '../../../data/settingsData';
 import { Save } from 'lucide-react';
+import { Button } from '@/components/ui2/Button';
 
 /**
  * Access Control Page
@@ -46,13 +47,9 @@ export default function AccessControl() {
             Manage module access and permissions by role
           </p>
         </div>
-        <button
-          onClick={handleSave}
-          className="px-4 py-2 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-lg hover:shadow transition-all flex items-center gap-2 text-sm font-medium"
-        >
-          <Save className="w-4 h-4" />
+        <Button variant="primary" icon={Save} onClick={handleSave}>
           Save Changes
-        </button>
+        </Button>
       </div>
 
       {/* Permissions Table */}

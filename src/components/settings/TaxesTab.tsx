@@ -7,16 +7,26 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Check, X, Loader2, Calculator, Sprout, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '../ui2/Button';
+import {
+  Modal, ModalHeader, ModalTitle, ModalContent, ModalFooter, ConfirmModal,
+} from '../ui2/Modal';
 import { taxService } from '@/api/services/tax.service';
 import type { TaxCategory, TaxSlab, TaxCalculationResult } from '@/api/services/tax.service';
-import toast from 'react-hot-toast';
+import { useToast } from '@/contexts/ToastContext';
+import { useCurrency } from '@/hooks/useCurrency';
 
 // ── Add Category Modal ────────────────────────────────────────
-function AddCategoryModal({ onClose, onSave }: { onClose: () => void; onSave: (data: { name: string; display_name: string; description?: string }) => Promise<void> }) {
+function AddCategoryModal({ isOpen, onClose, onSave }: {
+  isOpen: boolean; onClose: () => void;
+  onSave: (data: { name: string; display_name: string; description?: string }) => Promise<void>;
+}) {
   const [name, setName] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
+
+  const inputCls = 'w-full px-4 py-2.5 text-sm bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400';
+  const labelCls = 'block text-[12px] font-semibold text-neutral-600 mb-1.5';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,56 +40,59 @@ function AddCategoryModal({ onClose, onSave }: { onClose: () => void; onSave: (d
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <h3 className="text-[15px] font-semibold text-neutral-900">Add Tax Category</h3>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-[12px] font-medium text-neutral-600 mb-1">Internal Name</label>
-            <input
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="e.g. room_charge"
-              className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500"
-              required
-            />
-            <p className="text-[10px] text-neutral-400 mt-1">Lowercase, underscores. Used internally for mapping.</p>
+    <Modal isOpen={isOpen} onClose={onClose} size="md">
+      <form onSubmit={handleSubmit}>
+        <ModalHeader>
+          <ModalTitle>Add Tax Category</ModalTitle>
+        </ModalHeader>
+        <ModalContent>
+          <div className="space-y-4">
+            <div>
+              <label className={labelCls}>Internal Name</label>
+              <input
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="e.g. room_charge"
+                className={inputCls}
+                required
+              />
+              <p className="text-[10px] text-neutral-400 mt-1">Lowercase, underscores. Used internally for mapping.</p>
+            </div>
+            <div>
+              <label className={labelCls}>Display Name</label>
+              <input
+                value={displayName}
+                onChange={e => setDisplayName(e.target.value)}
+                placeholder="e.g. Room Charges"
+                className={inputCls}
+                required
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Description (optional)</label>
+              <input
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                placeholder="e.g. GST on room tariff"
+                className={inputCls}
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-[12px] font-medium text-neutral-600 mb-1">Display Name</label>
-            <input
-              value={displayName}
-              onChange={e => setDisplayName(e.target.value)}
-              placeholder="e.g. Room Charges"
-              className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-[12px] font-medium text-neutral-600 mb-1">Description (optional)</label>
-            <input
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="e.g. GST on room tariff"
-              className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500"
-            />
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline-neutral" onClick={onClose} type="button">Cancel</Button>
-            <Button variant="primary" type="submit" disabled={saving || !name.trim() || !displayName.trim()}>
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </ModalContent>
+        <ModalFooter>
+          <Button variant="ghost" onClick={onClose} type="button">Cancel</Button>
+          <Button variant="primary" type="submit" disabled={saving || !name.trim() || !displayName.trim()} loading={saving}>
+            {saving ? 'Creating...' : 'Create'}
+          </Button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 }
 
 // ── Add/Edit Slab Modal ────────────────────────────────────────
-function SlabModal({ categories, slab, onClose, onSave }: {
+function SlabModal({ isOpen, categories, slab, onClose, onSave }: {
+  isOpen: boolean;
   categories: TaxCategory[];
   slab?: TaxSlab | null;
   onClose: () => void;
@@ -102,6 +115,9 @@ function SlabModal({ categories, slab, onClose, onSave }: {
 
   const set = (key: string, value: any) => setForm(prev => ({ ...prev, [key]: value }));
 
+  const inputCls = 'w-full px-4 py-2.5 text-sm bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400';
+  const labelCls = 'block text-[12px] font-semibold text-neutral-600 mb-1.5';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -117,109 +133,110 @@ function SlabModal({ categories, slab, onClose, onSave }: {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="px-6 py-4 border-b border-neutral-100">
-          <h3 className="text-[15px] font-semibold text-neutral-900">{slab ? 'Edit Tax Slab' : 'Add Tax Slab'}</h3>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[12px] font-medium text-neutral-600 mb-1">Category</label>
-              <select
-                value={form.tax_category_id}
-                onChange={e => set('tax_category_id', Number(e.target.value))}
-                className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20"
-              >
-                {categories.map(c => <option key={c.id} value={c.id}>{c.display_name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-[12px] font-medium text-neutral-600 mb-1">Country</label>
-              <input
-                value={form.country}
-                onChange={e => set('country', e.target.value)}
-                placeholder="IN"
-                className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[12px] font-medium text-neutral-600 mb-1">Min Amount</label>
-              <input type="number" min={0} step="0.01" value={form.min_amount} onChange={e => set('min_amount', Number(e.target.value))}
-                className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20" />
-            </div>
-            <div>
-              <label className="block text-[12px] font-medium text-neutral-600 mb-1">Max Amount (blank = no limit)</label>
-              <input type="number" min={0} step="0.01" value={form.max_amount} onChange={e => set('max_amount', e.target.value === '' ? '' : Number(e.target.value))}
-                placeholder="No limit"
-                className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20" />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[12px] font-medium text-neutral-600 mb-1">Total Rate %</label>
-            <input type="number" min={0} max={100} step="0.01" value={form.rate_pct} onChange={e => set('rate_pct', Number(e.target.value))}
-              className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20" />
-          </div>
-
-          <div className="bg-neutral-50 rounded-lg p-4 space-y-3">
-            <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Tax Components</p>
+    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      <form onSubmit={handleSubmit}>
+        <ModalHeader>
+          <ModalTitle>{slab ? 'Edit Tax Slab' : 'Add Tax Slab'}</ModalTitle>
+        </ModalHeader>
+        <ModalContent>
+          <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[11px] font-medium text-neutral-500 mb-1">Component 1 Name</label>
-                <input value={form.component_1_name} onChange={e => set('component_1_name', e.target.value)}
-                  className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20" />
+                <label className={labelCls}>Category</label>
+                <select
+                  value={form.tax_category_id}
+                  onChange={e => set('tax_category_id', Number(e.target.value))}
+                  className={inputCls}
+                >
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.display_name}</option>)}
+                </select>
               </div>
               <div>
-                <label className="block text-[11px] font-medium text-neutral-500 mb-1">Component 1 %</label>
-                <input type="number" min={0} max={100} step="0.01" value={form.component_1_pct} onChange={e => set('component_1_pct', Number(e.target.value))}
-                  className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20" />
+                <label className={labelCls}>Country</label>
+                <input
+                  value={form.country}
+                  onChange={e => set('country', e.target.value)}
+                  placeholder="IN"
+                  className={inputCls}
+                />
               </div>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[11px] font-medium text-neutral-500 mb-1">Component 2 Name</label>
-                <input value={form.component_2_name} onChange={e => set('component_2_name', e.target.value)}
-                  className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20" />
+                <label className={labelCls}>Min Amount</label>
+                <input type="number" min={0} step="0.01" value={form.min_amount}
+                  onChange={e => set('min_amount', Number(e.target.value))} className={inputCls} />
               </div>
               <div>
-                <label className="block text-[11px] font-medium text-neutral-500 mb-1">Component 2 %</label>
-                <input type="number" min={0} max={100} step="0.01" value={form.component_2_pct} onChange={e => set('component_2_pct', Number(e.target.value))}
-                  className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20" />
+                <label className={labelCls}>Max Amount (blank = no limit)</label>
+                <input type="number" min={0} step="0.01" value={form.max_amount}
+                  onChange={e => set('max_amount', e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="No limit" className={inputCls} />
               </div>
             </div>
-            {Math.abs(form.component_1_pct + form.component_2_pct - form.rate_pct) > 0.01 && (
-              <p className="text-[11px] text-amber-600 font-medium">
-                Components ({form.component_1_pct}% + {form.component_2_pct}%) must equal total rate ({form.rate_pct}%)
-              </p>
-            )}
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[12px] font-medium text-neutral-600 mb-1">Effective From</label>
-              <input type="date" value={form.effective_from} onChange={e => set('effective_from', e.target.value)}
-                className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20" />
+              <label className={labelCls}>Total Rate %</label>
+              <input type="number" min={0} max={100} step="0.01" value={form.rate_pct}
+                onChange={e => set('rate_pct', Number(e.target.value))} className={inputCls} />
             </div>
-            <div>
-              <label className="block text-[12px] font-medium text-neutral-600 mb-1">Effective To (optional)</label>
-              <input type="date" value={form.effective_to} onChange={e => set('effective_to', e.target.value)}
-                className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20" />
-            </div>
-          </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline-neutral" onClick={onClose} type="button">Cancel</Button>
-            <Button variant="primary" type="submit" disabled={saving}>
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : (slab ? 'Update' : 'Create')}
-            </Button>
+            <div className="bg-neutral-50 rounded-xl p-4 space-y-3">
+              <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest">Tax Components</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-medium text-neutral-500 mb-1">Component 1 Name</label>
+                  <input value={form.component_1_name} onChange={e => set('component_1_name', e.target.value)}
+                    className={inputCls} />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-neutral-500 mb-1">Component 1 %</label>
+                  <input type="number" min={0} max={100} step="0.01" value={form.component_1_pct}
+                    onChange={e => set('component_1_pct', Number(e.target.value))} className={inputCls} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-medium text-neutral-500 mb-1">Component 2 Name</label>
+                  <input value={form.component_2_name} onChange={e => set('component_2_name', e.target.value)}
+                    className={inputCls} />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-neutral-500 mb-1">Component 2 %</label>
+                  <input type="number" min={0} max={100} step="0.01" value={form.component_2_pct}
+                    onChange={e => set('component_2_pct', Number(e.target.value))} className={inputCls} />
+                </div>
+              </div>
+              {Math.abs(form.component_1_pct + form.component_2_pct - form.rate_pct) > 0.01 && (
+                <p className="text-[11px] text-amber-600 font-medium">
+                  Components ({form.component_1_pct}% + {form.component_2_pct}%) must equal total rate ({form.rate_pct}%)
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Effective From</label>
+                <input type="date" value={form.effective_from}
+                  onChange={e => set('effective_from', e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Effective To (optional)</label>
+                <input type="date" value={form.effective_to}
+                  onChange={e => set('effective_to', e.target.value)} className={inputCls} />
+              </div>
+            </div>
           </div>
-        </form>
-      </div>
-    </div>
+        </ModalContent>
+        <ModalFooter>
+          <Button variant="ghost" onClick={onClose} type="button">Cancel</Button>
+          <Button variant="primary" type="submit" disabled={saving} loading={saving}>
+            {saving ? 'Saving...' : (slab ? 'Update' : 'Create')}
+          </Button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 }
 
@@ -229,6 +246,10 @@ function TaxCalculator({ categories }: { categories: TaxCategory[] }) {
   const [amount, setAmount] = useState<number>(5000);
   const [result, setResult] = useState<TaxCalculationResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const { error } = useToast();
+  const { formatSimple } = useCurrency();
+
+  const inputCls = 'w-full px-4 py-2.5 text-sm bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400';
 
   const calculate = async () => {
     if (!categoryName || !amount) return;
@@ -237,7 +258,7 @@ function TaxCalculator({ categories }: { categories: TaxCategory[] }) {
       const res = await taxService.calculateTax({ category_name: categoryName, base_amount: amount });
       setResult(res);
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Calculation failed');
+      error(err?.response?.data?.detail || 'Calculation failed');
       setResult(null);
     } finally {
       setLoading(false);
@@ -256,7 +277,7 @@ function TaxCalculator({ categories }: { categories: TaxCategory[] }) {
           <select
             value={categoryName}
             onChange={e => { setCategoryName(e.target.value); setResult(null); }}
-            className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+            className={inputCls}
           >
             {categories.map(c => <option key={c.id} value={c.name}>{c.display_name}</option>)}
           </select>
@@ -269,29 +290,29 @@ function TaxCalculator({ categories }: { categories: TaxCategory[] }) {
             step="0.01"
             value={amount}
             onChange={e => { setAmount(Number(e.target.value)); setResult(null); }}
-            className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+            className={inputCls}
           />
         </div>
-        <Button variant="primary" onClick={calculate} disabled={loading || !categoryName || !amount}>
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Calculate'}
+        <Button variant="primary" onClick={calculate} disabled={loading || !categoryName || !amount} loading={loading}>
+          Calculate
         </Button>
       </div>
       {result && (
-        <div className="mt-4 bg-white rounded-lg p-4 border border-neutral-100 space-y-2 text-[12px]">
-          <div className="flex justify-between"><span className="text-neutral-500">Base Amount</span><span className="font-medium">₹{result.base_amount.toLocaleString()}</span></div>
+        <div className="mt-4 bg-white rounded-xl p-4 border border-neutral-100 space-y-2 text-[12px]">
+          <div className="flex justify-between"><span className="text-neutral-500">Base Amount</span><span className="font-medium">{formatSimple(result.base_amount)}</span></div>
           {result.components.map((c, i) => (
             <div key={i} className="flex justify-between">
               <span className="text-neutral-500">{c.name} @ {c.rate_pct}%</span>
-              <span className="font-medium">₹{c.amount.toFixed(2)}</span>
+              <span className="font-medium">{formatSimple(c.amount)}</span>
             </div>
           ))}
           <div className="flex justify-between border-t border-neutral-100 pt-2 font-semibold">
             <span className="text-neutral-700">Total Tax ({result.tax_rate_pct}%)</span>
-            <span>₹{result.tax_amount.toFixed(2)}</span>
+            <span>{formatSimple(result.tax_amount)}</span>
           </div>
           <div className="flex justify-between border-t border-neutral-200 pt-2 font-bold text-[13px]">
             <span className="text-neutral-900">Grand Total</span>
-            <span>₹{result.total_with_tax.toLocaleString()}</span>
+            <span>{formatSimple(result.total_with_tax)}</span>
           </div>
         </div>
       )}
@@ -309,6 +330,7 @@ export default function TaxesTab() {
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'category' | 'slab'; id: number } | null>(null);
   const [seeding, setSeeding] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
+  const { success, error } = useToast();
 
   const fetchData = useCallback(async () => {
     try {
@@ -318,10 +340,9 @@ export default function TaxesTab() {
       ]);
       setCategories(Array.isArray(cats) ? cats : []);
       setSlabs(Array.isArray(slabsList) ? slabsList : []);
-      // Expand all categories by default
       setExpandedCategories(new Set((Array.isArray(cats) ? cats : []).map((c: TaxCategory) => c.id)));
     } catch (err: any) {
-      toast.error('Failed to load tax data');
+      error('Failed to load tax data');
     } finally {
       setLoading(false);
     }
@@ -333,10 +354,10 @@ export default function TaxesTab() {
     setSeeding(true);
     try {
       const res = await taxService.seedIndiaGST();
-      toast.success(`India GST seeded! Categories: ${res.categories_created || 0}, Slabs: ${res.slabs_created || 0}`);
+      success(`India GST seeded! Categories: ${res.categories_created || 0}, Slabs: ${res.slabs_created || 0}`);
       await fetchData();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Failed to seed GST');
+      error(err?.response?.data?.detail || 'Failed to seed GST');
     } finally {
       setSeeding(false);
     }
@@ -345,22 +366,22 @@ export default function TaxesTab() {
   const handleAddCategory = async (data: { name: string; display_name: string; description?: string }) => {
     try {
       await taxService.createCategory(data);
-      toast.success('Category created');
+      success('Category created');
       setShowAddCategory(false);
       await fetchData();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Failed to create category');
+      error(err?.response?.data?.detail || 'Failed to create category');
     }
   };
 
   const handleDeleteCategory = async (id: number) => {
     try {
       await taxService.deleteCategory(id);
-      toast.success('Category deactivated');
+      success('Category deactivated');
       setDeleteConfirm(null);
       await fetchData();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Failed to deactivate');
+      error(err?.response?.data?.detail || 'Failed to deactivate');
     }
   };
 
@@ -368,26 +389,26 @@ export default function TaxesTab() {
     try {
       if (showSlabModal.slab) {
         await taxService.updateSlab(showSlabModal.slab.id, data);
-        toast.success('Slab updated');
+        success('Slab updated');
       } else {
         await taxService.createSlab(data);
-        toast.success('Slab created');
+        success('Slab created');
       }
       setShowSlabModal({ open: false });
       await fetchData();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Failed to save slab');
+      error(err?.response?.data?.detail || 'Failed to save slab');
     }
   };
 
   const handleDeleteSlab = async (id: number) => {
     try {
       await taxService.deleteSlab(id);
-      toast.success('Slab deactivated');
+      success('Slab deactivated');
       setDeleteConfirm(null);
       await fetchData();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Failed to deactivate slab');
+      error(err?.response?.data?.detail || 'Failed to deactivate slab');
     }
   };
 
@@ -419,8 +440,7 @@ export default function TaxesTab() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline-neutral" icon={Sprout} onClick={handleSeedGST} disabled={seeding}>
-            {seeding ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+          <Button variant="outline" icon={Sprout} onClick={handleSeedGST} disabled={seeding} loading={seeding}>
             <span className="hidden sm:inline">Seed India GST</span>
             <span className="sm:hidden">Seed GST</span>
           </Button>
@@ -444,7 +464,7 @@ export default function TaxesTab() {
             const isExpanded = expandedCategories.has(cat.id);
 
             return (
-              <div key={cat.id} className="bg-neutral-50/50 rounded-xl overflow-hidden border border-neutral-100">
+              <div key={cat.id} className="bg-neutral-50/50 rounded-[10px] overflow-hidden border border-neutral-100">
                 {/* Category Header */}
                 <div className="flex items-center justify-between px-5 py-3.5 bg-white">
                   <button onClick={() => toggleCategory(cat.id)} className="flex items-center gap-2 text-left flex-1 min-w-0">
@@ -501,7 +521,7 @@ export default function TaxesTab() {
                               <tr key={slab.id} className="border-b border-neutral-50 last:border-0 hover:bg-neutral-50/50">
                                 <td className="px-4 py-2.5 text-neutral-600">{slab.country}</td>
                                 <td className="px-4 py-2.5 text-right text-neutral-700 font-medium">
-                                  ₹{slab.min_amount.toLocaleString()} – {slab.max_amount ? `₹${slab.max_amount.toLocaleString()}` : '∞'}
+                                  {slab.min_amount.toLocaleString()} – {slab.max_amount ? slab.max_amount.toLocaleString() : '∞'}
                                 </td>
                                 <td className="px-4 py-2.5 text-right font-semibold text-neutral-900">{slab.rate_pct}%</td>
                                 <td className="px-4 py-2.5 text-right text-neutral-600">{slab.component_1_pct ?? '–'}%</td>
@@ -553,15 +573,14 @@ export default function TaxesTab() {
       {categories.length > 0 && <TaxCalculator categories={categories} />}
 
       {/* Modals */}
-      {showAddCategory && <AddCategoryModal onClose={() => setShowAddCategory(false)} onSave={handleAddCategory} />}
-      {showSlabModal.open && (
-        <SlabModal
-          categories={categories}
-          slab={showSlabModal.slab}
-          onClose={() => setShowSlabModal({ open: false })}
-          onSave={handleSaveSlab}
-        />
-      )}
+      <AddCategoryModal isOpen={showAddCategory} onClose={() => setShowAddCategory(false)} onSave={handleAddCategory} />
+      <SlabModal
+        isOpen={showSlabModal.open}
+        categories={categories}
+        slab={showSlabModal.slab}
+        onClose={() => setShowSlabModal({ open: false })}
+        onSave={handleSaveSlab}
+      />
     </div>
   );
 }

@@ -9,7 +9,7 @@ import { loadGeneralSettings, saveGeneralSettings, loadBilling, saveBilling } fr
 const defaultGeneralSettings = {
   hotelName: 'Glimmora International Pvt Limited',
   tagline: 'Grounded in Luxury',
-  currency: 'USD',
+  currency: 'INR',
   timezone: 'Asia/Kolkata',
   dateFormat: 'DD/MM/YYYY',
   timeFormat: '12h',

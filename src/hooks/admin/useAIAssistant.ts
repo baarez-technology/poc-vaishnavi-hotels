@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAIAgent } from './useAIAgent';
 import { adminAIService, AdminAIChatResponse, PendingAction } from '@/api/services/admin-ai.service';
 
@@ -27,6 +28,9 @@ export function useAIAssistant() {
   // AI Agent (NLP + Command Router + Voice) - kept for voice features
   const aiAgent = useAIAgent();
 
+  // Current page context for multi-agent auto-fill
+  const location = useLocation();
+
   // State
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -44,6 +48,40 @@ export function useAIAssistant() {
   // Refs
   const conversationEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+
+  /**
+   * Extract enriched session context from the current page URL.
+   * The multi-agent Parameter Agent uses this for auto-fill.
+   */
+  const getSessionContext = useCallback(() => {
+    const path = location.pathname;
+    const context: Record<string, unknown> = {
+      currentPage: path,
+    };
+
+    // Detect module from URL
+    if (path.includes('/bookings')) context.currentModule = 'bookings';
+    else if (path.includes('/rooms')) context.currentModule = 'rooms';
+    else if (path.includes('/housekeeping')) context.currentModule = 'housekeeping';
+    else if (path.includes('/maintenance')) context.currentModule = 'maintenance';
+    else if (path.includes('/guests')) context.currentModule = 'guests';
+    else if (path.includes('/staff')) context.currentModule = 'staff';
+    else if (path.includes('/revenue') || path.includes('/analytics')) context.currentModule = 'revenue';
+    else if (path.includes('/folio')) context.currentModule = 'folio';
+
+    // Extract IDs from URL (e.g., /admin/rooms/305, /admin/bookings/42)
+    const idMatch = path.match(/\/(bookings|rooms|guests|staff)\/(\d+)/);
+    if (idMatch) {
+      const [, entity, id] = idMatch;
+      const numId = parseInt(id, 10);
+      if (entity === 'bookings') context.selectedBookingId = numId;
+      else if (entity === 'rooms') context.selectedRoomId = numId;
+      else if (entity === 'guests') context.selectedGuestId = numId;
+      else if (entity === 'staff') context.selectedStaffId = numId;
+    }
+
+    return context;
+  }, [location.pathname]);
 
   // Add user message to conversation
   const addUserMessage = useCallback(async (text: string) => {
@@ -84,10 +122,14 @@ export function useAIAssistant() {
   // Generate AI response using Backend Admin AI
   const generateBackendAIResponse = useCallback(async (userText: string, currentPendingAction?: PendingAction | null) => {
     try {
+      // Build enriched context with page/selection info for multi-agent auto-fill
+      const sessionContext = getSessionContext();
+
       const response = await adminAIService.chat({
         message: userText,
         session_id: sessionId,
         context: {
+          ...sessionContext,
           previousMessages: messages.slice(-5).map(m => ({
             role: m.type === 'user' ? 'user' : 'assistant',
             content: m.text
@@ -153,7 +195,7 @@ export function useAIAssistant() {
       setMessages(prev => [...prev, errorMessage]);
       setIsTyping(false);
     }
-  }, [sessionId, messages, aiAgent]);
+  }, [sessionId, messages, aiAgent, getSessionContext]);
 
   // Generate AI response using local AI Agent (fallback)
   const generateAIResponse = useCallback(async (userText: string) => {

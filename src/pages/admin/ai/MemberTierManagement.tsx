@@ -350,7 +350,7 @@ const TierCard = ({
           </span>
           <span className="flex items-center gap-1">
             <DollarSign className="w-3 h-3" />
-            ${tier.minSpend.toLocaleString()}
+            ₹{tier.minSpend.toLocaleString()}
           </span>
         </div>
       </div>
@@ -938,19 +938,19 @@ const DynamicPricingCalculator = ({ tiers }: { tiers: MemberTier[] }) => {
         <div className="bg-gradient-to-r from-[#5C9BA4]/5 to-[#4E5840]/5 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-neutral-600">Original Total</span>
-            <span className="text-sm text-neutral-500 line-through">${totalOriginal.toLocaleString()}</span>
+            <span className="text-sm text-neutral-500 line-through">₹{totalOriginal.toLocaleString()}</span>
           </div>
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-neutral-600">
               <TierBadge tier={tier.name} color={tier.color} size="sm" /> Rate
             </span>
-            <span className="text-lg font-bold text-neutral-900">${totalDiscounted.toLocaleString()}</span>
+            <span className="text-lg font-bold text-neutral-900">₹{totalDiscounted.toLocaleString()}</span>
           </div>
           <div className="flex items-center justify-between pt-3 border-t border-neutral-200">
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1 text-emerald-600 text-sm font-medium">
                 <TrendingUp className="w-4 h-4" />
-                Save ${savings.toLocaleString()}
+                Save ₹{savings.toLocaleString()}
               </span>
               <span className="flex items-center gap-1 text-amber-600 text-sm font-medium">
                 <Star className="w-4 h-4" />
@@ -1215,7 +1215,7 @@ export default function MemberTierManagement() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="font-medium text-neutral-900">${member.totalSpend.toLocaleString()}</span>
+                        <span className="font-medium text-neutral-900">₹{member.totalSpend.toLocaleString()}</span>
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-sm text-neutral-600">

@@ -134,15 +134,9 @@ export function RoomsSearchWidget({ onSearch }: SearchWidgetProps) {
           </button>
 
           {/* Guests Dropdown Menu */}
+          {showGuestsDropdown && (
           <div
-            className={`
-              absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border-2 border-neutral-200 shadow-xl z-50
-              transition-all duration-200 origin-top
-              ${showGuestsDropdown
-                ? 'opacity-100 scale-100 pointer-events-auto'
-                : 'opacity-0 scale-95 pointer-events-none'
-              }
-            `}
+            className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border-2 border-neutral-200 shadow-xl z-50"
           >
             <div className="p-4">
               {/* Adults */}
@@ -209,6 +203,7 @@ export function RoomsSearchWidget({ onSearch }: SearchWidgetProps) {
               </button>
             </div>
           </div>
+          )}
         </div>
 
         {/* Search Button */}

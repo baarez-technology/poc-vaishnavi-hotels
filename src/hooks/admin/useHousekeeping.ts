@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { housekeepingService, HousekeepingTask } from '@/api/services/housekeeping.service';
+import { roomsService } from '@/api/services/rooms.service';
 import { staffService, Staff } from '@/api/services/staff.service';
 
 // Interface for frontend room representation
@@ -99,27 +100,30 @@ export function useHousekeeping() {
       const tasksList = Array.isArray(tasksData) ? tasksData : [];
       setTasks(tasksList);
 
-      // Create a map of room_id to task
+      // Create a map of room_id to task (newest per room, in_progress wins)
       const tasksByRoomId = new Map<number, HousekeepingTask>();
       tasksList.forEach((task: HousekeepingTask) => {
-        // Keep only the most recent/active task per room
-        if (!tasksByRoomId.has(task.room_id) ||
-            task.status === 'in_progress' ||
-            (task.status === 'pending' && tasksByRoomId.get(task.room_id)?.status !== 'in_progress')) {
+        const existing = tasksByRoomId.get(task.room_id);
+        if (!existing) {
+          tasksByRoomId.set(task.room_id, task);
+        } else if (task.status === 'in_progress' && existing.status !== 'in_progress') {
+          // In-progress always wins — cleaning is happening now
           tasksByRoomId.set(task.room_id, task);
         }
       });
 
       // Transform API rooms to frontend format
       const transformedRooms: HousekeepingRoom[] = (Array.isArray(roomsData) ? roomsData : []).map((room: any) => {
-        // Use task data from rooms API first (includes completed tasks), fall back to tasks list
+        // Room-embedded task data is the authoritative source (backend selects the correct task).
+        // Only override with tasks-list data if it has an active (in_progress/assigned) task.
         const taskFromRoom = room.task_id ? room : null;
         const taskFromList = tasksByRoomId.get(room.id);
+        const activeTask = (taskFromList?.status === 'in_progress' || taskFromList?.status === 'assigned')
+          ? taskFromList
+          : null;
 
-        // Prefer task from tasks list for active tasks, but use room-embedded task for completed details
-        const activeTask = taskFromList;
         const taskId = activeTask?.id || taskFromRoom?.task_id || null;
-        const assignedTo = activeTask?.assigned_to || taskFromRoom?.assigned_to || null;
+        const assignedTo = activeTask?.assigned_to ?? taskFromRoom?.assigned_to ?? null;
         const assignedStaffName = activeTask?.assigned_staff_name || taskFromRoom?.assigned_staff_name || null;
         const taskPriority = activeTask?.priority || taskFromRoom?.task_priority || 'medium';
         const startedAt = normalizeUtcDateTime(activeTask?.started_at || taskFromRoom?.started_at || null);
@@ -729,23 +733,16 @@ export function useHousekeeping() {
   }, [rooms]);
 
   /**
-   * Add note with timestamp - BUG-005 FIX: Persist to API and show confirmation
+   * Add note with timestamp - persists to Room.notes via dedicated API endpoint
    */
   const addNote = useCallback(async (roomId: number, newNote: string) => {
+    const room = rooms.find(r => r.id === roomId);
     try {
-      const room = rooms.find(r => r.id === roomId);
-      const timestamp = new Date().toLocaleString();
-      const existingNotes = room?.notes || '';
-      const updatedNotes = existingNotes
-        ? `${existingNotes}\n[${timestamp}] ${newNote}`
-        : `[${timestamp}] ${newNote}`;
+      // Persist to Room.notes via dedicated endpoint (always works, regardless of taskId)
+      const result = await roomsService.addRoomNote(roomId, newNote);
 
-      // Persist to API if task exists
-      if (room?.taskId) {
-        await housekeepingService.updateTask(room.taskId, { notes: updatedNotes });
-      }
-
-      // Update local state
+      // Update local state with the full notes from the API response
+      const updatedNotes = result.notes;
       setRooms(prev => prev.map(r => {
         if (r.id === roomId) {
           return { ...r, notes: updatedNotes };
@@ -753,22 +750,20 @@ export function useHousekeeping() {
         return r;
       }));
 
+      // Also update task notes if a task exists (so maintenance staff see it too)
+      if (room?.taskId) {
+        try {
+          await housekeepingService.updateTask(room.taskId, { notes: newNote });
+        } catch {
+          // Task update failure is non-critical — room note is already saved
+        }
+      }
+
       toast.success(`Note saved for Room ${room?.number || roomId}`);
     } catch (err: any) {
       console.error('Error saving note:', err);
-      // Still update locally as fallback
-      setRooms(prev => prev.map(room => {
-        if (room.id === roomId) {
-          const timestamp = new Date().toLocaleString();
-          const existingNotes = room.notes || '';
-          const updatedNotes = existingNotes
-            ? `${existingNotes}\n[${timestamp}] ${newNote}`
-            : `[${timestamp}] ${newNote}`;
-          return { ...room, notes: updatedNotes };
-        }
-        return room;
-      }));
-      toast.success(`Note saved locally for Room ${roomId}`);
+      toast.error(`Failed to save note for Room ${room?.number || roomId}`);
+      throw err;
     }
   }, [rooms]);
 

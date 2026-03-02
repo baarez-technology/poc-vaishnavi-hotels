@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { MouseEvent } from 'react';
-import { Crown, Eye, Pencil, MoreHorizontal, Bed, XCircle, CalendarX, ChevronUp, ChevronDown, ChevronsUpDown, CreditCard } from 'lucide-react';
+import { Crown, Eye, Pencil, MoreHorizontal, Bed, XCircle, CalendarX, ChevronUp, ChevronDown, ChevronsUpDown, CreditCard, LogIn, LogOut, ArrowRightLeft, Undo2, UserX, SprayCan, RotateCcw, Receipt } from 'lucide-react';
 import { statusConfig, sourceConfig, paymentStatusConfig } from '../../data/bookingsData';
 import { IconButton } from '../ui2/Button';
 import { StatusBadge } from '../ui2/Badge';
@@ -13,6 +13,7 @@ type BookingLike = any;
 type SortConfigLike = { field?: string; direction?: 'asc' | 'desc' } | any;
 
 export default function BookingsTable({
+  activeTab = 'all',
   bookings,
   sortConfig,
   onSort,
@@ -20,8 +21,16 @@ export default function BookingsTable({
   onEditBooking,
   onAssignRoom,
   onCancelBooking,
-  onManagePayment
+  onManagePayment,
+  onCheckIn,
+  onCheckOut,
+  onCancelCheckIn,
+  onMarkNoShow,
+  onRequestCleaning,
+  onReinstate,
+  onViewBill,
 }: {
+  activeTab?: string;
   bookings: BookingLike[];
   sortConfig: SortConfigLike;
   onSort: (field: string) => void;
@@ -30,14 +39,41 @@ export default function BookingsTable({
   onAssignRoom?: (booking: BookingLike) => void;
   onCancelBooking?: (booking: BookingLike) => void;
   onManagePayment?: (booking: BookingLike) => void;
+  onCheckIn?: (booking: BookingLike) => void;
+  onCheckOut?: (booking: BookingLike) => void;
+  onCancelCheckIn?: (booking: BookingLike) => void;
+  onMarkNoShow?: (booking: BookingLike) => void;
+  onRequestCleaning?: (booking: BookingLike) => void;
+  onReinstate?: (booking: BookingLike) => void;
+  onViewBill?: (booking: BookingLike) => void;
 }) {
   const { formatCurrency } = useCurrency();
   const { getStatus } = usePrecheckinStatus();
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    if (!dateString) return 'N/A';
+    // Append T12:00:00 to date-only strings to prevent UTC midnight timezone shift
+    const safe = dateString.includes('T') ? dateString : `${dateString}T12:00:00`;
+    const date = new Date(safe);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
+
+  const formatTimeDisplay = (timeStr: string | undefined) => {
+    if (!timeStr || !String(timeStr).trim()) return '—';
+    const parts = String(timeStr).trim().split(':');
+    const h = parseInt(parts[0], 10);
+    const m = parts[1] ? parseInt(parts[1], 10) : 0;
+    if (isNaN(h)) return timeStr;
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour = h % 12 || 12;
+    return `${hour}:${String(m).padStart(2, '0')} ${period}`;
+  };
+
+  const showEta = activeTab === 'arrivals';
+  const showEtd = activeTab === 'departures';
+  const showEtaEtdColumn = showEta || showEtd;
+  const showEtaOnly = activeTab === 'arrivals';
+  const showEtdOnly = activeTab === 'departures';
 
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
@@ -147,6 +183,113 @@ export default function BookingsTable({
     }
   };
 
+  const handleCheckIn = (e: any, booking: BookingLike) => {
+    e.stopPropagation();
+    setOpenDropdownId(null);
+    if (onCheckIn) {
+      onCheckIn(booking);
+    }
+  };
+
+  const handleCheckOut = (e: any, booking: BookingLike) => {
+    e.stopPropagation();
+    setOpenDropdownId(null);
+    if (onCheckOut) {
+      onCheckOut(booking);
+    }
+  };
+
+  const handleCancelCheckIn = (e: any, booking: BookingLike) => {
+    e.stopPropagation();
+    setOpenDropdownId(null);
+    if (onCancelCheckIn) {
+      onCancelCheckIn(booking);
+    }
+  };
+
+  const handleMarkNoShow = (e: any, booking: BookingLike) => {
+    e.stopPropagation();
+    setOpenDropdownId(null);
+    if (onMarkNoShow) {
+      onMarkNoShow(booking);
+    }
+  };
+
+  const handleRequestCleaning = (e: any, booking: BookingLike) => {
+    e.stopPropagation();
+    setOpenDropdownId(null);
+    if (onRequestCleaning) {
+      onRequestCleaning(booking);
+    }
+  };
+
+  const handleReinstate = (e: any, booking: BookingLike) => {
+    e.stopPropagation();
+    setOpenDropdownId(null);
+    if (onReinstate) {
+      onReinstate(booking);
+    }
+  };
+
+  const handleViewBill = (e: any, booking: BookingLike) => {
+    e.stopPropagation();
+    setOpenDropdownId(null);
+    if (onViewBill) {
+      onViewBill(booking);
+    }
+  };
+
+  // Date guard helpers
+  const isExpired = (booking: BookingLike) => {
+    const checkOut = booking.checkOut || booking.departure_date;
+    if (!checkOut) return false;
+    const today = new Date().toISOString().split('T')[0];
+    return checkOut <= today;
+  };
+
+  // Past-arrival bookings that haven't checked in should not allow room assignment
+  const isPastArrivalNotCheckedIn = (booking: BookingLike) => {
+    const arrivalDate = booking.checkIn || booking.arrival_date;
+    if (!arrivalDate) return false;
+    const today = new Date().toISOString().split('T')[0];
+    const status = (booking.status || '').toUpperCase().replace(/[\s_-]/g, '_');
+    return arrivalDate < today && status !== 'CHECKED_IN' && status !== 'IN_HOUSE';
+  };
+
+  const isNoShow = (booking: BookingLike) => {
+    const status = (booking.status || '').toUpperCase().replace(/[\s_-]/g, '_');
+    return status === 'NO_SHOW';
+  };
+
+  const canMarkNoShow = (booking: BookingLike) => {
+    const status = (booking.status || '').toUpperCase().replace(/[\s_]/g, '-');
+    const isConfirmedLike = status === 'CONFIRMED' || status === 'PENDING' || status === 'BOOKED';
+    const arrivalDate = booking.checkIn || booking.arrival_date;
+    const today = new Date().toISOString().split('T')[0];
+    // Guest never showed up: arrival date has passed and status is still confirmed/pending
+    return isConfirmedLike && arrivalDate && arrivalDate < today;
+  };
+
+  // Helper to check booking status
+  const isCheckedIn = (booking: BookingLike) => {
+    const status = (booking.status || '').toUpperCase().replace(/[\s_]/g, '-');
+    return status === 'IN-HOUSE' || status === 'CHECKED-IN' || status === 'IN_HOUSE';
+  };
+
+  const isCancelled = (booking: BookingLike) => {
+    return (booking.status || '').toUpperCase() === 'CANCELLED';
+  };
+
+  const isCompleted = (booking: BookingLike) => {
+    const status = (booking.status || '').toUpperCase().replace(/[\s_]/g, '-');
+    return status === 'COMPLETED' || status === 'CHECKED-OUT';
+  };
+
+  const canCheckIn = (booking: BookingLike) => {
+    const status = (booking.status || '').toUpperCase().replace(/[\s_]/g, '-');
+    return (status === 'CONFIRMED' || status === 'PENDING' || status === 'BOOKED') && booking.room;
+  };
+
   const SortIndicator = ({ field }: { field: string }) => {
     const sorted = sortConfig?.field === field ? sortConfig?.direction : null;
     const Icon = sorted === 'asc' ? ChevronUp : sorted === 'desc' ? ChevronDown : ChevronsUpDown;
@@ -161,6 +304,7 @@ export default function BookingsTable({
           <col style={{ width: '150px' }} />
           <col style={{ width: '140px' }} />
           <col style={{ width: '90px' }} />
+          {showEtaEtdColumn && <col style={{ width: '90px' }} />}
           <col style={{ width: '190px' }} />
           <col style={{ width: '130px' }} />
           <col style={{ width: '110px' }} />
@@ -204,6 +348,11 @@ export default function BookingsTable({
                 Nights <SortIndicator field="nights" />
               </span>
             </th>
+            {showEtaEtdColumn && (
+              <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
+                {showEtaOnly ? 'ETA' : 'ETD'}
+              </th>
+            )}
             <th className="text-left px-6 py-4 text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
               Room
             </th>
@@ -251,7 +400,7 @@ export default function BookingsTable({
         <tbody className="divide-y divide-neutral-100">
           {bookings.length === 0 ? (
             <tr>
-              <td colSpan={11} className="px-4 py-12 text-center">
+              <td colSpan={showEtaEtdColumn ? 13 : 12} className="px-4 py-12 text-center">
                 <div className="flex flex-col items-center">
                   <div className="w-12 h-12 rounded-lg bg-terra-50 flex items-center justify-center mb-4">
                     <CalendarX className="w-5 h-5 text-terra-500" />
@@ -301,18 +450,39 @@ export default function BookingsTable({
 
                   {/* Booking ID */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-xs text-neutral-500 font-mono">{booking.id}</span>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-neutral-500 font-mono">{booking.bookingNumber || booking.id}</span>
+                      {booking.bookingNumber && booking.bookingNumber !== booking.id && booking.bookingNumber !== `BK-${booking.id}` && (
+                        <span className="text-[10px] text-neutral-400 font-mono">#{booking.id}</span>
+                      )}
+                    </div>
                   </td>
 
                   {/* Check-in Date */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-neutral-700 font-medium">{formatDate(booking.checkIn)}</span>
+                    <span className="text-sm text-neutral-700 font-medium">
+                      {booking.checkedInAt ? formatDate(new Date(booking.checkedInAt).toISOString().split('T')[0]) : formatDate(booking.checkIn)}
+                    </span>
+                    {booking.checkedInAt && (
+                      <div className="text-[11px] text-emerald-600 mt-0.5">
+                        Checked in: {new Date(booking.checkedInAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                      </div>
+                    )}
                   </td>
 
                   {/* Nights */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm text-neutral-600">{booking.nights}n</span>
                   </td>
+
+                  {/* Arrivals Today: ETA only. Departures Today: ETD only. */}
+                  {showEtaEtdColumn && (
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-neutral-700 font-medium">
+                        {showEtaOnly ? formatTimeDisplay(booking.eta) : formatTimeDisplay(booking.etd)}
+                      </span>
+                    </td>
+                  )}
 
                   {/* Room */}
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -378,7 +548,7 @@ export default function BookingsTable({
                             left: `${dropdownPosition.left}px`,
                             zIndex: 9999
                           }}
-                          className="w-36 bg-white rounded-lg shadow-lg shadow-neutral-900/10 border border-neutral-200 py-1 animate-in fade-in-0 zoom-in-95 duration-100"
+                          className="w-40 bg-white rounded-lg shadow-lg shadow-neutral-900/10 border border-neutral-200 py-1 animate-in fade-in-0 zoom-in-95 duration-100"
                         >
                           <button
                             onClick={(e) => handleViewClick(e, booking)}
@@ -387,36 +557,146 @@ export default function BookingsTable({
                             <Eye className="w-3.5 h-3.5 text-neutral-500" />
                             View
                           </button>
-                          <button
-                            onClick={(e) => handleEditClick(e, booking)}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
-                          >
-                            <Pencil className="w-3.5 h-3.5 text-neutral-500" />
-                            Edit
-                          </button>
-                          <button
-                            onClick={(e) => handleManagePayment(e, booking)}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
-                          >
-                            <CreditCard className="w-3.5 h-3.5 text-neutral-500" />
-                            Payment
-                          </button>
-                          <button
-                            onClick={(e) => handleAssignRoom(e, booking)}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
-                          >
-                            <Bed className="w-3.5 h-3.5 text-neutral-500" />
-                            Assign Room
-                          </button>
-                          <div className="border-t border-neutral-100 my-1" />
-                          <button
-                            onClick={(e) => handleCancel(e, booking)}
-                            disabled={booking.status === 'CANCELLED'}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-rose-600 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <XCircle className="w-3.5 h-3.5" />
-                            Cancel
-                          </button>
+
+                          {/* Post check-in: show Edit, Room Move, Payment, Check Out, Cancel Check-in */}
+                          {isCheckedIn(booking) && !isExpired(booking) ? (
+                            <>
+                              <button
+                                onClick={(e) => handleEditClick(e, booking)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
+                              >
+                                <Pencil className="w-3.5 h-3.5 text-neutral-500" />
+                                Edit
+                              </button>
+                              <button
+                                onClick={(e) => handleAssignRoom(e, booking)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
+                              >
+                                <ArrowRightLeft className="w-3.5 h-3.5 text-neutral-500" />
+                                Room Move
+                              </button>
+                              <button
+                                onClick={(e) => handleManagePayment(e, booking)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
+                              >
+                                <CreditCard className="w-3.5 h-3.5 text-neutral-500" />
+                                Payment
+                              </button>
+                              <button
+                                onClick={(e) => handleViewBill(e, booking)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
+                              >
+                                <Receipt className="w-3.5 h-3.5 text-neutral-500" />
+                                Guest Bill
+                              </button>
+                              <button
+                                onClick={(e) => handleRequestCleaning(e, booking)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-sage-700 hover:bg-sage-50"
+                              >
+                                <SprayCan className="w-3.5 h-3.5" />
+                                Request Cleaning
+                              </button>
+                              <button
+                                onClick={(e) => handleCheckOut(e, booking)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-terra-700 hover:bg-terra-50"
+                              >
+                                <LogOut className="w-3.5 h-3.5" />
+                                Check Out
+                              </button>
+                              <div className="border-t border-neutral-100 my-1" />
+                              <button
+                                onClick={(e) => handleCancelCheckIn(e, booking)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-amber-700 hover:bg-amber-50"
+                              >
+                                <Undo2 className="w-3.5 h-3.5" />
+                                Cancel Check-in
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={(e) => handleEditClick(e, booking)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
+                              >
+                                <Pencil className="w-3.5 h-3.5 text-neutral-500" />
+                                Edit
+                              </button>
+                              <button
+                                onClick={(e) => handleManagePayment(e, booking)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
+                              >
+                                <CreditCard className="w-3.5 h-3.5 text-neutral-500" />
+                                Payment
+                              </button>
+
+                              {/* Check In - only for confirmed bookings with a room, NOT expired */}
+                              {canCheckIn(booking) && !isExpired(booking) && (
+                                <button
+                                  onClick={(e) => handleCheckIn(e, booking)}
+                                  className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-emerald-700 hover:bg-emerald-50"
+                                >
+                                  <LogIn className="w-3.5 h-3.5" />
+                                  Check In
+                                </button>
+                              )}
+
+                              {/* Assign Room - NOT expired, NOT past-arrival unless checked in */}
+                              {!isCompleted(booking) && !isCancelled(booking) && !isNoShow(booking) && !isExpired(booking) && !isPastArrivalNotCheckedIn(booking) && (
+                                <button
+                                  onClick={(e) => handleAssignRoom(e, booking)}
+                                  className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
+                                >
+                                  <Bed className="w-3.5 h-3.5 text-neutral-500" />
+                                  Assign Room
+                                </button>
+                              )}
+
+                              {/* Mark No Show - for confirmed/booked bookings where arrival date has passed */}
+                              {canMarkNoShow(booking) && (
+                                <button
+                                  onClick={(e) => handleMarkNoShow(e, booking)}
+                                  className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-orange-700 hover:bg-orange-50"
+                                >
+                                  <UserX className="w-3.5 h-3.5" />
+                                  Mark No Show
+                                </button>
+                              )}
+
+                              {/* Guest Bill — for completed/checked-out bookings */}
+                              {isCompleted(booking) && (
+                                <button
+                                  onClick={(e) => handleViewBill(e, booking)}
+                                  className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
+                                >
+                                  <Receipt className="w-3.5 h-3.5 text-neutral-500" />
+                                  Guest Bill
+                                </button>
+                              )}
+
+                              {/* Reinstate - for no-show or cancelled bookings */}
+                              {(isNoShow(booking) || isCancelled(booking)) && (
+                                <button
+                                  onClick={(e) => handleReinstate(e, booking)}
+                                  className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-blue-700 hover:bg-blue-50"
+                                >
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                  Reinstate
+                                </button>
+                              )}
+
+                              <div className="border-t border-neutral-100 my-1" />
+
+                              {/* Cancel (for pre-check-in) */}
+                              <button
+                                onClick={(e) => handleCancel(e, booking)}
+                                disabled={isCancelled(booking) || isCompleted(booking) || isNoShow(booking)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-rose-600 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <XCircle className="w-3.5 h-3.5" />
+                                Cancel
+                              </button>
+                            </>
+                          )}
                         </div>,
                         document.body
                       )}

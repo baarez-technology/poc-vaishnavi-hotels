@@ -24,7 +24,8 @@ function transformApiRoom(apiRoom: any): any {
     type: roomType,
     floor: apiRoom.floor || 1,
     status: mapRoomStatus(apiRoom.status),
-    cleaning: apiRoom.status === 'available' || apiRoom.status === 'clean' || apiRoom.status === 'inspected' ? 'clean' : 'dirty',
+    cleaning: apiRoom.cleaningStatus || apiRoom.cleaning_status ||
+      (apiRoom.status === 'available' || apiRoom.status === 'clean' || apiRoom.status === 'inspected' ? 'clean' : 'dirty'),
     bedType: apiRoom.bedType || apiRoom.bed_type || 'King',
     viewType: apiRoom.view || apiRoom.view_type || apiRoom.viewType || 'Standard',
     capacity: apiRoom.maxGuests || apiRoom.capacity || 2,
@@ -41,6 +42,9 @@ function transformApiRoom(apiRoom: any): any {
 
 /**
  * Map backend status to admin panel status
+ * Note: out_of_service (OOS) and out_of_order (OOO) are distinct statuses:
+ * - OOS: Minor issues, room can be sold in emergency
+ * - OOO: Major issues (plumbing, electrical, renovation), room CANNOT be sold
  */
 function mapRoomStatus(status: string): string {
   const statusMap: Record<string, string> = {
@@ -53,7 +57,7 @@ function mapRoomStatus(status: string): string {
     'in_progress': 'dirty',
     'maintenance': 'out_of_service',
     'out_of_service': 'out_of_service',
-    'out_of_order': 'out_of_order',
+    'out_of_order': 'out_of_order',  // Keep OOO as separate status
   };
   return statusMap[status?.toLowerCase()] || 'available';
 }
@@ -77,6 +81,8 @@ export function useRooms() {
         setIsLoading(true);
         setError(null);
         console.log('[useRooms] Fetching rooms from API...');
+        clearApiCache('/api/v1/rooms');
+        clearApiCache('/rooms');
         const apiRooms = await roomsService.getRooms({ pageSize: 100 });
         console.log('[useRooms] API response:', apiRooms);
         if (Array.isArray(apiRooms) && apiRooms.length > 0) {
@@ -85,6 +91,8 @@ export function useRooms() {
           // BUG-013 FIX: Fetch active bookings to populate guest data for ALL rooms (not just occupied)
           // This ensures rooms assigned from the Bookings module also show guest data
           try {
+            clearApiCache('/api/v1/bookings');
+            clearApiCache('/bookings');
             const bookingsResponse = await bookingService.getBookings(1, 1000);
             const bookings = bookingsResponse.items || (Array.isArray(bookingsResponse) ? bookingsResponse : []);
             setAllBookings(bookings);
@@ -93,16 +101,26 @@ export function useRooms() {
             for (const room of transformedRooms) {
               // Check ALL rooms against active bookings (not just occupied ones)
               const activeBooking = bookings.find((b: any) => {
-                const bookingRoomId = b.room?.id || b.room?.number;
+                // CRITICAL: When a booking has no physical room assigned, b.room.id is the
+                // ROOM TYPE ID (not a room ID). Only match bookings that have an actual
+                // room number assigned — b.room.number will be null/undefined for unassigned bookings.
+                const bookingRoomNumber = b.room?.number;
+                if (!bookingRoomNumber) return false; // No physical room assigned, skip
+
+                const bookingRoomId = b.room?.id;
                 const matchesRoom =
                   String(bookingRoomId) === String(room.id) ||
-                  b.room?.number === room.roomNumber;
+                  String(bookingRoomNumber) === String(room.roomNumber);
                 const isActive = ['checked_in', 'checked-in', 'confirmed', 'booked'].includes(b.status);
-                // Also verify the booking overlaps with today
                 const checkIn = b.checkIn || b.arrival_date;
                 const checkOut = b.checkOut || b.departure_date;
                 const overlapsToday = checkIn && checkOut && checkIn <= today && checkOut > today;
-                return matchesRoom && isActive && overlapsToday;
+                // Also match upcoming bookings (next 7 days) with room already assigned
+                const sevenDays = new Date();
+                sevenDays.setDate(sevenDays.getDate() + 7);
+                const futureLimit = sevenDays.toISOString().split('T')[0];
+                const isUpcoming = checkIn && checkIn > today && checkIn <= futureLimit;
+                return matchesRoom && isActive && (overlapsToday || isUpcoming);
               });
 
               if (activeBooking) {
@@ -116,17 +134,38 @@ export function useRooms() {
                   adults: activeBooking.guests?.adults || 1,
                   children: activeBooking.guests?.children || 0,
                   bookingId: activeBooking.id,
+                  isUpcoming: !((activeBooking.checkIn || activeBooking.arrival_date) <= today && (activeBooking.checkOut || activeBooking.departure_date) > today),
                 };
 
-                // Self-heal: if booking is checked_in but room isn't marked occupied, fix it
+                // Self-heal: sync room status based on booking state
                 const isCheckedIn = ['checked_in', 'checked-in'].includes(activeBooking.status);
-                if (room.status !== 'occupied' && isCheckedIn) {
+                const isConfirmedOrBooked = ['confirmed', 'booked'].includes(activeBooking.status);
+                const bCheckIn = activeBooking.checkIn || activeBooking.arrival_date;
+                const bCheckOut = activeBooking.checkOut || activeBooking.departure_date;
+                const bOverlapsToday = bCheckIn && bCheckOut && bCheckIn <= today && bCheckOut > today;
+
+                if (isCheckedIn && room.status !== 'occupied') {
                   room.status = 'occupied';
-                  // Fire-and-forget API call to sync backend
                   roomsService.updateRoomStatus(room.id, 'occupied').catch((err: any) =>
                     console.warn('[useRooms] Self-heal: failed to sync room status:', err)
                   );
+                } else if (isConfirmedOrBooked && bOverlapsToday && room.status === 'available') {
+                  room.status = 'occupied';
+                  roomsService.updateRoomStatus(room.id, 'occupied').catch((err: any) =>
+                    console.warn('[useRooms] Self-heal: confirmed booking room sync:', err)
+                  );
                 }
+                // For upcoming bookings (future check-in), do NOT change status — room is available until check-in
+              } else if (room.status === 'occupied' && !room.guests) {
+                // Self-heal: room is marked "occupied" but NO active booking found for it.
+                // This is a zombie state — reset to "dirty" (needs cleaning after unknown occupancy).
+                console.warn(`[useRooms] Self-heal: Room ${room.roomNumber} is occupied but has no active booking. Resetting to dirty.`);
+                room.status = 'dirty';
+                room.cleaning = 'dirty';
+                // Fire-and-forget API call to sync backend
+                roomsService.updateRoomStatus(room.id, 'dirty').catch((err: any) =>
+                  console.warn('[useRooms] Self-heal: failed to reset zombie room status:', err)
+                );
               }
             }
             console.log('[useRooms] Guest data populated from bookings (all rooms checked)');
@@ -240,12 +279,13 @@ export function useRooms() {
   // Update room status
   const updateStatus = async (roomId: number | string, newStatus: string) => {
     // Map frontend status to backend status
-    // Backend supports: available, occupied, clean, dirty, inspected, cleaning, maintenance, out_of_service
+    // Backend supports: available, occupied, clean, dirty, inspected, cleaning, maintenance, out_of_service, out_of_order
     const backendStatusMap: Record<string, string> = {
       'available': 'available',
       'occupied': 'occupied',
       'dirty': 'dirty',
       'out_of_service': 'out_of_service',
+      'out_of_order': 'out_of_order',
     };
     const backendStatus = backendStatusMap[newStatus] || newStatus;
 
@@ -323,15 +363,28 @@ export function useRooms() {
           const response = await bookingService.getBookings(1, 100);
           const bookings = response.items || (Array.isArray(response) ? response : []);
 
-          // Double-booking prevention: check if another booking already has this room for overlapping dates
-          const roomNumber = String(roomId);
+          // Double-booking prevention: check if another booking (different guest) has this room
+          const roomIdStr = String(roomId);
+          const guestId = guest.id;
+          const guestName = (guest.name || '').toLowerCase().trim();
+          const guestEmail = (guest.email || '').toLowerCase().trim();
+
           const roomConflict = bookings.find((b: any) => {
             const bRoomId = b.room?.id || b.roomId;
             const bRoomNum = b.room?.number;
-            const isSameRoom = String(bRoomId) === roomNumber || bRoomNum === roomNumber;
+            const isSameRoom = String(bRoomId) === roomIdStr || bRoomNum === roomIdStr;
             const status = (b.status || '').toLowerCase().replace('-', '_');
             const isActive = status !== 'cancelled' && status !== 'checked_out' && status !== 'no_show';
             if (!isSameRoom || !isActive) return false;
+
+            // Exclude the current guest's own booking (allow reassignment to same room)
+            const bGuestId = b.guestId;
+            const bName = ((b.guestInfo?.firstName || '') + ' ' + (b.guestInfo?.lastName || '')).toLowerCase().trim();
+            const bEmail = (b.guestInfo?.email || '').toLowerCase().trim();
+            const isSameGuest = (guestId && bGuestId && Number(bGuestId) === Number(guestId)) ||
+              (guestName && bName === guestName) ||
+              (guestEmail && bEmail && bEmail === guestEmail);
+            if (isSameGuest) return false;
 
             const bCheckIn = new Date(b.checkIn);
             const bCheckOut = new Date(b.checkOut);
@@ -351,11 +404,8 @@ export function useRooms() {
             );
           }
 
-          // Find existing unassigned booking for this guest to link the room
-          const guestId = guest.id;
-          const guestName = (guest.name || '').toLowerCase().trim();
-          const guestEmail = (guest.email || '').toLowerCase().trim();
-
+          // Find existing booking for this guest to link the room
+          // Check both unassigned bookings AND bookings with a different room (reassignment)
           const existingBooking = bookings.find((b: any) => {
             const matchById = b.guestId && guestId && Number(b.guestId) === Number(guestId);
             const bookingGuest = (
@@ -367,8 +417,7 @@ export function useRooms() {
             const isMatchingGuest = matchById || matchByName || matchByEmail;
 
             const status = (b.status || '').toLowerCase().replace('-', '_');
-            const isActive = status !== 'cancelled' && status !== 'checked_out';
-            const hasNoRoom = !b.room || !b.room.number;
+            const isActive = status !== 'cancelled' && status !== 'checked_out' && status !== 'no_show';
 
             const bCheckIn = new Date(b.checkIn);
             const bCheckOut = new Date(b.checkOut);
@@ -376,15 +425,26 @@ export function useRooms() {
             const selCheckOut = new Date(guest.checkOut);
             const datesOverlap = bCheckIn < selCheckOut && bCheckOut > selCheckIn;
 
-            return isMatchingGuest && isActive && hasNoRoom && datesOverlap;
+            return isMatchingGuest && isActive && datesOverlap;
           });
 
           if (existingBooking) {
+            // Free the old room if guest is being reassigned
+            const oldRoomId = existingBooking.room?.id;
+            if (oldRoomId && String(oldRoomId) !== String(roomId)) {
+              try {
+                await roomsService.updateRoomStatus(oldRoomId, 'dirty');
+                console.log('[useRooms] Previous room freed:', oldRoomId);
+              } catch (freeErr) {
+                console.warn('[useRooms] Could not free previous room:', freeErr);
+              }
+            }
+
             await bookingService.updateBooking(String(existingBooking.id), {
               roomId: String(roomId),
             });
             bookingLinked = true;
-            console.log('[useRooms] Room assignment persisted to existing booking:', existingBooking.id);
+            console.log('[useRooms] Room assignment persisted to booking:', existingBooking.id);
           }
 
           // If no existing booking found, create a walk-in booking so it persists across refresh
@@ -414,13 +474,22 @@ export function useRooms() {
           if (bookingErr.message?.includes('Double booking') || bookingErr.message?.includes('not available')) {
             throw bookingErr;
           }
-          console.warn('[useRooms] Could not persist room-booking link:', bookingErr);
+          console.error('[useRooms] Failed to persist room-booking link:', bookingErr);
+          throw new Error(
+            `Room assignment could not be saved to the booking system. Please try again or assign from the Bookings page.`
+          );
         }
       }
 
       // Update room status to occupied via API
       await roomsService.updateRoomStatus(roomId, 'occupied');
       console.log('[useRooms] Room status updated to occupied via API');
+
+      // Clear caches so both modules pick up the change
+      clearApiCache('/api/v1/rooms');
+      clearApiCache('/rooms');
+      clearApiCache('/api/v1/bookings');
+      clearApiCache('/bookings');
     } catch (err: any) {
       console.error('[useRooms] Failed to assign guest:', err);
       throw err;

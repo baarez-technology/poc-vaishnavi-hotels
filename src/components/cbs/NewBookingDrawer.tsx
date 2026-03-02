@@ -41,6 +41,7 @@ export default function NewBookingDrawer({
   onClose,
   onSubmit,
   availableRooms = [],
+  getAvailableRooms,
   getRateForBooking
 }) {
   const { formatCurrency } = useCurrency();
@@ -84,9 +85,13 @@ export default function NewBookingDrawer({
 
   useEffect(() => {
     if (formData.checkIn && formData.checkOut) {
-      const filtered = availableRooms.filter(room =>
-        room.type === formData.roomType &&
-        room.cleaning !== 'dirty'
+      // Use getAvailableRooms callback with user's actual dates if available,
+      // otherwise fall back to the static availableRooms prop
+      const roomSource = getAvailableRooms
+        ? getAvailableRooms(formData.checkIn, formData.checkOut)
+        : availableRooms;
+      const filtered = roomSource.filter(room =>
+        room.type === formData.roomType
       );
       setFilteredRooms(filtered);
 
@@ -102,7 +107,7 @@ export default function NewBookingDrawer({
         }
       }
     }
-  }, [formData.roomType, formData.checkIn, formData.checkOut, formData.ratePlan, formData.nights, availableRooms, getRateForBooking]);
+  }, [formData.roomType, formData.checkIn, formData.checkOut, formData.ratePlan, formData.nights, availableRooms, getAvailableRooms, getRateForBooking]);
 
   const validateStep = (stepNum) => {
     const newErrors = {};

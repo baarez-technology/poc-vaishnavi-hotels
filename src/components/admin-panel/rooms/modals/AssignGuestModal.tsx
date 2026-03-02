@@ -132,7 +132,7 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-blue-700">Price:</span>
-                <span className="font-medium text-blue-900">${room.price}/night</span>
+                <span className="font-medium text-blue-900">₹{room.price}/night</span>
               </div>
             </div>
           </div>

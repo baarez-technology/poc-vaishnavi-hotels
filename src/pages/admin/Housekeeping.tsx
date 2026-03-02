@@ -26,6 +26,7 @@ import { ScanDigitalKeyModal } from '../../components/housekeeping/modals/ScanDi
 import { ForceAssignModal } from '../../components/common/ForceAssignModal';
 import { StaffAvailabilityAlert } from '../../components/common/StaffAvailabilityAlert';
 import Toast from '../../components/common/Toast';
+import RequestCleaningModal from '../../components/modals/RequestCleaningModal';
 import AutoAssignResultsModal from '../../components/housekeeping/modals/AutoAssignResultsModal';
 import ExportOptionsModal from '../../components/housekeeping/modals/ExportOptionsModal';
 import Pagination from '../../components/bookings/Pagination';
@@ -119,6 +120,7 @@ export default function Housekeeping() {
   const [taskForForceAssign, setTaskForForceAssign] = useState(null);
   const [roomForAction, setRoomForAction] = useState(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [cleaningRoom, setCleaningRoom] = useState<any>(null);
 
   // Staff availability state
   const [staffAvailability, setStaffAvailability] = useState({
@@ -512,6 +514,9 @@ export default function Housekeeping() {
         onUnblockRoom={handleUnblockRoom}
         onToggleChecklistItem={handleToggleChecklistItem}
         onAddNote={addNote}
+        onRequestCleaning={() => {
+          if (selectedRoom) setCleaningRoom(selectedRoom);
+        }}
       />
 
       {/* Assign Housekeeper Modal */}
@@ -618,6 +623,19 @@ export default function Housekeeping() {
         onClose={() => setIsExportModalOpen(false)}
         onExportCSV={handleExportCSV}
         onExportPDF={handleExportPDF}
+      />
+
+      {/* Request Cleaning Modal */}
+      <RequestCleaningModal
+        isOpen={!!cleaningRoom}
+        onClose={() => setCleaningRoom(null)}
+        onSuccess={() => {
+          showToast('Cleaning request submitted', 'success');
+          setCleaningRoom(null);
+          refreshData();
+        }}
+        roomId={cleaningRoom?.id || 0}
+        roomNumber={cleaningRoom?.number || cleaningRoom?.roomNumber || ''}
       />
 
       {/* Toast Notifications */}

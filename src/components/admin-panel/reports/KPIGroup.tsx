@@ -1,7 +1,7 @@
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useCurrency } from '@/hooks/useCurrency';
 
-const formatValue = (value, format, currencySymbol = '$') => {
+const formatValue = (value, format, currencySymbol = '₹') => {
   if (format === 'currency') {
     if (value >= 1000000) {
       return `${currencySymbol}${(value / 1000000).toFixed(1)}M`;

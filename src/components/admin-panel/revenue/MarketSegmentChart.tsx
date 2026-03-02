@@ -10,13 +10,13 @@ export default function MarketSegmentChart({ segmentsData }) {
           <p className="font-semibold text-neutral-900 mb-2">{data.name}</p>
           <div className="space-y-1">
             <p className="text-sm text-neutral-700">
-              <span className="font-medium">Revenue:</span> ${data.revenue.toLocaleString()}
+              <span className="font-medium">Revenue:</span> ₹{data.revenue.toLocaleString()}
             </p>
             <p className="text-sm text-neutral-700">
               <span className="font-medium">Rooms:</span> {data.rooms.toLocaleString()}
             </p>
             <p className="text-sm text-neutral-700">
-              <span className="font-medium">ADR:</span> ${data.adr}
+              <span className="font-medium">ADR:</span> ₹{data.adr}
             </p>
             <p className="text-sm font-semibold text-[#A57865] mt-2">
               {data.percentage}% of total
@@ -93,11 +93,11 @@ export default function MarketSegmentChart({ segmentsData }) {
               <span className="text-sm font-semibold text-neutral-900">{segment.name}</span>
             </div>
             <p className="text-xl font-bold text-neutral-900 mb-1">
-              ${(segment.revenue / 1000).toFixed(0)}K
+              ₹{(segment.revenue / 1000).toFixed(0)}K
             </p>
             <div className="flex items-center justify-between text-xs text-neutral-600">
               <span>{segment.rooms} rooms</span>
-              <span>ADR ${segment.adr}</span>
+              <span>ADR ₹{segment.adr}</span>
             </div>
           </div>
         ))}
@@ -107,7 +107,7 @@ export default function MarketSegmentChart({ segmentsData }) {
       <div className="mt-6 pt-6 border-t border-neutral-200 text-center">
         <p className="text-sm text-neutral-600 mb-1">Total Revenue</p>
         <p className="text-3xl font-bold text-[#A57865]">
-          ${(totalRevenue / 1000).toFixed(0)}K
+          ₹{(totalRevenue / 1000).toFixed(0)}K
         </p>
       </div>
     </div>

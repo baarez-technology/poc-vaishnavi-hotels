@@ -21,28 +21,28 @@ export const promotionAnalytics = {
   restrictions: ["Non-refundable", "Advance purchase required"],
   metrics: {
     redemptions: 133,
-    revenue: 258400,
+    revenue: 21447000,
     adrUplift: 12,
     occupancyImpact: 6,
     trend: { redemptions: +23, revenue: +18, adr: +12, occupancy: +4 }
   },
   revenueTimeline: [
-    { date: "2024-01-05", incrementalRevenue: 8200, barRate: 280, promoRate: 238 },
-    { date: "2024-01-06", incrementalRevenue: 9400, barRate: 280, promoRate: 238 },
-    { date: "2024-01-07", incrementalRevenue: 12100, barRate: 290, promoRate: 246 },
-    { date: "2024-01-08", incrementalRevenue: 7800, barRate: 275, promoRate: 234 },
-    { date: "2024-01-09", incrementalRevenue: 6500, barRate: 270, promoRate: 230 },
-    { date: "2024-01-10", incrementalRevenue: 8900, barRate: 285, promoRate: 242 },
-    { date: "2024-01-11", incrementalRevenue: 14200, barRate: 310, promoRate: 264 },
-    { date: "2024-01-12", incrementalRevenue: 18500, barRate: 340, promoRate: 289 },
-    { date: "2024-01-13", incrementalRevenue: 21300, barRate: 350, promoRate: 298 },
-    { date: "2024-01-14", incrementalRevenue: 16800, barRate: 320, promoRate: 272 },
-    { date: "2024-01-15", incrementalRevenue: 11200, barRate: 290, promoRate: 246 },
-    { date: "2024-01-16", incrementalRevenue: 9800, barRate: 280, promoRate: 238 },
-    { date: "2024-01-17", incrementalRevenue: 10500, barRate: 285, promoRate: 242 },
-    { date: "2024-01-18", incrementalRevenue: 15600, barRate: 315, promoRate: 268 },
-    { date: "2024-01-19", incrementalRevenue: 19200, barRate: 345, promoRate: 293 },
-    { date: "2024-01-20", incrementalRevenue: 17400, barRate: 330, promoRate: 280 }
+    { date: "2024-01-05", incrementalRevenue: 681000, barRate: 23000, promoRate: 19500 },
+    { date: "2024-01-06", incrementalRevenue: 780000, barRate: 23000, promoRate: 19500 },
+    { date: "2024-01-07", incrementalRevenue: 1004000, barRate: 24000, promoRate: 20500 },
+    { date: "2024-01-08", incrementalRevenue: 647000, barRate: 23000, promoRate: 19500 },
+    { date: "2024-01-09", incrementalRevenue: 539500, barRate: 22500, promoRate: 19000 },
+    { date: "2024-01-10", incrementalRevenue: 739000, barRate: 23500, promoRate: 20000 },
+    { date: "2024-01-11", incrementalRevenue: 1179000, barRate: 25500, promoRate: 22000 },
+    { date: "2024-01-12", incrementalRevenue: 1536000, barRate: 28000, promoRate: 24000 },
+    { date: "2024-01-13", incrementalRevenue: 1768000, barRate: 29000, promoRate: 24500 },
+    { date: "2024-01-14", incrementalRevenue: 1394000, barRate: 26500, promoRate: 22500 },
+    { date: "2024-01-15", incrementalRevenue: 930000, barRate: 24000, promoRate: 20500 },
+    { date: "2024-01-16", incrementalRevenue: 813000, barRate: 23000, promoRate: 19500 },
+    { date: "2024-01-17", incrementalRevenue: 872000, barRate: 23500, promoRate: 20000 },
+    { date: "2024-01-18", incrementalRevenue: 1295000, barRate: 26000, promoRate: 22000 },
+    { date: "2024-01-19", incrementalRevenue: 1594000, barRate: 28500, promoRate: 24500 },
+    { date: "2024-01-20", incrementalRevenue: 1444000, barRate: 27500, promoRate: 23000 }
   ],
   redemptionsTimeline: [
     { date: "2024-01-05", redemptions: 6 },
@@ -63,18 +63,18 @@ export const promotionAnalytics = {
     { date: "2024-01-20", redemptions: 15 }
   ],
   channelPerformance: [
-    { channel: "Website", redemptions: 58, revenue: 118320, adr: 342, conversion: 6.1, trend: +12 },
-    { channel: "Booking.com", redemptions: 48, revenue: 92300, adr: 325, conversion: 4.2, trend: +5 },
-    { channel: "Expedia", redemptions: 27, revenue: 47780, adr: 315, conversion: 3.8, trend: -2 }
+    { channel: "Website", redemptions: 58, revenue: 9821000, adr: 28500, conversion: 6.1, trend: +12 },
+    { channel: "Booking.com", redemptions: 48, revenue: 7661000, adr: 27000, conversion: 4.2, trend: +5 },
+    { channel: "Expedia", redemptions: 27, revenue: 3966000, adr: 26000, conversion: 3.8, trend: -2 }
   ],
   roomTypePerformance: [
-    { type: "Pacific Suite", revenue: 98400, redemptions: 72, uplift: 12, trend: +7 },
-    { type: "Oceanfront Penthouse", revenue: 160000, redemptions: 61, uplift: 18, trend: +11 }
+    { type: "Pacific Suite", revenue: 8167000, redemptions: 72, uplift: 12, trend: +7 },
+    { type: "Oceanfront Penthouse", revenue: 13280000, redemptions: 61, uplift: 18, trend: +11 }
   ],
   forecast: {
-    next7daysRevenue: 48200,
+    next7daysRevenue: 4000000,
     next7daysRedemptions: 63,
-    predictedADR: 344,
+    predictedADR: 28500,
     confidence: 0.92
   },
   aiInsights: [
@@ -101,7 +101,7 @@ export const promotionAnalytics = {
       title: "Extend Promotion by 7 Days",
       reason: "Strong weekend demand pattern detected with consistent upward trend. Historical data suggests continued momentum.",
       impact: "+18% expected revenue",
-      impactValue: 46500,
+      impactValue: 3860000,
       priority: "high"
     },
     {
@@ -109,7 +109,7 @@ export const promotionAnalytics = {
       title: "Increase Discount for Premium Rooms by 5%",
       reason: "Premium rooms show highest redemptions but lower conversion rate compared to segment benchmark.",
       impact: "+12% expected uplift",
-      impactValue: 19200,
+      impactValue: 1594000,
       priority: "medium"
     },
     {
@@ -117,7 +117,7 @@ export const promotionAnalytics = {
       title: "Reduce OTA Restrictions",
       reason: "Expedia channel showing negative trend. Loosening minimum stay requirement could boost conversions.",
       impact: "+8% channel recovery",
-      impactValue: 7800,
+      impactValue: 647000,
       priority: "medium"
     },
     {
@@ -145,7 +145,7 @@ export const getPromotionById = (id) => {
 export const formatCurrency = (amount) => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'INR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
   }).format(amount);

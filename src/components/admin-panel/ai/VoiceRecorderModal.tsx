@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Mic, Square, AlertCircle } from 'lucide-react';
+import { X, Mic, Square, AlertCircle, Trash2 } from 'lucide-react';
 import { adminAIService } from '../../../api/services/admin-ai.service';
 
 interface VoiceRecorderModalProps {
@@ -25,6 +25,7 @@ export default function VoiceRecorderModal({
   const [audioLevel, setAudioLevel] = useState(0);
   const [hasSpoken, setHasSpoken] = useState(false); // Track if user has spoken
   const [peakAudioLevel, setPeakAudioLevel] = useState(0); // Track peak audio level during recording
+  const [isSending, setIsSending] = useState(false); // Guard against double-clicks on Send
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -70,6 +71,7 @@ export default function VoiceRecorderModal({
       setIsTranscribing(false);
       setHasSpoken(false);
       setPeakAudioLevel(0);
+      setIsSending(false);
       // Don't auto-start - user must click to start recording
     } else {
       stopRecording();
@@ -343,9 +345,9 @@ export default function VoiceRecorderModal({
   };
 
   const handleDone = () => {
-    if (transcript) {
-      onTranscriptReady(transcript);
-    }
+    if (isSending || !transcript) return;
+    setIsSending(true);
+    onTranscriptReady(transcript);
     onClose();
   };
 
@@ -354,6 +356,17 @@ export default function VoiceRecorderModal({
     setError(null);
     setDuration(0);
     startRecording();
+  };
+
+  // Delete transcript without closing modal or re-recording
+  const handleDelete = () => {
+    setTranscript('');
+    setError(null);
+    setDuration(0);
+    setHasSpoken(false);
+    hasSpokenRef.current = false;
+    setPeakAudioLevel(0);
+    audioChunksRef.current = [];
   };
 
   // Format duration as MM:SS
@@ -508,23 +521,32 @@ export default function VoiceRecorderModal({
               Cancel
             </button>
             {transcript && !isRecording && !isTranscribing && (
-              <button
-                onClick={handleRetry}
-                className="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-lg text-[12px] sm:text-[13px] font-medium text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
-              >
-                Re-record
-              </button>
+              <>
+                <button
+                  onClick={handleDelete}
+                  className="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-rose-200 rounded-lg text-[12px] sm:text-[13px] font-medium text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition-colors flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete
+                </button>
+                <button
+                  onClick={handleRetry}
+                  className="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-neutral-200 rounded-lg text-[12px] sm:text-[13px] font-medium text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
+                >
+                  Re-record
+                </button>
+              </>
             )}
             <button
               onClick={handleDone}
-              disabled={!transcript || isRecording || isTranscribing}
+              disabled={!transcript || isRecording || isTranscribing || isSending}
               className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-[12px] sm:text-[13px] font-semibold transition-colors ${
-                transcript && !isRecording && !isTranscribing
+                transcript && !isRecording && !isTranscribing && !isSending
                   ? 'bg-terra-500 hover:bg-terra-600 text-white'
                   : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
               }`}
             >
-              Send Message
+              {isSending ? 'Sending...' : 'Send Message'}
             </button>
           </div>
         </div>

@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { User, Clock, CheckCircle2, AlertCircle, Play, CheckCircle, Ban, RotateCcw, Edit, Send } from 'lucide-react';
+import { User, Clock, CheckCircle2, AlertCircle, Play, CheckCircle, Ban, RotateCcw, Edit, Send, SprayCan } from 'lucide-react';
 import { Button } from '../ui2/Button';
 import { Drawer } from '../ui2/Drawer';
 
@@ -21,7 +21,8 @@ export default function RoomDrawer({
   onBlockRoom,
   onUnblockRoom,
   onToggleChecklistItem,
-  onAddNote
+  onAddNote,
+  onRequestCleaning
 }) {
   const [newNote, setNewNote] = useState('');
   const [isSavingNote, setIsSavingNote] = useState(false);
@@ -364,6 +365,14 @@ export default function RoomDrawer({
                 )}
               </>
             )}
+            {/* Request Cleaning — for occupied rooms */}
+            {room.status === 'occupied' && onRequestCleaning && (
+              <Button variant="outline" onClick={() => onRequestCleaning()} className="w-full justify-center px-5 py-2 text-[13px] font-semibold text-sage-700 border-sage-200 hover:bg-sage-50">
+                <SprayCan className="w-4 h-4 mr-1.5" />
+                Request Cleaning
+              </Button>
+            )}
+
             {room.status === 'out_of_service' ? (
               <Button variant="primary" onClick={() => onUnblockRoom(room.id)} className="w-full justify-center px-5 py-2 text-[13px] font-semibold">
                 Unblock Room

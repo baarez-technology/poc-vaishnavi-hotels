@@ -65,8 +65,13 @@ const getCacheTTL = (url: string | undefined): number => {
     return CACHE_TTL.dashboard;
   }
 
+  // Room types - short cache so price/availability updates propagate quickly
+  if (url.includes('/room-types')) {
+    return CACHE_TTL.default; // 2s
+  }
+
   // Static data
-  if (url.includes('/room-types') || url.includes('/amenities') || url.includes('/sources')) {
+  if (url.includes('/amenities') || url.includes('/sources')) {
     return CACHE_TTL.static;
   }
 
@@ -99,8 +104,10 @@ const cleanupCache = () => {
   }
 };
 
-// Run cleanup every 30 seconds
-setInterval(cleanupCache, 30000);
+// Run cleanup every 30 seconds (prevent duplicates in HMR)
+if (!(window as any).__glimmora_cache_cleanup__) {
+  (window as any).__glimmora_cache_cleanup__ = setInterval(cleanupCache, 30000);
+}
 
 // Create axios instance
 export const apiClient = axios.create({
@@ -111,6 +118,14 @@ export const apiClient = axios.create({
   },
   withCredentials: false, // Using Bearer tokens, not cookies
 });
+
+// Helper to extract data from wrapped API responses
+// Handles { data: { data: ... } } or { data: ... } patterns from axios responses
+export const extractData = (res: any) => {
+  const d = res?.data;
+  if (d && typeof d === 'object' && 'data' in d) return d.data;
+  return d;
+};
 
 // Helper to clear cache for specific patterns (useful after mutations)
 export const clearApiCache = (urlPattern?: string) => {
@@ -175,6 +190,12 @@ export const getAccessToken = () => {
 // Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
+    // Always add X-Hotel-Code header for multi-tenant support
+    // This allows both authenticated and unauthenticated requests to work
+    if (ENV.HOTEL_CODE) {
+      config.headers['X-Hotel-Code'] = ENV.HOTEL_CODE;
+    }
+
     // Don't add Authorization header for public endpoints
     const isPublicEndpoint = config.url?.includes('/api/v1/auth/login') ||
                           config.url?.includes('/api/v1/auth/signup') ||
@@ -183,19 +204,19 @@ apiClient.interceptors.request.use(
                           config.url?.includes('/api/v1/auth/reset-password') ||
                           config.url?.includes('/api/v1/otp/') ||
                           config.url?.includes('/api/v1/precheckin/verify-booking');
-    
+
     // Add access token if available and not a public endpoint
     if (accessToken && !isPublicEndpoint) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
-    
+
     // Ensure Content-Type is set for POST/PUT requests
-    if ((config.method === 'post' || config.method === 'put' || config.method === 'patch') && 
-        config.data && 
+    if ((config.method === 'post' || config.method === 'put' || config.method === 'patch') &&
+        config.data &&
         !config.headers['Content-Type']) {
       config.headers['Content-Type'] = 'application/json';
     }
-    
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -295,12 +316,28 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       originalRequest._retry = true;
 
+      // Only try refresh if we have a token
+      const currentToken = getAccessToken();
+      if (!currentToken) {
+        // No token to refresh, redirect to login
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+        return Promise.reject(error);
+      }
+
       try {
-        // Try to refresh token
+        // Try to refresh token - must include current token and hotel code
         const response = await axios.post(
           `${ENV.API_URL}/api/v1/auth/refresh`,
           {},
-          { withCredentials: false }
+          {
+            withCredentials: false,
+            headers: {
+              'Authorization': `Bearer ${currentToken}`,
+              'X-Hotel-Code': ENV.HOTEL_CODE || '',
+            }
+          }
         );
 
         const newAccessToken = response.data.access_token || response.data.accessToken;
@@ -345,6 +382,20 @@ apiClient.interceptors.response.use(
     if (originalRequest) {
       const cacheKey = getCacheKey(originalRequest);
       inflightRequests.delete(cacheKey);
+    }
+
+    // Normalize FastAPI validation error detail so it's always a string.
+    // FastAPI 422 responses return detail as [{type, loc, msg, input}, ...] which
+    // crashes React if rendered directly ("Objects are not valid as a React child").
+    if (error.response?.data?.detail) {
+      const detail = error.response.data.detail;
+      if (Array.isArray(detail)) {
+        error.response.data.detail = detail
+          .map((e: any) => (typeof e === 'string' ? e : e?.msg || e?.message || JSON.stringify(e)))
+          .join('. ');
+      } else if (typeof detail === 'object' && detail !== null) {
+        error.response.data.detail = detail.msg || detail.message || JSON.stringify(detail);
+      }
     }
 
     return Promise.reject(error);

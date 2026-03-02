@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react';
 import {
   User, Calendar, Bed, Crown, Check, Users, AlertCircle,
   Sparkles, Globe, Mail, Phone, X, ChevronRight,
-  Building, Wifi, Coffee, Car, ChevronLeft
+  Building, Building2, Wifi, Coffee, Car, ChevronLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Drawer } from '../ui2/Drawer';
@@ -16,6 +16,7 @@ import { Input, FormField, Select, Textarea } from '../ui2/Input';
 import { Button } from '../ui2/Button';
 import DatePicker from '../ui2/DatePicker';
 import { useCurrency } from '@/hooks/useCurrency';
+import { corporateService, type CorporateAccount } from '@/api/services/corporate.service';
 
 const roomTypes = [
   'Minimalist Studio',
@@ -60,11 +61,19 @@ export default function AddBookingModal({
     source: 'Direct',
     specialRequests: '',
     selectedRoom: null,
-    amount: 0
+    amount: 0,
+    corporateAccountId: null
   });
 
   const [errors, setErrors] = useState({});
   const [filteredRooms, setFilteredRooms] = useState([]);
+  const [corporateAccounts, setCorporateAccounts] = useState<CorporateAccount[]>([]);
+
+  useEffect(() => {
+    corporateService.listAccounts({ status: 'active' }).then((data) => {
+      setCorporateAccounts(Array.isArray(data) ? data : data?.items || []);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (formData.checkIn && formData.checkOut) {
@@ -185,7 +194,8 @@ export default function AddBookingModal({
       source: 'Direct',
       specialRequests: '',
       selectedRoom: null,
-      amount: 0
+      amount: 0,
+      corporateAccountId: null
     });
     setErrors({});
   };
@@ -418,6 +428,42 @@ export default function AddBookingModal({
                 </div>
               </button>
             </div>
+          </div>
+
+          {/* Corporate Account */}
+          <div>
+            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-4 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-terra-500" />
+              Corporate Account
+            </h3>
+
+            <FormField label="Link to Corporate" description="Optional - tag this booking to a corporate account">
+              <Select
+                value={formData.corporateAccountId || ''}
+                onChange={(e) => {
+                  const val = e.target.value ? Number(e.target.value) : null;
+                  handleChange('corporateAccountId', val);
+                  if (val) {
+                    handleChange('source', 'Corporate Portal');
+                    handleChange('ratePlan', 'Corporate');
+                  }
+                }}
+              >
+                <option value="">None (Walk-in)</option>
+                {corporateAccounts.map((corp) => (
+                  <option key={corp.id} value={corp.id}>{corp.company_name}</option>
+                ))}
+              </Select>
+            </FormField>
+
+            {formData.corporateAccountId && (
+              <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200">
+                <Building2 className="w-4 h-4 text-blue-600" />
+                <span className="text-[11px] font-medium text-blue-700">
+                  Source set to Corporate Portal · Rate plan set to Corporate
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}

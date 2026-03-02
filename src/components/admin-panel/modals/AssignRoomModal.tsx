@@ -1,10 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Check, Bed, Users, Wifi, Tv, Wind, Coffee, Search, Loader2 } from 'lucide-react';
+import { X, Check, Bed, Users, Wifi, Tv, Wind, Coffee, Search, Loader2, Lock, Unlock, ShieldAlert } from 'lucide-react';
 import { formatCurrency } from '@/utils/admin/bookings';
 import { roomsService } from '@/api/services/rooms.service';
+import { bookingService } from '@/api/services/booking.service';
 import { SimpleDropdown } from '@/components/ui/Select';
 import { Button } from '../../ui2/Button';
+import { useAuth } from '@/hooks/useAuth';
 
 // Feature icons mapping
 const FEATURE_ICONS = {
@@ -15,12 +17,27 @@ const FEATURE_ICONS = {
 };
 
 export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, isAssigning, bookings = [] }) {
+  const { user } = useAuth();
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterFloor, setFilterFloor] = useState('all');
   const [roomsData, setRoomsData] = useState([]);
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
+  const [dnmEnabled, setDnmEnabled] = useState(false);
+
+  // Role-based access
+  const userRole = (user?.role || '').toLowerCase();
+  const isAdminOrManager = ['admin', 'manager', 'general_manager'].includes(userRole) || user?.isSuperuser;
+
+  // Determine if this is a room move (checked-in guest)
+  const isRoomMove = (() => {
+    const status = (booking?.status || '').toUpperCase().replace(/[\s_]/g, '-');
+    return status === 'IN-HOUSE' || status === 'CHECKED-IN' || status === 'IN_HOUSE';
+  })();
+
+  // Checked-in bookings: only admin/manager can reassign
+  const isCheckedInLocked = isRoomMove && booking?.room && !isAdminOrManager;
 
   // Fetch rooms from database when modal opens
   useEffect(() => {
@@ -29,6 +46,7 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
       setSearchQuery('');
       setFilterType('all');
       setFilterFloor('all');
+      setDnmEnabled(booking?.doNotMove || false);
       fetchRooms();
     }
   }, [isOpen]);
@@ -37,10 +55,10 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
     setIsLoadingRooms(true);
     try {
       // Pass booking dates to filter rooms available for the stay period
+      // Fetch ALL room types to support upgrades/overbooking scenarios
       const searchParams: any = {};
       if (booking?.checkIn) searchParams.checkIn = booking.checkIn;
       if (booking?.checkOut) searchParams.checkOut = booking.checkOut;
-      if (booking?.roomType) searchParams.type = booking.roomType;
       const rooms = await roomsService.getRooms(searchParams);
       console.log('[AssignRoomModal] Fetched rooms:', rooms);
 
@@ -59,6 +77,7 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
         features: room.amenities || room.features || [],
         bedType: room.bedType || room.bed_type || 'King',
         view: room.view || room.view_type || 'Standard',
+        available: room.available,
       }));
 
       console.log('[AssignRoomModal] Transformed rooms:', transformedRooms);
@@ -87,13 +106,15 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
   const availableRooms = useMemo(() => {
     if (!roomsData || roomsData.length === 0) return [];
 
-    // Statuses that indicate a room can be assigned
-    const assignableStatuses = ['available', 'clean', 'inspected', 'dirty'];
-
     return roomsData.filter(room => {
-      // Only show rooms with assignable status
-      const roomStatus = (room.status || '').toLowerCase();
-      if (!assignableStatuses.includes(roomStatus)) return false;
+      // Use backend-computed availability (date-range based) when present
+      if (typeof room.available === 'boolean') {
+        if (!room.available) return false;
+      } else {
+        // Fallback: exclude only truly unavailable statuses
+        const roomStatus = (room.status || '').toLowerCase();
+        if (['occupied', 'maintenance', 'out_of_service'].includes(roomStatus)) return false;
+      }
 
       // Check for date conflicts if booking has dates
       if (booking?.checkIn && booking?.checkOut && bookings.length > 0) {
@@ -151,7 +172,7 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
     return Array.from(floorSet).sort((a, b) => a - b);
   }, [availableRooms]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (selectedRoom) {
       onAssign({
         id: selectedRoom.id,
@@ -162,6 +183,17 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
         floor: selectedRoom.floor,
         price: selectedRoom.price,
       });
+
+      // Auto-enable DNM for checked-in bookings, or toggle if user changed it
+      const shouldEnableDnm = isRoomMove ? true : dnmEnabled;
+      if (booking?.id && shouldEnableDnm !== (booking?.doNotMove || false)) {
+        try {
+          await bookingService.toggleDNM(booking.id, shouldEnableDnm);
+        } catch (err) {
+          console.error('[AssignRoomModal] DNM toggle failed:', err);
+        }
+      }
+
       setSelectedRoom(null);
     }
   };
@@ -233,6 +265,62 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
                       <span className="text-sm font-semibold text-[#A57865]">{booking.roomType}</span>
                     </div>
                   )}
+
+                  {/* DNM indicator if already locked */}
+                  {booking.doNotMove && (
+                    <div className="col-span-2 pt-2 border-t border-neutral-200">
+                      <div className="flex items-center gap-1.5 text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-1.5">
+                        <Lock className="w-3.5 h-3.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <span className="text-xs font-medium">DNM — Room assignment is locked</span>
+                          {booking.dnmSetByName && (
+                            <span className="text-[10px] text-amber-600 block mt-0.5">
+                              Locked by {booking.dnmSetByName}
+                              {booking.dnmSetAt && ` on ${new Date(booking.dnmSetAt).toLocaleDateString()}`}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Checked-in lock notice for non-admin */}
+                  {isCheckedInLocked && (
+                    <div className="col-span-2 pt-2 border-t border-neutral-200">
+                      <div className="flex items-center gap-1.5 text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-2.5 py-1.5">
+                        <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="text-xs font-medium">
+                          Checked-in rooms can only be reassigned by Admin or Manager
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* DNM toggle */}
+                  <div className="col-span-2 pt-2 border-t border-neutral-200">
+                    <label className={`flex items-center gap-2 group ${
+                      booking.doNotMove && !isAdminOrManager && booking.dnmSetBy !== user?.id
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'cursor-pointer'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={dnmEnabled}
+                        onChange={(e) => setDnmEnabled(e.target.checked)}
+                        disabled={booking.doNotMove && !isAdminOrManager && booking.dnmSetBy !== user?.id}
+                        className="w-3.5 h-3.5 rounded border-neutral-300 text-[#A57865] focus:ring-[#A57865] disabled:opacity-50"
+                      />
+                      <span className="flex items-center gap-1 text-xs text-neutral-600 group-hover:text-neutral-800">
+                        {dnmEnabled ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                        Do Not Move (DNM)
+                      </span>
+                      <span className="text-[10px] text-neutral-400 ml-auto">
+                        {booking.doNotMove && !isAdminOrManager && booking.dnmSetBy !== user?.id
+                          ? 'Only setter or manager can unlock'
+                          : 'Lock room assignment'}
+                      </span>
+                    </label>
+                  </div>
                 </div>
               </div>
             )}
@@ -302,7 +390,8 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
                   {filteredRooms.map((room) => (
                     <button
                       key={room.roomNumber}
-                      onClick={() => setSelectedRoom(room)}
+                      onClick={() => !isCheckedInLocked && setSelectedRoom(room)}
+                      disabled={isCheckedInLocked}
                       className={`p-4 rounded-xl border-2 text-left transition-all duration-200 ${
                         selectedRoom?.roomNumber === room.roomNumber
                           ? 'border-[#A57865] bg-[#A57865]/5 shadow-sm'
@@ -381,8 +470,8 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
             <Button variant="ghost" onClick={onClose} className="flex-1">
               Cancel
             </Button>
-            <Button variant="primary" onClick={handleSubmit} disabled={!selectedRoom || isAssigning} icon={Check} loading={isAssigning} className="flex-1">
-              {isAssigning ? 'Assigning...' : 'Assign Room'}
+            <Button variant="primary" onClick={handleSubmit} disabled={!selectedRoom || isAssigning || isCheckedInLocked} icon={Check} loading={isAssigning} className="flex-1">
+              {isAssigning ? 'Assigning...' : isRoomMove ? 'Move Room' : 'Assign Room'}
             </Button>
           </div>
         </div>

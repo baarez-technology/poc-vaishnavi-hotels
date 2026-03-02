@@ -126,7 +126,7 @@ export default function useCMSRatePlans() {
         name: planData.fullName || planData.name || 'New Rate Plan',
         description: planData.description || '',
         plan_type: 'BAR',
-        currency: 'USD',
+        currency: 'INR',
         base_price: planData.baseRates?.default || planData.basePrice?.default || 200,
         is_active: planData.isActive ?? true,
       };

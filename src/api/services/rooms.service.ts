@@ -190,6 +190,17 @@ export const roomsService = {
 
 
   /**
+   * Add a note to a room (persisted to Room.notes in the database)
+   */
+  addRoomNote: async (roomId: number | string, note: string): Promise<any> => {
+    const response = await apiClient.post(
+      `/api/v1/rooms/${roomId}/notes`,
+      { note }
+    );
+    return response.data;
+  },
+
+  /**
    * Create a new room
    */
   createRoom: async (data: {

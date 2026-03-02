@@ -11,6 +11,7 @@ import { WishlistProvider } from './contexts/WishlistContext';
 import { SSEProvider } from './contexts/SSEContext';
 import { BrandingProvider } from '@/contexts/BrandingContext';
 import { AGIChatWidget } from './components/chatbot/AGIChatWidget';
+import { HotelGuard } from './components/HotelGuard';
 
 // Wrapper component to conditionally show Aria AI Chat Widget only on guest pages
 function AriaChatWidgetWrapper() {
@@ -30,6 +31,7 @@ import { LoginPage } from './pages/Auth/LoginPage';
 import { SignupPage } from './pages/Auth/SignupPage';
 import { ForgotPasswordPage } from './pages/Auth/ForgotPasswordPage';
 import { ResetPassword } from './pages/Auth/ResetPassword';
+import SetFirstPassword from './pages/Auth/SetFirstPassword';
 import { RoomsPage } from './pages/Rooms/RoomsPage';
 import { RoomDetailPage } from './pages/Rooms/RoomDetailPage';
 import { ContactPage } from './pages/Contact/ContactPage';
@@ -89,7 +91,6 @@ const Staff = lazyWithRetry(() => import('./pages/admin/Staff'));
 const StaffProfile = lazyWithRetry(() => import('./pages/admin/staff/StaffProfile'));
 const Housekeeping = lazyWithRetry(() => import('./pages/admin/Housekeeping'));
 const Maintenance = lazyWithRetry(() => import('./pages/admin/Maintenance'));
-const Runner = lazyWithRetry(() => import('./pages/admin/Runner'));
 const RevenueAI = lazyWithRetry(() => import('./pages/admin/RevenueAI'));
 const ReputationAI = lazyWithRetry(() => import('./pages/admin/ReputationAI'));
 const ReputationGoals = lazyWithRetry(() => import('./pages/admin/ReputationGoals'));
@@ -97,11 +98,6 @@ const ReputationPendingReviews = lazyWithRetry(() => import('./pages/admin/Reput
 const CRM = lazyWithRetry(() => import('./pages/admin/CRM'));
 const CRMAI = lazyWithRetry(() => import('./pages/admin/ai/CRMAI'));
 const CRMAIDashboard = lazyWithRetry(() => import('./pages/admin/ai/CRMAIDashboard'));
-const ABTestingDashboard = lazyWithRetry(() => import('./pages/admin/ai/ABTestingDashboard'));
-const OTAConversionCenter = lazyWithRetry(() => import('./pages/admin/ai/OTAConversionCenter'));
-const MemberTierManagement = lazyWithRetry(() => import('./pages/admin/ai/MemberTierManagement'));
-const AISegmentationStudio = lazyWithRetry(() => import('./pages/admin/ai/AISegmentationStudio'));
-const RecoveryActionCenter = lazyWithRetry(() => import('./pages/admin/ai/RecoveryActionCenter'));
 const SegmentDetailsWrapper = lazyWithRetry(() => import('./pages/admin/crm/SegmentDetailsWrapper'));
 const SettingsLayout = lazyWithRetry(() => import('./pages/admin/settings/SettingsLayout'));
 const ReportsHome = lazyWithRetry(() => import('./pages/admin/ReportsHome'));
@@ -109,7 +105,6 @@ const BookingsOccupancyReport = lazyWithRetry(() => import('./pages/admin/Bookin
 const HousekeepingRoomsReport = lazyWithRetry(() => import('./pages/admin/HousekeepingRoomsReport'));
 const RevenueSnapshotReport = lazyWithRetry(() => import('./pages/admin/RevenueSnapshotReport'));
 const GuestExperienceReport = lazyWithRetry(() => import('./pages/admin/GuestExperienceReport'));
-const AdvancedAnalytics = lazyWithRetry(() => import('./pages/admin/AdvancedAnalytics'));
 const Profile = lazyWithRetry(() => import('./pages/admin/Profile'));
 const AccessDenied = lazyWithRetry(() => import('./pages/admin/AccessDenied'));
 
@@ -161,15 +156,29 @@ const StaffRunnerDeliveries = lazyWithRetry(() => import('./pages/staff-portal/r
 const StaffPortalProfile = lazyWithRetry(() => import('./pages/staff-portal/profile/Profile'));
 const StaffNotifications = lazyWithRetry(() => import('./pages/staff-portal/notifications/Notifications'));
 const TechnicianSpecializations = lazyWithRetry(() => import('./pages/admin/TechnicianSpecializations'));
+const NightAudit = lazyWithRetry(() => import('./pages/admin/NightAudit'));
+const CorporateAccounts = lazyWithRetry(() => import('./pages/admin/CorporateAccounts'));
+const ARLedger = lazyWithRetry(() => import('./pages/admin/ARLedger'));
+const AuditLogs = lazyWithRetry(() => import('./pages/admin/AuditLogs'));
+const CashierSessions = lazyWithRetry(() => import('./pages/admin/CashierSessions'));
+const RoomMoves = lazyWithRetry(() => import('./pages/admin/RoomMoves'));
+const PosClosurePage = lazyWithRetry(() => import('./pages/admin/PosClosurePage'));
+const PaymasterAccounts = lazyWithRetry(() => import('./pages/admin/PaymasterAccounts'));
+const AuditPackPage = lazyWithRetry(() => import('./pages/admin/AuditPackPage'));
+const MultiRoomBooking = lazyWithRetry(() => import('./pages/admin/MultiRoomBooking'));
+const TransactionCodes = lazyWithRetry(() => import('./pages/admin/TransactionCodes'));
+const PreAuthHolds = lazyWithRetry(() => import('./pages/admin/PreAuthHolds'));
+const RateCheckReport = lazyWithRetry(() => import('./pages/admin/RateCheckReport'));
 const StaffTaskAcceptance = lazyWithRetry(() => import('./pages/staff/TaskAcceptance'));
 
 function App() {
   return (
-    <ThemeProvider>
-      <WishlistProvider>
-        <BrandingProvider>
-          <Router>
-          <AuthProvider>
+    <HotelGuard>
+      <ThemeProvider>
+        <WishlistProvider>
+          <BrandingProvider>
+            <Router>
+            <AuthProvider>
             <ChatProvider>
               <AGIChatProvider>
                 <PreCheckInProvider>
@@ -314,7 +323,6 @@ function App() {
                                                     <Route path="staff/:staffId" element={<StaffProfile />} />
                                                     <Route path="housekeeping" element={<Housekeeping />} />
                                                     <Route path="maintenance" element={<Maintenance />} />
-                                                    <Route path="runner" element={<Runner />} />
                                                     <Route path="revenue" element={<RevenueDashboard />} />
                                                     <Route path="reputation" element={<ReputationAI />} />
                                                     <Route path="reputation/goals" element={<ReputationGoals />} />
@@ -326,7 +334,6 @@ function App() {
                                                     <Route path="reports/housekeeping-rooms" element={<HousekeepingRoomsReport />} />
                                                     <Route path="reports/revenue-snapshot" element={<RevenueSnapshotReport />} />
                                                     <Route path="reports/guest-experience" element={<GuestExperienceReport />} />
-                                                    <Route path="analytics" element={<AdvancedAnalytics />} />
                                                     <Route path="settings/*" element={<SettingsLayout />} />
                                                     {/* Profile Route */}
                                                     <Route path="profile" element={<Profile />} />
@@ -359,13 +366,22 @@ function App() {
                                                     <Route path="ai/crm" element={<CRM />} />
                                                     <Route path="ai/crm-dashboard" element={<CRMAIDashboard />} />
                                                     <Route path="ai/crm-chat" element={<CRMAI />} />
-                                                    <Route path="ai/ab-testing" element={<ABTestingDashboard />} />
-                                                    <Route path="ai/ota-conversion" element={<OTAConversionCenter />} />
-                                                    <Route path="ai/member-tiers" element={<MemberTierManagement />} />
-                                                    <Route path="ai/ai-segments" element={<AISegmentationStudio />} />
-                                                    <Route path="ai/recovery" element={<RecoveryActionCenter />} />
                                                     {/* Maintenance Specializations */}
                                                     <Route path="maintenance/specializations" element={<TechnicianSpecializations />} />
+                                                    {/* Night Audit */}
+                                                    <Route path="night-audit" element={<NightAudit />} />
+                                                    <Route path="corporate-accounts" element={<CorporateAccounts />} />
+                                                    <Route path="ar-ledger" element={<ARLedger />} />
+                                                    <Route path="audit-logs" element={<AuditLogs />} />
+                                                    <Route path="cashier-sessions" element={<CashierSessions />} />
+                                                    <Route path="room-moves" element={<RoomMoves />} />
+                                                    <Route path="pos-closure" element={<PosClosurePage />} />
+                                                    <Route path="paymaster" element={<PaymasterAccounts />} />
+                                                    <Route path="audit-pack" element={<AuditPackPage />} />
+                                                    <Route path="multi-room" element={<MultiRoomBooking />} />
+                                                    <Route path="transaction-codes" element={<TransactionCodes />} />
+                                                    <Route path="preauth-holds" element={<PreAuthHolds />} />
+                                                    <Route path="rate-check" element={<RateCheckReport />} />
                                                   </Route>
                                                 </Routes>
                                               </Suspense>
@@ -452,6 +468,7 @@ function App() {
                           <Route path="/signup" element={<SignupPage />} />
                           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                           <Route path="/reset-password" element={<ResetPassword />} />
+                          <Route path="/set-password" element={<SetFirstPassword />} />
                           {/* 404 */}
                           <Route path="*" element={<NotFound />} />
                         </Routes>
@@ -463,10 +480,11 @@ function App() {
               </AGIChatProvider>
             </ChatProvider>
           </AuthProvider>
-          </Router>
-        </BrandingProvider>
-      </WishlistProvider>
-    </ThemeProvider>
+            </Router>
+          </BrandingProvider>
+        </WishlistProvider>
+      </ThemeProvider>
+    </HotelGuard>
   );
 }
 

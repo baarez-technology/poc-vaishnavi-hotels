@@ -17,14 +17,30 @@ const paymentSchema = z.object({
     // Allow masked saved cards (**** **** **** 1234) or full card numbers
     if (val.startsWith('****')) return true;
     const cleaned = val.replace(/\s/g, '');
-    return cleaned.length >= 13 && cleaned.length <= 19 && /^\d+$/.test(cleaned);
-  }, 'Card number must be valid'),
+    if (!/^\d+$/.test(cleaned)) return false;
+    // D-13: CC digit validation per card type based on prefix
+    if (cleaned.startsWith('34') || cleaned.startsWith('37')) return cleaned.length === 15; // Amex
+    if (cleaned.startsWith('5018') || cleaned.startsWith('5020') || cleaned.startsWith('5038') || cleaned.startsWith('6304')) return cleaned.length >= 12 && cleaned.length <= 19; // Maestro
+    if (cleaned.startsWith('4')) return cleaned.length === 16 || cleaned.length === 19; // Visa (16 or 19)
+    if (cleaned.startsWith('5') || cleaned.startsWith('2')) return cleaned.length === 16; // Mastercard
+    if (cleaned.startsWith('6011') || cleaned.startsWith('65')) return cleaned.length === 16; // Discover
+    return cleaned.length >= 13 && cleaned.length <= 19; // Fallback
+  }, 'Card number must be valid for its card type'),
   cardName: z.string().min(3, 'Name on card is required'),
-  expiryDate: z.string().regex(/^(0[1-9]|1[0-2])\/\d{2}$/, 'Format: MM/YY'),
+  expiryDate: z.string().regex(/^(0[1-9]|1[0-2])\/\d{2}$/, 'Format: MM/YY').refine((val) => {
+    const [mm, yy] = val.split('/');
+    if (!mm || !yy) return false;
+    const month = parseInt(mm, 10);
+    const year = 2000 + parseInt(yy, 10);
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    return year > currentYear || (year === currentYear && month >= currentMonth);
+  }, 'Card is expired'),
   cvv: z.string().regex(/^\d{3,4}$/, 'CVV must be 3 or 4 digits'),
   billingAddress: z.string().min(5, 'Billing address is required'),
   city: z.string().min(2, 'City is required'),
-  zipCode: z.string().min(5, 'ZIP code is required'),
+  zipCode: z.string().optional().default(''),  // D-15: ZIP code non-mandatory
   country: z.string().min(2, 'Country is required'),
   state: z.string().optional(),
 });
@@ -325,6 +341,13 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
   };
 
   const onSubmit = async (data: any) => {
+    // Prevent duplicate submission if booking was already created
+    if (bookingData.bookingNumber && !bookingData.isModifyMode) {
+      toast.error('Booking already created. Redirecting to confirmation.');
+      onNext();
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
@@ -459,6 +482,13 @@ export function PaymentStep({ onNext }: PaymentStepProps) {
 
   // Non-card payment submission
   const handleNonCardSubmit = async () => {
+    // Prevent duplicate submission if booking was already created
+    if (bookingData.bookingNumber && !bookingData.isModifyMode) {
+      toast.error('Booking already created. Redirecting to confirmation.');
+      onNext();
+      return;
+    }
+
     setIsProcessing(true);
     try {
       if (!bookingData.room || !bookingData.checkIn || !bookingData.checkOut) {

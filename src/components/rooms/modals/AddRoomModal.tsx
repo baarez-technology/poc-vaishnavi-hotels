@@ -10,6 +10,7 @@ import { Check, ChevronDown } from 'lucide-react';
 import { Drawer } from '../../ui2/Drawer';
 import { Button } from '../../ui2/Button';
 import { useCurrency } from '@/hooks/useCurrency';
+import { roomTypesService } from '@/api/services/roomTypes.service';
 
 // Custom Select Dropdown Component with React Portal
 function SelectDropdown({ value, onChange, options, placeholder }) {
@@ -165,16 +166,22 @@ export default function AddRoomModal({ isOpen, onClose, onAdd }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const roomTypeOptions = [
+  const [roomTypeOptions, setRoomTypeOptions] = useState([
     { value: 'Minimalist Studio', label: 'Minimalist Studio' },
-    { value: 'Coastal Retreat', label: 'Coastal Retreat' },
-    { value: 'Urban Oasis', label: 'Urban Oasis' },
-    { value: 'Sunset Vista', label: 'Sunset Vista' },
-    { value: 'Pacific Suite', label: 'Pacific Suite' },
-    { value: 'Wellness Suite', label: 'Wellness Suite' },
-    { value: 'Family Sanctuary', label: 'Family Sanctuary' },
-    { value: 'Oceanfront Penthouse', label: 'Oceanfront Penthouse' }
-  ];
+  ]);
+
+  useEffect(() => {
+    roomTypesService.getRoomTypes().then((data: any[]) => {
+      const options = data.map((rt: any) => ({
+        value: rt.name,
+        label: rt.name,
+      }));
+      if (options.length > 0) {
+        setRoomTypeOptions(options);
+        setFormData(prev => ({ ...prev, type: options[0].value }));
+      }
+    }).catch(() => {});
+  }, []);
   const bedTypeOptions = [
     { value: 'Single', label: 'Single' },
     { value: 'Double', label: 'Double' },
@@ -186,18 +193,18 @@ export default function AddRoomModal({ isOpen, onClose, onAdd }) {
 
   useEffect(() => {
     if (isOpen) {
-      setFormData({
+      setFormData(prev => ({
         roomNumber: '',
-        type: 'Minimalist Studio',
+        type: roomTypeOptions[0]?.value || prev.type,
         floor: '1',
         bedType: 'Queen',
         capacity: '2',
         price: '',
         amenities: []
-      });
+      }));
       setError(null);
     }
-  }, [isOpen]);
+  }, [isOpen, roomTypeOptions]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

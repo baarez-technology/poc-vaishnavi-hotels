@@ -16,7 +16,7 @@ export const CURRENCY_SYMBOLS: Record<string, string> = {
  * @returns {string} Currency symbol
  */
 export const getCurrencySymbol = (currency: string): string => {
-  return CURRENCY_SYMBOLS[currency] || '$';
+  return CURRENCY_SYMBOLS[currency] || '₹';
 };
 
 /**
@@ -25,10 +25,11 @@ export const getCurrencySymbol = (currency: string): string => {
  * @param {string} currency - Currency code (default: USD)
  * @returns {string} Formatted currency string
  */
-export const formatCurrency = (value: number, currency = 'USD'): string => {
+export const formatCurrency = (value: number, currency = 'INR'): string => {
   // Use Intl.NumberFormat for proper locale-based formatting
   try {
-    return new Intl.NumberFormat('en-US', {
+    const locale = currency === 'INR' ? 'en-IN' : 'en-US';
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency,
       minimumFractionDigits: 0,
@@ -47,7 +48,7 @@ export const formatCurrency = (value: number, currency = 'USD'): string => {
  * @param {string} currency - Currency code (default: USD)
  * @returns {string} Formatted currency string with symbol
  */
-export const formatCurrencySimple = (value: number, currency = 'USD'): string => {
+export const formatCurrencySimple = (value: number, currency = 'INR'): string => {
   const symbol = getCurrencySymbol(currency);
   return `${symbol}${value.toLocaleString()}`;
 };

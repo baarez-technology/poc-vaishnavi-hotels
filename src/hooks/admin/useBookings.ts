@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import { bookingService } from '@/api/services/booking.service';
+import { bookingService, type CheckInData, type CheckOutData } from '@/api/services/booking.service';
 import { roomsService } from '@/api/services/rooms.service';
+import { clearApiCache } from '@/api/client';
 
 // Interface for frontend booking representation
 export interface AdminBooking {
@@ -43,6 +44,14 @@ export interface AdminBooking {
   amountPaid?: number;
   amount_paid?: number;
   paymentNotes?: string;
+  eta?: string;
+  etd?: string;
+  // Sprint 6 fields
+  vipLevel?: number | null;
+  guestProfileNumber?: string | null;
+  accompanyingGuests?: any[] | null;
+  arrivalDate?: string;
+  departureDate?: string;
 }
 
 // Transform API booking to admin format
@@ -138,6 +147,8 @@ function transformBooking(apiBooking: any): AdminBooking {
     'direct': 'Website',
     'Dummy Channel Manager': 'Dummy Channel Manager',
     'dummy channel manager': 'Dummy Channel Manager',
+    'DUMMY': 'Dummy Channel Manager',
+    'dummy': 'Dummy Channel Manager',
     'CRS': 'Dummy Channel Manager',
     'crs': 'Dummy Channel Manager',
     'Booking.com': 'Booking.com',
@@ -147,11 +158,14 @@ function transformBooking(apiBooking: any): AdminBooking {
     'Walk-in': 'Walk-in',
     'walk_in': 'Walk-in',
     'walk-in': 'Walk-in',
-    'OTA': 'Booking.com',
+    'OTA': 'OTA',  // Do NOT map to Booking.com - Dummy CM bookings use OTA; keep generic
   };
   const rawSource = apiBooking.bookingSource || apiBooking.booking_source || apiBooking.source || '';
-  // Map the source, but if not found in map, use raw source (don't default to something else)
-  const source = rawSource ? (sourceMap[rawSource] || rawSource) : 'Website';
+  // If ota_code/channel/metadata indicates Dummy CM, use that (backend may wrongly return Booking.com for CM bookings)
+  const otaCode = (apiBooking.ota_code || apiBooking.otaCode || apiBooking.channel_code || apiBooking.metadata?.ota || '').toString().toUpperCase();
+  const channel = (apiBooking.channel || apiBooking.source_channel || apiBooking.metadata?.channel || '').toString().toLowerCase();
+  const isDummyCM = otaCode === 'DUMMY' || otaCode === 'CRS' || channel.includes('dummy') || channel.includes('crs');
+  const source = isDummyCM ? 'Dummy Channel Manager' : (rawSource ? (sourceMap[rawSource] || rawSource) : 'Website');
 
   // Extract special requests - check guestInfo first
   const specialRequests = apiBooking.guestInfo?.specialRequests ||
@@ -192,6 +206,20 @@ function transformBooking(apiBooking: any): AdminBooking {
     paymentMethod: apiBooking.paymentMethod || apiBooking.payment_method || '',
     amountPaid: apiBooking.amountPaid || apiBooking.amount_paid || apiBooking.deposit_amount || 0,
     paymentNotes: apiBooking.paymentNotes || apiBooking.payment_notes || '',
+    doNotMove: apiBooking.doNotMove || apiBooking.do_not_move || false,
+    dnmSetBy: apiBooking.dnmSetBy || apiBooking.dnm_set_by || null,
+    dnmSetByName: apiBooking.dnmSetByName || apiBooking.dnm_set_by_name || null,
+    dnmSetAt: apiBooking.dnmSetAt || apiBooking.dnm_set_at || null,
+    checkedInAt: apiBooking.checkedInAt || apiBooking.checked_in_at || null,
+    checkedOutAt: apiBooking.checkedOutAt || apiBooking.checked_out_at || null,
+    eta: apiBooking.expectedArrivalTime || apiBooking.eta || apiBooking.arrival_time || '',
+    etd: apiBooking.expectedDepartureTime || apiBooking.etd || apiBooking.departure_time || '',
+    // Sprint 6
+    vipLevel: apiBooking.vipLevel || apiBooking.vip_level || null,
+    guestProfileNumber: apiBooking.guestProfileNumber || apiBooking.guest_profile_number || null,
+    accompanyingGuests: apiBooking.accompanyingGuests || apiBooking.accompanying_guests || null,
+    arrivalDate: apiBooking.arrivalDate || apiBooking.arrival_date || apiBooking.checkIn || '',
+    departureDate: apiBooking.departureDate || apiBooking.departure_date || apiBooking.checkOut || '',
   };
 }
 
@@ -261,6 +289,7 @@ export function useBookings() {
     try {
       setIsLoading(true);
       setError(null);
+      clearApiCache('/api/v1/bookings');
 
       const response = await bookingService.getBookings(page, pageSize, status);
 
@@ -269,14 +298,25 @@ export function useBookings() {
       let total = 0;
       let totalPages = 1;
 
-      if (response.items) {
-        bookingsData = response.items;
-        total = response.total || response.items.length;
-        totalPages = response.totalPages || Math.ceil(total / pageSize);
-      } else if (Array.isArray(response)) {
+      console.log('[useBookings.fetchBookings] Raw API response:', response);
+
+      if (Array.isArray(response)) {
         bookingsData = response;
         total = response.length;
         totalPages = 1;
+      } else if (response && typeof response === 'object') {
+        // Try common paginated response keys
+        const list = response.items ?? response.results ?? response.bookings ?? response.data;
+        if (Array.isArray(list)) {
+          bookingsData = list;
+          total = response.total ?? response.count ?? response.totalCount ?? list.length;
+          totalPages = response.totalPages ?? response.total_pages ?? Math.ceil(total / pageSize);
+        } else if (Array.isArray(response.data?.items)) {
+          // Nested: { data: { items: [...], total: N } }
+          bookingsData = response.data.items;
+          total = response.data.total ?? response.data.count ?? bookingsData.length;
+          totalPages = response.data.totalPages ?? Math.ceil(total / pageSize);
+        }
       }
 
       const transformedBookings = bookingsData.map(transformBooking);
@@ -325,7 +365,7 @@ export function useBookings() {
         guests: {
           adults: bookingData.adults || 1,
           children: bookingData.children || 0,
-          infants: 0,
+          infants: bookingData.infants || 0,
         },
         guestInfo: {
           firstName: firstName,
@@ -335,11 +375,39 @@ export function useBookings() {
           country: bookingData.nationality || bookingData.country || 'Unknown',
           specialRequests: bookingData.specialRequests || '',
         },
+        paymentMethod: bookingData.paymentMethod || 'card',
       };
+
+      // Optional arrival/departure times (ETA/ETD) for operational planning
+      if (bookingData.eta) {
+        apiData.expectedArrivalTime = bookingData.eta;
+      }
+      if (bookingData.etd) {
+        apiData.expectedDepartureTime = bookingData.etd;
+      }
+      // Sprint 6: accompanying guests
+      if (bookingData.accompanyingGuests) {
+        apiData.accompanyingGuests = bookingData.accompanyingGuests;
+      }
 
       // Include booking source if provided
       if (bookingData.source) {
         apiData.source = bookingData.source;
+      }
+
+      // Corporate account linkage
+      if (bookingData.corporateAccountId) {
+        apiData.corporateAccountId = bookingData.corporateAccountId;
+      }
+
+      // VIP flag
+      if (bookingData.isVip || bookingData.vip) {
+        apiData.vipStatus = true;
+      }
+
+      // Rate plan name (for backend rate lookup)
+      if (bookingData.ratePlan) {
+        apiData.ratePlan = bookingData.ratePlan;
       }
 
       const result = await bookingService.createBooking(apiData);
@@ -367,6 +435,8 @@ export function useBookings() {
     if (updates.paymentNotes !== undefined) localUpdates.paymentNotes = updates.paymentNotes;
     if (updates.status !== undefined) localUpdates.status = updates.status;
     if (updates.specialRequests !== undefined) localUpdates.specialRequests = updates.specialRequests;
+    if (updates.eta !== undefined) localUpdates.eta = updates.eta;
+    if (updates.etd !== undefined) localUpdates.etd = updates.etd;
 
     // Apply optimistic update immediately for better UX
     if (Object.keys(localUpdates).length > 0) {
@@ -440,6 +510,11 @@ export function useBookings() {
       if (updates.paymentMethod) apiUpdates.paymentMethod = updates.paymentMethod;
       if (updates.amountPaid !== undefined) apiUpdates.amountPaid = updates.amountPaid;
       if (updates.paymentNotes !== undefined) apiUpdates.paymentNotes = updates.paymentNotes;
+
+      if (updates.eta !== undefined) apiUpdates.expectedArrivalTime = updates.eta;
+      if (updates.etd !== undefined) apiUpdates.expectedDepartureTime = updates.etd;
+      if ((updates as any).vipLevel !== undefined) apiUpdates.vipLevel = (updates as any).vipLevel;
+      if ((updates as any).accompanyingGuests !== undefined) apiUpdates.accompanyingGuests = (updates as any).accompanyingGuests;
 
       const result = await bookingService.updateBooking(bookingId, apiUpdates);
       const updatedBooking = transformBooking(result);
@@ -530,23 +605,43 @@ export function useBookings() {
     try {
       console.log('[useBookings.assignRoom] Assigning room:', { bookingId, roomId, roomNumber, checkIn });
 
-      // API expects roomId as a string
+      // Find the booking to check current state
+      const currentBooking = bookings.find(b => b.id === bookingId);
+      const previousRoomId = currentBooking?.roomId;
+
+      // API expects roomId as a string - backend validates conflicts + room type
       const result = await bookingService.updateBooking(bookingId, { roomId: String(roomId) });
       console.log('[useBookings.assignRoom] API response:', result);
 
-      // Always sync room status to occupied so the Rooms section reflects the assignment
+      // Sync room status so Room module reflects the assignment
       try {
         await roomsService.updateRoomStatus(roomId, 'occupied');
-        console.log('[useBookings.assignRoom] Room status synced to occupied');
+        console.log('[useBookings.assignRoom] New room status synced to occupied');
       } catch (roomErr) {
         console.warn('[useBookings.assignRoom] Could not sync room status:', roomErr);
       }
 
+      // If reassigning (guest had a previous room), free the old room
+      if (previousRoomId && String(previousRoomId) !== String(roomId)) {
+        try {
+          await roomsService.updateRoomStatus(previousRoomId, 'dirty');
+          console.log('[useBookings.assignRoom] Previous room set to dirty:', previousRoomId);
+        } catch (roomErr) {
+          console.warn('[useBookings.assignRoom] Could not free previous room:', roomErr);
+        }
+      }
+
+      // Preserve current booking status - don't force to CONFIRMED
       setBookings(prev => prev.map(b =>
         b.id === bookingId
-          ? { ...b, roomId: Number(roomId), room: roomNumber, status: 'CONFIRMED' }
+          ? { ...b, roomId: Number(roomId), room: roomNumber }
           : b
       ));
+
+      // Clear rooms cache so Room module picks up the assignment
+      clearApiCache('/api/v1/rooms');
+      clearApiCache('/rooms');
+      clearApiCache('/api/v1/housekeeping');
 
       toast.success(`Room ${roomNumber} assigned successfully`);
       return true;
@@ -555,12 +650,12 @@ export function useBookings() {
       toast.error(extractErrorMessage(err, 'Failed to assign room'));
       return false;
     }
-  }, []);
+  }, [bookings]);
 
   /**
    * Check-in guest
    */
-  const checkInGuest = useCallback(async (bookingId: string, data?: { room_id?: number }) => {
+  const checkInGuest = useCallback(async (bookingId: string, data?: CheckInData) => {
     try {
       await bookingService.checkIn(bookingId, data);
 
@@ -580,7 +675,7 @@ export function useBookings() {
   /**
    * Check-out guest
    */
-  const checkOutGuest = useCallback(async (bookingId: string, data?: { final_charges?: number }) => {
+  const checkOutGuest = useCallback(async (bookingId: string, data?: CheckOutData) => {
     try {
       await bookingService.checkOut(bookingId, data);
 
@@ -593,6 +688,89 @@ export function useBookings() {
     } catch (err: any) {
       console.error('Error checking out:', err);
       toast.error(extractErrorMessage(err, 'Failed to check out'));
+      return false;
+    }
+  }, []);
+
+  /**
+   * Cancel check-in (revert checked-in guest back to confirmed/arrival status)
+   */
+  const cancelCheckIn = useCallback(async (bookingId: string) => {
+    try {
+      await bookingService.cancelCheckIn(bookingId);
+
+      setBookings(prev => prev.map(b =>
+        b.id === bookingId ? { ...b, status: 'CONFIRMED' } : b
+      ));
+
+      toast.success('Check-in cancelled. Booking reverted to confirmed status.');
+      return true;
+    } catch (err: any) {
+      console.error('Error cancelling check-in:', err);
+      toast.error(extractErrorMessage(err, 'Failed to cancel check-in'));
+      return false;
+    }
+  }, []);
+
+  /**
+   * Room move for checked-in guest (uses room-change endpoint)
+   */
+  const moveRoom = useCallback(async (bookingId: string, newRoomId: number, reason?: string) => {
+    try {
+      const result = await bookingService.changeRoom(bookingId, {
+        new_room_id: newRoomId,
+        reason: reason || 'Room move requested by staff',
+      });
+
+      // Refresh bookings to get updated data
+      await fetchBookings(pagination.page, pagination.pageSize);
+
+      // Clear rooms cache so Room module reflects the move
+      clearApiCache('/api/v1/rooms');
+      clearApiCache('/rooms');
+
+      toast.success(`Room moved to ${result.new_room} successfully`);
+      return result;
+    } catch (err: any) {
+      console.error('Error moving room:', err);
+      toast.error(extractErrorMessage(err, 'Failed to move room'));
+      return null;
+    }
+  }, [fetchBookings, pagination.page, pagination.pageSize]);
+
+  /**
+   * Mark booking as No Show
+   */
+  const markNoShow = useCallback(async (bookingId: string) => {
+    try {
+      await bookingService.markNoShow(bookingId);
+
+      setBookings(prev => prev.map(b =>
+        b.id === bookingId ? { ...b, status: 'NO_SHOW' } : b
+      ));
+
+      toast.success('Booking marked as No Show');
+      return true;
+    } catch (err: any) {
+      console.error('Error marking no-show:', err);
+      toast.error(extractErrorMessage(err, 'Failed to mark as no-show'));
+      return false;
+    }
+  }, []);
+
+  const reinstate = useCallback(async (bookingId: string) => {
+    try {
+      await bookingService.reinstate(bookingId);
+
+      setBookings(prev => prev.map(b =>
+        b.id === bookingId ? { ...b, status: 'CONFIRMED' } : b
+      ));
+
+      toast.success('Booking reinstated');
+      return true;
+    } catch (err: any) {
+      console.error('Error reinstating booking:', err);
+      toast.error(extractErrorMessage(err, 'Failed to reinstate booking'));
       return false;
     }
   }, []);
@@ -648,6 +826,10 @@ export function useBookings() {
     assignRoom,
     checkInGuest,
     checkOutGuest,
+    cancelCheckIn,
+    moveRoom,
+    markNoShow,
+    reinstate,
     // Helpers
     getArrivalsToday,
     getDeparturesToday,

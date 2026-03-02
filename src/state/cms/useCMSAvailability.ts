@@ -288,11 +288,10 @@ export default function useCMSAvailability() {
 
       if (!mounted) return;
 
-      try {
-        await fetchAIInsights();
-      } catch (err) {
+      // Load AI insights in background - don't block calendar; insights panel shows empty if it fails
+      fetchAIInsights().catch((err) => {
         console.error('Failed to load AI insights:', err);
-      }
+      });
     };
 
     loadData();
@@ -367,6 +366,10 @@ export default function useCMSAvailability() {
         apiUpdate.closed_to_departure = updates.restrictions.CTD;
         hasUpdates = true;
       }
+      if (updates.baseRate !== undefined) {
+        apiUpdate.base_rate = updates.baseRate;
+        hasUpdates = true;
+      }
 
       // Only call API if there are actual updates to persist
       if (hasUpdates) {
@@ -374,7 +377,7 @@ export default function useCMSAvailability() {
         console.log('[useCMSAvailability] Availability updated via API');
       }
 
-      // Handle base rate (price) update separately - this updates the room type's base price
+      // Handle base rate (price) update - also update room type default so config and other dates reflect it
       if (updates.baseRate !== undefined) {
         await updateRoomTypePrice(roomTypeData.id, updates.baseRate);
         console.log('[useCMSAvailability] Room type price updated via API:', roomTypeData.name, updates.baseRate);
@@ -397,6 +400,20 @@ export default function useCMSAvailability() {
       await fetchAvailabilityData();
     }
   }, [fetchAvailabilityData, roomTypes]);
+
+  // Batch update multiple availability records in a single API call (no per-item refetch)
+  const batchUpdate = useCallback(async (updates: BulkAvailabilityUpdate[]) => {
+    if (updates.length === 0) return;
+    try {
+      await bulkUpdateAvailability(updates);
+      console.log(`[useCMSAvailability] Batch updated ${updates.length} records`);
+      await fetchAvailabilityData();
+    } catch (err) {
+      console.error('Error in batch update:', err);
+      await fetchAvailabilityData();
+      throw err;
+    }
+  }, [fetchAvailabilityData]);
 
   // Close a room type for a specific date
   const closeRoomType = useCallback(async (date: string, roomType: string) => {
@@ -505,6 +522,7 @@ export default function useCMSAvailability() {
     resetAvailability,
     getRoomTypeConfig,
     refetch: fetchAvailabilityData,
+    batchUpdate,
     // Room blocks
     addRoomBlock,
     editRoomBlock,

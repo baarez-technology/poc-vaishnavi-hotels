@@ -83,7 +83,7 @@ export function generateForecast(startDate = new Date()) {
     ));
 
     // ADR calculation based on demand
-    const baseADR = 245;
+    const baseADR = 20500;
     const forecastedADR = Math.round(baseADR * demandIndex);
 
     // Revenue calculation
@@ -234,7 +234,7 @@ export function generateForecastInsights(forecast) {
       title: `${compressionDays.length} Compression Day${compressionDays.length > 1 ? 's' : ''} Detected`,
       message: `High demand expected on ${compressionDays.map(d => d.date.slice(5)).join(', ')}. Increase rates 20-30% and apply min-stay restrictions.`,
       dates: compressionDays.map(d => d.date),
-      potentialRevenue: Math.round(compressionDays.length * 3500),
+      potentialRevenue: Math.round(compressionDays.length * 291000),
     });
   }
 
@@ -246,7 +246,7 @@ export function generateForecastInsights(forecast) {
       title: 'Soft Demand in Next 7 Days',
       message: `${summary.next7Days.lowDemandDays} days showing below-average demand. Consider flash promotions or OTA rate boost.`,
       dates: opportunities.slice(0, 3).map(d => d.date),
-      riskAmount: Math.round(summary.next7Days.lowDemandDays * 2000),
+      riskAmount: Math.round(summary.next7Days.lowDemandDays * 166000),
     });
   }
 
@@ -266,13 +266,13 @@ export function generateForecastInsights(forecast) {
   }
 
   // ADR opportunity
-  if (summary.next30Days.avgADR < 250) {
+  if (summary.next30Days.avgADR < 21000) {
     insights.push({
       type: 'adr_opportunity',
       severity: 'medium',
       title: 'ADR Below Target',
-      message: `30-day average ADR of $${summary.next30Days.avgADR} is below target. Review rate positioning on high-demand days.`,
-      targetADR: 265,
+      message: `30-day average ADR of \u20B9${summary.next30Days.avgADR.toLocaleString('en-IN')} is below target. Review rate positioning on high-demand days.`,
+      targetADR: 22000,
       currentADR: summary.next30Days.avgADR,
     });
   }

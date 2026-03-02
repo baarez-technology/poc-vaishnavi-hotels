@@ -20,7 +20,11 @@ const colorMap = {
 
 function formatTimestamp(timestamp) {
   const now = new Date();
-  const time = new Date(timestamp);
+  // Backend stores UTC times without Z suffix — append Z so JS interprets as UTC
+  const utcTs = timestamp && !timestamp.endsWith('Z') && !timestamp.includes('+')
+    ? timestamp + 'Z'
+    : timestamp;
+  const time = new Date(utcTs);
   const diffMs = now - time;
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
@@ -40,17 +44,34 @@ export default function NotificationCard({ notification, onDelete, onNavigate })
   const Icon = iconMap[notification.type] || iconMap.default;
   const colorClass = colorMap[notification.type] || colorMap.default;
 
+  const getNotificationUrl = () => {
+    // Use explicit link if provided (mock notifications)
+    if (notification.link) return notification.link;
+    // Derive URL from entity references (API notifications)
+    const type = notification.type || notification.notification_type || '';
+    if (type.includes('housekeeping') || type.includes('task')) {
+      return '/admin/housekeeping';
+    }
+    if (notification.bookingId || notification.booking_id) {
+      return '/admin/bookings';
+    }
+    if (notification.guestId || notification.guest_id) {
+      return '/admin/guests';
+    }
+    if (type.includes('booking')) return '/admin/bookings';
+    if (type.includes('maintenance')) return '/admin/maintenance';
+    return null;
+  };
+
   const handleClick = () => {
     markNotificationRead(notification.id);
-    if (notification.link) {
-      // Close the drawer before navigating so the page is visible
+    const url = getNotificationUrl();
+    if (url) {
       if (onNavigate) onNavigate();
-      // Pass entity IDs via navigation state so target pages can
-      // auto-select/highlight the relevant guest or booking
       const state: Record<string, string> = {};
-      if (notification.guestId) state.guestId = String(notification.guestId);
-      if (notification.bookingId) state.bookingId = String(notification.bookingId);
-      navigate(notification.link, Object.keys(state).length > 0 ? { state } : undefined);
+      if (notification.guestId || notification.guest_id) state.guestId = String(notification.guestId || notification.guest_id);
+      if (notification.bookingId || notification.booking_id) state.bookingId = String(notification.bookingId || notification.booking_id);
+      navigate(url, Object.keys(state).length > 0 ? { state } : undefined);
     }
   };
 

@@ -57,7 +57,7 @@ interface TooltipPayload {
   payload: SegmentData;
 }
 
-const CustomTooltip = ({ active, payload, symbol = '$' }: { active?: boolean; payload?: TooltipPayload[]; symbol?: string }) => {
+const CustomTooltip = ({ active, payload, symbol = '₹' }: { active?: boolean; payload?: TooltipPayload[]; symbol?: string }) => {
   const formatCurrencyValue = (value: number) => {
     if (value >= 1000000) {
       return `${symbol}${(value / 1000000).toFixed(1)}M`;
@@ -225,7 +225,7 @@ export default function RevenueBySegment() {
       <div className="flex items-start gap-6">
         {/* Chart */}
         <div className="relative w-[160px] h-[160px] flex-shrink-0">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={160} minHeight={160}>
             <PieChart>
               <Pie
                 data={data}

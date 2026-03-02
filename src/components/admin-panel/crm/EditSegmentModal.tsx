@@ -46,7 +46,7 @@ export default function EditSegmentModal({ isOpen, onClose, onSave, onDelete, se
   const tiers = loyaltyTiers || DEFAULT_LOYALTY_TIERS;
 
   useEffect(() => {
-    if (isOpen && segment) {
+    if (segment) {
       setFormData({
         name: segment.name || '',
         description: segment.description || '',
@@ -67,7 +67,7 @@ export default function EditSegmentModal({ isOpen, onClose, onSave, onDelete, se
       setTagInput('');
       setShowDeleteConfirm(false);
     }
-  }, [isOpen, segment]);
+  }, [isOpen, segment?.id]);
 
   const previewGuests = useMemo(() => {
     const cleanFilters = {};
@@ -292,7 +292,7 @@ export default function EditSegmentModal({ isOpen, onClose, onSave, onDelete, se
 
               <div>
                 <label className="block text-xs font-medium text-neutral-500 mb-1">
-                  Minimum Spend ($)
+                  Minimum Spend (₹)
                 </label>
                 <input
                   type="number"
@@ -306,7 +306,7 @@ export default function EditSegmentModal({ isOpen, onClose, onSave, onDelete, se
 
               <div>
                 <label className="block text-xs font-medium text-neutral-500 mb-1">
-                  Maximum Spend ($)
+                  Maximum Spend (₹)
                 </label>
                 <input
                   type="number"
@@ -429,7 +429,7 @@ export default function EditSegmentModal({ isOpen, onClose, onSave, onDelete, se
                 <p className="text-xs text-neutral-500">Matching Guests</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-[#4E5840]">${previewStats.avgRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-[#4E5840]">₹{previewStats.avgRevenue.toLocaleString()}</p>
                 <p className="text-xs text-neutral-500">Avg Revenue</p>
               </div>
               <div className="text-center">

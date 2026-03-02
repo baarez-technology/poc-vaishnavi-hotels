@@ -1,18 +1,18 @@
 export const occupancyChartData = [
-  { date: 'Nov 12', occupancy: 78, revenue: 18200 },
-  { date: 'Nov 13', occupancy: 82, revenue: 19800 },
-  { date: 'Nov 14', occupancy: 85, revenue: 21400 },
-  { date: 'Nov 15', occupancy: 88, revenue: 23100 },
-  { date: 'Nov 16', occupancy: 84, revenue: 20900 },
-  { date: 'Nov 17', occupancy: 87, revenue: 24200 },
-  { date: 'Nov 18', occupancy: 87.5, revenue: 24680 },
+  { date: 'Nov 12', occupancy: 78, revenue: 1511000 },
+  { date: 'Nov 13', occupancy: 82, revenue: 1643000 },
+  { date: 'Nov 14', occupancy: 85, revenue: 1776000 },
+  { date: 'Nov 15', occupancy: 88, revenue: 1917000 },
+  { date: 'Nov 16', occupancy: 84, revenue: 1735000 },
+  { date: 'Nov 17', occupancy: 87, revenue: 2009000 },
+  { date: 'Nov 18', occupancy: 87.5, revenue: 2048000 },
 ];
 
 export const revenueByRoomType = [
-  { name: 'Executive Suite', value: 38, revenue: 125600 },
-  { name: 'Deluxe Suite', value: 28, revenue: 92400 },
-  { name: 'Premium King', value: 22, revenue: 72800 },
-  { name: 'Standard Queen', value: 12, revenue: 39600 },
+  { name: 'Executive Suite', value: 38, revenue: 10425000 },
+  { name: 'Deluxe Suite', value: 28, revenue: 7669000 },
+  { name: 'Premium King', value: 22, revenue: 6042000 },
+  { name: 'Standard Queen', value: 12, revenue: 3287000 },
 ];
 
 export const bookingSourceData = [
@@ -24,12 +24,12 @@ export const bookingSourceData = [
 ];
 
 export const monthlyTrends = [
-  { month: 'Jun', occupancy: 72, revenue: 418000, adr: 385 },
-  { month: 'Jul', occupancy: 85, revenue: 556000, adr: 425 },
-  { month: 'Aug', occupancy: 88, revenue: 598000, adr: 445 },
-  { month: 'Sep', occupancy: 76, revenue: 456000, adr: 395 },
-  { month: 'Oct', occupancy: 81, revenue: 512000, adr: 415 },
-  { month: 'Nov', occupancy: 87, revenue: 584000, adr: 440 },
+  { month: 'Jun', occupancy: 72, revenue: 34694000, adr: 32000 },
+  { month: 'Jul', occupancy: 85, revenue: 46148000, adr: 35500 },
+  { month: 'Aug', occupancy: 88, revenue: 49634000, adr: 37000 },
+  { month: 'Sep', occupancy: 76, revenue: 37848000, adr: 33000 },
+  { month: 'Oct', occupancy: 81, revenue: 42496000, adr: 34500 },
+  { month: 'Nov', occupancy: 87, revenue: 48472000, adr: 36500 },
 ];
 
 export const guestSatisfactionTrend = [

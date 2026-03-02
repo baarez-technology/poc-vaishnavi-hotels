@@ -137,45 +137,64 @@ export default function ChannelPerformanceTable() {
     };
   }, [channelsData]);
 
-  // Transform API data to table format
+  // Transform API data to table format (normalize: channels may be missing or non-array)
   const { channelData, summary, insights } = useMemo(() => {
     if (!channelResponse) {
       return { channelData: [], summary: null, insights: null };
     }
 
-    const channels = channelResponse.channels;
-    const totalRevenue = channels.reduce((sum, c) => sum + c.total_revenue, 0);
-    const totalNetRevenue = channels.reduce((sum, c) => sum + c.net_revenue, 0);
-    const totalBookings = channels.reduce((sum, c) => sum + c.total_bookings, 0);
-    const totalCommission = channels.reduce((sum, c) => sum + c.total_commission, 0);
+    const rawChannels = channelResponse.channels;
+    const channels = Array.isArray(rawChannels) ? rawChannels : [];
+    const totalRevenue = channels.reduce((sum, c) => sum + (c?.total_revenue ?? 0), 0);
+    const totalNetRevenue = channels.reduce((sum, c) => sum + (c?.net_revenue ?? 0), 0);
+    const totalBookings = channels.reduce((sum, c) => sum + (c?.total_bookings ?? 0), 0);
+    const totalCommission = channels.reduce((sum, c) => sum + (c?.total_commission ?? 0), 0);
 
     // Sort by revenue descending
-    const sortedChannels = [...channels].sort((a, b) => b.total_revenue - a.total_revenue);
+    const sortedChannels = [...channels].sort((a, b) => (b?.total_revenue ?? 0) - (a?.total_revenue ?? 0));
 
     const channelTableData: ChannelTableData[] = sortedChannels.map((channel, index) => {
+      if (!channel) {
+        return {
+          id: `channel-${index}`,
+          channel: 'Unknown',
+          revenue: 0,
+          bookings: 0,
+          adr: 0,
+          commission: 0,
+          netRevenue: 0,
+          percentage: 0,
+          trend: 'neutral' as const,
+          growth: 0,
+          conversionRate: 0,
+        };
+      }
       // Calculate growth trend based on commission rate comparison (lower is better)
-      const avgCommissionRate = channels.reduce((sum, c) => sum + c.commission_rate, 0) / channels.length;
+      const avgCommissionRate = channels.length > 0
+        ? channels.reduce((sum, c) => sum + (c?.commission_rate ?? 0), 0) / channels.length
+        : 0;
       const trend: 'up' | 'down' | 'neutral' =
-        channel.commission_rate < avgCommissionRate ? 'up' :
-        channel.commission_rate > avgCommissionRate * 1.2 ? 'down' : 'neutral';
+        (channel.commission_rate ?? 0) < avgCommissionRate ? 'up' :
+        (channel.commission_rate ?? 0) > avgCommissionRate * 1.2 ? 'down' : 'neutral';
 
       // Growth is calculated as revenue share difference (simulated)
-      const growth = channel.revenue_share > 20 ? (Math.random() * 8 + 2) :
-                     channel.revenue_share > 10 ? (Math.random() * 4 - 1) :
+      const revenueShare = channel.revenue_share ?? 0;
+      const growth = revenueShare > 20 ? (Math.random() * 8 + 2) :
+                     revenueShare > 10 ? (Math.random() * 4 - 1) :
                      -(Math.random() * 5 + 1);
 
       return {
         id: `channel-${index}`,
-        channel: channel.channel,
-        revenue: channel.total_revenue,
-        bookings: channel.total_bookings,
-        adr: channel.avg_booking_value,
-        commission: channel.commission_rate,
-        netRevenue: channel.net_revenue,
-        percentage: channel.revenue_share,
+        channel: channel.channel ?? 'Unknown',
+        revenue: channel.total_revenue ?? 0,
+        bookings: channel.total_bookings ?? 0,
+        adr: channel.avg_booking_value ?? 0,
+        commission: channel.commission_rate ?? 0,
+        netRevenue: channel.net_revenue ?? 0,
+        percentage: channel.revenue_share ?? 0,
         trend,
         growth: parseFloat(growth.toFixed(1)),
-        conversionRate: 100 - channel.cancellation_rate,
+        conversionRate: 100 - (channel.cancellation_rate ?? 0),
       };
     });
 
@@ -187,17 +206,22 @@ export default function ChannelPerformanceTable() {
     };
 
     // Find best performer (highest net revenue with lowest commission)
-    const bestPerformer = sortedChannels.reduce((best, channel) => {
-      const score = channel.net_revenue / (channel.commission_rate || 1);
-      const bestScore = best.net_revenue / (best.commission_rate || 1);
-      return score > bestScore ? channel : best;
-    }, sortedChannels[0]);
+    const validChannels = sortedChannels.filter((c): c is NonNullable<typeof c> => c != null);
+    const bestPerformer = validChannels.length > 0
+      ? validChannels.reduce((best, channel) => {
+          const score = (channel.net_revenue ?? 0) / ((channel.commission_rate ?? 0) || 1);
+          const bestScore = (best.net_revenue ?? 0) / ((best.commission_rate ?? 0) || 1);
+          return score > bestScore ? channel : best;
+        }, validChannels[0])
+      : null;
 
     const insightsData: ChannelInsight = {
-      bestPerformer: bestPerformer.channel,
-      bestPerformerCommission: bestPerformer.commission_rate,
+      bestPerformer: bestPerformer?.channel ?? '—',
+      bestPerformerCommission: bestPerformer?.commission_rate ?? 0,
       totalCommission,
-      avgConversion: parseFloat((channelTableData.reduce((sum, c) => sum + c.conversionRate, 0) / channelTableData.length).toFixed(1)),
+      avgConversion: channelTableData.length > 0
+        ? parseFloat((channelTableData.reduce((sum, c) => sum + c.conversionRate, 0) / channelTableData.length).toFixed(1))
+        : 0,
       recommendation: channelResponse.recommendations?.[0]?.message,
     };
 
@@ -349,21 +373,21 @@ export default function ChannelPerformanceTable() {
               </TableCell>
               <TableCell align="right">
                 <span className="font-semibold text-neutral-900">
-                  ${channel.revenue.toLocaleString()}
+                  ₹{channel.revenue.toLocaleString()}
                 </span>
               </TableCell>
               <TableCell align="right">
                 <span className="text-neutral-700">{channel.bookings}</span>
               </TableCell>
               <TableCell align="right">
-                <span className="text-neutral-700">${channel.adr.toLocaleString()}</span>
+                <span className="text-neutral-700">₹{channel.adr.toLocaleString()}</span>
               </TableCell>
               <TableCell align="right">
                 <span className="text-neutral-700">{channel.commission}%</span>
               </TableCell>
               <TableCell align="right">
                 <span className="font-semibold text-sage-600">
-                  ${channel.netRevenue.toLocaleString()}
+                  ₹{channel.netRevenue.toLocaleString()}
                 </span>
               </TableCell>
               <TableCell align="center">
@@ -383,7 +407,7 @@ export default function ChannelPerformanceTable() {
               <span className="font-semibold text-neutral-900">Total</span>
             </TableCell>
             <TableCell align="right">
-              <span className="font-semibold text-terra-600">${summary.totalRevenue.toLocaleString()}</span>
+              <span className="font-semibold text-terra-600">₹{summary.totalRevenue.toLocaleString()}</span>
             </TableCell>
             <TableCell align="right">
               <span className="font-semibold text-neutral-900">{summary.totalBookings}</span>
@@ -395,7 +419,7 @@ export default function ChannelPerformanceTable() {
               <span className="font-semibold text-neutral-900">{summary.avgCommission}%</span>
             </TableCell>
             <TableCell align="right">
-              <span className="font-semibold text-sage-600">${summary.totalNetRevenue.toLocaleString()}</span>
+              <span className="font-semibold text-sage-600">₹{summary.totalNetRevenue.toLocaleString()}</span>
             </TableCell>
             <TableCell align="center">
               <span className="text-neutral-500">-</span>
@@ -415,7 +439,7 @@ export default function ChannelPerformanceTable() {
           <div className="p-4 bg-gold-50 rounded-xl border border-gold-200">
             <p className="text-xs text-gold-700 font-medium mb-1">Total Commission</p>
             <p className="text-lg font-bold text-gold-900">
-              ${insights.totalCommission.toLocaleString()}
+              ₹{insights.totalCommission.toLocaleString()}
             </p>
             <p className="text-xs text-gold-600 mt-1">From all channels</p>
           </div>

@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import {
   X, Crown, Mail, Phone, Bed, Globe,
   Sparkles, Edit, XCircle, CheckCircle, Users,
-  Calendar, ChevronDown, Check
+  Calendar, ChevronDown, Check, Undo2, ArrowRightLeft, LogIn, LogOut, UserX, SprayCan, Clock,
+  DollarSign, Receipt, Wallet
 } from 'lucide-react';
 import { statusConfig, sourceConfig } from '../../data/bookingsData';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -18,6 +19,13 @@ export default function BookingDrawer({
   onEditBooking,
   onAssignRoom,
   onCancelBooking,
+  onCancelCheckIn,
+  onCheckIn,
+  onCheckOut,
+  onMarkNoShow,
+  onRequestCleaning,
+  onOpenFolio,
+  onViewBill,
 }) {
   const { formatCurrency } = useCurrency();
   const [showStatusSuccess, setShowStatusSuccess] = useState(false);
@@ -46,6 +54,25 @@ export default function BookingDrawer({
       });
     return () => { cancelled = true; };
   }, [isOpen, booking?.id]);
+
+  // ETA = pre-check-in arrival (arrival_time). ETD = pre-check-in departure (departure_time).
+  // Use precheckin data first, then booking.eta/etd from list API as fallback.
+  const eta = precheckinData?.arrival_time ?? booking?.eta ?? '—';
+  const etd = precheckinData?.departure_time ?? booking?.etd ?? '—';
+
+  // Same formatting as BookingsTable so ETA/ETD show identically everywhere.
+  const formatTimeDisplay = (timeStr) => {
+    if (!timeStr || typeof timeStr !== 'string') return '—';
+    const trimmed = String(timeStr).trim();
+    if (!trimmed || trimmed === '—') return '—';
+    const parts = trimmed.split(':');
+    const h = parseInt(parts[0], 10);
+    const m = parts[1] ? parseInt(parts[1], 10) : 0;
+    if (isNaN(h)) return trimmed;
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour = h % 12 || 12;
+    return `${hour}:${String(m).padStart(2, '0')} ${period}`;
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -144,7 +171,10 @@ export default function BookingDrawer({
   if (!booking) return null;
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    if (!dateString) return 'N/A';
+    // Append T12:00:00 to date-only strings to prevent UTC midnight timezone shift
+    const safe = dateString.includes('T') ? dateString : `${dateString}T12:00:00`;
+    const date = new Date(safe);
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -169,6 +199,8 @@ export default function BookingDrawer({
       'CHECKED-IN': { bg: 'bg-blue-500', text: 'text-blue-700', label: 'Checked In' },
       'CHECKED-OUT': { bg: 'bg-neutral-400', text: 'text-neutral-600', label: 'Checked Out' },
       'CANCELLED': { bg: 'bg-rose-500', text: 'text-rose-600', label: 'Cancelled' },
+      'NO-SHOW': { bg: 'bg-orange-500', text: 'text-orange-600', label: 'No Show' },
+      'NO_SHOW': { bg: 'bg-orange-500', text: 'text-orange-600', label: 'No Show' },
     };
     return config[statusKey] || config['PENDING'];
   };
@@ -216,7 +248,7 @@ export default function BookingDrawer({
                     <h2 className="text-base sm:text-lg font-semibold text-neutral-900 truncate">{booking.guest}</h2>
                     {booking.vip && <Crown className="w-4 h-4 text-gold-500 flex-shrink-0" />}
                   </div>
-                  <p className="text-xs sm:text-[13px] text-neutral-400 truncate">{booking.id}</p>
+                  <p className="text-xs sm:text-[13px] text-neutral-400 truncate">{booking.bookingNumber || booking.id}</p>
                 </div>
               </div>
               <button
@@ -229,35 +261,56 @@ export default function BookingDrawer({
 
             {/* Status Badge with Dropdown */}
             <div className="mt-4 relative" ref={dropdownRef}>
-              <button
-                onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 hover:bg-neutral-200 transition-colors"
-              >
-                <span className={`w-2 h-2 rounded-full ${statusConf.bg}`}></span>
-                <span className={`text-sm font-medium ${statusConf.text}`}>{statusConf.label}</span>
-                <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
+              {(() => {
+                const statusNorm = (booking?.status || '').toUpperCase().replace(/[\s_]/g, '-');
+                const isCheckedInStatus = statusNorm === 'IN-HOUSE' || statusNorm === 'CHECKED-IN';
+                const isTerminalStatus = statusNorm === 'CANCELLED' || statusNorm === 'CHECKED-OUT' || statusNorm === 'COMPLETED' || statusNorm === 'NO-SHOW' || statusNorm === 'NO_SHOW';
 
-              {/* Dropdown Menu */}
-              {statusDropdownOpen && (
-                <div className="absolute left-0 top-full mt-2 w-48 bg-white rounded-[10px] shadow-lg border border-neutral-200 py-1 z-[60]">
-                  {statusOptions.map((option) => (
+                // Post check-in and terminal statuses: show static badge (no dropdown)
+                if (isCheckedInStatus || isTerminalStatus) {
+                  return (
+                    <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100">
+                      <span className={`w-2 h-2 rounded-full ${statusConf.bg}`}></span>
+                      <span className={`text-sm font-medium ${statusConf.text}`}>{statusConf.label}</span>
+                    </span>
+                  );
+                }
+
+                // Pre check-in statuses: allow status change via dropdown
+                return (
+                  <>
                     <button
-                      key={option.value}
-                      onClick={() => handleStatusChange(option.value)}
-                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-[13px] hover:bg-neutral-50 transition-colors ${
-                        booking.status === option.value ? 'bg-neutral-50' : ''
-                      }`}
+                      onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 hover:bg-neutral-200 transition-colors"
                     >
-                      <span className={`w-2 h-2 rounded-full ${option.bg}`}></span>
-                      <span className={`font-medium ${option.color}`}>{option.label}</span>
-                      {booking.status === option.value && (
-                        <Check className="w-4 h-4 text-terra-500 ml-auto" />
-                      )}
+                      <span className={`w-2 h-2 rounded-full ${statusConf.bg}`}></span>
+                      <span className={`text-sm font-medium ${statusConf.text}`}>{statusConf.label}</span>
+                      <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
-                  ))}
-                </div>
-              )}
+
+                    {/* Dropdown Menu */}
+                    {statusDropdownOpen && (
+                      <div className="absolute left-0 top-full mt-2 w-48 bg-white rounded-[10px] shadow-lg border border-neutral-200 py-1 z-[60]">
+                        {statusOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() => handleStatusChange(option.value)}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-[13px] hover:bg-neutral-50 transition-colors ${
+                              booking.status === option.value ? 'bg-neutral-50' : ''
+                            }`}
+                          >
+                            <span className={`w-2 h-2 rounded-full ${option.bg}`}></span>
+                            <span className={`font-medium ${option.color}`}>{option.label}</span>
+                            {booking.status === option.value && (
+                              <Check className="w-4 h-4 text-terra-500 ml-auto" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
 
               {showStatusSuccess && (
                 <span className="ml-3 text-[13px] text-sage-600 inline-flex items-center gap-1">
@@ -309,6 +362,33 @@ export default function BookingDrawer({
                       ? `${booking.children} Child${booking.children !== 1 ? 'ren' : ''}`
                       : 'No children'}
                   </p>
+                </div>
+              </div>
+
+              {/* ETA / ETD from Pre-Check-In - above Contact (always visible) */}
+              <div className="space-y-2 sm:space-y-3">
+                <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest">Arrival & Departure Times</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 sm:p-4 bg-neutral-50 rounded-[10px]">
+                    <div className="flex items-center gap-2 text-neutral-500 mb-2">
+                      <Clock className="w-4 h-4" />
+                      <span className="text-[10px] sm:text-[11px] font-medium">ETA</span>
+                    </div>
+                    <p className="text-sm sm:text-base font-semibold text-neutral-900">
+                      {formatTimeDisplay(eta)}
+                    </p>
+                    <p className="text-xs sm:text-[13px] text-neutral-500">Expected Arrival</p>
+                  </div>
+                  <div className="p-3 sm:p-4 bg-neutral-50 rounded-[10px]">
+                    <div className="flex items-center gap-2 text-neutral-500 mb-2">
+                      <Clock className="w-4 h-4" />
+                      <span className="text-[10px] sm:text-[11px] font-medium">ETD</span>
+                    </div>
+                    <p className="text-sm sm:text-base font-semibold text-neutral-900">
+                      {formatTimeDisplay(etd)}
+                    </p>
+                    <p className="text-xs sm:text-[13px] text-neutral-500">Expected Departure</p>
+                  </div>
                 </div>
               </div>
 
@@ -367,50 +447,205 @@ export default function BookingDrawer({
                 </div>
               )}
 
-              {/* Total Amount */}
-              <div className="p-3 sm:p-4 bg-terra-50 rounded-[10px] border border-terra-100">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] sm:text-[11px] text-neutral-500 mb-1">Total Amount</p>
-                    <p className="text-xl sm:text-2xl font-bold text-terra-600">{formatCurrency(booking.amount)}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] sm:text-[11px] text-neutral-500 mb-1">Per Night</p>
-                    <p className="text-xs sm:text-[13px] font-semibold text-neutral-700">
-                      {formatCurrency(Math.round(booking.amount / booking.nights))}
+              {/* Billing Summary */}
+              <div className="p-3 sm:p-4 bg-terra-50 rounded-[10px] border border-terra-100 space-y-3">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-terra-600" />
+                  <p className="text-[10px] sm:text-[11px] font-semibold text-neutral-500 uppercase tracking-widest">Billing Summary</p>
+                </div>
+
+                {/* KPI Grid: Total, Paid, Balance */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-white/80 rounded-lg p-2.5 border border-terra-100">
+                    <p className="text-[9px] sm:text-[10px] font-medium text-neutral-500 uppercase tracking-wider mb-0.5">Total</p>
+                    <p className="text-sm sm:text-base font-bold text-neutral-900">
+                      {formatCurrency(booking.total || booking.amount || 0)}
                     </p>
                   </div>
+                  <div className="bg-white/80 rounded-lg p-2.5 border border-emerald-200/60">
+                    <p className="text-[9px] sm:text-[10px] font-medium text-neutral-500 uppercase tracking-wider mb-0.5">Paid</p>
+                    <p className="text-sm sm:text-base font-bold text-emerald-600">
+                      {formatCurrency(booking.depositAmount || booking.deposit_amount || booking.amountPaid || booking.amount_paid || 0)}
+                    </p>
+                  </div>
+                  <div className="bg-white/80 rounded-lg p-2.5 border border-amber-200/60">
+                    <p className="text-[9px] sm:text-[10px] font-medium text-neutral-500 uppercase tracking-wider mb-0.5">Balance</p>
+                    {(() => {
+                      const total = booking.total || booking.amount || 0;
+                      const paid = booking.depositAmount || booking.deposit_amount || booking.amountPaid || booking.amount_paid || 0;
+                      const balance = booking.balanceDue ?? booking.balance_due ?? (total - paid);
+                      return (
+                        <p className={`text-sm sm:text-base font-bold ${balance > 0 ? 'text-amber-600' : 'text-neutral-400'}`}>
+                          {formatCurrency(balance)}
+                        </p>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                {/* Rate per night + Payment Status */}
+                <div className="flex items-center justify-between text-xs sm:text-[13px]">
+                  <span className="text-neutral-600">
+                    Avg. {formatCurrency(Math.round((booking.total || booking.amount || 0) / (booking.nights || 1)))}/night
+                  </span>
+                  {(() => {
+                    const ps = (booking.paymentStatus || booking.payment_status || 'pending').toLowerCase();
+                    const psMap: Record<string, { label: string; cls: string }> = {
+                      paid: { label: 'Paid', cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+                      partial: { label: 'Partial', cls: 'bg-blue-100 text-blue-700 border-blue-200' },
+                      pending: { label: 'Pending', cls: 'bg-amber-100 text-amber-700 border-amber-200' },
+                      refunded: { label: 'Refunded', cls: 'bg-purple-100 text-purple-700 border-purple-200' },
+                      failed: { label: 'Failed', cls: 'bg-red-100 text-red-700 border-red-200' },
+                    };
+                    const cfg = psMap[ps] || psMap.pending;
+                    return (
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-semibold border ${cfg.cls}`}>
+                        {cfg.label}
+                      </span>
+                    );
+                  })()}
+                </div>
+
+                {/* Billing Action Buttons */}
+                <div className="flex gap-2 pt-0.5">
+                  <button
+                    onClick={() => onOpenFolio && onOpenFolio()}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[11px] sm:text-[12px] font-medium text-terra-700 bg-white border border-terra-200 rounded-lg hover:bg-terra-50 transition-colors"
+                  >
+                    <Wallet className="w-3.5 h-3.5" />
+                    Open Folio
+                  </button>
+                  <button
+                    onClick={() => onViewBill && onViewBill()}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[11px] sm:text-[12px] font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+                  >
+                    <Receipt className="w-3.5 h-3.5" />
+                    Guest Bill
+                  </button>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Footer */}
+          {/* Footer - Status-aware action buttons with date guards */}
           <div className="flex-shrink-0 border-t border-neutral-100 p-3 sm:p-4 bg-white">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <button
-                onClick={() => onCancelBooking && onCancelBooking()}
-                disabled={booking?.status === 'CANCELLED'}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-neutral-200 text-neutral-600 hover:border-rose-200 hover:text-rose-600 hover:bg-rose-50 rounded-lg text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <XCircle className="w-4 h-4" />
-                Cancel
-              </button>
-              <button
-                onClick={onAssignRoom}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg text-[13px] font-medium transition-colors"
-              >
-                <Bed className="w-4 h-4" />
-                Assign
-              </button>
-              <button
-                onClick={onEditBooking}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-terra-500 hover:bg-terra-600 text-white rounded-lg text-[13px] font-medium transition-colors"
-              >
-                <Edit className="w-4 h-4" />
-                Edit
-              </button>
-            </div>
+            {(() => {
+              const status = (booking?.status || '').toUpperCase().replace(/[\s_]/g, '-');
+              const isCheckedIn = status === 'IN-HOUSE' || status === 'CHECKED-IN';
+              const isCancelled = status === 'CANCELLED';
+              const isCompleted = status === 'CHECKED-OUT' || status === 'COMPLETED';
+              const isNoShowStatus = status === 'NO-SHOW' || status === 'NO_SHOW';
+              const hasRoom = booking?.room && booking.room !== 'Unassigned' && booking.room !== 'Not assigned';
+
+              // Date guards
+              const today = new Date().toISOString().split('T')[0];
+              const checkOut = booking?.checkOut || booking?.departure_date;
+              const checkIn = booking?.checkIn || booking?.arrival_date;
+              const expired = checkOut && checkOut <= today;
+              const arrivalPassed = checkIn && checkIn < today;
+
+              const canDoCheckIn = (status === 'CONFIRMED' || status === 'PENDING' || status === 'BOOKED') && hasRoom && !expired;
+              const canDoNoShow = (status === 'CONFIRMED' || status === 'PENDING' || status === 'BOOKED') && arrivalPassed;
+              const isTerminal = isCancelled || isCompleted || isNoShowStatus;
+
+              // Post check-in: show Edit, Room Move, Cancel Check-in, and Check Out
+              if (isCheckedIn && !expired) {
+                return (
+                  <div className="space-y-2">
+                    <button
+                      onClick={onEditBooking}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-terra-500 hover:bg-terra-600 text-white rounded-lg text-[13px] font-medium transition-colors"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit Booking
+                    </button>
+                    <button
+                      onClick={() => onRequestCleaning && onRequestCleaning()}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-sage-200 text-sage-700 hover:bg-sage-50 rounded-lg text-[13px] font-medium transition-colors"
+                    >
+                      <SprayCan className="w-4 h-4" />
+                      Request Cleaning
+                    </button>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <button
+                        onClick={() => onCancelCheckIn && onCancelCheckIn()}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-amber-200 text-amber-700 hover:bg-amber-50 rounded-lg text-[13px] font-medium transition-colors"
+                      >
+                        <Undo2 className="w-4 h-4" />
+                        Cancel Check-in
+                      </button>
+                      <button
+                        onClick={onAssignRoom}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg text-[13px] font-medium transition-colors"
+                      >
+                        <ArrowRightLeft className="w-4 h-4" />
+                        Room Move
+                      </button>
+                      <button
+                        onClick={() => onCheckOut && onCheckOut()}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-[13px] font-medium transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Check Out
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="flex items-center gap-2 sm:gap-3">
+                  {/* No Show button - for past confirmed bookings where guest never showed up */}
+                  {canDoNoShow ? (
+                    <button
+                      onClick={() => onMarkNoShow && onMarkNoShow()}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-orange-200 text-orange-700 hover:bg-orange-50 rounded-lg text-[13px] font-medium transition-colors"
+                    >
+                      <UserX className="w-4 h-4" />
+                      No Show
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onCancelBooking && onCancelBooking()}
+                      disabled={isTerminal || expired}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-neutral-200 text-neutral-600 hover:border-rose-200 hover:text-rose-600 hover:bg-rose-50 rounded-lg text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      Cancel
+                    </button>
+                  )}
+
+                  {/* Check In / Assign button - hidden for expired */}
+                  {canDoCheckIn ? (
+                    <button
+                      onClick={() => onCheckIn && onCheckIn()}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[13px] font-medium transition-colors"
+                    >
+                      <LogIn className="w-4 h-4" />
+                      Check In
+                    </button>
+                  ) : !expired && !isTerminal ? (
+                    <button
+                      onClick={onAssignRoom}
+                      disabled={isTerminal}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Bed className="w-4 h-4" />
+                      {hasRoom ? 'Reassign' : 'Assign'}
+                    </button>
+                  ) : null}
+
+                  {/* Edit button */}
+                  <button
+                    onClick={onEditBooking}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-terra-500 hover:bg-terra-600 text-white rounded-lg text-[13px] font-medium transition-colors"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>

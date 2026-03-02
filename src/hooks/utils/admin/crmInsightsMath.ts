@@ -35,7 +35,7 @@ export function generateInsights(guests) {
         'Offer special comeback discount (15-20%)',
         'Conduct satisfaction surveys'
       ],
-      estimatedLoss: `-$${Math.round(lostRevenue).toLocaleString()}`,
+      estimatedLoss: `-₹${Math.round(lostRevenue).toLocaleString()}`,
       impact: 'High'
     });
   }
@@ -51,7 +51,7 @@ export function generateInsights(guests) {
       type: 'opportunity',
       priority: 'high',
       title: 'VIP Segment High-Value Opportunity',
-      message: `Your ${segments.vip.length} VIP guests (${vipPercent}%) contribute ${((vipRevenue / guests.reduce((sum, g) => sum + g.totalSpend, 0)) * 100).toFixed(1)}% of total revenue. Average VIP LTV is $${avgVIPLTV}. Prioritize VIP retention and upsell programs.`,
+      message: `Your ${segments.vip.length} VIP guests (${vipPercent}%) contribute ${((vipRevenue / guests.reduce((sum, g) => sum + g.totalSpend, 0)) * 100).toFixed(1)}% of total revenue. Average VIP LTV is ₹${avgVIPLTV}. Prioritize VIP retention and upsell programs.`,
       metric: `${segments.vip.length} VIP guests`,
       confidence: 95,
       severity: 'medium',
@@ -61,7 +61,7 @@ export function generateInsights(guests) {
         'Offer room upgrades and late checkout',
         'Send birthday/anniversary perks'
       ],
-      estimatedRevenue: `+$${Math.round(vipRevenue * 0.15).toLocaleString()}`,
+      estimatedRevenue: `+₹${Math.round(vipRevenue * 0.15).toLocaleString()}`,
       impact: 'High'
     });
   }
@@ -92,7 +92,7 @@ export function generateInsights(guests) {
         'Increase loyalty points for direct bookings',
         'Create retargeting ads for direct bookings'
       ],
-      estimatedRevenue: `+$${Math.round((avgDirectLTV - avgOTALTV) * otaGuests.length * 0.2).toLocaleString()}`,
+      estimatedRevenue: `+₹${Math.round((avgDirectLTV - avgOTALTV) * otaGuests.length * 0.2).toLocaleString()}`,
       impact: 'Medium'
     });
   }
@@ -117,7 +117,7 @@ export function generateInsights(guests) {
         'Reach out to local tech/finance companies',
         'Offer volume-based discounts'
       ],
-      estimatedRevenue: `+$${Math.round(corpRevenue * 0.3).toLocaleString()}`,
+      estimatedRevenue: `+₹${Math.round(corpRevenue * 0.3).toLocaleString()}`,
       impact: 'Medium'
     });
   }
@@ -143,7 +143,7 @@ export function generateInsights(guests) {
         'Offer second-stay discount (10-15%)',
         'Request feedback and reviews'
       ],
-      estimatedRevenue: `+$${Math.round(conversionPotential * 800).toLocaleString()}`,
+      estimatedRevenue: `+₹${Math.round(conversionPotential * 800).toLocaleString()}`,
       impact: 'Medium'
     });
   }
@@ -176,7 +176,7 @@ export function generateInsights(guests) {
         'Implement service recovery for affected guests',
         'Monitor satisfaction scores weekly'
       ],
-      estimatedLoss: `-$${Math.round(lowSentimentGuests.length * 600).toLocaleString()}`,
+      estimatedLoss: `-₹${Math.round(lowSentimentGuests.length * 600).toLocaleString()}`,
       impact: 'High'
     });
   }
@@ -201,7 +201,7 @@ export function generateInsights(guests) {
         'Offer exclusive events or experiences',
         'Request referrals from loyal guests'
       ],
-      estimatedRevenue: `+$${Math.round(loyalRevenue * 0.1).toLocaleString()}`,
+      estimatedRevenue: `+₹${Math.round(loyalRevenue * 0.1).toLocaleString()}`,
       impact: 'Low'
     });
   }
@@ -226,7 +226,7 @@ export function generateInsights(guests) {
         'Provide exclusive comeback incentive',
         'Survey to understand absence reasons'
       ],
-      estimatedRevenue: `+$${Math.round(recoveryPotential * 700).toLocaleString()}`,
+      estimatedRevenue: `+₹${Math.round(recoveryPotential * 700).toLocaleString()}`,
       impact: 'Medium'
     });
   }

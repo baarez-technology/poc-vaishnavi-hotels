@@ -5,6 +5,7 @@
  */
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { channelManagerService } from '../api/services/channel-manager.service';
 import { roomTypesService } from '../api/services/roomTypes.service';
 import type {
@@ -86,9 +87,13 @@ function getApiErrorMessage(err: any, fallback: string): string {
 }
 
 export function ChannelManagerProvider({ children }) {
+  const location = useLocation();
   const toast = useToast() as { success: (msg: string, opts?: object) => void; error: (msg: string, opts?: object) => void };
   const { success, error: showError } = toast;
   const stored = loadFromStorage();
+
+  // Track if data has been loaded to prevent re-fetching
+  const isDataLoadedRef = useRef(false);
 
   // State - ensure Dummy Channel Manager is in list when restoring from storage
   const [otas, setOTAs] = useState<OTAConnection[]>(() => {
@@ -251,8 +256,14 @@ export function ChannelManagerProvider({ children }) {
     }
   }, [showError]);
 
-  // Initial data load
+  // Check if on channel-manager page
+  const isChannelManagerPage = location.pathname.includes('/channel-manager');
+
+  // Initial data load - only when on channel-manager pages
   useEffect(() => {
+    // Skip if not on channel-manager page or data already loaded
+    if (!isChannelManagerPage || isDataLoadedRef.current) return;
+
     const loadData = async () => {
       setIsLoading(true);
       try {
@@ -267,6 +278,7 @@ export function ChannelManagerProvider({ children }) {
           fetchAIInsights(),
           fetchRoomTypes(),
         ]);
+        isDataLoadedRef.current = true;
       } catch (err) {
         console.error('Error loading initial data:', err);
       } finally {
@@ -275,7 +287,7 @@ export function ChannelManagerProvider({ children }) {
     };
 
     loadData();
-  }, []); // Only run once on mount
+  }, [isChannelManagerPage]); // Re-check when route changes
 
   // Persist to localStorage (as cache/fallback)
   useEffect(() => {
@@ -314,8 +326,9 @@ export function ChannelManagerProvider({ children }) {
         return prev; // Skip duplicate log
       }
 
+      // ID and timestamp basis: unique id from timestamp + short random suffix
       const newLog: SyncLog = {
-        id: `log-${now}-${Math.random().toString(36).substr(2, 5)}`,
+        id: `log-${now}-${Math.random().toString(36).slice(2, 7)}`,
         timestamp: new Date(now).toISOString(),
         otaCode,
         otaName,
@@ -892,8 +905,9 @@ export function ChannelManagerProvider({ children }) {
         setOTAs(prev => prev.map(o => o.status === 'connected' ? { ...o, lastSync: syncTimestamp } : o));
         setSyncingOTAs([]);
         setLastGlobalSync(syncTimestamp);
-        success('Sync initiated for all OTAs');
-        // Refresh sync logs to show updated timestamps
+        const count = result.syncIds?.length;
+        success(count != null && count > 0 ? `Started ${count} sync${count === 1 ? '' : 's'}` : 'Sync initiated for all OTAs');
+        // Refetch Sync Logs so new rows (with result.syncIds) and timestamps appear
         await fetchSyncLogs({ pageSize: 50 });
         return result;
       } else {
@@ -907,8 +921,11 @@ export function ChannelManagerProvider({ children }) {
         setOTAs(prev => prev.map(o => o.code === otaCode ? { ...o, lastSync: syncTimestamp } : o));
         setSyncingOTAs([]);
         setLastGlobalSync(syncTimestamp);
-        success(`Sync initiated for ${ota.name}`);
-        // Refresh sync logs to show updated timestamps
+        const startedMsg = result.startedAt
+          ? `Sync started at ${new Date(result.startedAt).toLocaleString()}`
+          : `Sync initiated for ${ota.name}`;
+        success(startedMsg);
+        // Refetch Sync Logs so new row (id === result.syncId) and startedAt appear
         await fetchSyncLogs({ pageSize: 50 });
         return result;
       }
@@ -926,9 +943,11 @@ export function ChannelManagerProvider({ children }) {
   useEffect(() => {
     // Backend handles auto-sync, but we can refresh data periodically
     const intervalId = setInterval(() => {
-      // Refresh stats and insights periodically
-      fetchChannelStats();
-      fetchAIInsights();
+      // Only refresh when tab is visible to avoid wasted API calls
+      if (document.visibilityState === 'visible') {
+        fetchChannelStats();
+        fetchAIInsights();
+      }
     }, SYNC_INTERVAL);
     syncIntervalRef.current = intervalId;
 

@@ -55,7 +55,9 @@ export interface PreCheckInData {
   view_preference?: string;
   bed_type_preference?: string;
   quietness_preference?: string;
+  /** ETA: pre-check-in Expected Arrival (from arrival_time). */
   arrival_time?: string;
+  /** ETD: pre-check-in Expected Departure (from departure_time). */
   departure_time?: string;
   flight_number?: string;
   purpose?: string;
@@ -87,7 +89,9 @@ export interface PreCheckInResponse {
   selected_room_id?: number;
   ai_score?: number;
   ai_reasoning?: string;
+  /** ETA: pre-check-in Expected Arrival (from arrival_time). */
   arrival_time?: string;
+  /** ETD: pre-check-in Expected Departure (from departure_time). */
   departure_time?: string;
   flight_number?: string;
   purpose?: string;
@@ -150,16 +154,24 @@ export const precheckinService = {
 
   /**
    * Get pre-check-in by reservation ID
+   * Returns null if no pre-check-in exists for the reservation (404).
    */
   getByReservation: async (reservationId: number): Promise<PreCheckInResponse | null> => {
-    const response = await apiClient.get<ApiResponse<PreCheckInResponse | null>>(
-      `/api/v1/precheckin/reservation/${reservationId}`
-    );
-    // Handle ApiResponse wrapper - extract data field if it exists
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-      return (response.data as ApiResponse<PreCheckInResponse | null>).data;
+    try {
+      const response = await apiClient.get<ApiResponse<PreCheckInResponse | null>>(
+        `/api/v1/precheckin/reservation/${reservationId}`
+      );
+      // Handle ApiResponse wrapper - extract data field if it exists
+      if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+        return (response.data as ApiResponse<PreCheckInResponse | null>).data;
+      }
+      return response.data as PreCheckInResponse | null;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
     }
-    return response.data as PreCheckInResponse | null;
   },
 
   /**

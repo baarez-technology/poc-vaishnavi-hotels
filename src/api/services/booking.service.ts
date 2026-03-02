@@ -7,6 +7,8 @@ export interface CheckInData {
   room_id?: number;
   id_type?: string;
   id_number?: string;
+  id_verified?: boolean;
+  id_verification_confidence?: number;
   notes?: string;
 }
 
@@ -14,6 +16,7 @@ export interface CheckOutData {
   final_charges?: number;
   notes?: string;
   payment_method?: string;
+  force_checkout?: boolean;
 }
 
 export interface RoomChangeData {
@@ -129,6 +132,55 @@ export const bookingService = {
     return response.data.data || response.data;
   },
 
+  // Cancel check-in (revert checked-in booking back to confirmed/arrival status)
+  cancelCheckIn: async (bookingId: string | number) => {
+    const response = await apiClient.post<ApiResponse<Booking>>(
+      `/api/v1/bookings/${bookingId}/cancel-checkin`,
+      {}
+    );
+    clearApiCache('/bookings');
+    clearApiCache('/rooms');
+    return response.data.data || response.data;
+  },
+
+  // Mark booking as No Show
+  markNoShow: async (bookingId: string | number) => {
+    const response = await apiClient.post<ApiResponse<Booking>>(
+      `/api/v1/bookings/${bookingId}/no-show`,
+      {}
+    );
+    clearApiCache('/bookings');
+    clearApiCache('/rooms');
+    return response.data.data || response.data;
+  },
+
+  // Reinstate a no-show or cancelled booking
+  reinstate: async (bookingId: string | number) => {
+    const response = await apiClient.post<ApiResponse<Booking>>(
+      `/api/v1/bookings/${bookingId}/reinstate`,
+      {}
+    );
+    clearApiCache('/bookings');
+    return response.data.data || response.data;
+  },
+
+  // Download invoice PDF for a booking
+  downloadInvoice: async (bookingId: string | number) => {
+    const response = await apiClient.get(
+      `/api/v1/bookings/${bookingId}/invoice`,
+      { responseType: 'blob' }
+    );
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `invoice-${bookingId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
+
   // Extend a guest's stay
   extendStay: async (bookingId: string | number, data: ExtendStayData) => {
     const response = await apiClient.post<ApiResponse<Booking>>(
@@ -232,6 +284,20 @@ export const bookingService = {
     const response = await apiClient.post(
       `/api/v1/bookings/${bookingId}/smart-assign`,
       data || {}
+    );
+    return response.data;
+  },
+
+  /**
+   * Toggle DNM (Do Not Move) flag on a booking
+   */
+  toggleDNM: async (
+    bookingId: string | number,
+    enabled: boolean
+  ): Promise<{ success: boolean; do_not_move: boolean; message: string }> => {
+    const response = await apiClient.patch(
+      `/api/v1/bookings/${bookingId}/dnm`,
+      { enabled }
     );
     return response.data;
   },

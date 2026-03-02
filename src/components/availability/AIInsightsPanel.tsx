@@ -315,12 +315,12 @@ export function AIInsightsPanel({ insights, isLoading, onRefresh }: AIInsightsPa
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div>
                         <p className="text-xs text-gray-500">Current Rate</p>
-                        <p className="text-lg font-semibold text-gray-900">${suggestion.current_rate}</p>
+                        <p className="text-lg font-semibold text-gray-900">₹{suggestion.current_rate}</p>
                       </div>
                       <ChevronRight className="w-5 h-5 text-gray-400" />
                       <div>
                         <p className="text-xs text-gray-500">Suggested Rate</p>
-                        <p className="text-lg font-semibold text-terra-600">${suggestion.suggested_rate}</p>
+                        <p className="text-lg font-semibold text-terra-600">₹{suggestion.suggested_rate}</p>
                       </div>
                     </div>
                   </div>

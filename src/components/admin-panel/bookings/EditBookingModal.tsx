@@ -92,8 +92,8 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
         return value ? '' : 'Check-in date is required';
       case 'checkOut':
         if (!value) return 'Check-out date is required';
-        if (formState.checkIn && new Date(value) <= new Date(formState.checkIn))
-          return 'Check-out must be after check-in';
+        if (formState.checkIn && new Date(value) < new Date(formState.checkIn))
+          return 'Check-out cannot be before check-in';
         return '';
       default:
         return '';
@@ -143,6 +143,11 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
 
+    // Post check-in: preserve original check-in date, source, and special requests
+    const safeCheckIn = isCheckedIn ? (booking.checkIn || formState.checkIn) : formState.checkIn;
+    const safeSource = isCheckedIn ? (booking.source || formState.source) : formState.source;
+    const safeNotes = isCheckedIn ? (booking.specialRequests || formState.notes) : formState.notes.trim();
+
     onSave({
       guestInfo: {
         firstName,
@@ -150,22 +155,29 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
         email: formState.email.trim(),
         phone: formState.phone.trim(),
         country: booking.country || '',
-        specialRequests: formState.notes.trim(),
+        specialRequests: safeNotes,
       },
-      checkIn: formState.checkIn,
+      checkIn: safeCheckIn,
       checkOut: formState.checkOut,
       guests: {
         adults: booking.adults || 1,
         children: booking.children || 0,
       },
-      specialRequests: formState.notes.trim(),
+      specialRequests: safeNotes,
       guest: formState.guest.trim(),
       guestEmail: formState.email.trim(),
       guestPhone: formState.phone.trim(),
-      nights,
-      source: formState.source,
+      nights: calculateNights(safeCheckIn, formState.checkOut),
+      source: safeSource,
     });
   };
+
+  // Determine if booking is post-check-in (fields should be frozen)
+  const isCheckedIn = (() => {
+    const statusNorm = (booking?.status || '').toUpperCase().replace(/[\s_]/g, '-');
+    return statusNorm === 'IN-HOUSE' || statusNorm === 'CHECKED-IN' ||
+           statusNorm === 'CHECKED-OUT' || statusNorm === 'CANCELLED' || statusNorm === 'NO-SHOW';
+  })();
 
   if (!isOpen || !booking) return null;
 
@@ -295,24 +307,30 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
               {/* Booking Source */}
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Booking Source
+                  Booking Source {isCheckedIn && <span className="text-neutral-400 font-normal">(locked)</span>}
                 </label>
                 <div className="relative">
                   <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
                     <Globe className="w-4 h-4 text-neutral-400" />
                   </div>
-                  <select
-                    name="source"
-                    value={formState.source}
-                    onChange={handleChange}
-                    className={`${inputNormal} pl-10 appearance-none cursor-pointer`}
-                  >
-                    {SOURCE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
+                  {isCheckedIn ? (
+                    <div className="w-full pl-10 px-4 py-3 bg-neutral-100 border border-neutral-200 rounded-xl text-sm text-neutral-500 cursor-not-allowed">
+                      {formState.source}
+                    </div>
+                  ) : (
+                    <select
+                      name="source"
+                      value={formState.source}
+                      onChange={handleChange}
+                      className={`${inputNormal} pl-10 appearance-none cursor-pointer`}
+                    >
+                      {SOURCE_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               </div>
             </div>
@@ -328,22 +346,29 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
                 {/* Check-in */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Check-in <span className="text-red-500">*</span>
+                    Check-in {isCheckedIn ? <span className="text-neutral-400 font-normal">(locked)</span> : <span className="text-red-500">*</span>}
                   </label>
                   <div className="relative">
                     <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
                       <CalendarDays className="w-4 h-4 text-neutral-400" />
                     </div>
-                    <input
-                      name="checkIn"
-                      type="date"
-                      value={formState.checkIn}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      className={`${getInputClass('checkIn')} pl-10 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
-                    />
+                    {isCheckedIn ? (
+                      <div className="w-full pl-10 px-4 py-3 bg-neutral-100 border border-neutral-200 rounded-xl text-sm text-neutral-500 cursor-not-allowed">
+                        {formState.checkIn ? new Date(formState.checkIn + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                      </div>
+                    ) : (
+                      <input
+                        name="checkIn"
+                        type="date"
+                        value={formState.checkIn}
+                        min={new Date().toISOString().split('T')[0]}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        className={`${getInputClass('checkIn')} pl-10 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
+                      />
+                    )}
                   </div>
-                  {errors.checkIn && touched.checkIn && (
+                  {!isCheckedIn && errors.checkIn && touched.checkIn && (
                     <p className="mt-1.5 text-xs text-red-600 font-medium">{errors.checkIn}</p>
                   )}
                 </div>
@@ -382,7 +407,7 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
                       <Moon className="w-4 h-4 text-neutral-400" />
                     </div>
                     <div className="w-full pl-10 px-4 py-3 bg-neutral-100 border border-neutral-200 rounded-xl text-sm text-neutral-700 font-medium">
-                      {nights > 0 ? `${nights} night${nights > 1 ? 's' : ''}` : '—'}
+                      {nights > 0 ? `${nights} night${nights > 1 ? 's' : ''}` : (formState.checkIn && formState.checkOut && formState.checkIn === formState.checkOut ? 'Day use' : '—')}
                     </div>
                   </div>
                 </div>
@@ -398,7 +423,7 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Guest Special Requests
+                  Guest Special Requests {isCheckedIn && <span className="text-neutral-400 font-normal">(locked after check-in)</span>}
                 </label>
                 <div className="relative">
                   <div className="absolute left-3.5 top-3.5 pointer-events-none">
@@ -414,7 +439,7 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
                   />
                 </div>
                 <span className="text-[11px] text-neutral-400 mt-1 block">
-                  Special requests submitted by the guest cannot be edited
+                  {isCheckedIn ? 'Special requests are frozen after check-in' : 'Special requests submitted by the guest cannot be edited'}
                 </span>
               </div>
             </div>

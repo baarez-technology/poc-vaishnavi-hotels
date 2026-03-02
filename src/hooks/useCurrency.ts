@@ -13,7 +13,7 @@ import { formatCurrency as formatCurrencyUtil, formatCurrencySimple, getCurrency
  */
 export function useCurrency() {
   const { generalSettings } = useSettingsContext();
-  const currency = generalSettings?.currency || 'USD';
+  const currency = generalSettings?.currency || 'INR';
 
   /**
    * Format a value with the current currency

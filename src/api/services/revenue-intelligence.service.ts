@@ -77,7 +77,7 @@ const requestCache = new RequestCache();
 
 // ==================== TYPES ====================
 
-// Rate Calendar Types
+// Rate Calendar Types (frontend / legacy shape)
 export interface RateCalendarRoom {
   roomTypeId: number;
   roomTypeName: string;
@@ -110,6 +110,58 @@ export interface RateCalendarData {
   startDate: string;
   endDate: string;
   days: RateCalendarDay[];
+}
+
+// Backend rate calendar API response (GET .../rates/calendar) - snake_case
+export interface RateCalendarCellApi {
+  date: string;
+  room_type_id: number;
+  room_type_name: string;
+  base_rate: number;
+  effective_rate: number;
+  occupancy: number;
+  demand_level: string;
+  has_event: boolean;
+  event_name: string | null;
+}
+
+export interface RateCalendarApiResponse {
+  period: { start: string; end: string };
+  calendar: RateCalendarCellApi[];
+  summary: {
+    total_projected_revenue: number;
+    average_occupancy: number;
+    days_with_events: number;
+    room_types_count: number;
+  };
+}
+
+// Bulk update request/response
+export interface BulkRateUpdateItem {
+  room_type_id: number;
+  date: string;
+  rate: number;
+}
+
+export interface BulkRateUpdateRequest {
+  updates: BulkRateUpdateItem[];
+  reason?: string;
+}
+
+export interface BulkRateUpdateResultItem {
+  room_type_id: number;
+  date: string;
+  status: 'success' | 'failed';
+  new_rate?: number;
+  error?: string;
+}
+
+export interface BulkRateUpdateResponse {
+  success: boolean;
+  updated_count: number;
+  failed_count: number;
+  audit_ids?: number[];
+  results: BulkRateUpdateResultItem[];
 }
 
 // Pricing Rules Types
@@ -228,6 +280,8 @@ export interface PricingRule {
   updatedAt: string;
   lastTriggered?: string;
   timesTriggered?: number;
+  /** Backend numeric room type id; used to normalize roomTypes when API returns only this */
+  room_type_id?: number | null;
 }
 
 export interface CreatePricingRuleRequest {
@@ -236,6 +290,8 @@ export interface CreatePricingRuleRequest {
   priority: number;
   isActive: boolean;
   roomTypes: string[];
+  /** Optional backend room type dbIds; when provided, used for room_type_id so rules apply to room types */
+  roomTypeDbIds?: number[];
   conditions: PricingRuleCondition[];
   actions: PricingRuleAction[];
 }
@@ -246,6 +302,8 @@ export interface UpdatePricingRuleRequest {
   priority?: number;
   isActive?: boolean;
   roomTypes?: string[];
+  /** Optional backend room type dbIds; when provided, used for room_type_id so rules apply to room types */
+  roomTypeDbIds?: number[];
   conditions?: PricingRuleCondition[];
   actions?: PricingRuleAction[];
 }
@@ -688,18 +746,82 @@ export interface DashboardData {
 
 const BASE_URL = '/api/v1/revenue-intelligence';
 
+/** Transform backend calendar array (date × room_type cells) into legacy RateCalendarData (days with rooms). */
+function transformCalendarApiToLegacy(api: RateCalendarApiResponse): RateCalendarData {
+  const byDate = new Map<string, RateCalendarCellApi[]>();
+  for (const cell of api.calendar) {
+    const list = byDate.get(cell.date) ?? [];
+    list.push(cell);
+    byDate.set(cell.date, list);
+  }
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const days: RateCalendarDay[] = [];
+  const start = new Date(api.period.start);
+  const end = new Date(api.period.end);
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const dateStr = d.toISOString().slice(0, 10);
+    const cells = byDate.get(dateStr) ?? [];
+    const dayOfWeek = d.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const rooms: Record<string, RateCalendarRoom> = {};
+    let occupancy = 0;
+    let event: string | undefined;
+    let demandLevel: RateCalendarDay['demandLevel'] = 'moderate';
+    for (const c of cells) {
+      const key = String(c.room_type_id);
+      occupancy = c.occupancy ?? occupancy;
+      if (c.event_name) event = c.event_name;
+      const dl = c.demand_level as RateCalendarDay['demandLevel'];
+      if (dl) demandLevel = dl;
+      rooms[key] = {
+        roomTypeId: c.room_type_id,
+        roomTypeName: c.room_type_name,
+        baseRate: c.base_rate,
+        dynamicRate: c.effective_rate,
+        minRate: c.base_rate * 0.7,
+        maxRate: c.base_rate * 2,
+        occupancy: c.occupancy,
+        available: 0,
+        restrictions: {},
+      };
+    }
+    days.push({
+      date: dateStr,
+      dayOfWeek: dayNames[dayOfWeek],
+      isWeekend,
+      event,
+      demandLevel,
+      occupancy,
+      rooms,
+    });
+  }
+  return {
+    startDate: api.period.start,
+    endDate: api.period.end,
+    days,
+  };
+}
+
 /**
  * Transform API rule response to frontend format
  * Handles both camelCase and snake_case field names
  */
 const transformRuleResponse = (rule: any): PricingRule => {
+  const hasRoomTypesArray =
+    (rule.roomTypes && (rule.roomTypes as unknown[]).length) ||
+    (Array.isArray(rule.room_types) && rule.room_types.length);
+  const roomTypes = hasRoomTypesArray
+    ? (rule.roomTypes || rule.room_types || []) as string[]
+    : rule.room_type_id == null
+      ? ['ALL']
+      : [String(rule.room_type_id)];
   return {
     id: rule.id,
     name: rule.name || rule.rule_name || 'Unnamed Rule',
     description: rule.description || '',
     priority: rule.priority || 1,
     isActive: rule.isActive ?? rule.is_active ?? true,
-    roomTypes: rule.roomTypes || rule.room_types || [],
+    roomTypes,
     conditions: rule.conditions || [],
     actions: rule.actions || [],
     createdAt: rule.createdAt || rule.created_at || new Date().toISOString(),
@@ -708,16 +830,22 @@ const transformRuleResponse = (rule: any): PricingRule => {
     timesTriggered: rule.timesTriggered ?? rule.times_triggered ?? 0,
     executionStatus: rule.executionStatus || rule.execution_status,
     lastExecutionMessage: rule.lastExecutionMessage || rule.last_execution_message,
+    room_type_id: rule.room_type_id ?? null,
   };
 };
 
 function toBackendCreatePayload(rule: CreatePricingRuleRequest): BackendPricingRuleCreate {
-  const roomTypeId = rule.roomTypes?.length
-    ? (() => {
-        const n = parseInt(String(rule.roomTypes[0]), 10);
-        return Number.isNaN(n) ? null : n;
-      })()
-    : null;
+  const isAll =
+    !rule.roomTypes?.length ||
+    rule.roomTypes.includes('ALL');
+  const roomTypeId = isAll
+    ? null
+    : rule.roomTypeDbIds?.length
+      ? rule.roomTypeDbIds[0]
+      : (() => {
+          const n = parseInt(String(rule.roomTypes![0]), 10);
+          return Number.isNaN(n) ? null : n;
+        })();
   const actions = (rule.actions || [])
     .map(transformActionToBackend)
     .filter((a): a is NonNullable<typeof a> => a != null);
@@ -736,13 +864,20 @@ function toBackendUpdatePayload(rule: UpdatePricingRuleRequest): BackendPricingR
   const out: BackendPricingRuleUpdate = {};
   if (rule.name !== undefined) out.rule_name = rule.name;
   if (rule.description !== undefined) out.description = rule.description;
-  if (rule.roomTypes !== undefined) {
-    out.room_type_id = rule.roomTypes?.length
-      ? (() => {
-          const n = parseInt(String(rule.roomTypes![0]), 10);
-          return Number.isNaN(n) ? null : n;
-        })()
-      : null;
+  if (rule.roomTypes !== undefined || rule.roomTypeDbIds !== undefined) {
+    const isAll =
+      !rule.roomTypes?.length ||
+      rule.roomTypes?.includes('ALL');
+    out.room_type_id = isAll
+      ? null
+      : rule.roomTypeDbIds?.length
+        ? rule.roomTypeDbIds[0]
+        : rule.roomTypes?.length
+          ? (() => {
+              const n = parseInt(String(rule.roomTypes![0]), 10);
+              return Number.isNaN(n) ? null : n;
+            })()
+          : null;
   }
   if (rule.priority !== undefined) out.priority = rule.priority;
   if (rule.isActive !== undefined) out.is_active = rule.isActive;
@@ -777,22 +912,30 @@ export const revenueIntelligenceService = {
    * Get room types for RMS
    * Uses the main /api/v1/room-types endpoint and transforms to RMS format
    * Cached for 5 minutes since room types rarely change
+   * Returns empty list on 404 so callers can use fallback (e.g. RMSContext uses sample room types).
    */
   async getRoomTypes(): Promise<RMSRoomTypesResponse> {
     return requestCache.get('rms-room-types', async () => {
-      const response = await apiClient.get('/api/v1/room-types');
-      const data = response.data?.data || response.data;
-      const items = data?.items || (Array.isArray(data) ? data : []);
-      const roomTypes: RMSRoomType[] = items.map((rt: any, index: number) => ({
-        id: rt.slug || rt.id?.toString() || `room-${index}`,
-        name: rt.name || 'Unknown',
-        baseRate: rt.base_price || rt.baseRate || 0,
-        maxOccupancy: rt.max_guests || rt.maxOccupancy || 2,
-        category: rt.category || 'standard',
-        slug: rt.slug || rt.id?.toString() || '',
-        dbId: rt.id || index + 1,
-      }));
-      return { roomTypes };
+      try {
+        const response = await apiClient.get('/api/v1/room-types');
+        const data = response.data?.data || response.data;
+        const items = data?.items || (Array.isArray(data) ? data : []);
+        const roomTypes: RMSRoomType[] = items.map((rt: any, index: number) => ({
+          id: rt.slug || rt.id?.toString() || `room-${index}`,
+          name: rt.name || 'Unknown',
+          baseRate: rt.base_price || rt.baseRate || 0,
+          maxOccupancy: rt.max_guests || rt.maxOccupancy || 2,
+          category: rt.category || 'standard',
+          slug: rt.slug || rt.id?.toString() || '',
+          dbId: rt.id || index + 1,
+        }));
+        return { roomTypes };
+      } catch (err: any) {
+        if (err?.response?.status === 404) {
+          return { roomTypes: [] };
+        }
+        throw err;
+      }
     }, 300000); // 5 minute cache
   },
 
@@ -1090,7 +1233,7 @@ export const revenueIntelligenceService = {
    * Dismiss a pricing recommendation
    */
   async dismissRecommendation(id: string): Promise<void> {
-    await apiClient.post(`${BASE_URL}/pricing/recommendations/${id}/dismiss`);
+    await apiClient.post(`${BASE_URL}/pricing/recommendations/${id}/dismiss`, {});
     requestCache.invalidate('pricing-recommendations');
   },
 
@@ -1114,40 +1257,87 @@ export const revenueIntelligenceService = {
   // ==================== RATE MANAGEMENT ====================
 
   /**
-   * Update a single rate
+   * Update a single rate (PUT .../rates/{room_type_id}/{rate_date}).
+   * date must be YYYY-MM-DD.
    */
   async updateRate(
     roomTypeId: string | number,
     date: string,
     data: { rate: number; reason?: string }
-  ): Promise<void> {
-    await apiClient.put(`${BASE_URL}/rates/${roomTypeId}/${date}`, data);
-    // Invalidate caches that depend on rate data
+  ): Promise<{
+    success: boolean;
+    room_type_id: number;
+    date: string;
+    previous_rate: number;
+    new_rate: number;
+    change_percent?: number;
+    message?: string;
+  }> {
+    const id = typeof roomTypeId === 'number' ? roomTypeId : parseInt(String(roomTypeId), 10);
+    const response = await apiClient.put<{
+      success: boolean;
+      room_type_id: number;
+      date: string;
+      previous_rate: number;
+      new_rate: number;
+      change_percent?: number;
+      message?: string;
+    }>(`${BASE_URL}/rates/${id}/${date}`, data);
     requestCache.invalidate('kpi');
     requestCache.invalidate('forecast');
     requestCache.invalidate('dashboard');
     requestCache.invalidate('pricing-recommendations');
+    requestCache.invalidate('rate-calendar');
+    return response.data;
   },
 
   /**
-   * Bulk update rates
+   * Bulk update rates (PUT .../rates/bulk-update).
+   * Sends { updates: [{ room_type_id, date, rate }], reason? }. Date format YYYY-MM-DD.
    */
   async bulkUpdateRates(
-    updates: Array<{ roomTypeId: number; date: string; rate: number }>
-  ): Promise<void> {
-    await apiClient.put(`${BASE_URL}/rates/bulk-update`, { updates });
-    // Invalidate all data caches since multiple rates changed
+    updates: Array<{ room_type_id?: number; roomTypeId?: number; date: string; rate: number }>,
+    options?: { reason?: string }
+  ): Promise<BulkRateUpdateResponse> {
+    const payload: BulkRateUpdateItem[] = updates.map((u) => {
+      const id = u.room_type_id ?? (typeof u.roomTypeId === 'number' ? u.roomTypeId : parseInt(String(u.roomTypeId), 10));
+      return { room_type_id: id, date: u.date, rate: u.rate };
+    }).filter((u) => !Number.isNaN(u.room_type_id) && u.rate > 0);
+    const body: BulkRateUpdateRequest = { updates: payload };
+    if (options?.reason) body.reason = options.reason;
+    const response = await apiClient.put<BulkRateUpdateResponse>(`${BASE_URL}/rates/bulk-update`, body);
     requestCache.invalidate();
+    return response.data;
   },
 
   /**
-   * Get rate calendar for a date range
+   * Get rate calendar for a date range (Revenue Intelligence API).
+   * Backend returns { period, calendar[], summary }. We normalize to RateCalendarData (days + rooms) for existing UI.
    */
-  async getRateCalendar(startDate: string, endDate: string): Promise<RateCalendarData> {
-    const response = await apiClient.get<RateCalendarData>(`${BASE_URL}/rates/calendar`, {
-      params: { start_date: startDate, end_date: endDate },
+  async getRateCalendar(
+    startDate: string,
+    endDate: string,
+    roomTypeId?: number
+  ): Promise<RateCalendarData> {
+    const params: Record<string, string | number> = {
+      start_date: startDate,
+      end_date: endDate,
+    };
+    if (roomTypeId != null) params.room_type_id = roomTypeId;
+    const cacheKey = `rate-calendar:${startDate}:${endDate}:${roomTypeId ?? 'all'}`;
+    return requestCache.get(cacheKey, async () => {
+      const response = await apiClient.get<RateCalendarApiResponse | RateCalendarData>(
+        `${BASE_URL}/rates/calendar`,
+        { params }
+      );
+      const data = response.data;
+      // New API shape: { period, calendar[], summary }
+      if (data && 'calendar' in data && Array.isArray((data as RateCalendarApiResponse).calendar)) {
+        return transformCalendarApiToLegacy(data as RateCalendarApiResponse);
+      }
+      // Legacy shape: { startDate, endDate, days[] }
+      return data as RateCalendarData;
     });
-    return response.data;
   },
 
   // ==================== PRICING RULES ====================
@@ -1214,7 +1404,14 @@ export const revenueIntelligenceService = {
     const response = await apiClient.post<ExecuteRulesResponse>(
       `${BASE_URL}/pricing-rules/execute`
     );
-    return response.data;
+    const data = response.data ?? {};
+    return {
+      executedAt: data.executedAt ?? new Date().toISOString(),
+      rulesEvaluated: data.rulesEvaluated ?? 0,
+      rulesTriggered: data.rulesTriggered ?? 0,
+      ratesUpdated: data.ratesUpdated ?? 0,
+      results: Array.isArray(data.results) ? data.results : [],
+    };
   },
 
   // ==================== SETTINGS ====================

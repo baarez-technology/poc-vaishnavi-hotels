@@ -1,5 +1,6 @@
 import { apiClient, setAccessToken } from '../client';
 import { API_ENDPOINTS } from '@/config/constants';
+import { ENV } from '@/config/env';
 import type {
   LoginCredentials,
   SignupData,
@@ -10,12 +11,17 @@ export const authService = {
   login: async (credentials: LoginCredentials) => {
     try {
       // Make login request - ensure payload matches backend LoginRequest schema
-      const payload = {
+      const payload: { email: string; password: string; hotel_code?: string } = {
         email: credentials.email.trim(),
         password: credentials.password,
       };
+
+      // Include hotel_code for multi-tenant support
+      if (ENV.HOTEL_CODE) {
+        payload.hotel_code = ENV.HOTEL_CODE;
+      }
       
-      const response = await apiClient.post<{ access_token: string; token_type: string }>(
+      const response = await apiClient.post<{ access_token: string; token_type: string; must_reset_password?: boolean; first_login?: boolean }>(
         API_ENDPOINTS.AUTH.LOGIN,
         payload,
         {
@@ -70,18 +76,27 @@ export const authService = {
         };
       }
       
+      // Extract onboarding flags from login response and /me response
+      const mustResetPassword = responseData?.must_reset_password || user.must_reset_password || false;
+      const firstLogin = responseData?.first_login || user.first_login || false;
+
       return {
         user: {
           id: String(user.id || 0),
           email: user.email || credentials.email,
-          fullName: user.full_name || '',
+          fullName: user.full_name || user.fullName || '',
           phone: user.phone || '',
           emailVerified: true,
           createdAt: new Date().toISOString(),
           role: user.role || 'staff',
-          isSuperuser: user.is_superuser || false,
+          isSuperuser: user.is_superuser || user.isSuperuser || false,
+          mustResetPassword,
+          firstLogin,
+          permissions: user.permissions || null,
         },
         accessToken: token,
+        mustResetPassword,
+        firstLogin,
       };
     } catch (error: any) {
       // Clear token on error
@@ -113,7 +128,10 @@ export const authService = {
       }
       if (error.response?.status === 422) {
         const detail = error.response?.data?.detail || 'Validation error';
-        throw new Error(Array.isArray(detail) ? detail.join(', ') : detail);
+        if (Array.isArray(detail)) {
+          throw new Error(detail.map((e: any) => (typeof e === 'string' ? e : e?.msg || e?.message || String(e))).join('. '));
+        }
+        throw new Error(typeof detail === 'string' ? detail : 'Validation error');
       }
       if (error.response?.data?.detail) {
         throw new Error(error.response.data.detail);
@@ -130,25 +148,29 @@ export const authService = {
 
   signup: async (signupData: SignupData) => {
     // Combine firstName and lastName into full_name for backend
-    const fullName = signupData.fullName || 
+    const fullName = signupData.fullName ||
                      `${signupData.firstName || ''} ${signupData.lastName || ''}`.trim();
-    
-    await apiClient.post(
-      API_ENDPOINTS.AUTH.SIGNUP,
-      {
-        email: signupData.email,
-        password: signupData.password,
-        full_name: fullName || signupData.email.split('@')[0], // Fallback to email username
-        phone: signupData.phone || '',
-      }
-    );
-    
+
+    const payload: { email: string; password: string; full_name: string; phone: string; hotel_code?: string } = {
+      email: signupData.email,
+      password: signupData.password,
+      full_name: fullName || signupData.email.split('@')[0],
+      phone: signupData.phone || '',
+    };
+
+    // Include hotel_code for multi-tenant support
+    if (ENV.HOTEL_CODE) {
+      payload.hotel_code = ENV.HOTEL_CODE;
+    }
+
+    await apiClient.post(API_ENDPOINTS.AUTH.SIGNUP, payload);
+
     // Auto-login after signup
     const loginResponse = await authService.login({
       email: signupData.email,
       password: signupData.password,
     });
-    
+
     return loginResponse;
   },
 
@@ -173,7 +195,7 @@ export const authService = {
   verifyEmail: async (token: string) => {
     const { data } = await apiClient.post(
       API_ENDPOINTS.AUTH.VERIFY_EMAIL,
-      { token }
+      { token, hotel_code: ENV.HOTEL_CODE }
     );
     return data;
   },
@@ -196,7 +218,7 @@ export const authService = {
   forgotPassword: async (email: string) => {
     const response = await apiClient.post<ApiResponse<{ message: string }>>(
       API_ENDPOINTS.AUTH.FORGOT_PASSWORD,
-      { email }
+      { email, hotel_code: ENV.HOTEL_CODE }
     );
     return response.data.data || response.data;
   },
@@ -204,7 +226,7 @@ export const authService = {
   resetPassword: async (token: string, newPassword: string) => {
     const response = await apiClient.post<ApiResponse<{ message: string }>>(
       API_ENDPOINTS.AUTH.RESET_PASSWORD,
-      { token, new_password: newPassword }
+      { token, new_password: newPassword, hotel_code: ENV.HOTEL_CODE }
     );
     return response.data.data || response.data;
   },
@@ -214,7 +236,7 @@ export const authService = {
       const response = await apiClient.get<ApiResponse<{ valid: boolean; message: string }>>(
         API_ENDPOINTS.AUTH.VERIFY_RESET_TOKEN,
         {
-          params: { token },
+          params: { token, hotel_code: ENV.HOTEL_CODE },
         }
       );
       return response.data.data || response.data;

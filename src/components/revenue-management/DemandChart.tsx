@@ -190,16 +190,16 @@ const DemandChart = ({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-neutral-500">ADR:</span>
-              <span className="font-bold text-neutral-800">${data.adr}</span>
+              <span className="font-bold text-neutral-800">₹{data.adr}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-neutral-500">RevPAR:</span>
-              <span className="font-bold text-neutral-800">${data.revPAR}</span>
+              <span className="font-bold text-neutral-800">₹{data.revPAR}</span>
             </div>
             {showRevenue && (
               <div className="flex items-center justify-between">
                 <span className="text-neutral-500">Revenue:</span>
-                <span className="font-bold text-sage-600">${data.revenue.toLocaleString()}</span>
+                <span className="font-bold text-sage-600">₹{data.revenue.toLocaleString()}</span>
               </div>
             )}
             <div className="flex items-center justify-between pt-2 border-t">
@@ -328,7 +328,7 @@ const DemandChart = ({
               tick={{ fontSize: 9, fill: '#6A6A6A' }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(value) => `$${value}`}
+              tickFormatter={(value) => `₹${value}`}
               width={35}
             />
             <Tooltip content={<CustomTooltip />} />
@@ -586,11 +586,11 @@ export const ForecastSummaryCards = ({ className }: ForecastSummaryCardsProps) =
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[10px] sm:text-[11px] font-medium text-neutral-500">Avg ADR</span>
-                <span className="text-lg sm:text-xl font-bold text-neutral-900">${data.avgADR}</span>
+                <span className="text-lg sm:text-xl font-bold text-neutral-900">₹{data.avgADR}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[10px] sm:text-[11px] font-medium text-neutral-500">Avg RevPAR</span>
-                <span className="text-lg sm:text-xl font-bold text-terra-600">${data.avgRevPAR}</span>
+                <span className="text-lg sm:text-xl font-bold text-terra-600">₹{data.avgRevPAR}</span>
               </div>
             </div>
 
@@ -600,7 +600,7 @@ export const ForecastSummaryCards = ({ className }: ForecastSummaryCardsProps) =
                   Total Revenue
                 </span>
                 <span className="text-base sm:text-lg font-bold text-sage-600">
-                  ${data.totalRevenue.toLocaleString()}
+                  ₹{data.totalRevenue.toLocaleString()}
                 </span>
               </div>
             </div>

@@ -20,10 +20,9 @@ import DeleteGuestModal from '../../components/guests/DeleteGuestModal';
 import { ConfirmModal } from '../../components/ui2/Modal';
 import {
   exportGuestsToCSV,
-  addNoteToGuest,
-  removeNoteFromGuest,
   calculateLoyaltyTier,
 } from '../../utils/guests';
+import { guestsService } from '../../api/services/guests.service';
 
 export default function Guests() {
   const navigate = useNavigate();
@@ -175,27 +174,35 @@ export default function Guests() {
     navigate(`/admin/guests/${guest.id}`);
   };
 
-  const handleAddNote = (guestId, noteText) => {
-    const guest = rawGuests.find(g => g.id === guestId);
-    if (guest) {
-      const updatedGuest = addNoteToGuest(guest, noteText);
-      updateGuest(guestId, { notes: updatedGuest.notes });
-      // Refresh drawer data
+  const handleAddNote = async (guestId, noteText) => {
+    try {
+      const result = await guestsService.addNote(guestId, { text: noteText });
+      // Refresh drawer with updated notes from API
+      const notesData = await guestsService.getNotes(guestId);
+      const notes = notesData?.notes || notesData || [];
       if (drawer.data?.id === guestId) {
-        drawer.openDrawer({ ...drawer.data, notes: updatedGuest.notes });
+        drawer.openDrawer({ ...drawer.data, notes });
       }
+      toast.success('Note saved successfully');
+    } catch (err) {
+      console.error('Failed to add note:', err);
+      toast.error('Failed to save note');
     }
   };
 
-  const handleDeleteNote = (guestId, noteId) => {
-    const guest = rawGuests.find(g => g.id === guestId);
-    if (guest) {
-      const updatedGuest = removeNoteFromGuest(guest, noteId);
-      updateGuest(guestId, { notes: updatedGuest.notes });
-      // Refresh drawer data
+  const handleDeleteNote = async (guestId, noteId) => {
+    try {
+      await guestsService.deleteNote(guestId, noteId);
+      // Refresh drawer with updated notes from API
+      const notesData = await guestsService.getNotes(guestId);
+      const notes = notesData?.notes || notesData || [];
       if (drawer.data?.id === guestId) {
-        drawer.openDrawer({ ...drawer.data, notes: updatedGuest.notes });
+        drawer.openDrawer({ ...drawer.data, notes });
       }
+      toast.success('Note deleted');
+    } catch (err) {
+      console.error('Failed to delete note:', err);
+      toast.error('Failed to delete note');
     }
   };
 

@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Calendar, Users, CreditCard, AlertTriangle, Check, X, Loader2 } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { bookingService } from '@/api/services/booking.service';
+import { useGSTCalculator } from '@/hooks/useGSTCalculator';
 import toast from 'react-hot-toast';
 
 interface BookingDetails {
@@ -41,6 +42,7 @@ export function ModifyBookingPage() {
   const [booking, setBooking] = useState<BookingDetails | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const { calculateGST } = useGSTCalculator();
 
   // Form state for modifications
   const [newCheckIn, setNewCheckIn] = useState('');
@@ -50,14 +52,12 @@ export function ModifyBookingPage() {
 
   // Calculate prices
   const calculatePrices = (checkIn: string, checkOut: string, pricePerNight: number) => {
-    if (!checkIn || !checkOut) return { nights: 0, subtotal: 0, taxes: 0, serviceFee: 0, total: 0 };
+    if (!checkIn || !checkOut) return { nights: 0, subtotal: 0, taxes: 0, serviceFee: 0, total: 0, taxRate: 0 };
     const nights = differenceInDays(parseISO(checkOut), parseISO(checkIn));
-    if (nights <= 0) return { nights: 0, subtotal: 0, taxes: 0, serviceFee: 0, total: 0 };
+    if (nights <= 0) return { nights: 0, subtotal: 0, taxes: 0, serviceFee: 0, total: 0, taxRate: 0 };
     const subtotal = pricePerNight * nights;
-    const taxes = subtotal * 0.12;
-    const serviceFee = subtotal * 0.05;
-    const total = subtotal + taxes + serviceFee;
-    return { nights, subtotal, taxes, serviceFee, total };
+    const gst = calculateGST(pricePerNight, nights);
+    return { nights, subtotal, taxes: gst.taxAmount, serviceFee: gst.serviceFee, total: gst.total, taxRate: gst.taxRate };
   };
 
   // Load booking details
@@ -343,19 +343,19 @@ export function ModifyBookingPage() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-neutral-600">{originalPrices.nights} night(s)</span>
-                  <span className="text-neutral-900">${originalPrices.subtotal.toFixed(2)}</span>
+                  <span className="text-neutral-900">₹{originalPrices.subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-neutral-600">Taxes (12%)</span>
-                  <span className="text-neutral-900">${originalPrices.taxes.toFixed(2)}</span>
+                  <span className="text-neutral-600">GST</span>
+                  <span className="text-neutral-900">₹{originalPrices.taxes.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-neutral-600">Service Fee (5%)</span>
-                  <span className="text-neutral-900">${originalPrices.serviceFee.toFixed(2)}</span>
+                  <span className="text-neutral-900">₹{originalPrices.serviceFee.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-neutral-200 font-semibold">
                   <span>Total Paid</span>
-                  <span className="text-green-600">${originalPrices.total.toFixed(2)}</span>
+                  <span className="text-green-600">₹{originalPrices.total.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -367,19 +367,19 @@ export function ModifyBookingPage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-neutral-600">{newPrices.nights} night(s)</span>
-                    <span className="text-neutral-900">${newPrices.subtotal.toFixed(2)}</span>
+                    <span className="text-neutral-900">₹{newPrices.subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-neutral-600">Taxes (12%)</span>
-                    <span className="text-neutral-900">${newPrices.taxes.toFixed(2)}</span>
+                    <span className="text-neutral-600">GST ({newPrices.taxRate}%)</span>
+                    <span className="text-neutral-900">₹{newPrices.taxes.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-neutral-600">Service Fee (5%)</span>
-                    <span className="text-neutral-900">${newPrices.serviceFee.toFixed(2)}</span>
+                    <span className="text-neutral-900">₹{newPrices.serviceFee.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between pt-2 border-t border-neutral-200 font-semibold">
                     <span>New Total</span>
-                    <span>${newPrices.total.toFixed(2)}</span>
+                    <span>₹{newPrices.total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -405,7 +405,7 @@ export function ModifyBookingPage() {
                 <p className={`text-2xl font-bold ${
                   balanceAmount > 0 ? 'text-amber-700' : balanceAmount < 0 ? 'text-green-700' : 'text-neutral-700'
                 }`}>
-                  {balanceAmount > 0 ? '+' : ''}{balanceAmount !== 0 ? `$${Math.abs(balanceAmount).toFixed(2)}` : '$0.00'}
+                  {balanceAmount > 0 ? '+' : ''}{balanceAmount !== 0 ? `₹${Math.abs(balanceAmount).toFixed(2)}` : '₹0.00'}
                 </p>
                 <p className="text-sm text-neutral-600 mt-2">
                   {balanceAmount > 0

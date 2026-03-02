@@ -345,9 +345,9 @@ const RevenueDashboard = () => {
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         const metrics = [
-          [`${getPeriodDays()}-Day Revenue:`, `$${getPeriodRevenue().toLocaleString()}`, `${kpis?.revenue_trend || 0}%`],
+          [`${getPeriodDays()}-Day Revenue:`, `₹${getPeriodRevenue().toLocaleString()}`, `${kpis?.revenue_trend || 0}%`],
           ['Avg Occupancy:', `${kpis?.occupancy || 0}%`, `${kpis?.occupancy_trend || 0}%`],
-          ['Avg ADR:', `$${kpis?.adr || 0}`, `${kpis?.adr_trend || 0}%`],
+          ['Avg ADR:', `₹${kpis?.adr || 0}`, `${kpis?.adr_trend || 0}%`],
           ['Active Pricing Rules:', `${Array.isArray(rules) ? rules.filter(r => r.isActive).length : 0}`, ''],
         ];
 
@@ -379,7 +379,7 @@ const RevenueDashboard = () => {
             yPos = 20;
           }
           doc.text(day.date, 14, yPos);
-          doc.text(`$${day.revenue.toLocaleString()}`, 60, yPos);
+          doc.text(`₹${day.revenue.toLocaleString()}`, 60, yPos);
           doc.text(`${day.occupancy}%`, 100, yPos);
           yPos += 5;
         });
@@ -430,16 +430,16 @@ const RevenueDashboard = () => {
 
         csvData.push(['KEY METRICS']);
         csvData.push(['Metric', 'Value', 'Change']);
-        csvData.push([`${getPeriodDays()}-Day Revenue`, `$${getPeriodRevenue().toLocaleString()}`, `${kpis?.revenue_trend || 0}%`]);
+        csvData.push([`${getPeriodDays()}-Day Revenue`, `₹${getPeriodRevenue().toLocaleString()}`, `${kpis?.revenue_trend || 0}%`]);
         csvData.push(['Avg Occupancy', `${kpis?.occupancy || 0}%`, `${kpis?.occupancy_trend || 0}%`]);
-        csvData.push(['Avg ADR', `$${kpis?.adr || 0}`, `${kpis?.adr_trend || 0}%`]);
+        csvData.push(['Avg ADR', `₹${kpis?.adr || 0}`, `${kpis?.adr_trend || 0}%`]);
         csvData.push(['Active Pricing Rules', Array.isArray(rules) ? rules.filter(r => r.isActive).length : 0, '']);
         csvData.push([]);
 
         csvData.push(['REVENUE FORECAST (14 Days)']);
         csvData.push(['Date', 'Revenue', 'Occupancy %']);
         revenueChartData.forEach(day => {
-          csvData.push([day.date, `$${day.revenue}`, `${day.occupancy}%`]);
+          csvData.push([day.date, `₹${day.revenue}`, `${day.occupancy}%`]);
         });
         csvData.push([]);
 
@@ -913,7 +913,7 @@ const RevenueDashboard = () => {
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <KPICard
             title={`${getPeriodDays()}-Day Revenue`}
-            value={`$${(getPeriodRevenue() / 1000).toFixed(0)}K`}
+            value={`₹${(getPeriodRevenue() / 1000).toFixed(0)}K`}
             trendValue={dashboardData?.kpis?.next_7_days?.revenue_trend || null}
             icon={DollarSign}
             accentColor="sage"
@@ -935,7 +935,7 @@ const RevenueDashboard = () => {
 
           <KPICard
             title="Avg ADR"
-            value={`$${dashboardData?.kpis?.next_7_days?.adr || 0}`}
+            value={`₹${dashboardData?.kpis?.next_7_days?.adr || 0}`}
             trendValue={dashboardData?.kpis?.next_7_days?.adr_trend || null}
             icon={TrendingUp}
             accentColor="ocean"
@@ -1059,7 +1059,7 @@ const RevenueDashboard = () => {
                     tick={{ fontSize: 11, fill: '#9ca3af' }}
                     axisLine={false}
                     tickLine={false}
-                    tickFormatter={(value) => `$${(value/1000).toFixed(0)}K`}
+                    tickFormatter={(value) => `₹${(value/1000).toFixed(0)}K`}
                     dx={-5}
                   />
                   <YAxis
@@ -1082,7 +1082,7 @@ const RevenueDashboard = () => {
                       boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                     }}
                     formatter={(value: number, name: string) => [
-                      name === 'revenue' ? `$${value.toLocaleString()}` : `${value}%`,
+                      name === 'revenue' ? `₹${value.toLocaleString()}` : `${value}%`,
                       name === 'revenue' ? 'Revenue' : 'Occupancy'
                     ]}
                     labelStyle={{ fontWeight: 600, marginBottom: 4 }}

@@ -96,7 +96,7 @@ const DEFAULT_SEGMENTS: AISegment[] = [
     description: 'Frequent visitors with high spending and excellent engagement. Core revenue drivers.',
     memberCount: 245,
     characteristics: [
-      { label: 'Avg Spend', value: '$4,500', type: 'value', score: 95 },
+      { label: 'Avg Spend', value: '₹4,500', type: 'value', score: 95 },
       { label: 'Visit Frequency', value: '8.5/year', type: 'frequency', score: 90 },
       { label: 'Last Visit', value: '<30 days', type: 'recency', score: 85 },
       { label: 'Sentiment', value: 'Very Positive', type: 'sentiment', score: 92 }
@@ -126,7 +126,7 @@ const DEFAULT_SEGMENTS: AISegment[] = [
     description: 'Previously high spenders showing declining engagement. Priority for retention.',
     memberCount: 128,
     characteristics: [
-      { label: 'Avg Spend', value: '$3,200', type: 'value', score: 80 },
+      { label: 'Avg Spend', value: '₹3,200', type: 'value', score: 80 },
       { label: 'Visit Decline', value: '-45%', type: 'frequency', score: 35 },
       { label: 'Last Visit', value: '60-90 days', type: 'recency', score: 40 },
       { label: 'Sentiment', value: 'Declining', type: 'sentiment', score: 55 }
@@ -156,7 +156,7 @@ const DEFAULT_SEGMENTS: AISegment[] = [
     description: 'New guests with high engagement potential. Growing spend trajectory.',
     memberCount: 312,
     characteristics: [
-      { label: 'Avg Spend', value: '$850', type: 'value', score: 55 },
+      { label: 'Avg Spend', value: '₹850', type: 'value', score: 55 },
       { label: 'Growth Rate', value: '+120%', type: 'frequency', score: 95 },
       { label: 'Last Visit', value: '<14 days', type: 'recency', score: 92 },
       { label: 'Sentiment', value: 'Positive', type: 'sentiment', score: 78 }
@@ -186,7 +186,7 @@ const DEFAULT_SEGMENTS: AISegment[] = [
     description: 'Infrequent but consistent guests. Opportunity for increased engagement.',
     memberCount: 456,
     characteristics: [
-      { label: 'Avg Spend', value: '$1,200', type: 'value', score: 60 },
+      { label: 'Avg Spend', value: '₹1,200', type: 'value', score: 60 },
       { label: 'Visit Frequency', value: '1.5/year', type: 'frequency', score: 45 },
       { label: 'Last Visit', value: '90-180 days', type: 'recency', score: 35 },
       { label: 'Sentiment', value: 'Neutral', type: 'sentiment', score: 65 }
@@ -216,7 +216,7 @@ const DEFAULT_SEGMENTS: AISegment[] = [
     description: 'Price-sensitive guests who respond well to promotions and deals.',
     memberCount: 389,
     characteristics: [
-      { label: 'Avg Spend', value: '$520', type: 'value', score: 35 },
+      { label: 'Avg Spend', value: '₹520', type: 'value', score: 35 },
       { label: 'Promo Response', value: '85%', type: 'frequency', score: 88 },
       { label: 'Last Visit', value: '<60 days', type: 'recency', score: 65 },
       { label: 'Sentiment', value: 'Positive', type: 'sentiment', score: 72 }
@@ -314,7 +314,7 @@ const MemberPreviewList = ({ members }: { members: SegmentMember[] }) => (
           </div>
         </div>
         <div className="text-right">
-          <p className="text-sm font-bold text-neutral-900">${member.ltv.toLocaleString()}</p>
+          <p className="text-sm font-bold text-neutral-900">₹{member.ltv.toLocaleString()}</p>
           <p className="text-xs text-neutral-500">Health: {member.healthScore}%</p>
         </div>
       </div>
@@ -394,7 +394,7 @@ const SegmentCard = ({
         <div className="flex items-center justify-center gap-1 text-emerald-600 mb-1">
           <DollarSign className="w-3.5 h-3.5" />
         </div>
-        <p className="text-sm font-bold text-neutral-900">${(segment.avgLTV / 1000).toFixed(1)}k</p>
+        <p className="text-sm font-bold text-neutral-900">₹{(segment.avgLTV / 1000).toFixed(1)}k</p>
         <p className="text-[10px] text-neutral-500">Avg LTV</p>
       </div>
       <div className="bg-neutral-50 rounded-lg p-2.5 text-center">
@@ -608,7 +608,7 @@ const SegmentDetailModal = ({
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-emerald-50 rounded-xl p-4 text-center">
               <DollarSign className="w-5 h-5 text-emerald-600 mx-auto mb-2" />
-              <p className="text-xl font-bold text-neutral-900">${segment.avgLTV.toLocaleString()}</p>
+              <p className="text-xl font-bold text-neutral-900">₹{segment.avgLTV.toLocaleString()}</p>
               <p className="text-xs text-neutral-500">Average LTV</p>
             </div>
             <div className="bg-blue-50 rounded-xl p-4 text-center">
@@ -858,7 +858,7 @@ export default function AISegmentationStudio() {
               <DollarSign className="w-5 h-5 text-emerald-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-900">${(totalLTV / 1000000).toFixed(1)}M</p>
+              <p className="text-2xl font-bold text-neutral-900">₹{(totalLTV / 1000000).toFixed(1)}M</p>
               <p className="text-sm text-neutral-500">Total LTV</p>
             </div>
           </div>

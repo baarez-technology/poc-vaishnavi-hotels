@@ -72,12 +72,12 @@ const SegmentCard = ({ segment, performance, onClick, isSelected }) => {
         <div>
           <p className="text-[9px] sm:text-[10px] font-medium uppercase tracking-wider text-neutral-400">YTD Revenue</p>
           <p className="text-lg sm:text-xl font-bold text-neutral-900">
-            ${(ytd.revenue / 1000).toFixed(0)}K
+            ₹{(ytd.revenue / 1000).toFixed(0)}K
           </p>
         </div>
         <div>
           <p className="text-[9px] sm:text-[10px] font-medium uppercase tracking-wider text-neutral-400">ADR</p>
-          <p className="text-lg sm:text-xl font-bold text-neutral-900">${ytd.adr}</p>
+          <p className="text-lg sm:text-xl font-bold text-neutral-900">₹{ytd.adr}</p>
         </div>
         <div>
           <p className="text-[9px] sm:text-[10px] font-medium uppercase tracking-wider text-neutral-400">Contribution</p>
@@ -152,7 +152,7 @@ export const SegmentDetailPanel = ({ segment, performance }) => {
         <div className="grid grid-cols-2 gap-2 sm:gap-3">
           <div className="p-3 sm:p-4 rounded-lg bg-neutral-50">
             <p className="text-[10px] sm:text-[11px] font-medium text-neutral-500 whitespace-nowrap mb-1">YTD Revenue</p>
-            <p className="text-lg sm:text-xl font-bold text-neutral-900">${(ytd.revenue / 1000000).toFixed(2)}M</p>
+            <p className="text-lg sm:text-xl font-bold text-neutral-900">₹{(ytd.revenue / 1000000).toFixed(2)}M</p>
           </div>
           <div className="p-3 sm:p-4 rounded-lg bg-neutral-50">
             <p className="text-[10px] sm:text-[11px] font-medium text-neutral-500 whitespace-nowrap mb-1">Room Nights</p>
@@ -160,7 +160,7 @@ export const SegmentDetailPanel = ({ segment, performance }) => {
           </div>
           <div className="p-3 sm:p-4 rounded-lg bg-neutral-50">
             <p className="text-[10px] sm:text-[11px] font-medium text-neutral-500 whitespace-nowrap mb-1">ADR</p>
-            <p className="text-lg sm:text-xl font-bold text-neutral-900">${ytd.adr}</p>
+            <p className="text-lg sm:text-xl font-bold text-neutral-900">₹{ytd.adr}</p>
           </div>
           <div className="p-3 sm:p-4 rounded-lg bg-neutral-50">
             <p className="text-[10px] sm:text-[11px] font-medium text-neutral-500 whitespace-nowrap mb-1">YoY Growth</p>
@@ -181,7 +181,7 @@ export const SegmentDetailPanel = ({ segment, performance }) => {
             <div className="space-y-2 sm:space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] sm:text-[12px] text-neutral-500">Revenue</span>
-                <span className="text-[12px] sm:text-[13px] font-semibold text-neutral-800">${mtd.revenue.toLocaleString()}</span>
+                <span className="text-[12px] sm:text-[13px] font-semibold text-neutral-800">₹{mtd.revenue.toLocaleString()}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] sm:text-[12px] text-neutral-500">Room Nights</span>
@@ -189,11 +189,11 @@ export const SegmentDetailPanel = ({ segment, performance }) => {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] sm:text-[12px] text-neutral-500">ADR</span>
-                <span className="text-[12px] sm:text-[13px] font-semibold text-neutral-800">${mtd.adr}</span>
+                <span className="text-[12px] sm:text-[13px] font-semibold text-neutral-800">₹{mtd.adr}</span>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-neutral-100">
                 <span className="text-[11px] sm:text-[12px] font-medium text-neutral-600">RevPAR</span>
-                <span className="text-[13px] sm:text-[14px] font-bold" style={{ color: segment.color }}>${mtd.revPAR}</span>
+                <span className="text-[13px] sm:text-[14px] font-bold" style={{ color: segment.color }}>₹{mtd.revPAR}</span>
               </div>
             </div>
           </div>
@@ -204,7 +204,7 @@ export const SegmentDetailPanel = ({ segment, performance }) => {
             <div className="space-y-2 sm:space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] sm:text-[12px] text-neutral-500">Revenue</span>
-                <span className="text-[12px] sm:text-[13px] font-semibold text-neutral-800">${ytd.revenue.toLocaleString()}</span>
+                <span className="text-[12px] sm:text-[13px] font-semibold text-neutral-800">₹{ytd.revenue.toLocaleString()}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] sm:text-[12px] text-neutral-500">Room Nights</span>
@@ -212,11 +212,11 @@ export const SegmentDetailPanel = ({ segment, performance }) => {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] sm:text-[12px] text-neutral-500">ADR</span>
-                <span className="text-[12px] sm:text-[13px] font-semibold text-neutral-800">${ytd.adr}</span>
+                <span className="text-[12px] sm:text-[13px] font-semibold text-neutral-800">₹{ytd.adr}</span>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-neutral-100">
                 <span className="text-[11px] sm:text-[12px] font-medium text-neutral-600">RevPAR</span>
-                <span className="text-[13px] sm:text-[14px] font-bold" style={{ color: segment.color }}>${ytd.revPAR}</span>
+                <span className="text-[13px] sm:text-[14px] font-bold" style={{ color: segment.color }}>₹{ytd.revPAR}</span>
               </div>
             </div>
           </div>

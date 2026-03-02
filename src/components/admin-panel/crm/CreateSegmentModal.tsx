@@ -289,7 +289,7 @@ export default function CreateSegmentModal({ isOpen, onClose, onSave, guests, lo
               {/* Min Spend */}
               <div>
                 <label className="block text-xs font-medium text-neutral-500 mb-1">
-                  Minimum Spend ($)
+                  Minimum Spend (₹)
                 </label>
                 <input
                   type="number"
@@ -304,7 +304,7 @@ export default function CreateSegmentModal({ isOpen, onClose, onSave, guests, lo
               {/* Max Spend */}
               <div>
                 <label className="block text-xs font-medium text-neutral-500 mb-1">
-                  Maximum Spend ($)
+                  Maximum Spend (₹)
                 </label>
                 <input
                   type="number"
@@ -433,7 +433,7 @@ export default function CreateSegmentModal({ isOpen, onClose, onSave, guests, lo
                 <p className="text-xs text-neutral-500">Matching Guests</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-[#4E5840]">${previewStats.avgRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-[#4E5840]">₹{previewStats.avgRevenue.toLocaleString()}</p>
                 <p className="text-xs text-neutral-500">Avg Revenue</p>
               </div>
               <div className="text-center">

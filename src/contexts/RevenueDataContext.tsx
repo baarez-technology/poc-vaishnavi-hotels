@@ -11,6 +11,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import {
   revenueIntelligenceService,
+  invalidateRevenueCache,
   KPISummary,
   ForecastResponse,
   ChannelAnalysisResponse,
@@ -58,7 +59,7 @@ interface RevenueDataContextValue {
   loading: boolean; // True only if ALL sections are loading
   error: string | null;
   lastUpdated: Date | null;
-  refresh: () => void; // Triggers background refresh of all sections
+  refresh: () => Promise<void>; // Triggers refresh of all sections; resolves when complete
   refreshSection: (section: SectionKey) => void;
   isBackgroundRefreshing: boolean;
 }
@@ -260,6 +261,7 @@ export function RevenueDataProvider({ children }: { children: ReactNode }) {
   });
 
   const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
+  const [lastRefreshCompletedAt, setLastRefreshCompletedAt] = useState<number | null>(null);
   const requestQueueRef = useRef(new RequestQueue(MAX_CONCURRENT_REQUESTS));
   const mountedRef = useRef(true);
   const initialLoadDoneRef = useRef(false);
@@ -322,27 +324,29 @@ export function RevenueDataProvider({ children }: { children: ReactNode }) {
     queueSectionFetch(section, false);
   }, [queueSectionFetch]);
 
-  // Refresh all sections in background
-  const refresh = useCallback(() => {
+  // Refresh all sections: invalidate API cache so fetches get fresh data, then queue all sections.
+  // Returns a Promise that resolves when all section fetches have completed.
+  const refresh = useCallback((): Promise<void> => {
     setIsBackgroundRefreshing(true);
-
-    // Clear any pending requests
+    invalidateRevenueCache(); // Force fresh API data instead of cached
     requestQueueRef.current.clear();
 
-    // Queue all sections for refresh (in priority order)
     for (const section of SECTION_ORDER) {
       queueSectionFetch(section, true);
     }
 
-    // Monitor when all refreshes are done
-    const checkComplete = setInterval(() => {
-      if (requestQueueRef.current.pendingCount === 0) {
-        clearInterval(checkComplete);
-        if (mountedRef.current) {
-          setIsBackgroundRefreshing(false);
+    return new Promise((resolve) => {
+      const checkComplete = setInterval(() => {
+        if (requestQueueRef.current.pendingCount === 0) {
+          clearInterval(checkComplete);
+          if (mountedRef.current) {
+            setLastRefreshCompletedAt(Date.now());
+            setIsBackgroundRefreshing(false);
+          }
+          resolve();
         }
-      }
-    }, 500);
+      }, 100);
+    });
   }, [queueSectionFetch]);
 
   // Initial load - section by section, with priority
@@ -410,19 +414,45 @@ export function RevenueDataProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Timeout: if still loading after 20s (e.g. API hung), clear loading so UI can show content/errors and user can retry
+  const LOADING_TIMEOUT_MS = 20000;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!mountedRef.current) return;
+      setSectionStates(prev => {
+        const anyStillLoading = Object.values(prev).some(s => s.loading);
+        if (!anyStillLoading) return prev;
+        const next = { ...prev };
+        for (const key of SECTION_ORDER) {
+          if (next[key].loading) {
+            next[key] = {
+              ...next[key],
+              loading: false,
+              error: next[key].error || 'Request timed out',
+            };
+          }
+        }
+        return next;
+      });
+    }, LOADING_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Computed: overall loading (true only if ALL sections are loading)
   const loading = Object.values(sectionStates).every(s => s.loading);
 
   // Computed: first error found
   const error = Object.values(sectionStates).find(s => s.error)?.error || null;
 
-  // Computed: most recent update
+  // Computed: most recent update (use lastRefreshCompletedAt when set so "Updated" time changes after Refresh)
   const lastUpdated = (() => {
     const timestamps = Object.values(sectionStates)
       .map(s => s.lastUpdated)
       .filter((t): t is number => t !== null);
-    if (timestamps.length === 0) return null;
-    return new Date(Math.max(...timestamps));
+    const fromSections = timestamps.length > 0 ? Math.max(...timestamps) : 0;
+    const fromRefresh = lastRefreshCompletedAt ?? 0;
+    const latest = Math.max(fromSections, fromRefresh);
+    return latest > 0 ? new Date(latest) : null;
   })();
 
   const value: RevenueDataContextValue = {

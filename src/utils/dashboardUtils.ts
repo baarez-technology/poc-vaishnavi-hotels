@@ -4,7 +4,7 @@
  */
 
 // Format currency - pass currency code from useCurrency() hook in components
-export function formatCurrency(value, currency = 'USD') {
+export function formatCurrency(value, currency = 'INR') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,

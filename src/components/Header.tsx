@@ -134,7 +134,6 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed, onMobile
       'dashboard': 'Dashboard',
       'reports': 'Reports',
       'settings': 'Settings',
-      'analytics': 'Advanced Analytics',
     };
 
     const formatLabel = (segment) => {

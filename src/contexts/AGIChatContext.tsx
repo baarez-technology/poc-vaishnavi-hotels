@@ -495,6 +495,9 @@ export const AGIChatProvider = ({ children }: AGIChatProviderProps) => {
   const playResponse = async (text: string) => {
     if (!voiceEnabled) return;
 
+    // Stop any currently playing audio before starting new
+    stopAudio();
+
     try {
       setIsPlayingAudio(true);
 
@@ -505,11 +508,22 @@ export const AGIChatProvider = ({ children }: AGIChatProviderProps) => {
       });
 
       if (response.audio_base64) {
-        await agiAssistantService.playAudioFromBase64(response.audio_base64, response.audio_format);
+        // Create and manage Audio element directly so stopAudio can control it
+        const audio = new Audio(
+          `data:audio/${response.audio_format || 'mp3'};base64,${response.audio_base64}`
+        );
+        audioRef.current = audio;
+
+        await new Promise<void>((resolve, reject) => {
+          audio.onended = () => resolve();
+          audio.onerror = (e) => reject(e);
+          audio.play().catch(reject);
+        });
       }
     } catch (error) {
       console.error('Error playing audio response:', error);
     } finally {
+      audioRef.current = null;
       setIsPlayingAudio(false);
     }
   };
@@ -518,6 +532,11 @@ export const AGIChatProvider = ({ children }: AGIChatProviderProps) => {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+    // Also cancel any browser speech synthesis
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
     }
     setIsPlayingAudio(false);
   };

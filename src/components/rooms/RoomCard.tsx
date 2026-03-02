@@ -106,10 +106,15 @@ export default function RoomCard({ room, onClick }) {
             </span>
           </div>
           {/* Cleaning Status */}
-          {room.cleaning === 'clean' ? (
+          {room.cleaning === 'clean' || room.cleaning === 'inspected' ? (
             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-sage-600 px-2 py-1 bg-sage-50 rounded-lg">
               <Sparkles className="w-3 h-3" />
-              Clean
+              {room.cleaning === 'inspected' ? 'Inspected' : 'Clean'}
+            </span>
+          ) : room.cleaning === 'in_progress' ? (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 px-2 py-1 bg-blue-50 rounded-lg">
+              <Sparkles className="w-3 h-3" />
+              Cleaning...
             </span>
           ) : (
             <span className="text-[11px] font-medium text-gold-600 px-2 py-1 bg-gold-50 rounded-lg">Needs Cleaning</span>

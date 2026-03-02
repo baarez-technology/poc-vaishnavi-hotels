@@ -124,7 +124,7 @@ export const reviewsData = [
     date: '2025-11-22',
     sentimentScore: 72,
     category: 'pricing',
-    comment: 'Good value for money. The breakfast buffet was extensive and included in the rate. Parking was expensive though at $40/night.',
+    comment: 'Good value for money. The breakfast buffet was extensive and included in the rate. Parking was expensive though at \u20B93,300/night.',
     highlights: ['Good value', 'Great breakfast', 'Expensive parking'],
     responded: false,
     response: null,

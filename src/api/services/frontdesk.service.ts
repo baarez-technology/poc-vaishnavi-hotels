@@ -116,5 +116,25 @@ export const frontdeskService = {
     const response = await apiClient.post('/api/v1/frontdesk/night-audit');
     return response.data.data || response.data;
   },
+
+  getBusinessDate: async () => {
+    const response = await apiClient.get('/api/v1/config/business-date');
+    return response.data.data || response.data;
+  },
+
+  getHotelConfig: async () => {
+    const response = await apiClient.get('/api/v1/config');
+    return response.data.data || response.data;
+  },
+
+  getGuestBill: async (bookingId: number) => {
+    const response = await apiClient.get(`/api/v1/frontdesk/guest-bill/${bookingId}`);
+    return response.data.data || response.data;
+  },
+
+  getNightAuditReport: async (date: string) => {
+    const response = await apiClient.get(`/api/v1/frontdesk/night-audit/${date}/report`);
+    return response.data.data || response.data;
+  },
 };
 

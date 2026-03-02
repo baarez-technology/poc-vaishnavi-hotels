@@ -29,7 +29,7 @@ interface TooltipPayload {
   payload: ChartDataItem;
 }
 
-const CustomTooltip = ({ active, payload, label, symbol = '$' }: { active?: boolean; payload?: TooltipPayload[]; label?: string; symbol?: string }) => {
+const CustomTooltip = ({ active, payload, label, symbol = '₹' }: { active?: boolean; payload?: TooltipPayload[]; label?: string; symbol?: string }) => {
   const formatCurrencyValue = (value: number) => {
     if (value >= 1000000) {
       return `${symbol}${(value / 1000000).toFixed(1)}M`;
@@ -245,7 +245,7 @@ export default function ForecastChart() {
 
       {/* Chart */}
       <div className="h-[260px]">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minHeight={260}>
           <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="colorRevenueForecast" x1="0" y1="0" x2="0" y2="1">

@@ -238,6 +238,7 @@ export default function FiltersBar({ filters, onFilterChange, onClearFilters }) 
     { value: 'CHECKED-OUT', label: 'Checked Out' },
     { value: 'PENDING', label: 'Pending' },
     { value: 'CANCELLED', label: 'Cancelled' },
+    { value: 'NO-SHOW', label: 'No Show' },
   ];
 
   const sourceOptions = [

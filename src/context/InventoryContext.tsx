@@ -423,7 +423,7 @@ export function InventoryProvider({ children }) {
   // UTILITY FUNCTIONS
   // ============================================
 
-  const formatCurrency = useCallback((amountInCents, currency = 'USD') => {
+  const formatCurrency = useCallback((amountInCents, currency = 'INR') => {
     return engineRef.current.formatCurrency(amountInCents, currency);
   }, []);
 

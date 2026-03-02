@@ -3,12 +3,13 @@
  * Drawer for creating/editing pricing rules - Glimmora Design System v5.0
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Trash2, AlertCircle, Zap, ChevronDown, Check, Loader2 } from 'lucide-react';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 import { useToast } from '../../contexts/ToastContext';
+import { useRMS } from '../../context/RMSContext';
 import revenueIntelligenceService, {
   PricingRule,
   CreatePricingRuleRequest,
@@ -184,18 +185,6 @@ const actionTypes = [
   { id: 'apply_stop_sell', label: 'Stop Sell', type: 'boolean' },
 ];
 
-const roomTypeOptions = [
-  { id: 'ALL', label: 'All Room Types' },
-  { id: 'minimalist-studio', label: 'Minimalist Studio' },
-  { id: 'coastal-retreat', label: 'Coastal Retreat' },
-  { id: 'urban-oasis', label: 'Urban Oasis' },
-  { id: 'sunset-vista', label: 'Sunset Vista' },
-  { id: 'pacific-suite', label: 'Pacific Suite' },
-  { id: 'wellness-suite', label: 'Wellness Suite' },
-  { id: 'family-sanctuary', label: 'Family Sanctuary' },
-  { id: 'oceanfront-penthouse', label: 'Oceanfront Penthouse' },
-];
-
 const priorityOptions = [
   { value: 1, label: 'P1', color: 'bg-rose-500' },
   { value: 2, label: 'P2', color: 'bg-gold-500' },
@@ -208,9 +197,43 @@ const priorityOptions = [
 const conditionSelectOptions = conditionTypes.map(ct => ({ value: ct.id, label: ct.label }));
 const actionSelectOptions = actionTypes.map(at => ({ value: at.id, label: at.label }));
 
+/** Map API rule room types (may be dbIds or 'ALL') to form room type ids (RMS ids for selector) */
+function ruleRoomTypesToFormIds(rule: PricingRule | null, rmsRoomTypes: { id: string; name: string; dbId?: number }[]): string[] {
+  if (!rule) return ['ALL'];
+  const raw = rule.roomTypes && rule.roomTypes.length ? rule.roomTypes : (rule.room_type_id != null ? [String(rule.room_type_id)] : []);
+  if (!raw.length || (raw.length === 1 && raw[0] === 'ALL')) return ['ALL'];
+  const mapped = raw.map((rt) => {
+    const n = typeof rt === 'number' ? rt : parseInt(String(rt), 10);
+    if (!Number.isNaN(n)) {
+      const r = rmsRoomTypes.find((x) => x.dbId === n);
+      return r ? String(r.id) : String(rt);
+    }
+    return rt === 'ALL' ? 'ALL' : String(rt);
+  });
+  return mapped.filter(Boolean).length ? mapped : ['ALL'];
+}
+
 const RuleEditorDrawer = ({ isOpen, onClose, rule, onSave }: RuleEditorDrawerProps) => {
   const { success, error: showError } = useToast();
+  const { roomTypes: rmsRoomTypes } = useRMS();
   const isEditing = !!rule;
+
+  const roomTypeOptions = useMemo(() => {
+    const list =
+      Array.isArray(rmsRoomTypes) && rmsRoomTypes.length > 0
+        ? rmsRoomTypes.map((r) => ({ id: String(r.id), label: r.name }))
+        : [
+            { id: 'minimalist-studio', label: 'Minimalist Studio' },
+            { id: 'coastal-retreat', label: 'Coastal Retreat' },
+            { id: 'urban-oasis', label: 'Urban Oasis' },
+            { id: 'sunset-vista', label: 'Sunset Vista' },
+            { id: 'pacific-suite', label: 'Pacific Suite' },
+            { id: 'wellness-suite', label: 'Wellness Suite' },
+            { id: 'family-sanctuary', label: 'Family Sanctuary' },
+            { id: 'oceanfront-penthouse', label: 'Oceanfront Penthouse' },
+          ];
+    return [{ id: 'ALL', label: 'All Room Types' }, ...list.filter((r) => r.id !== 'ALL')];
+  }, [rmsRoomTypes]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -229,12 +252,13 @@ const RuleEditorDrawer = ({ isOpen, onClose, rule, onSave }: RuleEditorDrawerPro
 
   useEffect(() => {
     if (rule) {
+      const formRoomTypes = ruleRoomTypesToFormIds(rule, rmsRoomTypes ?? []);
       setFormData({
         name: rule.name,
         description: rule.description || '',
         priority: rule.priority,
         isActive: rule.isActive,
-        roomTypes: Array.isArray(rule.roomTypes) ? rule.roomTypes : ['ALL'],
+        roomTypes: formRoomTypes,
         conditions: (rule.conditions || []).map(c => ({ type: c.type, value: c.value })),
         actions: (rule.actions || []).map(a => ({ type: a.type, value: a.value })),
       });
@@ -251,7 +275,7 @@ const RuleEditorDrawer = ({ isOpen, onClose, rule, onSave }: RuleEditorDrawerPro
     }
     setErrors({});
     setShowDeleteConfirm(false);
-  }, [rule, isOpen]);
+  }, [rule, isOpen, rmsRoomTypes]);
 
   const handleAddCondition = () => {
     setFormData(prev => ({
@@ -338,13 +362,23 @@ const RuleEditorDrawer = ({ isOpen, onClose, rule, onSave }: RuleEditorDrawerPro
     setIsSaving(true);
 
     try {
+      const roomTypesForm = formData.roomTypes ?? ['ALL'];
+      const isAllRoomTypes = !roomTypesForm.length || roomTypesForm.includes('ALL');
+      const roomTypeDbIds = isAllRoomTypes
+        ? undefined
+        : roomTypesForm
+            .filter((id) => id !== 'ALL')
+            .map((id) => rmsRoomTypes?.find((r) => String(r.id) === String(id))?.dbId)
+            .filter((id): id is number => id != null);
+
       if (isEditing && rule) {
         const updatePayload: UpdatePricingRuleRequest = {
           name: formData.name,
           description: formData.description,
           priority: formData.priority,
           isActive: formData.isActive,
-          roomTypes: formData.roomTypes ?? ['ALL'],
+          roomTypes: roomTypesForm,
+          roomTypeDbIds,
           conditions: formData.conditions,
           actions: formData.actions,
         };
@@ -356,7 +390,8 @@ const RuleEditorDrawer = ({ isOpen, onClose, rule, onSave }: RuleEditorDrawerPro
           description: formData.description,
           priority: formData.priority,
           isActive: formData.isActive,
-          roomTypes: formData.roomTypes ?? ['ALL'],
+          roomTypes: roomTypesForm,
+          roomTypeDbIds,
           conditions: formData.conditions,
           actions: formData.actions,
         };

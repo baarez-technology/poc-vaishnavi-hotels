@@ -187,11 +187,11 @@ const CaseCard = ({ recoveryCase }: { recoveryCase: RecoveryCase }) => {
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div className="bg-neutral-50 rounded-lg p-3">
           <p className="text-xs text-neutral-500">Recovery Value</p>
-          <p className="text-lg font-bold text-emerald-600">${recoveryCase.recoveryValue.toLocaleString()}</p>
+          <p className="text-lg font-bold text-emerald-600">₹{recoveryCase.recoveryValue.toLocaleString()}</p>
         </div>
         <div className="bg-neutral-50 rounded-lg p-3">
           <p className="text-xs text-neutral-500">Guest LTV</p>
-          <p className="text-lg font-bold text-neutral-900">${recoveryCase.guestLTV.toLocaleString()}</p>
+          <p className="text-lg font-bold text-neutral-900">₹{recoveryCase.guestLTV.toLocaleString()}</p>
         </div>
       </div>
 
@@ -296,7 +296,7 @@ export default function RecoveryActionCenter() {
         />
         <StatCard
           title="Recovery Value"
-          value={`$${totalRecoveryValue.toLocaleString()}`}
+          value={`₹${totalRecoveryValue.toLocaleString()}`}
           subtitle="Potential saved revenue"
           icon={TrendingUp}
           color="blue"

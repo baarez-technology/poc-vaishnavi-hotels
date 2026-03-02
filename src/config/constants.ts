@@ -83,6 +83,7 @@ export const API_ENDPOINTS = {
     CREATE: '/api/v1/room-types',
     DETAIL: (slug: string) => `/api/v1/room-types/${slug}`,
     UPDATE: (slug: string) => `/api/v1/room-types/${slug}`,
+    DELETE: (slug: string) => `/api/v1/room-types/${slug}`,
   },
   DASHBOARDS: {
     GUEST: '/api/v1/dashboards/guest',

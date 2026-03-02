@@ -109,7 +109,7 @@ const Segmentation = () => {
               </p>
             </div>
             <p className="text-[22px] sm:text-[28px] font-semibold tracking-tight text-neutral-900">
-              ${(segmentComparison.totals.revenue / 1000000).toFixed(2)}M
+              ₹{(segmentComparison.totals.revenue / 1000000).toFixed(2)}M
             </p>
           </div>
 
@@ -123,7 +123,7 @@ const Segmentation = () => {
               </p>
             </div>
             <p className="text-[22px] sm:text-[28px] font-semibold tracking-tight text-neutral-900">
-              ${segmentComparison.overallADR}
+              ₹{segmentComparison.overallADR}
             </p>
           </div>
 
@@ -219,7 +219,7 @@ const Segmentation = () => {
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
                           <p className="text-[9px] sm:text-[10px] font-medium uppercase tracking-wider text-neutral-400">Total</p>
                           <p className="text-lg sm:text-xl font-bold text-neutral-900">
-                            ${(segmentComparison.totals.revenue / 1000000).toFixed(1)}M
+                            ₹{(segmentComparison.totals.revenue / 1000000).toFixed(1)}M
                           </p>
                         </div>
                       </div>
@@ -243,7 +243,7 @@ const Segmentation = () => {
                                   {segment.value}%
                                 </span>
                                 <span className="text-[10px] sm:text-[11px] text-neutral-400 w-14 sm:w-16 text-right">
-                                  ${(segment.revenue / 1000).toFixed(0)}K
+                                  ₹{(segment.revenue / 1000).toFixed(0)}K
                                 </span>
                               </div>
                             </div>
@@ -301,7 +301,7 @@ const Segmentation = () => {
                           tick={{ fontSize: 10, fill: '#9ca3af' }}
                           axisLine={false}
                           tickLine={false}
-                          tickFormatter={(value) => `$${value}`}
+                          tickFormatter={(value) => `₹${value}`}
                           width={45}
                         />
                         <Tooltip
@@ -317,14 +317,14 @@ const Segmentation = () => {
                                         <div className="w-2 h-2 rounded-sm bg-terra-500" />
                                         <span className="text-[11px] text-neutral-500">ADR</span>
                                       </div>
-                                      <span className="text-[12px] font-semibold text-neutral-800">${payload[0]?.value}</span>
+                                      <span className="text-[12px] font-semibold text-neutral-800">₹{payload[0]?.value}</span>
                                     </div>
                                     <div className="flex items-center justify-between gap-4">
                                       <div className="flex items-center gap-1.5">
                                         <div className="w-2 h-2 rounded-sm bg-ocean-500" />
                                         <span className="text-[11px] text-neutral-500">RevPAR</span>
                                       </div>
-                                      <span className="text-[12px] font-semibold text-neutral-800">${payload[1]?.value}</span>
+                                      <span className="text-[12px] font-semibold text-neutral-800">₹{payload[1]?.value}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -367,7 +367,7 @@ const Segmentation = () => {
                           {segmentComparison.topPerformer?.segmentName}
                         </span>
                         <span className="text-base sm:text-lg font-bold text-sage-600">
-                          ${(segmentComparison.topPerformer?.ytd.revenue / 1000).toFixed(0)}K
+                          ₹{(segmentComparison.topPerformer?.ytd.revenue / 1000).toFixed(0)}K
                         </span>
                       </div>
                     </div>

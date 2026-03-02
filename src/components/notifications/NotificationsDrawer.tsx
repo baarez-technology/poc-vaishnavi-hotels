@@ -80,7 +80,11 @@ interface NotificationsDrawerProps {
 
 // Format time ago
 const formatTimeAgo = (dateStr: string): string => {
-  const date = new Date(dateStr);
+  // Backend stores UTC times without Z suffix — append Z so JS interprets as UTC
+  const utcStr = dateStr && !dateStr.endsWith('Z') && !dateStr.includes('+')
+    ? dateStr + 'Z'
+    : dateStr;
+  const date = new Date(utcStr);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);

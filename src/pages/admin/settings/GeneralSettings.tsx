@@ -95,13 +95,15 @@ export default function GeneralSettings() {
 
           <FormField label="Default Currency" required>
             <select
-              value={settings.currency || 'USD'}
+              value={settings.currency || 'INR'}
               onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
               className="w-full px-4 py-3 bg-[#FAF8F6] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent"
             >
+              <option value="INR">INR - Indian Rupee</option>
               <option value="USD">USD - US Dollar</option>
               <option value="EUR">EUR - Euro</option>
               <option value="GBP">GBP - British Pound</option>
+              <option value="AED">AED - UAE Dirham</option>
               <option value="JPY">JPY - Japanese Yen</option>
               <option value="AUD">AUD - Australian Dollar</option>
             </select>

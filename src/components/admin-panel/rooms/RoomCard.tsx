@@ -9,19 +9,21 @@ export default function RoomCard({ room, onClick }) {
       available: 'bg-[#4E5840]/10 text-[#4E5840] border-[#4E5840]/30',
       occupied: 'bg-[#A57865]/10 text-[#A57865] border-[#A57865]/30',
       dirty: 'bg-orange-50 text-orange-700 border-orange-200',
-      out_of_service: 'bg-red-50 text-red-700 border-red-200'
+      out_of_service: 'bg-amber-50 text-amber-700 border-amber-200',
+      out_of_order: 'bg-red-50 text-red-700 border-red-200'
     };
 
     const labels = {
       available: 'Available',
       occupied: 'Occupied',
       dirty: 'Dirty',
-      out_of_service: 'Out of Service'
+      out_of_service: 'Out of Service',
+      out_of_order: 'Out of Order'
     };
 
     return (
-      <span className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-semibold border ${styles[status]}`}>
-        {labels[status]}
+      <span className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-semibold border ${styles[status] || styles.available}`}>
+        {labels[status] || status}
       </span>
     );
   };
@@ -153,13 +155,15 @@ export default function RoomCard({ room, onClick }) {
         </div>
       </div>
 
-      {/* Blocked Info */}
-      {room.status === 'out_of_service' && room.blockedReason && (
-        <div className="p-4 bg-red-50 rounded-xl border border-red-200 mb-4">
-          <p className="text-xs font-bold text-red-900 mb-2 uppercase tracking-wider">Blocked</p>
-          <p className="text-sm text-red-700 mb-1">{room.blockedReason}</p>
+      {/* Blocked Info - shown for out_of_service and out_of_order */}
+      {(room.status === 'out_of_service' || room.status === 'out_of_order') && room.blockedReason && (
+        <div className={`p-4 rounded-xl border mb-4 ${room.status === 'out_of_order' ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
+          <p className={`text-xs font-bold mb-2 uppercase tracking-wider ${room.status === 'out_of_order' ? 'text-red-900' : 'text-amber-900'}`}>
+            {room.status === 'out_of_order' ? 'Out of Order' : 'Out of Service'}
+          </p>
+          <p className={`text-sm mb-1 ${room.status === 'out_of_order' ? 'text-red-700' : 'text-amber-700'}`}>{room.blockedReason}</p>
           {room.blockedUntil && (
-            <p className="text-xs text-red-600 font-medium mt-2">Until: {room.blockedUntil}</p>
+            <p className={`text-xs font-medium mt-2 ${room.status === 'out_of_order' ? 'text-red-600' : 'text-amber-600'}`}>Until: {room.blockedUntil}</p>
           )}
         </div>
       )}

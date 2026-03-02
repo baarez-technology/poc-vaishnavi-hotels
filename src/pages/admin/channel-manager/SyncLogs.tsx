@@ -153,7 +153,7 @@ function SelectDropdown({ value, onChange, options, placeholder = 'Select...', c
 
 // Icons for action types
 const actionIcons = {
-  rate_update: () => <span className="text-xs">$</span>,
+  rate_update: () => <span className="text-xs">₹</span>,
   availability_update: () => <Calendar className="w-3.5 h-3.5" />,
   restriction_update: () => <span className="text-xs">⊘</span>,
   promotion_sync: () => <span className="text-xs">🎁</span>,
@@ -199,6 +199,9 @@ export default function SyncLogs() {
   // Filter states - single select dropdowns (initialize from URL if present)
   const [otaFilter, setOTAFilter] = useState(urlOtaParam || 'all');
   const [actionFilter, setActionFilter] = useState('all');
+  // Date range filters (YYYY-MM-DD) - same param names as backend (dateFrom, dateTo)
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   const toast = useToast();
 
@@ -216,9 +219,11 @@ export default function SyncLogs() {
   // Fetch stats counts for all statuses (independent of current tab filter)
   const fetchStats = useCallback(async () => {
     try {
-      const baseFilters: any = { pageSize: 1 }; // Only need counts, not data
+      const baseFilters: any = { page: 1, pageSize: 1 }; // Only need counts, not data
       if (otaFilter !== 'all') baseFilters.otaCode = otaFilter;
       if (actionFilter !== 'all') baseFilters.action = actionFilter;
+      if (dateFrom) baseFilters.dateFrom = dateFrom;
+      if (dateTo) baseFilters.dateTo = dateTo;
 
       // Fetch counts for each status in parallel
       const [allRes, successRes, errorRes, warningRes, pendingRes] = await Promise.all([
@@ -239,9 +244,9 @@ export default function SyncLogs() {
     } catch (err) {
       console.error('Error fetching stats:', err);
     }
-  }, [otaFilter, actionFilter, fetchSyncLogs]);
+  }, [otaFilter, actionFilter, dateFrom, dateTo, fetchSyncLogs]);
 
-  // Refetch data function for SSE
+  // Refetch data function for SSE (backend expects camelCase: pageSize, action, status, dateFrom, dateTo)
   const refetchData = useCallback(async () => {
     const filters: any = {
       page: currentPage,
@@ -256,6 +261,8 @@ export default function SyncLogs() {
     if (actionFilter !== 'all') {
       filters.action = actionFilter;
     }
+    if (dateFrom) filters.dateFrom = dateFrom;
+    if (dateTo) filters.dateTo = dateTo;
     const response = await fetchSyncLogs(filters);
     setTotalPages(response.totalPages || 1);
     setTotalCount(response.total || 0);
@@ -266,7 +273,7 @@ export default function SyncLogs() {
     } else {
       setCachedStats(prev => ({ ...prev, [activeTab]: response.total || 0 }));
     }
-  }, [currentPage, activeTab, otaFilter, actionFilter, fetchSyncLogs]);
+  }, [currentPage, activeTab, otaFilter, actionFilter, dateFrom, dateTo, fetchSyncLogs]);
 
   // Register SSE event handlers for real-time updates
   useChannelManagerSSEEvents({
@@ -302,12 +309,14 @@ export default function SyncLogs() {
   };
 
   // Check if any filters are active
-  const hasActiveFilters = otaFilter !== 'all' || actionFilter !== 'all';
+  const hasActiveFilters = otaFilter !== 'all' || actionFilter !== 'all' || !!dateFrom || !!dateTo;
 
   // Clear all filters
   const clearFilters = () => {
     setOTAFilter('all');
     setActionFilter('all');
+    setDateFrom('');
+    setDateTo('');
     setSearchParams({});
     setCurrentPage(1);
   };
@@ -343,19 +352,21 @@ export default function SyncLogs() {
     triggerManualSync('ALL');
   };
 
-  // Client-side CSV export fallback
+  // Client-side CSV export fallback (includes Date to match backend export)
   const generateClientSideCSV = (logs: typeof syncLogs) => {
-    const headers = ['Timestamp', 'Channel', 'Channel Code', 'Action', 'Status', 'Message'];
+    const headers = ['Date', 'Timestamp', 'Channel', 'Channel Code', 'Action', 'Status', 'Message'];
     const rows = logs.map(log => {
       const otaInfo = getOTAInfo(log.otaCode);
       const actionConfig = actionTypes[log.action] || { label: log.action };
+      const dateStr = log?.date || (log?.timestamp ? new Date(log.timestamp).toISOString().split('T')[0] : '');
       return [
-        new Date(log.timestamp).toISOString(),
+        dateStr,
+        log.timestamp ? new Date(log.timestamp).toISOString() : '',
         otaInfo.name,
         log.otaCode,
         actionConfig.label,
         log.status,
-        `"${(log.message || '').replace(/"/g, '""')}"` // Escape quotes in CSV
+        `"${(log.message || '').replace(/"/g, '""')}"`
       ].join(',');
     });
     return [headers.join(','), ...rows].join('\n');
@@ -366,10 +377,13 @@ export default function SyncLogs() {
 
     setExportLoading(true);
     try {
+      // Same filter param names as list API so exported file matches filtered list
       const filters: any = { format };
       if (activeTab !== 'all') filters.status = activeTab;
       if (otaFilter !== 'all') filters.otaCode = otaFilter;
       if (actionFilter !== 'all') filters.action = actionFilter;
+      if (dateFrom) filters.dateFrom = dateFrom;
+      if (dateTo) filters.dateTo = dateTo;
 
       let blob: Blob;
       let useClientSide = false;
@@ -443,6 +457,20 @@ export default function SyncLogs() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  /** Display date from backend date (YYYY-MM-DD) or derived from timestamp */
+  const formatLogDate = (log) => {
+    if (log?.date) return log.date;
+    if (log?.timestamp) return new Date(log.timestamp).toISOString().split('T')[0];
+    return '—';
+  };
+
+  /** Full date/time for tooltip/secondary display */
+  const formatLogDateTime = (log) => {
+    if (!log?.timestamp) return '—';
+    const d = new Date(log.timestamp);
+    return d.toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' });
   };
 
   const getStatusIcon = (status) => {
@@ -649,33 +677,45 @@ export default function SyncLogs() {
               {/* Spacer to push filters to right - hidden on mobile */}
               <div className="hidden sm:block flex-1" />
 
-              {/* Filter Dropdowns - row on all sizes */}
-              <div className="flex items-center gap-2">
+              {/* Filter Dropdowns and date range - row on all sizes */}
+              <div className="flex flex-wrap items-center gap-2">
                 {/* Channel Filter Dropdown */}
                 <SelectDropdown
                   value={otaFilter}
                   onChange={(val) => {
                     setOTAFilter(val);
                     setCurrentPage(1);
-                    // Update URL param when filter changes
-                    if (val === 'all') {
-                      setSearchParams({});
-                    } else {
-                      setSearchParams({ ota: val });
-                    }
+                    if (val === 'all') setSearchParams({});
+                    else setSearchParams({ ota: val });
                   }}
                   options={channelOptions}
                   placeholder="Channels"
                   className="flex-1 sm:flex-none sm:min-w-[140px] lg:min-w-[160px]"
                 />
 
-                {/* Action Type Filter Dropdown */}
+                {/* Action Type Filter Dropdown - values: rate_update | availability_update | ... */}
                 <SelectDropdown
                   value={actionFilter}
                   onChange={(val) => { setActionFilter(val); setCurrentPage(1); }}
                   options={actionOptions}
                   placeholder="Actions"
                   className="flex-1 sm:flex-none sm:min-w-[140px] lg:min-w-[180px]"
+                />
+
+                {/* Date range (YYYY-MM-DD) - backend params dateFrom, dateTo */}
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => { setDateFrom(e.target.value); setCurrentPage(1); }}
+                  className="h-9 sm:h-10 px-3 rounded-lg text-xs sm:text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 min-w-0 sm:min-w-[120px]"
+                  title="From date"
+                />
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => { setDateTo(e.target.value); setCurrentPage(1); }}
+                  className="h-9 sm:h-10 px-3 rounded-lg text-xs sm:text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 min-w-0 sm:min-w-[120px]"
+                  title="To date"
                 />
               </div>
             </div>
@@ -712,6 +752,9 @@ export default function SyncLogs() {
                   <thead>
                     <tr className="bg-neutral-50/30 border-b border-neutral-100">
                       <th className="text-left px-3 sm:px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
+                        Date
+                      </th>
+                      <th className="text-left px-3 sm:px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
                         Time
                       </th>
                       <th className="text-left px-3 sm:px-4 py-3 sm:py-4 text-[9px] sm:text-[10px] font-semibold text-neutral-400 uppercase tracking-widest whitespace-nowrap">
@@ -742,6 +785,12 @@ export default function SyncLogs() {
                           style={{ animationDelay: `${index * 30}ms` }}
                           className="bg-white hover:bg-neutral-50/50 transition-colors animate-in fade-in slide-in-from-left-2 border-b border-neutral-100 last:border-b-0"
                         >
+                          {/* Date (backend date YYYY-MM-DD or from timestamp) */}
+                          <td className="py-3 sm:py-4 px-3 sm:px-4 whitespace-nowrap" title={formatLogDateTime(log)}>
+                            <span className="text-xs sm:text-[13px] text-neutral-600 font-medium">
+                              {formatLogDate(log)}
+                            </span>
+                          </td>
                           {/* Time */}
                           <td className="py-3 sm:py-4 px-3 sm:px-4 whitespace-nowrap">
                             <span className="text-xs sm:text-[13px] text-neutral-600 font-medium">

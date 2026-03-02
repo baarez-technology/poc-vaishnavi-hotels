@@ -55,6 +55,16 @@ const DatePicker = ({
   const min = useMemo(() => parseISODate(minDate), [minDate]);
   const max = useMemo(() => parseISODate(maxDate), [maxDate]);
 
+  // Auto-show next month when near month end (28th+) and no value selected
+  const defaultMonth = useMemo(() => {
+    if (selectedDate) return selectedDate;
+    const today = new Date();
+    if (today.getDate() >= 28) {
+      return new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    }
+    return today;
+  }, [selectedDate]);
+
   const disabledMatchers = useMemo(() => {
     const matchers = [];
     if (min) matchers.push({ before: min });
@@ -135,6 +145,7 @@ const DatePicker = ({
           <Calendar
             mode="single"
             selected={selectedDate || undefined}
+            defaultMonth={defaultMonth}
             onSelect={(date) => {
               if (!date) return;
               onChange?.(formatYYYYMMDD(date));

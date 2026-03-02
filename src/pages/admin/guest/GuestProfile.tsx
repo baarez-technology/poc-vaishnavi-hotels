@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   ArrowLeft,
   Mail,
@@ -638,8 +639,10 @@ export default function GuestProfile() {
           } : null);
         }
         setNewNote('');
+        toast.success('Note saved successfully');
       } catch (err) {
         console.error('Failed to add note:', err);
+        toast.error('Failed to save note');
       }
     }
   };
@@ -655,8 +658,10 @@ export default function GuestProfile() {
           ...prev,
           notes: (prev.notes || []).filter(n => n.id !== noteId)
         } : null);
+        toast.success('Note deleted');
       } catch (err) {
         console.error('Failed to delete note:', err);
+        toast.error('Failed to delete note');
       }
     }
   };
@@ -895,7 +900,7 @@ export default function GuestProfile() {
                   <BarChart data={spendingByYear}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" />
                     <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
+                    <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `₹${v}`} />
                     <Tooltip
                       formatter={(value) => formatCurrency(value)}
                       contentStyle={{

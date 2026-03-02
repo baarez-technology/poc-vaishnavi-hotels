@@ -164,7 +164,9 @@ export default function BookingDrawer({
   if (!isOpen || !booking) return null;
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    if (!dateString) return 'N/A';
+    const safe = dateString.includes('T') ? dateString : `${dateString}T12:00:00`;
+    const date = new Date(safe);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
@@ -278,7 +280,7 @@ export default function BookingDrawer({
               <PenLine className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-300 group-hover:text-terra-500 transition-colors flex-shrink-0" />
             </button>
           )}
-          <p className="text-[10px] sm:text-[11px] text-neutral-400 font-mono mt-0.5 truncate">{booking.id}</p>
+          <p className="text-[10px] sm:text-[11px] text-neutral-400 font-mono mt-0.5 truncate">{booking.bookingNumber || booking.id}</p>
         </div>
       </div>
 

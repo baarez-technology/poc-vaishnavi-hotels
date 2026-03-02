@@ -2,6 +2,7 @@ import { format } from 'date-fns';
 import { Calendar, Users, MapPin, Edit2 } from 'lucide-react';
 import { Card, Button } from '@/components/ui';
 import { useCurrency } from '@/hooks/useCurrency';
+import { useGSTCalculator } from '@/hooks/useGSTCalculator';
 import type { BookingDraft, Booking } from '@/api/types/booking.types';
 
 interface BookingSummaryWidgetProps {
@@ -20,6 +21,7 @@ export const BookingSummaryWidget = ({
   onEdit,
 }: BookingSummaryWidgetProps) => {
   const { formatCurrency } = useCurrency();
+  const { calculateGSTPerNight } = useGSTCalculator();
   const isDraft = 'checkIn' in booking && booking.checkIn instanceof Date;
   const room = 'room' in booking ? booking.room : null;
 
@@ -117,37 +119,46 @@ export const BookingSummaryWidget = ({
       </div>
 
       {/* Price Breakdown */}
-      <div className="space-y-3 mb-6">
-        <h4 className="font-semibold text-neutral-900">Price Details</h4>
+      {(() => {
+        const gst = calculateGSTPerNight(room.price);
+        return (
+          <div className="space-y-3 mb-6">
+            <h4 className="font-semibold text-neutral-900">Price Details</h4>
 
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-neutral-600">
-              {formatCurrency(room.price)} × {booking.nights} nights
-            </span>
-            <span className="text-neutral-900">{formatCurrency(booking.basePrice)}</span>
-          </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-neutral-600">
+                  {formatCurrency(room.price)} × {booking.nights} nights
+                </span>
+                <span className="text-neutral-900">{formatCurrency(booking.basePrice)}</span>
+              </div>
 
-          <div className="flex justify-between">
-            <span className="text-neutral-600">Taxes (12%)</span>
-            <span className="text-neutral-900">{formatCurrency(booking.taxes)}</span>
-          </div>
+              <div className="flex justify-between">
+                <span className="text-neutral-600">GST ({gst.taxRate}%)</span>
+                <span className="text-neutral-900">{formatCurrency(booking.taxes)}</span>
+              </div>
 
-          <div className="flex justify-between">
-            <span className="text-neutral-600">Service Fee (5%)</span>
-            <span className="text-neutral-900">{formatCurrency(booking.serviceFee)}</span>
-          </div>
-        </div>
+              <div className="flex justify-between text-xs pl-2">
+                <span className="text-neutral-500">CGST ({gst.cgstRate}%) + SGST ({gst.sgstRate}%)</span>
+              </div>
 
-        <div className="pt-3 border-t border-neutral-200">
-          <div className="flex justify-between items-center">
-            <span className="font-semibold text-neutral-900">Total</span>
-            <span className="text-2xl font-bold text-primary-600">
-              {formatCurrency(booking.totalPrice)}
-            </span>
+              <div className="flex justify-between">
+                <span className="text-neutral-600">Service Fee</span>
+                <span className="text-neutral-900">{formatCurrency(booking.serviceFee)}</span>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-neutral-200">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold text-neutral-900">Total</span>
+                <span className="text-2xl font-bold text-primary-600">
+                  {formatCurrency(booking.totalPrice)}
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Cancellation Policy */}
       {showCancellationPolicy && (

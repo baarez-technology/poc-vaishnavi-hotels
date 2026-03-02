@@ -136,15 +136,15 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
     mutationFn: async (reservationId: number) => {
       // First, try to get existing pre-checkin
       const existing = await precheckinService.getByReservation(reservationId);
-      
+
       if (existing) {
         // Load existing data
         const booking = await bookingService.getBooking(String(reservationId));
-        
+
         return {
           bookingNumber: booking.bookingNumber,
           reservationId: existing.reservation_id,
-          guestName: `${booking.guestInfo.firstName} ${booking.guestInfo.lastName}`,
+          guestName: `${booking.guestInfo?.firstName || ''} ${booking.guestInfo?.lastName || ''}`.trim() || 'Unknown Guest',
           roomType: booking.room?.name || '',
           checkInDate: booking.checkIn,
           checkOutDate: booking.checkOut,
@@ -173,7 +173,7 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
           } : undefined,
           travelDetails: {
             arrivalTime: existing.arrival_time || '',
-            departureTime: (existing as any).departure_time || '',
+            departureTime: existing.departure_time || '',
             flightNumber: existing.flight_number || '',
             purpose: (existing.purpose as any) || 'leisure',
             transportationNeeded: existing.transportation_needed,
@@ -204,13 +204,13 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
         // Load from booking
         const booking = await bookingService.getBooking(String(reservationId));
         return {
+          ...initialData,
           bookingNumber: booking.bookingNumber,
           reservationId: Number(booking.id),
-          guestName: `${booking.guestInfo.firstName} ${booking.guestInfo.lastName}`,
+          guestName: `${booking.guestInfo?.firstName || ''} ${booking.guestInfo?.lastName || ''}`.trim() || 'Unknown Guest',
           roomType: booking.room?.name || '',
           checkInDate: booking.checkIn,
           checkOutDate: booking.checkOut,
-          ...initialData,
         } as PreCheckInData;
       }
     },
@@ -262,7 +262,7 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
 
       // Check if pre-checkin exists
       const existing = await precheckinService.getByReservation(data.reservationId);
-      
+
       // Prepare update payload (only fields allowed in PreCheckInUpdate)
       // Note: room_type_slug stores the selected room type; hotel assigns actual room later
       const updatePayload: any = {
@@ -276,6 +276,9 @@ export function PreCheckInProvider({ children }: { children: ReactNode }) {
         digital_key_activated: data.digitalKey?.activated || false,
         qr_code: data.digitalKey?.qrCode,
         status: 'completed',
+        // ETA/ETD: keep pre-check-in arrival_time and departure_time in sync on update
+        arrival_time: data.travelDetails.arrivalTime || undefined,
+        departure_time: data.travelDetails.departureTime || undefined,
       };
 
       if (existing) {

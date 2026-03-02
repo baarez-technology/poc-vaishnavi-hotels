@@ -281,7 +281,7 @@ export default function ScenarioSimulationModal({ open, onClose }: ScenarioSimul
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-neutral-600">Revenue</span>
                     <span className="text-sm font-semibold text-neutral-900">
-                      ${(result.baseline.revenue / 1000).toFixed(0)}K
+                      ₹{(result.baseline.revenue / 1000).toFixed(0)}K
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -291,7 +291,7 @@ export default function ScenarioSimulationModal({ open, onClose }: ScenarioSimul
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-neutral-600">ADR</span>
                     <span className="text-sm font-semibold text-neutral-900">
-                      ${result.baseline.adr.toLocaleString()}
+                      ₹{result.baseline.adr.toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -311,14 +311,14 @@ export default function ScenarioSimulationModal({ open, onClose }: ScenarioSimul
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-neutral-600">Revenue</span>
                     <span className={`text-sm font-semibold ${result.projected.revenue_change >= 0 ? 'text-sage-700' : 'text-rose-700'}`}>
-                      ${(result.projected.revenue / 1000).toFixed(0)}K
+                      ₹{(result.projected.revenue / 1000).toFixed(0)}K
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-neutral-600">Change</span>
                     <span className={`text-sm font-bold ${result.projected.revenue_change >= 0 ? 'text-sage-700' : 'text-rose-700'}`}>
                       {result.projected.revenue_change >= 0 ? '+' : ''}
-                      ${(result.projected.revenue_change / 1000).toFixed(0)}K
+                      ₹{(result.projected.revenue_change / 1000).toFixed(0)}K
                     </span>
                   </div>
                   <div className="flex items-center justify-between">

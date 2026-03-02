@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Loader2, Check } from 'lucide-react';
+import { X, Loader2, Check, Search } from 'lucide-react';
 import { roomsService } from '@/api/services/rooms.service';
 import { Button } from '../../ui2/Button';
 
@@ -23,6 +23,8 @@ export default function AssignRoomModal({
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [roomsData, setRoomsData] = useState([]);
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   // Fetch rooms from API when modal opens
   useEffect(() => {
@@ -36,17 +38,16 @@ export default function AssignRoomModal({
     setIsLoadingRooms(true);
     try {
       // Pass booking dates to filter rooms available for the stay period
+      // Fetch ALL room types to support upgrades/overbooking scenarios
       const searchParams: any = {};
       if (booking?.checkIn) searchParams.checkIn = booking.checkIn;
       if (booking?.checkOut) searchParams.checkOut = booking.checkOut;
-      if (booking?.roomType) searchParams.type = booking.roomType;
 
       const rooms = await roomsService.getRooms(searchParams);
       // Handle both array and items wrapper
       const roomsArray = Array.isArray(rooms) ? rooms : (rooms?.items || []);
 
-      // Transform and filter available rooms
-      const assignableStatuses = ['available', 'clean', 'inspected', 'dirty'];
+      // Transform and filter available rooms using backend-computed date-range availability
       const bookingRoomType = (booking?.roomType || '').toLowerCase();
       const transformedRooms = roomsArray
         .map((room: any) => ({
@@ -57,8 +58,14 @@ export default function AssignRoomModal({
           status: (room.status || 'available').toLowerCase(),
           price: room.price || 0,
           maxOccupancy: room.maxGuests || 2,
+          available: room.available,
         }))
-        .filter(room => assignableStatuses.includes(room.status))
+        .filter(room => {
+          // Use backend-computed availability (date-range based) when present
+          if (typeof room.available === 'boolean') return room.available;
+          // Fallback: exclude only truly unavailable statuses
+          return !['occupied', 'maintenance', 'out_of_service'].includes(room.status);
+        })
         .filter(room => !bookingRoomType || room.type.toLowerCase().includes(bookingRoomType) || bookingRoomType.includes(room.type.toLowerCase()));
 
       setRoomsData(transformedRooms);
@@ -148,18 +155,52 @@ export default function AssignRoomModal({
             </div>
           </div>
 
+          {/* F-04: Status filter + F-05: Room search */}
+          <div className="mb-3 flex flex-wrap gap-2 items-center">
+            <div className="relative flex-1 min-w-[180px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <input
+                type="text"
+                placeholder="Search by room number..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-transparent"
+              />
+            </div>
+            {['all', 'clean', 'inspected', 'dirty'].map((s) => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-full border transition ${
+                  statusFilter === s
+                    ? 'bg-[#A57865] text-white border-[#A57865]'
+                    : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'
+                }`}
+              >
+                {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+          </div>
+
           <div className="grid gap-3 max-h-[420px] overflow-y-auto pr-1">
             {isLoadingRooms ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 text-[#A57865] animate-spin mb-3" />
                 <p className="text-sm text-neutral-500">Loading available rooms...</p>
               </div>
-            ) : roomsData.length === 0 ? (
+            ) : (() => {
+              // F-04 + F-05: Apply search and status filter
+              const filtered = roomsData.filter((room) => {
+                if (searchQuery && !room.roomNumber.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+                if (statusFilter !== 'all' && room.status !== statusFilter) return false;
+                return true;
+              });
+              return filtered.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-neutral-500">No available rooms found</p>
               </div>
             ) : (
-              roomsData.map((room) => {
+              filtered.map((room) => {
                 const isSelected = selectedRoom?.roomNumber === room.roomNumber;
                 return (
                   <button
@@ -190,7 +231,7 @@ export default function AssignRoomModal({
                   </button>
                 );
               })
-            )}
+            )); })()}
           </div>
 
           <div className="mt-6 flex justify-end gap-3">

@@ -386,8 +386,8 @@ const OTAConversionOfferModal = ({
       id: 'package_spa',
       name: 'Spa Package Special',
       type: 'package',
-      value: '$100 Credit',
-      description: 'Book direct and receive $100 spa credit'
+      value: '₹100 Credit',
+      description: 'Book direct and receive ₹100 spa credit'
     }
   ];
 
@@ -457,7 +457,7 @@ const OTAConversionOfferModal = ({
               </div>
               <div>
                 <p className="text-xs text-neutral-400">OTA Revenue</p>
-                <p className="text-sm font-semibold text-neutral-900">${guest.total_ota_revenue.toLocaleString()}</p>
+                <p className="text-sm font-semibold text-neutral-900">₹{guest.total_ota_revenue.toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-xs text-neutral-400">Conversion Prob.</p>
@@ -816,12 +816,12 @@ export default function OTAConversionCenter() {
         />
         <StatCard
           title="Revenue Impact"
-          value={`$${(stats?.revenue_impact || 0).toLocaleString()}`}
+          value={`₹${(stats?.revenue_impact || 0).toLocaleString()}`}
           subtitle="From converted guests"
           icon={DollarSign}
           color="green"
           trend="up"
-          trendValue="+$12K this month"
+          trendValue="+₹12K this month"
         />
       </div>
 
@@ -895,7 +895,7 @@ export default function OTAConversionCenter() {
                   </div>
                   <div>
                     <p className="text-xs text-neutral-400">OTA Revenue</p>
-                    <p className="text-sm font-semibold text-neutral-900">${guest.total_ota_revenue.toLocaleString()}</p>
+                    <p className="text-sm font-semibold text-neutral-900">₹{guest.total_ota_revenue.toLocaleString()}</p>
                   </div>
                   <div>
                     <p className="text-xs text-neutral-400">First OTA Stay</p>

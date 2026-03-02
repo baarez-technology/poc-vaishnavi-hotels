@@ -6,10 +6,10 @@
 
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
-import { Users, Sparkles, Bed, UsersRound } from 'lucide-react';
+import { Users, Sparkles, Bed, UsersRound, SprayCan } from 'lucide-react';
 import { useCurrency } from '@/hooks/useCurrency';
 
-export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAssignGuest, onMarkClean, onMarkDirty, onBlockRoom, onUnassignGuest, onUnblockRoom }) {
+export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAssignGuest, onMarkClean, onMarkDirty, onBlockRoom, onUnassignGuest, onUnblockRoom, onRequestCleaning }) {
   const { symbol, formatCurrency } = useCurrency();
   if (!room) return null;
 
@@ -18,8 +18,8 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
     available: { label: 'Available', dot: 'bg-sage-500', text: 'text-sage-700', bg: 'bg-sage-50' },
     occupied: { label: 'Occupied', dot: 'bg-terra-500', text: 'text-terra-700', bg: 'bg-terra-50' },
     dirty: { label: 'Dirty', dot: 'bg-gold-500', text: 'text-gold-700', bg: 'bg-gold-50' },
-    out_of_service: { label: 'Out of Service', dot: 'bg-rose-500', text: 'text-rose-600', bg: 'bg-rose-50' },
-    out_of_order: { label: 'Out of Order', dot: 'bg-gray-500', text: 'text-gray-700', bg: 'bg-gray-100' }
+    out_of_service: { label: 'Out of Service', dot: 'bg-amber-500', text: 'text-amber-600', bg: 'bg-amber-50' },
+    out_of_order: { label: 'Out of Order', dot: 'bg-rose-500', text: 'text-rose-600', bg: 'bg-rose-50' }
   };
 
   const status = statusConfig[room.status] || statusConfig.available;
@@ -94,19 +94,19 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
           </div>
         )}
 
-        {/* Blocked Info */}
+        {/* Blocked Info - shown for out_of_service and out_of_order */}
         {(room.status === 'out_of_service' || room.status === 'out_of_order') && room.blockedReason && (
           <div>
             <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
-              Block Information
+              {room.status === 'out_of_order' ? 'Out of Order Info' : 'Out of Service Info'}
             </h4>
-            <div className={`p-4 rounded-lg ${room.status === 'out_of_order' ? 'bg-gray-100 border border-gray-200' : 'bg-rose-50 border border-rose-100'}`}>
-              <p className={`text-[11px] font-semibold uppercase tracking-wider mb-1 ${room.status === 'out_of_order' ? 'text-gray-500' : 'text-rose-500'}`}>
+            <div className={`p-4 rounded-lg border ${room.status === 'out_of_order' ? 'bg-rose-50 border-rose-100' : 'bg-amber-50 border-amber-100'}`}>
+              <p className={`text-[11px] font-semibold uppercase tracking-wider mb-1 ${room.status === 'out_of_order' ? 'text-rose-500' : 'text-amber-500'}`}>
                 {room.status === 'out_of_order' ? 'Out of Order' : 'Out of Service'}
               </p>
-              <p className={`text-[13px] font-semibold mb-1 ${room.status === 'out_of_order' ? 'text-gray-700' : 'text-rose-700'}`}>{room.blockedReason}</p>
+              <p className={`text-[13px] font-semibold mb-1 ${room.status === 'out_of_order' ? 'text-rose-700' : 'text-amber-700'}`}>{room.blockedReason}</p>
               {room.blockedUntil && (
-                <p className={`text-[11px] ${room.status === 'out_of_order' ? 'text-gray-500' : 'text-rose-500'}`}>Until: {room.blockedUntil}</p>
+                <p className={`text-[11px] ${room.status === 'out_of_order' ? 'text-rose-500' : 'text-amber-500'}`}>Until: {room.blockedUntil}</p>
               )}
             </div>
           </div>
@@ -191,7 +191,8 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
               <div>
                 <p className="text-[13px] font-semibold text-neutral-900">Room Access</p>
                 <p className="text-[11px] text-neutral-500 mt-0.5">
-                  {(room.status === 'out_of_service' || room.status === 'out_of_order') ? 'Room is currently blocked' : 'Room is accessible'}
+                  {room.status === 'out_of_order' ? 'Room is Out of Order (major issue)' :
+                   room.status === 'out_of_service' ? 'Room is Out of Service (minor issue)' : 'Room is accessible'}
                 </p>
               </div>
               {(room.status === 'out_of_service' || room.status === 'out_of_order') ? (
@@ -205,8 +206,24 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
               )}
             </div>
 
+            {/* Request Cleaning — occupied rooms only */}
+            {room.status === 'occupied' && onRequestCleaning && (
+              <div className="flex items-center justify-between p-4 rounded-lg bg-sage-50 border border-sage-100">
+                <div>
+                  <p className="text-[13px] font-semibold text-neutral-900">Request Cleaning</p>
+                  <p className="text-[11px] text-neutral-500 mt-0.5">
+                    Submit a housekeeping task for this room
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => onRequestCleaning(room)} className="text-sage-700 border-sage-200 hover:bg-sage-100">
+                  <SprayCan className="w-3.5 h-3.5 mr-1.5" />
+                  Request
+                </Button>
+              </div>
+            )}
+
             {/* Assign/Unassign Guest */}
-            {(room.status === 'available' || room.status === 'occupied') && (
+            {(room.status === 'available' || room.status === 'occupied' || room.status === 'dirty') && (
               <div className="flex items-center justify-between p-4 rounded-lg bg-neutral-50 border border-neutral-100">
                 <div>
                   <p className="text-[13px] font-semibold text-neutral-900">Guest Assignment</p>
@@ -214,13 +231,13 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
                     {room.guests ? `Assigned to ${room.guests.name}` : 'No guest assigned'}
                   </p>
                 </div>
-                {room.status === 'available' ? (
-                  <Button variant="outline" size="sm" onClick={() => onAssignGuest(room)}>
-                    Assign Guest
-                  </Button>
-                ) : (
+                {room.guests ? (
                   <Button variant="outline" size="sm" onClick={() => onUnassignGuest(room)}>
                     Unassign
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={() => onAssignGuest(room)}>
+                    Assign Guest
                   </Button>
                 )}
               </div>

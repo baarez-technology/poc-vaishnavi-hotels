@@ -9,6 +9,7 @@ export interface Staff {
   role: string;
   department?: string;
   email: string;
+  personal_email?: string;
   phone?: string;
   status: string;
   shift?: string;
@@ -56,8 +57,15 @@ export interface AttendanceStats {
   overtime_hours: number;
 }
 
+export interface StaffCreateResponse extends Staff {
+  temp_password?: string;
+  must_reset_password?: boolean;
+  email_sent?: boolean;
+}
+
 export interface StaffCreate {
   email: string;
+  personal_email?: string;
   full_name: string;
   phone?: string;
   role: string;
@@ -176,9 +184,9 @@ export const staffService = {
     return extractData<StaffFullProfile>(response.data);
   },
 
-  create: async (data: StaffCreate): Promise<Staff> => {
-    const response = await apiClient.post<Staff>('/api/v1/staff', data);
-    return extractData<Staff>(response.data);
+  create: async (data: StaffCreate): Promise<StaffCreateResponse> => {
+    const response = await apiClient.post<StaffCreateResponse>('/api/v1/staff', data);
+    return extractData<StaffCreateResponse>(response.data);
   },
 
   update: async (staffId: number | string, data: StaffUpdate): Promise<Staff> => {

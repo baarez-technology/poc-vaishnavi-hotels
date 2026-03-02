@@ -19,9 +19,9 @@ export const conditionTypes = [
 export const actionTypes = [
   { id: 'increase_percent', label: 'Increase Rate By', unit: '%', type: 'number' },
   { id: 'decrease_percent', label: 'Decrease Rate By', unit: '%', type: 'number' },
-  { id: 'set_rate', label: 'Set Rate To', unit: '$', type: 'number' },
-  { id: 'set_min_rate', label: 'Set Minimum Rate', unit: '$', type: 'number' },
-  { id: 'set_max_rate', label: 'Set Maximum Rate', unit: '$', type: 'number' },
+  { id: 'set_rate', label: 'Set Rate To', unit: '₹', type: 'number' },
+  { id: 'set_min_rate', label: 'Set Minimum Rate', unit: '₹', type: 'number' },
+  { id: 'set_max_rate', label: 'Set Maximum Rate', unit: '₹', type: 'number' },
   { id: 'apply_min_stay', label: 'Apply Min Stay', unit: 'nights', type: 'number' },
   { id: 'apply_cta', label: 'Close to Arrival', unit: '', type: 'boolean' },
   { id: 'apply_ctd', label: 'Close to Departure', unit: '', type: 'boolean' },
@@ -248,8 +248,14 @@ export function evaluateCondition(condition, context) {
 }
 
 export function evaluateRule(rule, context) {
-  // Check if rule applies to this room type
-  if (!rule.roomTypes.includes('ALL') && !rule.roomTypes.includes(context.roomType)) {
+  // Check if rule applies to this room type (empty/missing roomTypes = apply to ALL)
+  const roomTypes = rule.roomTypes;
+  const appliesToRoom =
+    !Array.isArray(roomTypes) ||
+    roomTypes.length === 0 ||
+    roomTypes.includes('ALL') ||
+    roomTypes.includes(context.roomType);
+  if (!appliesToRoom) {
     return { applies: false, rule };
   }
 

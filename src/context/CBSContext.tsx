@@ -5,14 +5,14 @@
  * Connected to backend API for real data
  */
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { statusConfig, sampleBookings } from '../data/cbs/sampleBookings';
 import { sampleRatePlans } from '../data/cbs/sampleRatePlans';
 import { samplePromotions } from '../data/cbs/samplePromotions';
 import { getCalendarDates, checkAvailability } from '../data/cbs/sampleAvailability';
 import { roomsData } from '../data/roomsData';
 import { apiClient, clearApiCache } from '../api/client';
-
 // Import CMS Zustand stores for enhanced functionality
 import useCMSBookings from '../state/cms/useCMSBookings';
 import useCMSAvailability from '../state/cms/useCMSAvailability';
@@ -107,7 +107,22 @@ function saveToStorage(data) {
 }
 
 export function CBSProvider({ children }) {
+  const location = useLocation();
   const stored = loadFromStorage();
+
+  // Track if data has been loaded to prevent re-fetching
+  const isDataLoadedRef = useRef(false);
+
+  // Check if on pages that need CBS data (bookings, rates, calendar, dashboard, reservations)
+  const isCBSPage =
+    location.pathname.includes('/bookings') ||
+    location.pathname.includes('/rates') ||
+    location.pathname.includes('/calendar') ||
+    location.pathname.includes('/reservations') ||
+    location.pathname.includes('/dashboard') ||
+    location.pathname.includes('/availability') ||
+    location.pathname === '/admin' ||
+    location.pathname === '/admin/';
 
   const [bookings, setBookings] = useState(stored?.bookings || []);
   // Don't use sample availability - wait for API data from cmsAvailability hook
@@ -136,8 +151,14 @@ export function CBSProvider({ children }) {
   }, [promotionTypes]);
 
   // Fetch bookings, rate plans, and promotions from API on mount
-  // Only fetch if user has an access token (is authenticated)
+  // Only fetch if user has an access token (is authenticated) AND on CBS pages
   useEffect(() => {
+    // Skip if not on CBS page or data already loaded
+    if (!isCBSPage || isDataLoadedRef.current) {
+      if (!isCBSPage) setIsLoading(false);
+      return;
+    }
+
     const fetchFromApi = async () => {
       // Check if user is authenticated before making API calls
       const token = localStorage.getItem('glimmora_access_token');
@@ -213,23 +234,21 @@ export function CBSProvider({ children }) {
               adults: (b.guests?.adults || b.adults || 1),
               children: (b.guests?.children || b.children || 0),
               status: statusMap[b.status?.toLowerCase()] || 'CONFIRMED',
-              // Map source to normalized format (e.g., "crs" -> "CRS")
+              // Map source - prefer ota_code/channel for Dummy CM (backend may wrongly return Booking.com)
               source: (() => {
+                const otaCode = (b.ota_code || b.otaCode || b.channel_code || b.metadata?.ota || '').toString().toUpperCase();
+                const channel = (b.channel || b.source_channel || b.metadata?.channel || '').toString().toLowerCase();
+                const isDummyCM = otaCode === 'DUMMY' || otaCode === 'CRS' || channel.includes('dummy') || channel.includes('crs');
+                if (isDummyCM) return 'Dummy Channel Manager';
                 const sourceMap = {
-                  'Website': 'Website',
-                  'direct': 'Website',
-                  'Dummy Channel Manager': 'Dummy Channel Manager',
-                  'dummy channel manager': 'Dummy Channel Manager',
-                  'CRS': 'Dummy Channel Manager',
-                  'crs': 'Dummy Channel Manager',
-                  'Booking.com': 'Booking.com',
-                  'booking.com': 'Booking.com',
-                  'Expedia': 'Expedia',
-                  'expedia': 'Expedia',
-                  'Walk-in': 'Walk-in',
-                  'walk_in': 'Walk-in',
-                  'walk-in': 'Walk-in',
-                  'OTA': 'Booking.com',
+                  'Website': 'Website', 'direct': 'Website',
+                  'Dummy Channel Manager': 'Dummy Channel Manager', 'dummy channel manager': 'Dummy Channel Manager',
+                  'DUMMY': 'Dummy Channel Manager', 'dummy': 'Dummy Channel Manager',
+                  'CRS': 'Dummy Channel Manager', 'crs': 'Dummy Channel Manager',
+                  'Booking.com': 'Booking.com', 'booking.com': 'Booking.com',
+                  'Expedia': 'Expedia', 'expedia': 'Expedia',
+                  'Walk-in': 'Walk-in', 'walk_in': 'Walk-in', 'walk-in': 'Walk-in',
+                  'OTA': 'OTA',
                 };
                 const rawSource = b.bookingSource || b.booking_source || 'Direct';
                 return sourceMap[rawSource] || rawSource;
@@ -335,10 +354,10 @@ export function CBSProvider({ children }) {
             const transformedRooms = apiRooms.map((r: any) => ({
               id: r.id, // Database ID for API calls
               roomNumber: r.number || r.roomNumber || String(r.id),
-              type: r.category || r.room_type?.name || r.type || 'Minimalist Studio',
+              type: r.type || (r.category ? r.category.split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : null) || r.room_type?.name || 'Minimalist Studio',
               floor: r.floor || 1,
               status: r.status || 'available',
-              cleaning: r.status === 'available' ? 'clean' : 'dirty',
+              cleaning: ['available', 'clean', 'inspected'].includes(r.status) ? 'clean' : 'dirty',
               price: r.price || r.room_type?.base_price || 0,
               capacity: r.max_occupancy || r.maxGuests || 2,
               bedType: r.bed_type || 'King',
@@ -357,11 +376,12 @@ export function CBSProvider({ children }) {
         setBookings([...sampleBookings]);
       } finally {
         setIsLoading(false);
+        isDataLoadedRef.current = true;
       }
     };
 
     fetchFromApi();
-  }, []);
+  }, [isCBSPage]); // Re-check when route changes
 
   // Refresh bookings and related data from API
   const refreshBookings = useCallback(async () => {
@@ -431,27 +451,25 @@ export function CBSProvider({ children }) {
             adults: (b.guests?.adults || b.adults || 1),
             children: (b.guests?.children || b.children || 0),
             status: statusMap[b.status?.toLowerCase()] || 'CONFIRMED',
-            // Map source to normalized format (e.g., "crs" -> "CRS")
-            source: (() => {
-              const sourceMap = {
-                'Website': 'Website',
-                'direct': 'Website',
-                'Dummy Channel Manager': 'Dummy Channel Manager',
-                'dummy channel manager': 'Dummy Channel Manager',
-                'CRS': 'Dummy Channel Manager',
-                'crs': 'Dummy Channel Manager',
-                'Booking.com': 'Booking.com',
-                'booking.com': 'Booking.com',
-                'Expedia': 'Expedia',
-                'expedia': 'Expedia',
-                'Walk-in': 'Walk-in',
-                'walk_in': 'Walk-in',
-                'walk-in': 'Walk-in',
-                'OTA': 'Booking.com',
-              };
-              const rawSource = b.bookingSource || b.booking_source || 'Direct';
-              return sourceMap[rawSource] || rawSource;
-            })(),
+            // Map source - prefer ota_code/channel for Dummy CM (backend may wrongly return Booking.com)
+              source: (() => {
+                const otaCode = (b.ota_code || b.otaCode || b.channel_code || b.metadata?.ota || '').toString().toUpperCase();
+                const channel = (b.channel || b.source_channel || b.metadata?.channel || '').toString().toLowerCase();
+                const isDummyCM = otaCode === 'DUMMY' || otaCode === 'CRS' || channel.includes('dummy') || channel.includes('crs');
+                if (isDummyCM) return 'Dummy Channel Manager';
+                const sourceMap = {
+                  'Website': 'Website', 'direct': 'Website',
+                  'Dummy Channel Manager': 'Dummy Channel Manager', 'dummy channel manager': 'Dummy Channel Manager',
+                  'DUMMY': 'Dummy Channel Manager', 'dummy': 'Dummy Channel Manager',
+                  'CRS': 'Dummy Channel Manager', 'crs': 'Dummy Channel Manager',
+                  'Booking.com': 'Booking.com', 'booking.com': 'Booking.com',
+                  'Expedia': 'Expedia', 'expedia': 'Expedia',
+                  'Walk-in': 'Walk-in', 'walk_in': 'Walk-in', 'walk-in': 'Walk-in',
+                  'OTA': 'OTA',
+                };
+                const rawSource = b.bookingSource || b.booking_source || 'Direct';
+                return sourceMap[rawSource] || rawSource;
+              })(),
             amount: totalPrice,
             amountPaid: amountPaid,
             balance: balance,

@@ -3,7 +3,7 @@ import { BedDouble, Plus, Pencil, Trash2, Users, RefreshCw, AlertCircle, DollarS
 import { AMENITIES } from '@/utils/admin/settings';
 import AddRoomTypeModal from './AddRoomTypeModal';
 import EditRoomTypeModal from './EditRoomTypeModal';
-import { roomTypesService, RoomTypeUpdate } from '@/api/services/roomTypes.service';
+import { roomTypesService, RoomTypeCreate, RoomTypeUpdate } from '@/api/services/roomTypes.service';
 import { useToast } from '@/contexts/ToastContext';
 
 interface RoomType {
@@ -62,15 +62,33 @@ export default function RoomTypesTab() {
     fetchRoomTypes();
   }, []);
 
-  const handleAddRoom = (newRoom: any) => {
-    const roomWithId = {
-      ...newRoom,
-      id: `rt-${Date.now()}`,
-      slug: newRoom.name.toLowerCase().replace(/\s+/g, '-')
-    };
-    setRoomTypes(prev => [...prev, roomWithId]);
-    setShowAddModal(false);
-    toast.showToast('Room type added locally. Note: Full create API coming soon.', 'info');
+  const handleAddRoom = async (newRoom: any) => {
+    setIsSaving(true);
+    try {
+      const createData: RoomTypeCreate = {
+        name: newRoom.name,
+        description: newRoom.description,
+        base_price: newRoom.price,
+        max_guests: newRoom.maxOccupancy || 2,
+        amenities: newRoom.amenities,
+        features: newRoom.inclusions || newRoom.features || [],
+        bed_type: newRoom.bedType,
+        size_sqft: newRoom.size,
+        view_type: newRoom.view,
+        category: newRoom.category,
+      };
+
+      await roomTypesService.createRoomType(createData);
+      await fetchRoomTypes();
+
+      setShowAddModal(false);
+      toast.showToast('Room type created successfully! It will now appear across all sections.', 'success');
+    } catch (err: any) {
+      console.error('Failed to create room type:', err);
+      toast.showToast(err.message || 'Failed to create room type', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleEditRoom = async (updatedRoom: any) => {
@@ -105,10 +123,22 @@ export default function RoomTypesTab() {
     }
   };
 
-  const handleDeleteRoom = (id: string) => {
-    setRoomTypes(prev => prev.filter(rt => rt.id !== id));
-    setDeleteConfirm(null);
-    toast.showToast('Room type removed from view.', 'info');
+  const handleDeleteRoom = async (id: string) => {
+    setIsSaving(true);
+    try {
+      const room = roomTypes.find(rt => rt.id === id);
+      const slug = room?.slug || id;
+      await roomTypesService.deleteRoomType(slug);
+      await fetchRoomTypes();
+      setDeleteConfirm(null);
+      toast.showToast('Room type deleted successfully.', 'success');
+    } catch (err: any) {
+      console.error('Failed to delete room type:', err);
+      toast.showToast(err.message || 'Failed to delete room type. It may have rooms assigned to it.', 'error');
+      setDeleteConfirm(null);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getAmenityLabel = (amenityId: string) => {

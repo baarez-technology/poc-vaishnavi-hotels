@@ -144,12 +144,18 @@ export function calculateNights(checkIn, checkOut) {
   return diff;
 }
 
+// GST slab lookup for room charges (India GST: ≤7500 → 12%, >7500 → 18%)
+function getRoomGSTRate(pricePerNight: number): number {
+  return pricePerNight > 7500 ? 0.18 : 0.12;
+}
+
 // Calculate booking amount
-export function calculateBookingAmount(roomType, nights, taxRate = 0.12) {
+export function calculateBookingAmount(roomType, nights, taxRate?: number) {
   const roomTypeConfig = ROOM_TYPES.find(r => r.value === roomType);
   const baseRate = roomTypeConfig?.price || 150;
+  const effectiveTaxRate = taxRate ?? getRoomGSTRate(baseRate);
   const subtotal = baseRate * nights;
-  const taxes = subtotal * taxRate;
+  const taxes = subtotal * effectiveTaxRate;
   return {
     baseRate,
     subtotal,
@@ -159,7 +165,7 @@ export function calculateBookingAmount(roomType, nights, taxRate = 0.12) {
 }
 
 // Format currency - prefer using useCurrency hook in components for dynamic currency
-export function formatCurrency(amount, currency = 'USD') {
+export function formatCurrency(amount, currency = 'INR') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,

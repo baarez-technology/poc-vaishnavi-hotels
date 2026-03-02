@@ -705,7 +705,7 @@ const ABTestResultsModal = ({
             <div className="p-4 bg-neutral-50 rounded-xl">
               <p className="text-xs text-neutral-500 mb-1">Total Revenue</p>
               <p className="text-xl font-bold text-[#4E5840]">
-                ${test.variants.reduce((sum, v) => sum + v.revenue, 0).toLocaleString()}
+                ₹{test.variants.reduce((sum, v) => sum + v.revenue, 0).toLocaleString()}
               </p>
             </div>
           </div>
@@ -781,7 +781,7 @@ const ABTestResultsModal = ({
                     <div className="flex items-center justify-between text-xs text-neutral-500">
                       <span>{variant.participants.toLocaleString()} participants</span>
                       <span>{variant.conversions.toLocaleString()} conversions</span>
-                      <span>${variant.revenue.toLocaleString()} revenue</span>
+                      <span>₹{variant.revenue.toLocaleString()} revenue</span>
                     </div>
                   </div>
                 );
@@ -832,7 +832,7 @@ const ABTestResultsModal = ({
                         {variant.conversion_rate.toFixed(2)}%
                       </td>
                       <td className="px-4 py-3 text-right font-medium text-neutral-900">
-                        ${variant.revenue.toLocaleString()}
+                        ₹{variant.revenue.toLocaleString()}
                       </td>
                     </tr>
                   ))}
@@ -919,7 +919,7 @@ export default function ABTestingDashboard() {
           status: 'completed',
           variants: [
             { id: 4, name: '15% Off', description: 'Percentage discount', content: {}, participants: 3000, conversions: 180, conversion_rate: 6.0, revenue: 27000, is_control: true },
-            { id: 5, name: '$50 Off', description: 'Fixed amount discount', content: {}, participants: 3000, conversions: 270, conversion_rate: 9.0, revenue: 40500, is_control: false }
+            { id: 5, name: '₹50 Off', description: 'Fixed amount discount', content: {}, participants: 3000, conversions: 270, conversion_rate: 9.0, revenue: 40500, is_control: false }
           ],
           start_date: '2024-01-01T00:00:00Z',
           end_date: '2024-01-14T00:00:00Z',

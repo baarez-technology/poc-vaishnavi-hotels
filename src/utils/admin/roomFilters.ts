@@ -4,6 +4,9 @@
 
 /**
  * Filter by tab (all, available, occupied, dirty, out_of_service, out_of_order)
+ * Note: out_of_service (OOS) and out_of_order (OOO) are distinct:
+ * - OOS: Minor issues, room can be sold in emergency
+ * - OOO: Major issues (plumbing, electrical, renovation), room CANNOT be sold
  */
 export function filterByTab(rooms, tab) {
   switch (tab) {

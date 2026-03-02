@@ -187,6 +187,26 @@ export const ROUTE_MODULE_MAP: Record<string, PermissionModule> = {
   '/admin/ai/member-tiers':  'crmAI',
   '/admin/ai/ai-segments':   'crmAI',
   '/admin/ai/recovery':      'crmAI',
+  // Corporate & AR
+  '/admin/corporate-accounts': 'bookings',
+  '/admin/ar-ledger':          'bookings',
+  // Finance & Audit
+  '/admin/night-audit':        'bookings',
+  '/admin/pos-closure':        'bookings',
+  '/admin/audit-pack':         'bookings',
+  '/admin/cashier-sessions':   'bookings',
+  '/admin/paymaster':          'bookings',
+  // Operations
+  '/admin/room-moves':         'rooms',
+  // Multi-room
+  '/admin/multi-room':         'bookings',
+  // Transaction Codes & Pre-Auth
+  '/admin/transaction-codes':  'settings',
+  '/admin/preauth-holds':      'bookings',
+  // Audit Logs
+  '/admin/audit-logs':         'settings',
+  // Rate Check
+  '/admin/rate-check':         'reports',
   // Reports & Settings
   '/admin/reports':          'reports',
   '/admin/analytics':        'reports',

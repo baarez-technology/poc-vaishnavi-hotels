@@ -29,6 +29,14 @@ export interface AdminAIChatRequest {
   session_id?: string;
   context?: {
     currentPage?: string;
+    currentModule?: string;
+    selectedBookingId?: number;
+    selectedGuestId?: number;
+    selectedRoomId?: number;
+    selectedStaffId?: number;
+    activeFilters?: Record<string, unknown>;
+    userRole?: string;
+    businessDate?: string;
     selectedItems?: string[];
     previousMessages?: Array<{ role: string; content: string }>;
     pendingAction?: {
@@ -73,6 +81,10 @@ export interface AdminAIChatResponse {
   suggestions?: string[];
   audit_id?: number;
   error?: string;
+  // Multi-agent architecture fields
+  intents_detected?: string[];
+  auto_filled_params?: string[];
+  context_entities?: Record<string, unknown>;
 }
 
 export interface AdminAIExecuteRequest {

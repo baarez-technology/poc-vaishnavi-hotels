@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Bell, Menu, Moon, Search, Settings, Sparkles, Sun, UserCircle } from 'lucide-react';
+import { Bell, Calendar, Menu, Moon, Search, Settings, Sparkles, Sun, UserCircle } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { cn } from '../../lib/utils';
 import { IconButton } from '../ui2/IconButton';
 import { Button } from '../ui2/Button';
+import { apiClient } from '../../api/client';
 
 function useBreadcrumb() {
   const location = useLocation();
@@ -34,7 +35,6 @@ function useBreadcrumb() {
       ai: 'AI',
       crm: 'CRM',
       reputation: 'Reputation',
-      analytics: 'Advanced Analytics',
       staff: 'Staff',
     };
 
@@ -68,6 +68,13 @@ export function AdminTopbar({ onToggleMobileSidebar, onToggleAI, rightSlot }) {
   const { isDark, toggleTheme } = useTheme();
   const breadcrumb = useBreadcrumb();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [businessDate, setBusinessDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    apiClient.get('/v1/config/business-date')
+      .then(res => setBusinessDate(res.data?.business_date))
+      .catch(() => {}); // graceful fallback — badge just won't show
+  }, []);
 
   return (
     <header
@@ -106,6 +113,16 @@ export function AdminTopbar({ onToggleMobileSidebar, onToggleAI, rightSlot }) {
             ))}
           </nav>
         </div>
+
+        {/* Business Date Badge */}
+        {businessDate && (
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200/60">
+            <Calendar className="w-3.5 h-3.5 text-amber-600" />
+            <span className="text-xs font-semibold text-amber-700">
+              {new Date(businessDate + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+            </span>
+          </div>
+        )}
 
         {/* Center (optional) */}
         <div className="hidden xl:flex items-center gap-2">{rightSlot}</div>

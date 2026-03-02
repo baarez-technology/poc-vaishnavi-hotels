@@ -32,12 +32,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check for existing session on mount
   useEffect(() => {
+    let isMounted = true;
+
     const checkAuth = async () => {
       const token = getAccessToken();
       if (token) {
         try {
           // Validate token by fetching current user
           const currentUser = await authService.getCurrentUser();
+          if (!isMounted) return;
 
           // DEV: allow role override for RBAC testing
           // Set localStorage key "glimmora_dev_role" to test, e.g. "receptionist"
@@ -54,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Store user in localStorage for quick access
           localStorage.setItem('glimmora_user', JSON.stringify(currentUser));
         } catch (error) {
+          if (!isMounted) return;
           // Token invalid or expired, clear everything
           setAccessToken(null);
           setUser(null);
@@ -62,14 +66,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.removeItem('glimmora_access_token');
         }
       } else {
+        if (!isMounted) return;
         // No token found, clear any stale user data
         setUser(null);
         localStorage.removeItem('glimmora_user');
       }
-      setIsLoading(false);
+      if (isMounted) setIsLoading(false);
     };
 
     checkAuth();
+
+    return () => { isMounted = false; };
   }, []);
 
   const login = async (email: string, password: string, remember = false) => {
@@ -82,17 +89,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       setUser(response.user);
-      
+
       // Store user in localStorage for persistence
       localStorage.setItem('glimmora_user', JSON.stringify(response.user));
-      
+
       if (remember) {
         localStorage.setItem('glimmora_remember', 'true');
       }
-      
+
       setIsLoading(false);
+
+      // If user must reset their temp password, redirect to set-password page
+      if (response.mustResetPassword || response.user.mustResetPassword) {
+        toast.success('Welcome! Please set your new password to continue.');
+        navigate('/set-password');
+        return;
+      }
+
       toast.success('Welcome back!');
-      
+
       // Redirect based on user role
       const role = response.user.role?.toLowerCase();
       const currentPath = window.location.pathname;
@@ -102,28 +117,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const maintenanceRoles = ['maintenance', 'technician', 'electrician', 'plumber', 'hvac_technician'];
       const housekeepingRoles = ['housekeeping', 'housekeeper', 'room_attendant', 'laundry_attendant'];
       const runnerRoles = ['runner', 'bellhop', 'valet'];
-      const frontDeskRoles = ['front_desk', 'frontdesk', 'receptionist', 'concierge', 'night_auditor'];
-      const managementRoles = ['admin', 'manager', 'supervisor', 'general_manager'];
+      const frontDeskRoles = ['front_desk', 'frontdesk', 'receptionist', 'concierge', 'night_auditor', 'front_office_manager', 'duty_manager'];
+      const managementRoles = ['admin', 'manager', 'supervisor', 'general_manager', 'reservation_manager', 'revenue_manager', 'accounts_manager'];
+      const housekeepingMgmtRoles = ['housekeeping_manager'];
 
       if (role === 'admin' || response.user.isSuperuser || managementRoles.includes(role)) {
         navigate('/admin');
       } else if (frontDeskRoles.includes(role)) {
-        navigate('/dashboard/frontdesk');
+        navigate('/admin');
+      } else if (housekeepingMgmtRoles.includes(role)) {
+        navigate('/admin');
       } else if (housekeepingRoles.includes(role)) {
-        // Redirect to staff portal if coming from staff login, otherwise regular dashboard
         navigate(fromStaffLogin ? '/staff/housekeeping' : '/dashboard/housekeeping');
       } else if (maintenanceRoles.includes(role)) {
-        // Always redirect maintenance roles to staff portal
         navigate('/staff/maintenance');
       } else if (runnerRoles.includes(role)) {
-        // Always redirect runner roles to staff portal
         navigate('/staff/runner');
       } else if (role === 'finance') {
         navigate('/dashboard/finance');
       } else if (role === 'operations') {
         navigate('/dashboard/operations');
       } else {
-        // Guest or unknown role - redirect to guest dashboard
         navigate('/dashboard');
       }
     } catch (error: any) {

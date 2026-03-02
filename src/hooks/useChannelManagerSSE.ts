@@ -8,6 +8,11 @@ import { useEffect, useRef, useCallback } from 'react';
 import { getAccessToken } from '../api/client';
 import { ENV } from '../config/env';
 
+// Debug logger - only logs in development
+const sseLog = ENV.IS_DEV ? console.log.bind(console) : () => {};
+const sseWarn = ENV.IS_DEV ? console.warn.bind(console) : () => {};
+const sseError = console.error.bind(console); // Always log errors
+
 export interface SSEEvent {
   type: string;
   data: any;
@@ -60,7 +65,7 @@ export function useChannelManagerSSE(options: UseChannelManagerSSEOptions = {}) 
 
     const baseUrl = ENV.API_URL.replace(/\/+$/, ''); // strip trailing slashes
     const url = `${baseUrl}/api/v1/webhooks/channel-manager/sse`;
-    console.log('[SSE] Connecting to:', url);
+    sseLog('[SSE] Connecting to:', url);
 
     // Clean up previous connection
     if (abortControllerRef.current) {
@@ -95,7 +100,7 @@ export function useChannelManagerSSE(options: UseChannelManagerSSEOptions = {}) 
 
       if (!response.ok) {
         if (response.status === 401) {
-          console.warn('[SSE] Authentication failed (401)');
+          sseWarn('[SSE] Authentication failed (401)');
           isConnectingRef.current = false;
           isConnectedRef.current = false;
           onError?.(new Error('Authentication failed'));
@@ -120,7 +125,7 @@ export function useChannelManagerSSE(options: UseChannelManagerSSEOptions = {}) 
         const { done, value } = await readerRef.current.read();
 
         if (done) {
-          console.log('[SSE] Connection closed by server');
+          sseLog('[SSE] Connection closed by server');
           isConnectedRef.current = false;
           if (enabled) {
             reconnectDelayRef.current = Math.min(reconnectDelayRef.current * 2, maxReconnectDelay);
@@ -151,7 +156,7 @@ export function useChannelManagerSSE(options: UseChannelManagerSSEOptions = {}) 
 
               // Handle initial connection message
               if (data.type === 'connected') {
-                console.log('[SSE] Connected successfully');
+                sseLog('[SSE] Connected successfully');
                 isConnectedRef.current = true;
                 onConnect?.();
                 continue;
@@ -160,7 +165,7 @@ export function useChannelManagerSSE(options: UseChannelManagerSSEOptions = {}) 
               // Handle regular events
               onEvent?.(data);
             } catch (error) {
-              console.warn('[SSE] Failed to parse SSE data:', line.substring(0, 80));
+              sseWarn('[SSE] Failed to parse SSE data:', line.substring(0, 80));
             }
           }
         }
@@ -174,7 +179,7 @@ export function useChannelManagerSSE(options: UseChannelManagerSSEOptions = {}) 
       }
 
       retriesRef.current += 1;
-      console.warn(`[SSE] Connection failed (attempt ${retriesRef.current}/${MAX_RETRIES}):`, error.message);
+      sseWarn(`[SSE] Connection failed (attempt ${retriesRef.current}/${MAX_RETRIES}):`, error.message);
       onError?.(error);
 
       // Reconnect with exponential backoff, but stop after MAX_RETRIES

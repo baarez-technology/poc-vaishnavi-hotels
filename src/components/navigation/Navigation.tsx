@@ -52,7 +52,7 @@ export function Navigation() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-3 group relative z-10">
+            <Link to="/" className="flex items-center gap-3 group relative z-10 overflow-hidden h-full">
               <motion.img
                 src={hotelInfo.logo ||logo }
                 alt={hotelInfo.name}
@@ -63,7 +63,7 @@ export function Navigation() {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-2">
+            <nav className="hidden lg:flex items-center gap-2 relative z-20">
               {navLinks.map((link) => {
                 const isActive = location.pathname === link.path;
 

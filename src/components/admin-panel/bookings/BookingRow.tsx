@@ -18,7 +18,9 @@ export default function BookingRow({ booking, onClick }) {
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-    const date = new Date(dateString);
+    // Append T12:00:00 to date-only strings to prevent UTC midnight timezone shift
+    const safe = dateString.includes('T') ? dateString : `${dateString}T12:00:00`;
+    const date = new Date(safe);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
@@ -28,7 +30,14 @@ export default function BookingRow({ booking, onClick }) {
   };
 
   // Normalize status to uppercase for lookup
-  const normalizedStatus = booking.status?.toUpperCase?.() || 'UNKNOWN';
+  // C-06: Show "Guaranteed" for confirmed bookings with future arrival date
+  let normalizedStatus = booking.status?.toUpperCase?.() || 'UNKNOWN';
+  if (normalizedStatus === 'CONFIRMED' && booking.checkIn) {
+    const today = new Date().toISOString().split('T')[0];
+    if (booking.checkIn > today) {
+      normalizedStatus = 'GUARANTEED';
+    }
+  }
   const status = statusConfig[normalizedStatus] || statusConfig[booking.status] || defaultStatus;
 
   // Normalize source for lookup
@@ -52,7 +61,7 @@ export default function BookingRow({ booking, onClick }) {
 
       {/* Booking ID */}
       <div className="text-xs text-neutral-500 font-mono truncate">
-        {booking.id}
+        {booking.bookingNumber || booking.id}
       </div>
 
       {/* Check-in Date */}

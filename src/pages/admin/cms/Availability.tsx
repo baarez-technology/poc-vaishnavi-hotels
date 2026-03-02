@@ -527,7 +527,7 @@ function CalendarDayCell({
 }) {
   if (!dayData) return null;
 
-  const { sold, reserved = 0, remaining, totalRooms, isClosed, restrictions } = dayData;
+  const { sold, reserved = 0, remaining, totalRooms, isClosed, restrictions, baseRate } = dayData;
   // Calculate total occupied (sold + reserved)
   const totalOccupied = (sold || 0) + (reserved || 0);
   const occupancy = totalRooms > 0 ? Math.round((totalOccupied / totalRooms) * 100) : 0;
@@ -640,6 +640,16 @@ function CalendarDayCell({
           )}>
             <Clock className="w-2.5 h-2.5" />
             {minStay}N min
+          </div>
+        )}
+
+        {/* Base rate */}
+        {baseRate != null && (
+          <div className={cn(
+            'text-[10px] font-semibold tabular-nums',
+            isDark ? 'text-terra-400' : 'text-terra-600'
+          )}>
+            ${baseRate}
           </div>
         )}
 
@@ -912,6 +922,7 @@ function AvailabilityEditPanel({
       setEditData({
         remaining: dayData.remaining,
         isClosed: dayData.isClosed,
+        baseRate: dayData.baseRate ?? null,
         minStay: dayData.restrictions?.minStay || 1,
         maxStay: dayData.restrictions?.maxStay || null,
         CTA: dayData.restrictions?.CTA || false,
@@ -989,6 +1000,33 @@ function AvailabilityEditPanel({
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Base Rate */}
+        <div>
+          <label className={cn(
+            'block text-sm font-medium mb-3',
+            isDark ? 'text-neutral-300' : 'text-neutral-700'
+          )}>
+            Base Rate ($)
+          </label>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            value={editData.baseRate ?? ''}
+            onChange={(e) => {
+              const v = e.target.value === '' ? null : Math.max(0, parseInt(e.target.value, 10) || 0);
+              setEditData(prev => ({ ...prev, baseRate: v }));
+            }}
+            placeholder="e.g. 245"
+            className={cn(
+              'w-full h-12 rounded-xl border px-4 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-terra-500/40',
+              isDark
+                ? 'bg-neutral-800 border-neutral-700 text-white placeholder:text-neutral-500'
+                : 'bg-white border-neutral-200 text-neutral-900 placeholder:text-neutral-400'
+            )}
+          />
         </div>
 
         {/* Availability Control */}
@@ -1627,7 +1665,7 @@ export default function CMSAvailability() {
   };
 
   const handleSaveAvailability = (date, roomType, updates) => {
-    cmsAvailability.updateAvailability(date, roomType, {
+    const payload = {
       remaining: updates.remaining,
       isClosed: updates.isClosed,
       restrictions: {
@@ -1636,7 +1674,11 @@ export default function CMSAvailability() {
         CTA: updates.CTA,
         CTD: updates.CTD
       }
-    });
+    };
+    if (updates.baseRate !== undefined && updates.baseRate !== null) {
+      payload.baseRate = updates.baseRate;
+    }
+    cmsAvailability.updateAvailability(date, roomType, payload);
     success('Availability updated successfully');
     setEditPanelOpen(false);
   };
@@ -1680,39 +1722,38 @@ export default function CMSAvailability() {
     );
   };
 
-  // Quick Action: Close Weekends (apply CTA to both Saturday AND Sunday)
-  const handleCloseWeekends = useCallback(async () => {
-    setQuickActionLoading('closeWeekends');
-    try {
-      const weekendDates: string[] = [];
-      dates.forEach(dateObj => {
-        if (dateObj.isWeekend) {
-          weekendDates.push(dateObj.date);
-        }
-      });
-
-      if (weekendDates.length === 0) {
-        showError('No weekend dates found in the current date range');
-        return;
-      }
-
-      // Apply CTA (Closed to Arrival) to ALL weekend dates (both Saturday AND Sunday)
-      for (const roomType of selectedRoomTypes) {
-        for (const date of weekendDates) {
-          await cmsAvailability.updateRestrictions(date, roomType, { CTA: true });
-        }
-      }
-
-      await cmsAvailability.refetch();
-      success(`Weekend arrivals blocked for ${weekendDates.length} days across ${selectedRoomTypes.length} room types`);
-    } catch (err) {
-      console.error('Close weekends failed:', err);
-      showError('Failed to close weekends. Please try again.');
-    } finally {
-      setQuickActionLoading(null);
-      setConfirmDialog(null);
-    }
-  }, [dates, selectedRoomTypes, cmsAvailability, success, showError]);
+  // Quick Action: Close Weekends (apply CTA to both Saturday AND Sunday) - COMMENTED OUT FOR NOW
+  // const handleCloseWeekends = useCallback(async () => {
+  //   setQuickActionLoading('closeWeekends');
+  //   try {
+  //     const weekendDates: string[] = [];
+  //     dates.forEach(dateObj => {
+  //       if (dateObj.isWeekend) {
+  //         weekendDates.push(dateObj.date);
+  //       }
+  //     });
+  //
+  //     if (weekendDates.length === 0) {
+  //       showError('No weekend dates found in the current date range');
+  //       return;
+  //     }
+  //
+  //     for (const roomType of selectedRoomTypes) {
+  //       for (const date of weekendDates) {
+  //         await cmsAvailability.updateRestrictions(date, roomType, { CTA: true });
+  //       }
+  //     }
+  //
+  //     await cmsAvailability.refetch();
+  //     success(`Weekend arrivals blocked for ${weekendDates.length} days across ${selectedRoomTypes.length} room types`);
+  //   } catch (err) {
+  //     console.error('Close weekends failed:', err);
+  //     showError('Failed to close weekends. Please try again.');
+  //   } finally {
+  //     setQuickActionLoading(null);
+  //     setConfirmDialog(null);
+  //   }
+  // }, [dates, selectedRoomTypes, cmsAvailability, success, showError]);
 
   // Quick Action: Apply Weekend Rate (+15%)
   const handleApplyWeekendRate = useCallback(async () => {
@@ -1775,27 +1816,25 @@ export default function CMSAvailability() {
     }
   }, [dates, selectedRoomTypes, cmsAvailability, success, showError]);
 
-  // Quick Action: Stop Sell All Rooms
-  const handleStopSellAll = useCallback(async () => {
-    setQuickActionLoading('stopSell');
-    try {
-      // Close all room types for all dates
-      for (const roomType of selectedRoomTypes) {
-        for (const dateObj of dates) {
-          await cmsAvailability.closeRoomType(dateObj.date, roomType);
-        }
-      }
-
-      await cmsAvailability.refetch();
-      success(`Stop sell applied - all ${selectedRoomTypes.length} room types are now closed for ${dates.length} days`);
-    } catch (err) {
-      console.error('Stop sell failed:', err);
-      showError('Failed to stop sell. Please try again.');
-    } finally {
-      setQuickActionLoading(null);
-      setConfirmDialog(null);
-    }
-  }, [dates, selectedRoomTypes, cmsAvailability, success, showError]);
+  // Quick Action: Stop Sell All Rooms - COMMENTED OUT FOR NOW
+  // const handleStopSellAll = useCallback(async () => {
+  //   setQuickActionLoading('stopSell');
+  //   try {
+  //     for (const roomType of selectedRoomTypes) {
+  //       for (const dateObj of dates) {
+  //         await cmsAvailability.closeRoomType(dateObj.date, roomType);
+  //       }
+  //     }
+  //     await cmsAvailability.refetch();
+  //     success(`Stop sell applied - all ${selectedRoomTypes.length} room types are now closed for ${dates.length} days`);
+  //   } catch (err) {
+  //     console.error('Stop sell failed:', err);
+  //     showError('Failed to stop sell. Please try again.');
+  //   } finally {
+  //     setQuickActionLoading(null);
+  //     setConfirmDialog(null);
+  //   }
+  // }, [dates, selectedRoomTypes, cmsAvailability, success, showError]);
 
   // Bulk Update Handler
   const handleBulkUpdate = useCallback(async () => {
@@ -1862,20 +1901,21 @@ export default function CMSAvailability() {
 
   // Quick Actions configuration
   const quickActions = [
-    {
-      id: 'closeWeekends',
-      icon: Ban,
-      title: 'Close Weekends',
-      description: 'Block weekend check-ins (Sat & Sun)',
-      accent: 'terra',
-      onClick: () => setConfirmDialog({
-        isOpen: true,
-        title: 'Close Weekends to Arrival',
-        message: 'This will prevent check-ins on ALL Saturdays AND Sundays for the next 30 days across all selected room types.',
-        variant: 'warning',
-        onConfirm: handleCloseWeekends
-      })
-    },
+    // Close Weekends - COMMENTED OUT FOR NOW
+    // {
+    //   id: 'closeWeekends',
+    //   icon: Ban,
+    //   title: 'Close Weekends',
+    //   description: 'Block weekend check-ins (Sat & Sun)',
+    //   accent: 'terra',
+    //   onClick: () => setConfirmDialog({
+    //     isOpen: true,
+    //     title: 'Close Weekends to Arrival',
+    //     message: 'This will prevent check-ins on ALL Saturdays AND Sundays for the next 30 days across all selected room types.',
+    //     variant: 'warning',
+    //     onConfirm: handleCloseWeekends
+    //   })
+    // },
     {
       id: 'weekendRate',
       icon: TrendingUp,
@@ -1904,20 +1944,21 @@ export default function CMSAvailability() {
         onConfirm: handleSetMinStay
       })
     },
-    {
-      id: 'stopSell',
-      icon: AlertTriangle,
-      title: 'Stop Sell All',
-      description: 'Block ALL bookings immediately',
-      accent: 'rose',
-      onClick: () => setConfirmDialog({
-        isOpen: true,
-        title: 'Stop Sell All Rooms',
-        message: 'WARNING: This will close ALL room types and prevent ANY new bookings. This is a drastic action.',
-        variant: 'danger',
-        onConfirm: handleStopSellAll
-      })
-    }
+    // Stop Sell All - COMMENTED OUT FOR NOW
+    // {
+    //   id: 'stopSell',
+    //   icon: AlertTriangle,
+    //   title: 'Stop Sell All',
+    //   description: 'Block ALL bookings immediately',
+    //   accent: 'rose',
+    //   onClick: () => setConfirmDialog({
+    //     isOpen: true,
+    //     title: 'Stop Sell All Rooms',
+    //     message: 'WARNING: This will close ALL room types and prevent ANY new bookings. This is a drastic action.',
+    //     variant: 'danger',
+    //     onConfirm: handleStopSellAll
+    //   })
+    // }
   ];
 
   return (

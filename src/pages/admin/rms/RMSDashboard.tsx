@@ -81,7 +81,7 @@ const AI_RECOMMENDATIONS = [
     type: 'increase',
     title: 'Increase Weekend Rates',
     description: 'High demand detected for Saturday. Consider 15% rate increase.',
-    impact: '+$12,400 potential revenue',
+    impact: '+₹12,400 potential revenue',
     priority: 'high',
   },
   {
@@ -95,7 +95,7 @@ const AI_RECOMMENDATIONS = [
     type: 'optimize',
     title: 'Length of Stay Discount',
     description: '3+ night stays at 10% off could increase bookings.',
-    impact: '+$5,200 monthly revenue',
+    impact: '+₹5,200 monthly revenue',
     priority: 'low',
   },
 ];
@@ -168,7 +168,7 @@ export default function RMSDashboard() {
             <span className="text-xs text-neutral-500">Weekly Revenue</span>
           </div>
           <p className="text-2xl font-bold text-neutral-900">
-            ${metrics.totalRevenue.toLocaleString()}
+            ₹{metrics.totalRevenue.toLocaleString()}
           </p>
           <div className="flex items-center gap-1 mt-1">
             <ArrowUpRight className="w-3 h-3 text-sage-500" />
@@ -193,7 +193,7 @@ export default function RMSDashboard() {
             <Building2 className="w-4 h-4 text-ocean-600" />
             <span className="text-xs text-neutral-500">Avg Rate (ADR)</span>
           </div>
-          <p className="text-2xl font-bold text-neutral-900">${metrics.avgRate}</p>
+          <p className="text-2xl font-bold text-neutral-900">₹{metrics.avgRate}</p>
           <div className="flex items-center gap-1 mt-1">
             <ArrowUpRight className="w-3 h-3 text-sage-500" />
             <span className="text-xs text-sage-500">+3.1% vs last month</span>
@@ -205,7 +205,7 @@ export default function RMSDashboard() {
             <Target className="w-4 h-4 text-gold-600" />
             <span className="text-xs text-neutral-500">RevPAR</span>
           </div>
-          <p className="text-2xl font-bold text-neutral-900">${metrics.revPAR}</p>
+          <p className="text-2xl font-bold text-neutral-900">₹{metrics.revPAR}</p>
           <div className="flex items-center gap-1 mt-1">
             <ArrowUpRight className="w-3 h-3 text-sage-500" />
             <span className="text-xs text-sage-500">+6.8% vs budget</span>
@@ -315,8 +315,8 @@ export default function RMSDashboard() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="text-sm font-bold text-neutral-900">${room.suggested}</p>
-                      <p className="text-xs text-neutral-400">Current: ${room.current}</p>
+                      <p className="text-sm font-bold text-neutral-900">₹{room.suggested}</p>
+                      <p className="text-xs text-neutral-400">Current: ₹{room.current}</p>
                     </div>
                     {room.change !== 0 && (
                       <div
@@ -371,7 +371,7 @@ export default function RMSDashboard() {
                       border: '1px solid #E5E5E5',
                       borderRadius: '8px',
                     }}
-                    formatter={(value: number) => [`$${value}`, 'Rate']}
+                    formatter={(value: number) => [`₹${value}`, 'Rate']}
                   />
                   <Bar
                     dataKey="price"

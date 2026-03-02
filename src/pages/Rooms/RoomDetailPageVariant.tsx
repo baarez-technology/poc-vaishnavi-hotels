@@ -25,11 +25,13 @@ import {
 import { getRoomBySlug } from '@/data/roomsData';
 import { Button, Card } from '@/components/ui';
 import { formatCurrency } from '@/utils/helpers/format';
+import { useGSTCalculator } from '@/hooks/useGSTCalculator';
 
 export const RoomDetailPageVariant = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { calculateGSTPerNight } = useGSTCalculator();
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
@@ -538,24 +540,37 @@ export const RoomDetailPageVariant = () => {
                   </p>
 
                   {/* Price Breakdown */}
-                  <div className="space-y-3 mb-6 pb-6 border-b border-neutral-200">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-neutral-700">Base price</span>
-                      <span className="font-semibold text-neutral-900">{formatCurrency(room.price)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-neutral-700">Taxes (12%)</span>
-                      <span className="font-semibold text-neutral-900">{formatCurrency(room.price * 0.12)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-neutral-700">Service fee (5%)</span>
-                      <span className="font-semibold text-neutral-900">{formatCurrency(room.price * 0.05)}</span>
-                    </div>
-                    <div className="flex justify-between pt-3 border-t border-neutral-200">
-                      <span className="font-bold text-neutral-900">Total</span>
-                      <span className="font-bold text-xl text-primary-700">{formatCurrency(room.price * 1.17)}</span>
-                    </div>
-                  </div>
+                  {(() => {
+                    const gst = calculateGSTPerNight(room.price);
+                    return (
+                      <div className="space-y-3 mb-6 pb-6 border-b border-neutral-200">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-neutral-700">Base price</span>
+                          <span className="font-semibold text-neutral-900">{formatCurrency(room.price)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-neutral-700">GST ({gst.taxRate}%)</span>
+                          <span className="font-semibold text-neutral-900">{formatCurrency(gst.taxAmount)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs pl-4">
+                          <span className="text-neutral-500">CGST ({gst.cgstRate}%)</span>
+                          <span className="text-neutral-500">{formatCurrency(gst.cgst)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs pl-4">
+                          <span className="text-neutral-500">SGST ({gst.sgstRate}%)</span>
+                          <span className="text-neutral-500">{formatCurrency(gst.sgst)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-neutral-700">Service fee (5%)</span>
+                          <span className="font-semibold text-neutral-900">{formatCurrency(gst.serviceFee)}</span>
+                        </div>
+                        <div className="flex justify-between pt-3 border-t border-neutral-200">
+                          <span className="font-bold text-neutral-900">Total</span>
+                          <span className="font-bold text-xl text-primary-700">{formatCurrency(gst.total)}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Benefits */}
                   <div className="space-y-3">

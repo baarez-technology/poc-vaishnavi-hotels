@@ -60,9 +60,9 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
       <div
         onClick={onClose}
         className={`
-          fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]
+          fixed inset-0 bg-black/50 z-[100]
           transition-opacity duration-300 ease-out
-          ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}
+          ${isOpen ? 'opacity-100 pointer-events-auto backdrop-blur-sm' : 'opacity-0 pointer-events-none'}
         `}
       />
 
@@ -72,7 +72,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           fixed top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl z-[101]
           overflow-y-auto
           transition-transform duration-300 ease-out
-          ${isOpen ? 'translate-x-0' : 'translate-x-full'}
+          ${isOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none'}
         `}
       >
         {/* Header */}

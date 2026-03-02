@@ -9,7 +9,7 @@ type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
 
 interface RateCellProps {
   date: string;
-  roomTypeId: string;
+  roomTypeId?: string;
   roomData: {
     dynamicRate: number;
     baseRate: number;
@@ -111,12 +111,12 @@ const RateCell = ({
     }
 
     if (newRate < MIN_RATE) {
-      setShowValidationError(`Rate must be at least $${MIN_RATE}`);
+      setShowValidationError(`Rate must be at least ₹${MIN_RATE}`);
       return;
     }
 
     if (newRate > MAX_RATE) {
-      setShowValidationError(`Rate cannot exceed $${MAX_RATE}`);
+      setShowValidationError(`Rate cannot exceed ₹${MAX_RATE}`);
       return;
     }
 
@@ -136,35 +136,27 @@ const RateCell = ({
     setSaveStatus('saving');
 
     try {
-      // Call API to save the rate
-      await revenueIntelligenceService.updateRate(roomTypeId, date, {
-        rate: newRate,
-        reason: 'Manual override',
-      });
+      // When parent provides onUpdateRate, let parent handle API (so correct room type id is used and rate persists)
+      const maybePromise = onUpdateRate(date, newRate);
+      await Promise.resolve(maybePromise);
 
-      // Update local state via parent callback
-      onUpdateRate(date, newRate);
-
-      // Show success state
       setSaveStatus('success');
 
-      // Show success toast
       const oldRate = dynamicRate;
       const change = newRate - oldRate;
-      const changeText = change > 0 ? `+$${change}` : `-$${Math.abs(change)}`;
+      const changeText = change > 0 ? `+₹${change}` : `-₹${Math.abs(change)}`;
 
-      success(`Rate updated to $${newRate} (${changeText})`, {
+      success(`Rate updated to ₹${newRate} (${changeText})`, {
         duration: 3000,
       });
 
       setIsEditing(false);
     } catch (err) {
-      // Show error state
       setSaveStatus('error');
       showError('Failed to update rate. Please try again.');
       setShowValidationError('Save failed. Please try again.');
     }
-  }, [date, roomTypeId, dynamicRate, onUpdateRate, success, showError]);
+  }, [date, dynamicRate, onUpdateRate, success, showError]);
 
   const handleCancel = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -274,7 +266,7 @@ const RateCell = ({
         >
           <div className="text-center">
             <div className="flex items-center justify-center gap-1">
-              <p className="text-[15px] font-bold text-neutral-800">${dynamicRate}</p>
+              <p className="text-[15px] font-bold text-neutral-800">₹{dynamicRate}</p>
               {getSaveStatusIndicator() || (
                 <Info className="w-3 h-3 text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity" />
               )}
@@ -310,7 +302,7 @@ const RateCell = ({
                   Rate Details
                 </p>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-2xl font-bold text-neutral-900">${dynamicRate}</p>
+                  <p className="text-2xl font-bold text-neutral-900">₹{dynamicRate}</p>
                   {hasOverride && (
                     <span className="px-2 py-0.5 text-[10px] font-medium bg-terra-50 text-terra-600 rounded">
                       Override
@@ -322,15 +314,15 @@ const RateCell = ({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-medium text-neutral-500">BAR (Best Available)</span>
-                  <span className="text-[13px] font-bold text-neutral-900">${rates.BAR}</span>
+                  <span className="text-[13px] font-bold text-neutral-900">₹{rates.BAR}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-medium text-neutral-500">OTA Rate (+15%)</span>
-                  <span className="text-[13px] font-bold text-neutral-900">${rates.OTA}</span>
+                  <span className="text-[13px] font-bold text-neutral-900">₹{rates.OTA}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-medium text-neutral-500">Corporate (-20%)</span>
-                  <span className="text-[13px] font-bold text-neutral-900">${rates.CORP}</span>
+                  <span className="text-[13px] font-bold text-neutral-900">₹{rates.CORP}</span>
                 </div>
               </div>
 
@@ -347,7 +339,7 @@ const RateCell = ({
                   )}
                   <span className="text-[11px] font-medium">
                     {rateChange > 0 ? '+' : ''}
-                    {rateChangePercent}% vs base rate (${baseRate})
+                    {rateChangePercent}% vs base rate (₹{baseRate})
                   </span>
                 </div>
               )}
@@ -361,7 +353,7 @@ const RateCell = ({
           onClose={() => setLargeChangeConfirm({ isOpen: false, newRate: null, percentChange: 0 })}
           onConfirm={confirmLargeChange}
           title="Confirm Large Rate Change"
-          description={`This is a ${largeChangeConfirm.percentChange}% change from $${dynamicRate} to $${largeChangeConfirm.newRate}. Are you sure you want to apply this rate change?`}
+          description={`This is a ${largeChangeConfirm.percentChange}% change from ₹${dynamicRate} to ₹${largeChangeConfirm.newRate}. Are you sure you want to apply this rate change?`}
           variant="warning"
           confirmText="Apply Change"
           cancelText="Cancel"
@@ -427,7 +419,7 @@ const RateCell = ({
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold text-neutral-800">${dynamicRate}</span>
+              <span className="text-xl font-bold text-neutral-800">₹{dynamicRate}</span>
               {getSaveStatusIndicator()}
               {hasOverride && !getSaveStatusIndicator() && (
                 <span className="px-1.5 py-0.5 text-[10px] font-medium bg-terra-50 text-terra-600 rounded">
@@ -470,15 +462,15 @@ const RateCell = ({
         <div className="space-y-1 mb-2 text-[11px]">
           <div className="flex justify-between">
             <span className="text-neutral-500">BAR</span>
-            <span className="font-medium">${rates.BAR}</span>
+            <span className="font-medium">₹{rates.BAR}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-neutral-500">OTA</span>
-            <span className="font-medium">${rates.OTA}</span>
+            <span className="font-medium">₹{rates.OTA}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-neutral-500">Corp</span>
-            <span className="font-medium">${rates.CORP}</span>
+            <span className="font-medium">₹{rates.CORP}</span>
           </div>
         </div>
 
@@ -526,7 +518,7 @@ const RateCell = ({
         onClose={() => setLargeChangeConfirm({ isOpen: false, newRate: null, percentChange: 0 })}
         onConfirm={confirmLargeChange}
         title="Confirm Large Rate Change"
-        description={`This is a ${largeChangeConfirm.percentChange}% change from $${dynamicRate} to $${largeChangeConfirm.newRate}. Are you sure you want to apply this rate change?`}
+        description={`This is a ${largeChangeConfirm.percentChange}% change from ₹${dynamicRate} to ₹${largeChangeConfirm.newRate}. Are you sure you want to apply this rate change?`}
         variant="warning"
         confirmText="Apply Change"
         cancelText="Cancel"

@@ -16,9 +16,10 @@ import {
   Home,
   Loader2,
   ArrowUpDown,
-  Heart
+  Heart,
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
-import { rooms as mockRooms } from '@/data/roomsData';
 import { Button, Card } from '@/components/ui';
 import { formatCurrency } from '@/utils/helpers/format';
 import type { Room } from '@/api/types/booking.types';
@@ -38,7 +39,7 @@ export const RoomsPage = () => {
   const [searchParams] = useSearchParams();
 
   // Rooms state - loaded from API (prices come directly from database)
-  const [rooms, setRooms] = useState<Room[]>(mockRooms);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,21 +74,18 @@ export const RoomsPage = () => {
         console.log('[RoomsPage] Is array:', Array.isArray(apiRooms), 'Length:', apiRooms?.length);
         if (Array.isArray(apiRooms) && apiRooms.length > 0) {
           console.log('[RoomsPage] Using API data, first room slug:', apiRooms[0]?.slug, 'price:', apiRooms[0]?.price);
-          // Use API prices directly (they come from RoomType.base_price in the database)
           setRooms(apiRooms);
           // Clear stale filter selections that may not exist in API data
           setSelectedAmenities([]);
           setSelectedCategories([]);
         } else {
-          console.log('[RoomsPage] Falling back to mock data');
-          // Fallback to mock data if API returns empty
-          setRooms(mockRooms);
+          console.log('[RoomsPage] API returned empty');
+          setRooms([]);
         }
       } catch (err) {
         console.error('Failed to fetch rooms from API:', err);
         setError('Failed to load rooms');
-        // Keep using mock data as fallback
-        setRooms(mockRooms);
+        setRooms([]);
       } finally {
         setIsLoading(false);
       }
@@ -97,7 +95,7 @@ export const RoomsPage = () => {
   }, [searchData.checkIn, searchData.checkOut, searchData.adults, searchData.children]);
 
   // Filter state
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 80000]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>('popularity');
@@ -133,6 +131,16 @@ export const RoomsPage = () => {
     return Array.from(amenitiesSet).sort();
   }, [rooms]);
 
+  // Clear selected amenities that no longer exist after data refresh
+  useEffect(() => {
+    if (allAmenities.length > 0 && selectedAmenities.length > 0) {
+      const validAmenities = selectedAmenities.filter(a => allAmenities.includes(a));
+      if (validAmenities.length !== selectedAmenities.length) {
+        setSelectedAmenities(validAmenities);
+      }
+    }
+  }, [allAmenities]);
+
   const categories = ['standard', 'deluxe', 'suite', 'presidential'];
 
   const sortOptions = useMemo(() => [
@@ -150,15 +158,14 @@ export const RoomsPage = () => {
     return Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
   }, [searchData.checkIn, searchData.checkOut]);
 
-  // Check if room is available (mock logic - in real app would check database)
+  // Check if room is available using real API data
   const isRoomAvailable = (room: Room) => {
     // If no dates selected, show all rooms
     if (!searchData.checkIn || !searchData.checkOut) return true;
 
-    // Mock availability logic: 80% of rooms are available for any given date
-    // In production, this would check against actual bookings
-    const roomHash = room.id.charCodeAt(0) + searchData.checkIn.charCodeAt(0);
-    return roomHash % 5 !== 0; // 80% availability rate
+    // Use real availability from API response
+    if (room.available === false) return false;
+    return true;
   };
 
   // Filter and sort rooms
@@ -249,7 +256,7 @@ export const RoomsPage = () => {
   };
 
   const clearFilters = () => {
-    setPriceRange([0, 1000]);
+    setPriceRange([0, 80000]);
     setSelectedCategories([]);
     setSelectedAmenities([]);
   };
@@ -404,7 +411,7 @@ export const RoomsPage = () => {
                   {/* Price Filter */}
                   <div className="mb-6 pb-6 border-b-2 border-neutral-100">
                     <label className="block text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
-                      <span className="text-primary-600">$</span>
+                      <span className="text-primary-600">₹</span>
                       Price per night
                     </label>
                     <div className="flex items-center justify-between mb-4 px-2">
@@ -422,8 +429,8 @@ export const RoomsPage = () => {
                       <input
                         type="range"
                         min="0"
-                        max="1000"
-                        step="50"
+                        max="80000"
+                        step="1000"
                         value={priceRange[0]}
                         onChange={(e) => setPriceRange([Number(e.target.value), priceRange[1]])}
                         className="w-full h-2 accent-primary-600 cursor-pointer"
@@ -431,8 +438,8 @@ export const RoomsPage = () => {
                       <input
                         type="range"
                         min="0"
-                        max="1000"
-                        step="50"
+                        max="80000"
+                        step="1000"
                         value={priceRange[1]}
                         onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
                         className="w-full h-2 accent-primary-600 cursor-pointer"
@@ -583,7 +590,46 @@ export const RoomsPage = () => {
               </div>
             )}
 
+            {/* Error State */}
+            {error && !isLoading && (
+              <div className="text-center py-20 px-6">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 mb-6">
+                  <AlertTriangle size={32} className="text-red-500" />
+                </div>
+                <p className="text-neutral-900 text-xl font-semibold mb-2">Unable to Load Rooms</p>
+                <p className="text-neutral-600 mb-8">{error}</p>
+                <Button
+                  variant="primary"
+                  onClick={() => setSearchData({ ...searchData })}
+                  className="font-semibold px-8 py-4 inline-flex items-center gap-2"
+                >
+                  <RefreshCw size={18} />
+                  Try Again
+                </Button>
+              </div>
+            )}
+
+            {/* Empty State (API returned no rooms) */}
+            {rooms.length === 0 && !isLoading && !error && (
+              <div className="text-center py-20 px-6">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-neutral-100 mb-6">
+                  <Home size={32} className="text-neutral-400" />
+                </div>
+                <p className="text-neutral-900 text-xl font-semibold mb-2">No Rooms Available</p>
+                <p className="text-neutral-600">There are currently no rooms configured. Please check back later.</p>
+              </div>
+            )}
+
+            {/* Loading State */}
+            {isLoading && (
+              <div className="text-center py-20 px-6">
+                <Loader2 size={40} className="animate-spin text-primary-600 mx-auto mb-4" />
+                <p className="text-neutral-600 font-medium">Loading available suites...</p>
+              </div>
+            )}
+
             {/* Room Grid/List */}
+            {!isLoading && !error && rooms.length > 0 && (
             <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6' : 'space-y-4 sm:space-y-6'}>
               {paginatedRooms.map((room) => (
                 <RoomCard
@@ -597,9 +643,10 @@ export const RoomsPage = () => {
                 />
               ))}
             </div>
+            )}
 
-            {/* No Results */}
-            {filteredAndSortedRooms.length === 0 && (
+            {/* No Results (filters narrowed to zero) */}
+            {filteredAndSortedRooms.length === 0 && rooms.length > 0 && !isLoading && !error && (
               <div className="text-center py-24 px-6">
                 <p className="text-neutral-600 text-xl mb-8 font-medium">
                   No suites found matching your criteria
@@ -763,7 +810,7 @@ const RoomCard = ({ room, viewMode, searchData, nights, navigate, getCategoryBad
               )}
 
             {/* Available Badge */}
-              {hasSearchDates && (
+              {hasSearchDates && room.available !== false && (
               <div className="absolute top-3 right-3 px-3.5 py-2 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg flex items-center gap-1.5 border-2 border-green-400">
                 <CheckCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
                 <span className="text-xs font-bold">Available</span>
@@ -919,7 +966,7 @@ const RoomCard = ({ room, viewMode, searchData, nights, navigate, getCategoryBad
           )}
 
           {/* Available Badge */}
-          {hasSearchDates && (
+          {hasSearchDates && room.available !== false && (
             <div className="absolute bottom-3 right-3 px-3.5 py-2 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg flex items-center gap-1.5 border-2 border-green-400">
               <CheckCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
               <span className="text-xs font-bold">Available</span>

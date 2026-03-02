@@ -93,23 +93,28 @@ function ErrorDisplay({ error, onRetry }: { error: string; onRetry: () => void }
 export default function MarketSegmentChart() {
   const { data: apiSegments, loading, error, refresh } = useSegments();
 
-  // Transform API data to chart format
+  // Transform API data to chart format (normalize: API may return array or { segments: [] })
   const segmentsData: SegmentData[] = useMemo(() => {
-    if (!apiSegments || apiSegments.length === 0) {
+    const list = Array.isArray(apiSegments)
+      ? apiSegments
+      : (apiSegments && typeof apiSegments === 'object' && Array.isArray((apiSegments as { segments?: unknown }).segments))
+        ? (apiSegments as { segments: SegmentPerformance[] }).segments
+        : [];
+    if (list.length === 0) {
       return FALLBACK_SEGMENTS;
     }
 
-    const totalRevenue = apiSegments.reduce((sum, s) => sum + s.revenue, 0);
+    const totalRevenue = list.reduce((sum, s) => sum + (s?.revenue ?? 0), 0);
 
-    return apiSegments.map((segment, index) => ({
-      id: segment.segmentId,
-      name: segment.segmentName,
-      revenue: segment.revenue,
-      rooms: segment.bookings,
-      adr: segment.adr,
-      percentage: totalRevenue > 0 ? parseFloat(((segment.revenue / totalRevenue) * 100).toFixed(1)) : 0,
+    return list.map((segment, index) => ({
+      id: segment?.segmentId ?? `seg-${index}`,
+      name: segment?.segmentName ?? 'Unknown',
+      revenue: segment?.revenue ?? 0,
+      rooms: segment?.bookings ?? 0,
+      adr: segment?.adr ?? 0,
+      percentage: totalRevenue > 0 ? parseFloat((((segment?.revenue ?? 0) / totalRevenue) * 100).toFixed(1)) : 0,
       color: SEGMENT_COLORS[index % SEGMENT_COLORS.length],
-      trend: segment.trend,
+      trend: segment?.trend ?? 0,
     }));
   }, [apiSegments]);
 
@@ -126,13 +131,13 @@ export default function MarketSegmentChart() {
           <p className="font-semibold text-neutral-900 mb-2">{data.name}</p>
           <div className="space-y-1">
             <p className="text-sm text-neutral-700">
-              <span className="font-medium">Revenue:</span> ${data.revenue.toLocaleString()}
+              <span className="font-medium">Revenue:</span> ₹{data.revenue.toLocaleString()}
             </p>
             <p className="text-sm text-neutral-700">
               <span className="font-medium">Rooms:</span> {data.rooms.toLocaleString()}
             </p>
             <p className="text-sm text-neutral-700">
-              <span className="font-medium">ADR:</span> ${data.adr}
+              <span className="font-medium">ADR:</span> ₹{data.adr}
             </p>
             <p className={`text-sm font-semibold mt-2 ${data.trend >= 0 ? 'text-[#4E5840]' : 'text-rose-600'}`}>
               {data.trend >= 0 ? '+' : ''}{data.trend.toFixed(1)}% trend
@@ -237,11 +242,11 @@ export default function MarketSegmentChart() {
               </span>
             </div>
             <p className="text-xl font-bold text-neutral-900 mb-1">
-              ${(segment.revenue / 1000).toFixed(0)}K
+              ₹{(segment.revenue / 1000).toFixed(0)}K
             </p>
             <div className="flex items-center justify-between text-xs text-neutral-600">
               <span>{segment.rooms} rooms</span>
-              <span>ADR ${segment.adr}</span>
+              <span>ADR ₹{segment.adr}</span>
             </div>
           </div>
         ))}
@@ -251,7 +256,7 @@ export default function MarketSegmentChart() {
       <div className="mt-6 pt-6 border-t border-neutral-200 text-center">
         <p className="text-sm text-neutral-600 mb-1">Total Revenue</p>
         <p className="text-3xl font-bold text-[#A57865]">
-          ${(totalRevenue / 1000).toFixed(0)}K
+          ₹{(totalRevenue / 1000).toFixed(0)}K
         </p>
       </div>
     </div>

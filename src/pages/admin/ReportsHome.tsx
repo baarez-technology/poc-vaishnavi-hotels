@@ -1,5 +1,4 @@
-import { TrendingUp, Brain, ArrowRight, Zap, BarChart3, MessageSquare } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { TrendingUp } from 'lucide-react';
 import ReportCard from '../../components/reports/ReportCard';
 
 const REPORTS = [
@@ -48,55 +47,6 @@ export default function ReportsHome() {
           </div>
         </header>
 
-        {/* AI-Powered Analytics Banner */}
-        <Link
-          to="/admin/analytics"
-          className="block group"
-        >
-          <div className="relative overflow-hidden bg-gradient-to-r from-sage-600 via-sage-500 to-sage-600 rounded-[10px] p-4 sm:p-6">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
-
-            <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-sm flex-shrink-0">
-                  <Brain className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2 flex-wrap">
-                    <span>Advanced Analytics</span>
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider bg-gold-100 text-gold-700">
-                      AI-Powered
-                    </span>
-                  </h2>
-                  <p className="text-white/80 text-[12px] sm:text-[13px] mt-0.5">
-                    Natural language BI, predictive insights, and AI-generated reports
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 sm:gap-6">
-                <div className="hidden lg:flex items-center gap-4 text-white/70 text-[12px]">
-                  <div className="flex items-center gap-1.5">
-                    <Zap className="w-4 h-4" />
-                    <span>Predictions</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <BarChart3 className="w-4 h-4" />
-                    <span>KPI Dashboard</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <MessageSquare className="w-4 h-4" />
-                    <span>Ask Analytics</span>
-                  </div>
-                </div>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors">
-                  <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-0.5 transition-transform" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </Link>
 
         {/* Quick Stats */}
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6">

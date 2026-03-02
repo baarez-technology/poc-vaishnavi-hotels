@@ -35,7 +35,6 @@ function useBreadcrumb() {
       ai: 'AI',
       crm: 'CRM',
       reputation: 'Reputation',
-      analytics: 'Advanced Analytics',
       staff: 'Staff',
     };
 

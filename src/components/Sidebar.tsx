@@ -49,9 +49,6 @@ import {
   Hash,
   Shield,
   ScrollText,
-  FlaskConical,
-  Crown,
-  Heart,
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSettingsContext } from '../contexts/SettingsContext';
@@ -85,7 +82,6 @@ const navCategories = [
       { name: 'Staff', icon: UserCheck, to: '/admin/staff' },
       { name: 'Housekeeping', icon: ClipboardCheck, to: '/admin/housekeeping' },
       { name: 'Maintenance', icon: Wrench, to: '/admin/maintenance' },
-      { name: 'Runner', icon: Package, to: '/admin/runner' },
       { name: 'Room Moves', icon: ArrowRightLeft, to: '/admin/room-moves' },
     ]
   },
@@ -153,11 +149,6 @@ const navCategories = [
       { name: 'Reputation AI', icon: MessageSquare, to: '/admin/ai/reputation' },
       { name: 'CRM AI', icon: Contact, to: '/admin/ai/crm' },
       { name: 'ReConnect AI', icon: Brain, to: '/admin/ai/crm-dashboard' },
-      { name: 'A/B Testing', icon: FlaskConical, to: '/admin/ai/ab-testing' },
-      { name: 'OTA Conversion', icon: Globe, to: '/admin/ai/ota-conversion' },
-      { name: 'Member Tiers', icon: Crown, to: '/admin/ai/member-tiers' },
-      { name: 'AI Segments', icon: Layers, to: '/admin/ai/ai-segments' },
-      { name: 'Recovery Center', icon: Heart, to: '/admin/ai/recovery' },
     ]
   },
   {
@@ -165,7 +156,6 @@ const navCategories = [
     name: 'Analytics',
     icon: FileBarChart,
     items: [
-      { name: 'Advanced Analytics', icon: Brain, to: '/admin/analytics' },
       { name: 'Reports', icon: FileText, to: '/admin/reports' },
       { name: 'Rate Check', icon: BarChart2, to: '/admin/rate-check' },
     ]

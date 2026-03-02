@@ -91,7 +91,6 @@ const Staff = lazyWithRetry(() => import('./pages/admin/Staff'));
 const StaffProfile = lazyWithRetry(() => import('./pages/admin/staff/StaffProfile'));
 const Housekeeping = lazyWithRetry(() => import('./pages/admin/Housekeeping'));
 const Maintenance = lazyWithRetry(() => import('./pages/admin/Maintenance'));
-const Runner = lazyWithRetry(() => import('./pages/admin/Runner'));
 const RevenueAI = lazyWithRetry(() => import('./pages/admin/RevenueAI'));
 const ReputationAI = lazyWithRetry(() => import('./pages/admin/ReputationAI'));
 const ReputationGoals = lazyWithRetry(() => import('./pages/admin/ReputationGoals'));
@@ -99,11 +98,6 @@ const ReputationPendingReviews = lazyWithRetry(() => import('./pages/admin/Reput
 const CRM = lazyWithRetry(() => import('./pages/admin/CRM'));
 const CRMAI = lazyWithRetry(() => import('./pages/admin/ai/CRMAI'));
 const CRMAIDashboard = lazyWithRetry(() => import('./pages/admin/ai/CRMAIDashboard'));
-const ABTestingDashboard = lazyWithRetry(() => import('./pages/admin/ai/ABTestingDashboard'));
-const OTAConversionCenter = lazyWithRetry(() => import('./pages/admin/ai/OTAConversionCenter'));
-const MemberTierManagement = lazyWithRetry(() => import('./pages/admin/ai/MemberTierManagement'));
-const AISegmentationStudio = lazyWithRetry(() => import('./pages/admin/ai/AISegmentationStudio'));
-const RecoveryActionCenter = lazyWithRetry(() => import('./pages/admin/ai/RecoveryActionCenter'));
 const SegmentDetailsWrapper = lazyWithRetry(() => import('./pages/admin/crm/SegmentDetailsWrapper'));
 const SettingsLayout = lazyWithRetry(() => import('./pages/admin/settings/SettingsLayout'));
 const ReportsHome = lazyWithRetry(() => import('./pages/admin/ReportsHome'));
@@ -111,7 +105,6 @@ const BookingsOccupancyReport = lazyWithRetry(() => import('./pages/admin/Bookin
 const HousekeepingRoomsReport = lazyWithRetry(() => import('./pages/admin/HousekeepingRoomsReport'));
 const RevenueSnapshotReport = lazyWithRetry(() => import('./pages/admin/RevenueSnapshotReport'));
 const GuestExperienceReport = lazyWithRetry(() => import('./pages/admin/GuestExperienceReport'));
-const AdvancedAnalytics = lazyWithRetry(() => import('./pages/admin/AdvancedAnalytics'));
 const Profile = lazyWithRetry(() => import('./pages/admin/Profile'));
 const AccessDenied = lazyWithRetry(() => import('./pages/admin/AccessDenied'));
 
@@ -330,7 +323,6 @@ function App() {
                                                     <Route path="staff/:staffId" element={<StaffProfile />} />
                                                     <Route path="housekeeping" element={<Housekeeping />} />
                                                     <Route path="maintenance" element={<Maintenance />} />
-                                                    <Route path="runner" element={<Runner />} />
                                                     <Route path="revenue" element={<RevenueDashboard />} />
                                                     <Route path="reputation" element={<ReputationAI />} />
                                                     <Route path="reputation/goals" element={<ReputationGoals />} />
@@ -342,7 +334,6 @@ function App() {
                                                     <Route path="reports/housekeeping-rooms" element={<HousekeepingRoomsReport />} />
                                                     <Route path="reports/revenue-snapshot" element={<RevenueSnapshotReport />} />
                                                     <Route path="reports/guest-experience" element={<GuestExperienceReport />} />
-                                                    <Route path="analytics" element={<AdvancedAnalytics />} />
                                                     <Route path="settings/*" element={<SettingsLayout />} />
                                                     {/* Profile Route */}
                                                     <Route path="profile" element={<Profile />} />
@@ -375,11 +366,6 @@ function App() {
                                                     <Route path="ai/crm" element={<CRM />} />
                                                     <Route path="ai/crm-dashboard" element={<CRMAIDashboard />} />
                                                     <Route path="ai/crm-chat" element={<CRMAI />} />
-                                                    <Route path="ai/ab-testing" element={<ABTestingDashboard />} />
-                                                    <Route path="ai/ota-conversion" element={<OTAConversionCenter />} />
-                                                    <Route path="ai/member-tiers" element={<MemberTierManagement />} />
-                                                    <Route path="ai/ai-segments" element={<AISegmentationStudio />} />
-                                                    <Route path="ai/recovery" element={<RecoveryActionCenter />} />
                                                     {/* Maintenance Specializations */}
                                                     <Route path="maintenance/specializations" element={<TechnicianSpecializations />} />
                                                     {/* Night Audit */}

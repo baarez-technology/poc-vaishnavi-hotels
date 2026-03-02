@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ArrowLeft, Check, AlertTriangle, X, CreditCard } from 'lucide-react';
 import { useBooking } from '@/contexts/BookingContext';
+import { useGSTCalculator } from '@/hooks/useGSTCalculator';
 import { roomTypesService } from '@/api/services/roomTypes.service';
 import { bookingService } from '@/api/services/booking.service';
 import { DatesStep } from './steps/DatesStep';
@@ -34,6 +35,7 @@ export function BookingPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { bookingData, updateBookingData, resetBooking } = useBooking();
+  const { calculateGST } = useGSTCalculator();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const hasInitialized = useRef(false);
@@ -44,6 +46,18 @@ export function BookingPage() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
+
+  // Prevent browser back button from going back to payment after confirmation
+  useEffect(() => {
+    if (currentStep === 4 && bookingData.bookingNumber) {
+      window.history.pushState(null, '', window.location.href);
+      const handlePopState = () => {
+        window.history.pushState(null, '', window.location.href);
+      };
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+    }
+  }, [currentStep, bookingData.bookingNumber]);
 
   // Get room and search params from URL
   useEffect(() => {
@@ -193,10 +207,8 @@ export function BookingPage() {
     if (!bookingData.room?.price || !bookingData.checkIn || !bookingData.checkOut) return 0;
     const nights = differenceInDays(parseISO(bookingData.checkOut), parseISO(bookingData.checkIn));
     if (nights <= 0) return 0;
-    const subtotal = bookingData.room.price * nights;
-    const taxes = subtotal * 0.12;
-    const serviceFee = subtotal * 0.05;
-    return subtotal + taxes + serviceFee;
+    const gst = calculateGST(bookingData.room.price, nights);
+    return gst.total;
   };
 
   const newTotal = calculateNewTotal();
@@ -267,6 +279,9 @@ export function BookingPage() {
                 <span className="hidden sm:inline">Back to Room</span>
                 <span className="sm:hidden">Back</span>
               </Link>
+            ) : currentStep === 4 ? (
+              /* After confirmation: no back navigation — prevents duplicate reservations */
+              <div className="w-24" />
             ) : (
               <button
                 type="button"
@@ -359,7 +374,7 @@ export function BookingPage() {
                   <div className="flex-1">
                     <p className="text-sm text-blue-800 font-semibold">Modifying Booking #{originalBooking.bookingNumber}</p>
                     <p className="text-sm text-blue-700 mt-0.5">
-                      Original: {originalBooking.nights} night(s) - ${originalBooking.totalPrice.toFixed(2)}
+                      Original: {originalBooking.nights} night(s) - ₹{originalBooking.totalPrice.toFixed(2)}
                       {isPaid && <span className="ml-2 text-green-600 font-medium">(Paid)</span>}
                     </p>
                   </div>
@@ -377,14 +392,14 @@ export function BookingPage() {
                 }`}>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-neutral-600">New Total: ${newTotal.toFixed(2)}</p>
+                      <p className="text-sm font-medium text-neutral-600">New Total: ₹{newTotal.toFixed(2)}</p>
                       <p className={`text-lg font-bold ${
                         balanceAmount > 0 ? 'text-amber-700' : balanceAmount < 0 ? 'text-green-700' : 'text-neutral-700'
                       }`}>
                         {balanceAmount > 0
-                          ? `Balance Due: +$${balanceAmount.toFixed(2)}`
+                          ? `Balance Due: +₹${balanceAmount.toFixed(2)}`
                           : balanceAmount < 0
-                            ? `Refund: $${Math.abs(balanceAmount).toFixed(2)}`
+                            ? `Refund: ₹${Math.abs(balanceAmount).toFixed(2)}`
                             : 'No Balance Change'}
                       </p>
                     </div>

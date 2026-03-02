@@ -147,12 +147,12 @@ export default function CompetitorTable({ yourRate = 150 }: CompetitorTableProps
             </button>
             <div className="text-right">
               <p className="text-[11px] text-neutral-400 font-medium">Your Rate</p>
-              <p className="text-lg font-bold text-neutral-900">${yourRate.toLocaleString()}</p>
+              <p className="text-lg font-bold text-neutral-900">₹{yourRate.toLocaleString()}</p>
             </div>
             <div className="h-8 w-px bg-neutral-200" />
             <div className="text-right">
               <p className="text-[11px] text-neutral-400 font-medium">Market Avg</p>
-              <p className="text-lg font-bold text-neutral-500">${avgCompetitorRate.toLocaleString()}</p>
+              <p className="text-lg font-bold text-neutral-500">₹{avgCompetitorRate.toLocaleString()}</p>
             </div>
             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold ${
               marketDiff > 0 ? 'bg-gold-50 text-gold-700' : marketDiff < 0 ? 'bg-sage-50 text-sage-700' : 'bg-neutral-100 text-neutral-600'
@@ -206,11 +206,11 @@ export default function CompetitorTable({ yourRate = 150 }: CompetitorTableProps
                 <div className="flex items-center gap-6">
                   <div className="text-center">
                     <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-wider">Today</p>
-                    <p className="text-[15px] font-bold text-neutral-900 mt-0.5">${(competitor.today ?? 0).toLocaleString()}</p>
+                    <p className="text-[15px] font-bold text-neutral-900 mt-0.5">₹{(competitor.today ?? 0).toLocaleString()}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-wider">7-Day Avg</p>
-                    <p className="text-[15px] font-bold text-neutral-600 mt-0.5">${(competitor.next7 ?? 0).toLocaleString()}</p>
+                    <p className="text-[15px] font-bold text-neutral-600 mt-0.5">₹{(competitor.next7 ?? 0).toLocaleString()}</p>
                   </div>
                 </div>
 

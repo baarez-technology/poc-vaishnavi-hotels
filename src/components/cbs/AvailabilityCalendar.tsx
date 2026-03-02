@@ -476,7 +476,7 @@ const AvailabilityCalendar = forwardRef(({
                         {/* Rate */}
                         <div className="h-11 flex items-center justify-center border-t border-neutral-200/40 bg-white/20 transition-colors duration-200">
                           <span className={`text-sm font-semibold tracking-tight transition-colors duration-200 ${colors.text}`}>
-                            ${cellData.rate}
+                            ₹{cellData.rate}
                           </span>
                         </div>
 
@@ -648,7 +648,7 @@ const AvailabilityCalendar = forwardRef(({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[13px] font-semibold text-neutral-800">Nightly Rate</p>
-                  <p className="text-[11px] text-neutral-400 font-medium">Base: ${getRoomTypeBaseRate(selectedCell.roomType)}/night</p>
+                  <p className="text-[11px] text-neutral-400 font-medium">Base: ₹{getRoomTypeBaseRate(selectedCell.roomType)}/night</p>
                 </div>
                 {editData.rate !== getRoomTypeBaseRate(selectedCell.roomType) && (
                   <span className={cn(
@@ -664,7 +664,7 @@ const AvailabilityCalendar = forwardRef(({
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex-1 relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-terra-500 font-semibold text-lg">$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-terra-500 font-semibold text-lg">₹</span>
                   <input
                     type="number"
                     value={editData.rate}

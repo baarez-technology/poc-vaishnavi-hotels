@@ -1352,8 +1352,8 @@ export default function CMSBookings() {
           <KPICard
             title="Revenue Collected"
             value={stats.totalRevenue}
-            subtitle={stats.pendingRevenue > 0 ? `$${stats.pendingRevenue.toLocaleString()} pending` : null}
-            prefix="$"
+            subtitle={stats.pendingRevenue > 0 ? `₹${stats.pendingRevenue.toLocaleString()} pending` : null}
+            prefix="₹"
             trend="up"
             trendValue="+12.5%"
             icon={DollarSign}

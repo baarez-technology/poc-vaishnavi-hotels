@@ -25,6 +25,7 @@ export default function VoiceRecorderModal({
   const [audioLevel, setAudioLevel] = useState(0);
   const [hasSpoken, setHasSpoken] = useState(false); // Track if user has spoken
   const [peakAudioLevel, setPeakAudioLevel] = useState(0); // Track peak audio level during recording
+  const [isSending, setIsSending] = useState(false); // Guard against double-clicks on Send
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -70,6 +71,7 @@ export default function VoiceRecorderModal({
       setIsTranscribing(false);
       setHasSpoken(false);
       setPeakAudioLevel(0);
+      setIsSending(false);
       // Don't auto-start - user must click to start recording
     } else {
       stopRecording();
@@ -343,9 +345,9 @@ export default function VoiceRecorderModal({
   };
 
   const handleDone = () => {
-    if (transcript) {
-      onTranscriptReady(transcript);
-    }
+    if (isSending || !transcript) return;
+    setIsSending(true);
+    onTranscriptReady(transcript);
     onClose();
   };
 
@@ -537,14 +539,14 @@ export default function VoiceRecorderModal({
             )}
             <button
               onClick={handleDone}
-              disabled={!transcript || isRecording || isTranscribing}
+              disabled={!transcript || isRecording || isTranscribing || isSending}
               className={`flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-[12px] sm:text-[13px] font-semibold transition-colors ${
-                transcript && !isRecording && !isTranscribing
+                transcript && !isRecording && !isTranscribing && !isSending
                   ? 'bg-terra-500 hover:bg-terra-600 text-white'
                   : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
               }`}
             >
-              Send Message
+              {isSending ? 'Sending...' : 'Send Message'}
             </button>
           </div>
         </div>

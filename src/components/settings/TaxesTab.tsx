@@ -1,318 +1,565 @@
-import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
-import { defaultSettings } from '../../utils/settings';
-import AddFeeModal from './AddFeeModal';
-import EditFeeModal from './EditFeeModal';
+/**
+ * TaxesTab — API-backed Tax Configuration
+ * Replaces the old localStorage-based version.
+ * Shows tax categories, slabs, and a calculator preview.
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+import { Plus, Trash2, Check, X, Loader2, Calculator, Sprout, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '../ui2/Button';
+import { taxService } from '@/api/services/tax.service';
+import type { TaxCategory, TaxSlab, TaxCalculationResult } from '@/api/services/tax.service';
+import toast from 'react-hot-toast';
 
-const STORAGE_KEY = 'glimmora_fees';
+// ── Add Category Modal ────────────────────────────────────────
+function AddCategoryModal({ onClose, onSave }: { onClose: () => void; onSave: (data: { name: string; display_name: string; description?: string }) => Promise<void> }) {
+  const [name, setName] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [description, setDescription] = useState('');
+  const [saving, setSaving] = useState(false);
 
-const defaultFees = [
-  { id: 'fee-001', name: 'Room Tax (GST)', type: 'percentage', value: 12, description: 'GST on room charges' },
-  { id: 'fee-002', name: 'Service Charge', type: 'percentage', value: 10, description: 'Service charge on total bill' },
-  { id: 'fee-003', name: 'City Tax', type: 'percentage', value: 5, description: 'Municipal tax' },
-  { id: 'fee-004', name: 'Extra Guest Fee', type: 'fixed', value: 1500, description: 'Per extra guest per night' },
-  { id: 'fee-005', name: 'Cleaning Fee', type: 'fixed', value: 500, description: 'Deep cleaning charge' },
-  { id: 'fee-006', name: 'Resort Fee', type: 'fixed', value: 2000, description: 'Access to resort amenities' }
-];
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !displayName.trim()) return;
+    setSaving(true);
+    try {
+      await onSave({ name: name.trim().toLowerCase().replace(/\s+/g, '_'), display_name: displayName.trim(), description: description.trim() || undefined });
+    } finally {
+      setSaving(false);
+    }
+  };
 
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+        <div className="px-6 py-4 border-b border-neutral-100">
+          <h3 className="text-[15px] font-semibold text-neutral-900">Add Tax Category</h3>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="block text-[12px] font-medium text-neutral-600 mb-1">Internal Name</label>
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="e.g. room_charge"
+              className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500"
+              required
+            />
+            <p className="text-[10px] text-neutral-400 mt-1">Lowercase, underscores. Used internally for mapping.</p>
+          </div>
+          <div>
+            <label className="block text-[12px] font-medium text-neutral-600 mb-1">Display Name</label>
+            <input
+              value={displayName}
+              onChange={e => setDisplayName(e.target.value)}
+              placeholder="e.g. Room Charges"
+              className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-[12px] font-medium text-neutral-600 mb-1">Description (optional)</label>
+            <input
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder="e.g. GST on room tariff"
+              className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20 focus:border-terra-500"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline-neutral" onClick={onClose} type="button">Cancel</Button>
+            <Button variant="primary" type="submit" disabled={saving || !name.trim() || !displayName.trim()}>
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Add/Edit Slab Modal ────────────────────────────────────────
+function SlabModal({ categories, slab, onClose, onSave }: {
+  categories: TaxCategory[];
+  slab?: TaxSlab | null;
+  onClose: () => void;
+  onSave: (data: any) => Promise<void>;
+}) {
+  const [form, setForm] = useState({
+    tax_category_id: slab?.tax_category_id || (categories[0]?.id || 0),
+    country: slab?.country || 'IN',
+    min_amount: slab?.min_amount ?? 0,
+    max_amount: slab?.max_amount ?? '',
+    rate_pct: slab?.rate_pct ?? 0,
+    component_1_name: slab?.component_1_name || 'CGST',
+    component_1_pct: slab?.component_1_pct ?? 0,
+    component_2_name: slab?.component_2_name || 'SGST',
+    component_2_pct: slab?.component_2_pct ?? 0,
+    effective_from: slab?.effective_from || new Date().toISOString().split('T')[0],
+    effective_to: slab?.effective_to || '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  const set = (key: string, value: any) => setForm(prev => ({ ...prev, [key]: value }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await onSave({
+        ...form,
+        max_amount: form.max_amount === '' ? null : Number(form.max_amount),
+        effective_to: form.effective_to || null,
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="px-6 py-4 border-b border-neutral-100">
+          <h3 className="text-[15px] font-semibold text-neutral-900">{slab ? 'Edit Tax Slab' : 'Add Tax Slab'}</h3>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[12px] font-medium text-neutral-600 mb-1">Category</label>
+              <select
+                value={form.tax_category_id}
+                onChange={e => set('tax_category_id', Number(e.target.value))}
+                className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20"
+              >
+                {categories.map(c => <option key={c.id} value={c.id}>{c.display_name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[12px] font-medium text-neutral-600 mb-1">Country</label>
+              <input
+                value={form.country}
+                onChange={e => set('country', e.target.value)}
+                placeholder="IN"
+                className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[12px] font-medium text-neutral-600 mb-1">Min Amount</label>
+              <input type="number" min={0} step="0.01" value={form.min_amount} onChange={e => set('min_amount', Number(e.target.value))}
+                className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20" />
+            </div>
+            <div>
+              <label className="block text-[12px] font-medium text-neutral-600 mb-1">Max Amount (blank = no limit)</label>
+              <input type="number" min={0} step="0.01" value={form.max_amount} onChange={e => set('max_amount', e.target.value === '' ? '' : Number(e.target.value))}
+                placeholder="No limit"
+                className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[12px] font-medium text-neutral-600 mb-1">Total Rate %</label>
+            <input type="number" min={0} max={100} step="0.01" value={form.rate_pct} onChange={e => set('rate_pct', Number(e.target.value))}
+              className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20" />
+          </div>
+
+          <div className="bg-neutral-50 rounded-lg p-4 space-y-3">
+            <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Tax Components</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[11px] font-medium text-neutral-500 mb-1">Component 1 Name</label>
+                <input value={form.component_1_name} onChange={e => set('component_1_name', e.target.value)}
+                  className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-neutral-500 mb-1">Component 1 %</label>
+                <input type="number" min={0} max={100} step="0.01" value={form.component_1_pct} onChange={e => set('component_1_pct', Number(e.target.value))}
+                  className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[11px] font-medium text-neutral-500 mb-1">Component 2 Name</label>
+                <input value={form.component_2_name} onChange={e => set('component_2_name', e.target.value)}
+                  className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-neutral-500 mb-1">Component 2 %</label>
+                <input type="number" min={0} max={100} step="0.01" value={form.component_2_pct} onChange={e => set('component_2_pct', Number(e.target.value))}
+                  className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20" />
+              </div>
+            </div>
+            {Math.abs(form.component_1_pct + form.component_2_pct - form.rate_pct) > 0.01 && (
+              <p className="text-[11px] text-amber-600 font-medium">
+                Components ({form.component_1_pct}% + {form.component_2_pct}%) must equal total rate ({form.rate_pct}%)
+              </p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[12px] font-medium text-neutral-600 mb-1">Effective From</label>
+              <input type="date" value={form.effective_from} onChange={e => set('effective_from', e.target.value)}
+                className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20" />
+            </div>
+            <div>
+              <label className="block text-[12px] font-medium text-neutral-600 mb-1">Effective To (optional)</label>
+              <input type="date" value={form.effective_to} onChange={e => set('effective_to', e.target.value)}
+                className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-terra-500/20" />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline-neutral" onClick={onClose} type="button">Cancel</Button>
+            <Button variant="primary" type="submit" disabled={saving}>
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : (slab ? 'Update' : 'Create')}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Tax Calculator Preview ────────────────────────────────────
+function TaxCalculator({ categories }: { categories: TaxCategory[] }) {
+  const [categoryName, setCategoryName] = useState(categories[0]?.name || '');
+  const [amount, setAmount] = useState<number>(5000);
+  const [result, setResult] = useState<TaxCalculationResult | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const calculate = async () => {
+    if (!categoryName || !amount) return;
+    setLoading(true);
+    try {
+      const res = await taxService.calculateTax({ category_name: categoryName, base_amount: amount });
+      setResult(res);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Calculation failed');
+      setResult(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-amber-50/50 border border-amber-200/60 rounded-xl p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Calculator className="w-4 h-4 text-amber-600" />
+        <h3 className="text-[13px] font-semibold text-neutral-900">Tax Calculator Preview</h3>
+      </div>
+      <div className="flex items-end gap-3">
+        <div className="flex-1">
+          <label className="block text-[11px] font-medium text-neutral-500 mb-1">Category</label>
+          <select
+            value={categoryName}
+            onChange={e => { setCategoryName(e.target.value); setResult(null); }}
+            className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+          >
+            {categories.map(c => <option key={c.id} value={c.name}>{c.display_name}</option>)}
+          </select>
+        </div>
+        <div className="w-36">
+          <label className="block text-[11px] font-medium text-neutral-500 mb-1">Amount</label>
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            value={amount}
+            onChange={e => { setAmount(Number(e.target.value)); setResult(null); }}
+            className="w-full px-3 py-2 text-[13px] border border-neutral-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+          />
+        </div>
+        <Button variant="primary" onClick={calculate} disabled={loading || !categoryName || !amount}>
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Calculate'}
+        </Button>
+      </div>
+      {result && (
+        <div className="mt-4 bg-white rounded-lg p-4 border border-neutral-100 space-y-2 text-[12px]">
+          <div className="flex justify-between"><span className="text-neutral-500">Base Amount</span><span className="font-medium">₹{result.base_amount.toLocaleString()}</span></div>
+          {result.components.map((c, i) => (
+            <div key={i} className="flex justify-between">
+              <span className="text-neutral-500">{c.name} @ {c.rate_pct}%</span>
+              <span className="font-medium">₹{c.amount.toFixed(2)}</span>
+            </div>
+          ))}
+          <div className="flex justify-between border-t border-neutral-100 pt-2 font-semibold">
+            <span className="text-neutral-700">Total Tax ({result.tax_rate_pct}%)</span>
+            <span>₹{result.tax_amount.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between border-t border-neutral-200 pt-2 font-bold text-[13px]">
+            <span className="text-neutral-900">Grand Total</span>
+            <span>₹{result.total_with_tax.toLocaleString()}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main TaxesTab Component ───────────────────────────────────
 export default function TaxesTab() {
-  const [fees, setFees] = useState([]);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingFee, setEditingFee] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [categories, setCategories] = useState<TaxCategory[]>([]);
+  const [slabs, setSlabs] = useState<TaxSlab[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [showSlabModal, setShowSlabModal] = useState<{ open: boolean; slab?: TaxSlab | null }>({ open: false });
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'category' | 'slab'; id: number } | null>(null);
+  const [seeding, setSeeding] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
 
-  // Load fees from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setFees(JSON.parse(stored));
-    } else {
-      setFees(defaultFees);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultFees));
+  const fetchData = useCallback(async () => {
+    try {
+      const [cats, slabsList] = await Promise.all([
+        taxService.listCategories(),
+        taxService.listSlabs(),
+      ]);
+      setCategories(Array.isArray(cats) ? cats : []);
+      setSlabs(Array.isArray(slabsList) ? slabsList : []);
+      // Expand all categories by default
+      setExpandedCategories(new Set((Array.isArray(cats) ? cats : []).map((c: TaxCategory) => c.id)));
+    } catch (err: any) {
+      toast.error('Failed to load tax data');
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  // Save fees to localStorage
-  const saveFees = (newFees) => {
-    setFees(newFees);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newFees));
-  };
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  const handleAddFee = (newFee) => {
-    const feeWithId = {
-      ...newFee,
-      id: `fee-${Date.now()}`
-    };
-    saveFees([...fees, feeWithId]);
-    setShowAddModal(false);
-  };
-
-  const handleEditFee = (updatedFee) => {
-    saveFees(fees.map((f) => (f.id === updatedFee.id ? updatedFee : f)));
-    setEditingFee(null);
-  };
-
-  const handleDeleteFee = (id) => {
-    saveFees(fees.filter((f) => f.id !== id));
-    setDeleteConfirm(null);
-  };
-
-  const formatValue = (fee) => {
-    if (fee.type === 'percentage') {
-      return `${fee.value}%`;
+  const handleSeedGST = async () => {
+    setSeeding(true);
+    try {
+      const res = await taxService.seedIndiaGST();
+      toast.success(`India GST seeded! Categories: ${res.categories_created || 0}, Slabs: ${res.slabs_created || 0}`);
+      await fetchData();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Failed to seed GST');
+    } finally {
+      setSeeding(false);
     }
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(fee.value);
   };
 
-  const percentageFees = fees.filter((f) => f.type === 'percentage');
-  const fixedFees = fees.filter((f) => f.type === 'fixed');
+  const handleAddCategory = async (data: { name: string; display_name: string; description?: string }) => {
+    try {
+      await taxService.createCategory(data);
+      toast.success('Category created');
+      setShowAddCategory(false);
+      await fetchData();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Failed to create category');
+    }
+  };
+
+  const handleDeleteCategory = async (id: number) => {
+    try {
+      await taxService.deleteCategory(id);
+      toast.success('Category deactivated');
+      setDeleteConfirm(null);
+      await fetchData();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Failed to deactivate');
+    }
+  };
+
+  const handleSaveSlab = async (data: any) => {
+    try {
+      if (showSlabModal.slab) {
+        await taxService.updateSlab(showSlabModal.slab.id, data);
+        toast.success('Slab updated');
+      } else {
+        await taxService.createSlab(data);
+        toast.success('Slab created');
+      }
+      setShowSlabModal({ open: false });
+      await fetchData();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Failed to save slab');
+    }
+  };
+
+  const handleDeleteSlab = async (id: number) => {
+    try {
+      await taxService.deleteSlab(id);
+      toast.success('Slab deactivated');
+      setDeleteConfirm(null);
+      await fetchData();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Failed to deactivate slab');
+    }
+  };
+
+  const toggleCategory = (id: number) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-4xl space-y-6 sm:space-y-8">
+    <div className="max-w-4xl space-y-6">
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-base sm:text-lg font-semibold text-neutral-900">Taxes & Fees</h1>
-          <p className="text-[12px] sm:text-sm text-neutral-500 mt-1">
-            Configure taxes and additional charges applied to bookings
+          <h1 className="text-base sm:text-lg font-semibold text-neutral-900">Tax Configuration</h1>
+          <p className="text-[12px] text-neutral-500 mt-1">
+            Manage GST categories, tax slabs, and rate structures
           </p>
         </div>
-        <Button variant="primary" icon={Plus} onClick={() => setShowAddModal(true)}>
-          <span className="hidden sm:inline">Add Tax / Fee</span>
-          <span className="sm:hidden">Add</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline-neutral" icon={Sprout} onClick={handleSeedGST} disabled={seeding}>
+            {seeding ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+            <span className="hidden sm:inline">Seed India GST</span>
+            <span className="sm:hidden">Seed GST</span>
+          </Button>
+          <Button variant="primary" icon={Plus} onClick={() => setShowAddCategory(true)}>
+            <span className="hidden sm:inline">Add Category</span>
+            <span className="sm:hidden">Category</span>
+          </Button>
+        </div>
       </header>
 
-      {/* Percentage-based Taxes */}
-      <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
-          <h2 className="text-[12px] sm:text-[13px] font-semibold text-neutral-800">Percentage-based Taxes</h2>
-          <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-0.5">Applied as a percentage of the total amount</p>
+      {/* Categories + Slabs */}
+      {categories.length === 0 ? (
+        <div className="bg-neutral-50 rounded-xl p-12 text-center">
+          <p className="text-[13px] text-neutral-500">No tax categories configured.</p>
+          <p className="text-[12px] text-neutral-400 mt-1">Use "Seed India GST" to set up default categories and slabs, or add a category manually.</p>
         </div>
+      ) : (
+        <div className="space-y-4">
+          {categories.map(cat => {
+            const catSlabs = slabs.filter(s => s.tax_category_id === cat.id);
+            const isExpanded = expandedCategories.has(cat.id);
 
-        {percentageFees.length > 0 ? (
-          <div className="p-4 sm:p-6">
-            {/* Desktop Table */}
-            <table className="w-full hidden sm:table">
-              <thead>
-                <tr className="border-b border-neutral-200">
-                  <th className="text-left pb-3 text-[13px] font-medium text-neutral-600">Name</th>
-                  <th className="text-left pb-3 text-[13px] font-medium text-neutral-600">Description</th>
-                  <th className="text-right pb-3 text-[13px] font-medium text-neutral-600">Rate</th>
-                  <th className="text-right pb-3 text-[13px] font-medium text-neutral-600">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {percentageFees.map((fee, index) => (
-                  <tr key={fee.id} className={index !== percentageFees.length - 1 ? 'border-b border-neutral-100' : ''}>
-                    <td className="py-3">
-                      <span className="text-sm font-medium text-neutral-900">{fee.name}</span>
-                    </td>
-                    <td className="py-3">
-                      <span className="text-sm text-neutral-500">{fee.description}</span>
-                    </td>
-                    <td className="py-3 text-right">
-                      <span className="text-sm font-medium text-neutral-900">{fee.value}%</span>
-                    </td>
-                    <td className="py-3 text-right">
-                      {deleteConfirm === fee.id ? (
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            icon={X}
-                            onClick={() => setDeleteConfirm(null)}
-                          />
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            icon={Check}
-                            onClick={() => handleDeleteFee(fee.id)}
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            icon={Pencil}
-                            onClick={() => setEditingFee(fee)}
-                          />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            icon={Trash2}
-                            onClick={() => setDeleteConfirm(fee.id)}
-                          />
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* Mobile Card View */}
-            <div className="sm:hidden space-y-3">
-              {percentageFees.map((fee) => (
-                <div key={fee.id} className="bg-white rounded-lg p-3 border border-neutral-100">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[12px] font-semibold text-neutral-900">{fee.name}</p>
-                      <p className="text-[10px] text-neutral-500 mt-0.5 line-clamp-2">{fee.description}</p>
+            return (
+              <div key={cat.id} className="bg-neutral-50/50 rounded-xl overflow-hidden border border-neutral-100">
+                {/* Category Header */}
+                <div className="flex items-center justify-between px-5 py-3.5 bg-white">
+                  <button onClick={() => toggleCategory(cat.id)} className="flex items-center gap-2 text-left flex-1 min-w-0">
+                    {isExpanded ? <ChevronDown className="w-4 h-4 text-neutral-400 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-neutral-400 flex-shrink-0" />}
+                    <div className="min-w-0">
+                      <span className="text-[13px] font-semibold text-neutral-900">{cat.display_name}</span>
+                      <span className="text-[11px] text-neutral-400 ml-2">({cat.name})</span>
+                      {cat.description && <p className="text-[11px] text-neutral-500 truncate">{cat.description}</p>}
                     </div>
-                    <span className="text-[13px] font-semibold text-terra-600 flex-shrink-0">{fee.value}%</span>
-                  </div>
-                  <div className="flex items-center justify-end gap-1 pt-2 border-t border-neutral-100">
-                    {deleteConfirm === fee.id ? (
-                      <>
+                  </button>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-[10px] font-medium text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded">
+                      {catSlabs.length} slab{catSlabs.length !== 1 ? 's' : ''}
+                    </span>
+                    {deleteConfirm?.type === 'category' && deleteConfirm.id === cat.id ? (
+                      <div className="flex items-center gap-1">
                         <Button variant="outline" size="sm" icon={X} onClick={() => setDeleteConfirm(null)} />
-                        <Button variant="danger" size="sm" icon={Check} onClick={() => handleDeleteFee(fee.id)} />
-                      </>
+                        <Button variant="danger" size="sm" icon={Check} onClick={() => handleDeleteCategory(cat.id)} />
+                      </div>
                     ) : (
-                      <>
-                        <Button variant="ghost" size="sm" icon={Pencil} onClick={() => setEditingFee(fee)} />
-                        <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setDeleteConfirm(fee.id)} />
-                      </>
+                      <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setDeleteConfirm({ type: 'category', id: cat.id })} />
                     )}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="p-4 sm:p-6">
-            <div className="py-8 sm:py-12 text-center">
-              <p className="text-[12px] sm:text-sm text-neutral-500">No percentage-based taxes configured</p>
-            </div>
-          </div>
-        )}
-      </section>
 
-      {/* Fixed Fees */}
-      <section className="bg-neutral-50/50 rounded-[10px] overflow-hidden">
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100">
-          <h2 className="text-[12px] sm:text-[13px] font-semibold text-neutral-800">Fixed Fees</h2>
-          <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-0.5">Flat rate charges applied to bookings</p>
-        </div>
-
-        {fixedFees.length > 0 ? (
-          <div className="p-4 sm:p-6">
-            {/* Desktop Table */}
-            <table className="w-full hidden sm:table">
-              <thead>
-                <tr className="border-b border-neutral-200">
-                  <th className="text-left pb-3 text-[13px] font-medium text-neutral-600">Name</th>
-                  <th className="text-left pb-3 text-[13px] font-medium text-neutral-600">Description</th>
-                  <th className="text-right pb-3 text-[13px] font-medium text-neutral-600">Amount</th>
-                  <th className="text-right pb-3 text-[13px] font-medium text-neutral-600">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {fixedFees.map((fee, index) => (
-                  <tr key={fee.id} className={index !== fixedFees.length - 1 ? 'border-b border-neutral-100' : ''}>
-                    <td className="py-3">
-                      <span className="text-sm font-medium text-neutral-900">{fee.name}</span>
-                    </td>
-                    <td className="py-3">
-                      <span className="text-sm text-neutral-500">{fee.description}</span>
-                    </td>
-                    <td className="py-3 text-right">
-                      <span className="text-sm font-medium text-neutral-900">{formatValue(fee)}</span>
-                    </td>
-                    <td className="py-3 text-right">
-                      {deleteConfirm === fee.id ? (
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            icon={X}
-                            onClick={() => setDeleteConfirm(null)}
-                          />
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            icon={Check}
-                            onClick={() => handleDeleteFee(fee.id)}
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            icon={Pencil}
-                            onClick={() => setEditingFee(fee)}
-                          />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            icon={Trash2}
-                            onClick={() => setDeleteConfirm(fee.id)}
-                          />
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* Mobile Card View */}
-            <div className="sm:hidden space-y-3">
-              {fixedFees.map((fee) => (
-                <div key={fee.id} className="bg-white rounded-lg p-3 border border-neutral-100">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[12px] font-semibold text-neutral-900">{fee.name}</p>
-                      <p className="text-[10px] text-neutral-500 mt-0.5 line-clamp-2">{fee.description}</p>
-                    </div>
-                    <span className="text-[13px] font-semibold text-terra-600 flex-shrink-0">{formatValue(fee)}</span>
-                  </div>
-                  <div className="flex items-center justify-end gap-1 pt-2 border-t border-neutral-100">
-                    {deleteConfirm === fee.id ? (
-                      <>
-                        <Button variant="outline" size="sm" icon={X} onClick={() => setDeleteConfirm(null)} />
-                        <Button variant="danger" size="sm" icon={Check} onClick={() => handleDeleteFee(fee.id)} />
-                      </>
+                {/* Slabs Table */}
+                {isExpanded && (
+                  <div className="border-t border-neutral-100">
+                    {catSlabs.length === 0 ? (
+                      <div className="py-8 text-center text-[12px] text-neutral-400">
+                        No slabs for this category.
+                        <button onClick={() => setShowSlabModal({ open: true, slab: null })} className="text-terra-600 hover:underline ml-1">Add one</button>
+                      </div>
                     ) : (
-                      <>
-                        <Button variant="ghost" size="sm" icon={Pencil} onClick={() => setEditingFee(fee)} />
-                        <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setDeleteConfirm(fee.id)} />
-                      </>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-[12px]">
+                          <thead>
+                            <tr className="bg-neutral-50 border-b border-neutral-100">
+                              <th className="text-left px-4 py-2 font-medium text-neutral-500">Country</th>
+                              <th className="text-right px-4 py-2 font-medium text-neutral-500">Amount Range</th>
+                              <th className="text-right px-4 py-2 font-medium text-neutral-500">Rate%</th>
+                              <th className="text-right px-4 py-2 font-medium text-neutral-500">
+                                {catSlabs[0]?.component_1_name || 'Comp 1'}%
+                              </th>
+                              <th className="text-right px-4 py-2 font-medium text-neutral-500">
+                                {catSlabs[0]?.component_2_name || 'Comp 2'}%
+                              </th>
+                              <th className="text-left px-4 py-2 font-medium text-neutral-500">Effective</th>
+                              <th className="text-right px-4 py-2 font-medium text-neutral-500">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {catSlabs.map(slab => (
+                              <tr key={slab.id} className="border-b border-neutral-50 last:border-0 hover:bg-neutral-50/50">
+                                <td className="px-4 py-2.5 text-neutral-600">{slab.country}</td>
+                                <td className="px-4 py-2.5 text-right text-neutral-700 font-medium">
+                                  ₹{slab.min_amount.toLocaleString()} – {slab.max_amount ? `₹${slab.max_amount.toLocaleString()}` : '∞'}
+                                </td>
+                                <td className="px-4 py-2.5 text-right font-semibold text-neutral-900">{slab.rate_pct}%</td>
+                                <td className="px-4 py-2.5 text-right text-neutral-600">{slab.component_1_pct ?? '–'}%</td>
+                                <td className="px-4 py-2.5 text-right text-neutral-600">{slab.component_2_pct ?? '–'}%</td>
+                                <td className="px-4 py-2.5 text-neutral-500">
+                                  {slab.effective_from}{slab.effective_to ? ` → ${slab.effective_to}` : ' → present'}
+                                </td>
+                                <td className="px-4 py-2.5 text-right">
+                                  {deleteConfirm?.type === 'slab' && deleteConfirm.id === slab.id ? (
+                                    <div className="flex items-center justify-end gap-1">
+                                      <Button variant="outline" size="sm" icon={X} onClick={() => setDeleteConfirm(null)} />
+                                      <Button variant="danger" size="sm" icon={Check} onClick={() => handleDeleteSlab(slab.id)} />
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center justify-end gap-1">
+                                      <button
+                                        onClick={() => setShowSlabModal({ open: true, slab })}
+                                        className="px-2 py-1 text-[11px] text-terra-600 hover:bg-terra-50 rounded transition-colors"
+                                      >
+                                        Edit
+                                      </button>
+                                      <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setDeleteConfirm({ type: 'slab', id: slab.id })} />
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     )}
+                    <div className="px-4 py-2 border-t border-neutral-100">
+                      <button
+                        onClick={() => setShowSlabModal({ open: true, slab: null })}
+                        className="inline-flex items-center gap-1 text-[11px] text-terra-600 hover:text-terra-700 font-medium"
+                      >
+                        <Plus className="w-3 h-3" /> Add Slab
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="p-4 sm:p-6">
-            <div className="py-8 sm:py-12 text-center">
-              <p className="text-[12px] sm:text-sm text-neutral-500">No fixed fees configured</p>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* Modals */}
-      {showAddModal && (
-        <AddFeeModal
-          onClose={() => setShowAddModal(false)}
-          onSave={handleAddFee}
-        />
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
 
-      {editingFee && (
-        <EditFeeModal
-          fee={editingFee}
-          onClose={() => setEditingFee(null)}
-          onSave={handleEditFee}
+      {/* Tax Calculator */}
+      {categories.length > 0 && <TaxCalculator categories={categories} />}
+
+      {/* Modals */}
+      {showAddCategory && <AddCategoryModal onClose={() => setShowAddCategory(false)} onSave={handleAddCategory} />}
+      {showSlabModal.open && (
+        <SlabModal
+          categories={categories}
+          slab={showSlabModal.slab}
+          onClose={() => setShowSlabModal({ open: false })}
+          onSave={handleSaveSlab}
         />
       )}
     </div>

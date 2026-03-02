@@ -13,7 +13,7 @@ export const dashboardKPIs = [
   {
     id: 2,
     title: 'Revenue Today',
-    value: '$24,680',
+    value: '\u20B920,48,000',
     change: '+12.8%',
     trend: 'up',
     icon: 'dollar',
@@ -76,14 +76,14 @@ export const aiInsightsData = [
 ];
 
 export const occupancyRevenueData = [
-  { date: 'Nov 11', occupancy: 75, revenue: 17200 },
-  { date: 'Nov 12', occupancy: 78, revenue: 18200 },
-  { date: 'Nov 13', occupancy: 82, revenue: 19800 },
-  { date: 'Nov 14', occupancy: 85, revenue: 21400 },
-  { date: 'Nov 15', occupancy: 88, revenue: 23100 },
-  { date: 'Nov 16', occupancy: 84, revenue: 20900 },
-  { date: 'Nov 17', occupancy: 87, revenue: 24200 },
-  { date: 'Nov 18', occupancy: 87.5, revenue: 24680 },
+  { date: 'Nov 11', occupancy: 75, revenue: 1428000 },
+  { date: 'Nov 12', occupancy: 78, revenue: 1511000 },
+  { date: 'Nov 13', occupancy: 82, revenue: 1643000 },
+  { date: 'Nov 14', occupancy: 85, revenue: 1776000 },
+  { date: 'Nov 15', occupancy: 88, revenue: 1917000 },
+  { date: 'Nov 16', occupancy: 84, revenue: 1735000 },
+  { date: 'Nov 17', occupancy: 87, revenue: 2009000 },
+  { date: 'Nov 18', occupancy: 87.5, revenue: 2048000 },
 ];
 
 export const recentReviewsData = [

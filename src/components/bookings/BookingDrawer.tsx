@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import {
   X, Crown, Mail, Phone, Bed, Globe,
   Sparkles, Edit, XCircle, CheckCircle, Users,
-  Calendar, ChevronDown, Check, Undo2, ArrowRightLeft, LogIn, LogOut, UserX, SprayCan, Clock
+  Calendar, ChevronDown, Check, Undo2, ArrowRightLeft, LogIn, LogOut, UserX, SprayCan, Clock,
+  DollarSign, Receipt, Wallet
 } from 'lucide-react';
 import { statusConfig, sourceConfig } from '../../data/bookingsData';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -23,6 +24,8 @@ export default function BookingDrawer({
   onCheckOut,
   onMarkNoShow,
   onRequestCleaning,
+  onOpenFolio,
+  onViewBill,
 }) {
   const { formatCurrency } = useCurrency();
   const [showStatusSuccess, setShowStatusSuccess] = useState(false);
@@ -444,19 +447,81 @@ export default function BookingDrawer({
                 </div>
               )}
 
-              {/* Total Amount */}
-              <div className="p-3 sm:p-4 bg-terra-50 rounded-[10px] border border-terra-100">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] sm:text-[11px] text-neutral-500 mb-1">Total Amount</p>
-                    <p className="text-xl sm:text-2xl font-bold text-terra-600">{formatCurrency(booking.amount)}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] sm:text-[11px] text-neutral-500 mb-1">Per Night</p>
-                    <p className="text-xs sm:text-[13px] font-semibold text-neutral-700">
-                      {formatCurrency(Math.round(booking.amount / booking.nights))}
+              {/* Billing Summary */}
+              <div className="p-3 sm:p-4 bg-terra-50 rounded-[10px] border border-terra-100 space-y-3">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-terra-600" />
+                  <p className="text-[10px] sm:text-[11px] font-semibold text-neutral-500 uppercase tracking-widest">Billing Summary</p>
+                </div>
+
+                {/* KPI Grid: Total, Paid, Balance */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-white/80 rounded-lg p-2.5 border border-terra-100">
+                    <p className="text-[9px] sm:text-[10px] font-medium text-neutral-500 uppercase tracking-wider mb-0.5">Total</p>
+                    <p className="text-sm sm:text-base font-bold text-neutral-900">
+                      {formatCurrency(booking.total || booking.amount || 0)}
                     </p>
                   </div>
+                  <div className="bg-white/80 rounded-lg p-2.5 border border-emerald-200/60">
+                    <p className="text-[9px] sm:text-[10px] font-medium text-neutral-500 uppercase tracking-wider mb-0.5">Paid</p>
+                    <p className="text-sm sm:text-base font-bold text-emerald-600">
+                      {formatCurrency(booking.depositAmount || booking.deposit_amount || booking.amountPaid || booking.amount_paid || 0)}
+                    </p>
+                  </div>
+                  <div className="bg-white/80 rounded-lg p-2.5 border border-amber-200/60">
+                    <p className="text-[9px] sm:text-[10px] font-medium text-neutral-500 uppercase tracking-wider mb-0.5">Balance</p>
+                    {(() => {
+                      const total = booking.total || booking.amount || 0;
+                      const paid = booking.depositAmount || booking.deposit_amount || booking.amountPaid || booking.amount_paid || 0;
+                      const balance = booking.balanceDue ?? booking.balance_due ?? (total - paid);
+                      return (
+                        <p className={`text-sm sm:text-base font-bold ${balance > 0 ? 'text-amber-600' : 'text-neutral-400'}`}>
+                          {formatCurrency(balance)}
+                        </p>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                {/* Rate per night + Payment Status */}
+                <div className="flex items-center justify-between text-xs sm:text-[13px]">
+                  <span className="text-neutral-600">
+                    Avg. {formatCurrency(Math.round((booking.total || booking.amount || 0) / (booking.nights || 1)))}/night
+                  </span>
+                  {(() => {
+                    const ps = (booking.paymentStatus || booking.payment_status || 'pending').toLowerCase();
+                    const psMap: Record<string, { label: string; cls: string }> = {
+                      paid: { label: 'Paid', cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+                      partial: { label: 'Partial', cls: 'bg-blue-100 text-blue-700 border-blue-200' },
+                      pending: { label: 'Pending', cls: 'bg-amber-100 text-amber-700 border-amber-200' },
+                      refunded: { label: 'Refunded', cls: 'bg-purple-100 text-purple-700 border-purple-200' },
+                      failed: { label: 'Failed', cls: 'bg-red-100 text-red-700 border-red-200' },
+                    };
+                    const cfg = psMap[ps] || psMap.pending;
+                    return (
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-semibold border ${cfg.cls}`}>
+                        {cfg.label}
+                      </span>
+                    );
+                  })()}
+                </div>
+
+                {/* Billing Action Buttons */}
+                <div className="flex gap-2 pt-0.5">
+                  <button
+                    onClick={() => onOpenFolio && onOpenFolio()}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[11px] sm:text-[12px] font-medium text-terra-700 bg-white border border-terra-200 rounded-lg hover:bg-terra-50 transition-colors"
+                  >
+                    <Wallet className="w-3.5 h-3.5" />
+                    Open Folio
+                  </button>
+                  <button
+                    onClick={() => onViewBill && onViewBill()}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[11px] sm:text-[12px] font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+                  >
+                    <Receipt className="w-3.5 h-3.5" />
+                    Guest Bill
+                  </button>
                 </div>
               </div>
             </div>

@@ -114,8 +114,8 @@
     "name": "Corporate Perk",
     "code": "CORP5",
     "type": "Flat",
-    "value": 50,
-    "description": "$50 off per night for corporate account holders on extended stays.",
+    "value": 4150,
+    "description": "\u20b94,150 off per night for corporate account holders on extended stays.",
     "status": "Active",
     "isActive": true,
     "startDate": "2025-01-01",
@@ -127,7 +127,7 @@
     "applicableRatePlans": ["Corporate"],
     "stackable": false,
     "blackoutDates": [],
-    "terms": "Valid for corporate account holders only. Minimum 5-night stay required. $50 discount applied per night.",
+    "terms": "Valid for corporate account holders only. Minimum 5-night stay required. \u20b94,150 discount applied per night.",
     "createdAt": "2025-01-01T08:00:00Z",
     "updatedAt": "2025-12-01T10:00:00Z"
   }

@@ -44,7 +44,7 @@ function SourceBadge({ source }) {
 }
 
 // Payment Display
-function PaymentDisplay({ amount, balance, symbol = '$' }) {
+function PaymentDisplay({ amount, balance, symbol = '₹' }) {
   const isPaid = balance === 0 && amount > 0;
 
   return (

@@ -172,10 +172,11 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
     });
   };
 
-  // Determine if booking is checked-in (post check-in fields are frozen)
+  // Determine if booking is post-check-in (fields should be frozen)
   const isCheckedIn = (() => {
     const statusNorm = (booking?.status || '').toUpperCase().replace(/[\s_]/g, '-');
-    return statusNorm === 'IN-HOUSE' || statusNorm === 'CHECKED-IN';
+    return statusNorm === 'IN-HOUSE' || statusNorm === 'CHECKED-IN' ||
+           statusNorm === 'CHECKED-OUT' || statusNorm === 'CANCELLED' || statusNorm === 'NO-SHOW';
   })();
 
   if (!isOpen || !booking) return null;
@@ -360,6 +361,7 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
                         name="checkIn"
                         type="date"
                         value={formState.checkIn}
+                        min={new Date().toISOString().split('T')[0]}
                         onChange={handleChange}
                         onBlur={handleBlur}
                         className={`${getInputClass('checkIn')} pl-10 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer`}

@@ -12,7 +12,7 @@ const generateForecastData = () => {
     date.setDate(date.getDate() + i);
 
     // Simulate forecasted patterns with confidence intervals
-    const baseRevenue = 16500;
+    const baseRevenue = 1370000;
     const trendFactor = 1 + (i / 100); // Growing trend
     const seasonalFactor = 1 + (Math.sin(i / 7) * 0.15);
     const revenue = Math.round(baseRevenue * trendFactor * seasonalFactor);

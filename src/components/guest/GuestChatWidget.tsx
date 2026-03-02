@@ -272,7 +272,7 @@ const RoomSearchResultsCard = ({ results, onQuickAction }: RoomSearchResultsCard
               </div>
             </div>
             <div className="text-right">
-              <span className="text-lg font-bold text-primary-600">${room.price_per_night}</span>
+              <span className="text-lg font-bold text-primary-600">₹{room.price_per_night}</span>
               <span className="text-xs text-neutral-500 block">/night</span>
             </div>
           </div>
@@ -402,7 +402,7 @@ const BookingsListCard = ({ bookings, onQuickAction }: BookingsListCardProps) =>
               {booking.total_price !== undefined && (
                 <span className="flex items-center gap-1">
                   <DollarSign className="w-3 h-3" />
-                  ${booking.total_price}
+                  ₹{booking.total_price}
                 </span>
               )}
             </div>

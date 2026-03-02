@@ -64,7 +64,7 @@ export default function useCMSEngine() {
       baseRate,
       finalRate: Math.round(finalRate),
       adjustments,
-      currency: 'USD',
+      currency: 'INR',
     };
   }, []);
 

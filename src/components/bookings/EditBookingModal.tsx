@@ -229,8 +229,9 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
   const isCheckedIn = statusNorm === 'IN-HOUSE' || statusNorm === 'CHECKED-IN';
   const isCheckedOut = statusNorm === 'CHECKED-OUT' || statusNorm === 'COMPLETED';
   const isCancelled = statusNorm === 'CANCELLED';
-  // Post check-in: lock source, check-in date, special requests (applies to checked-in, checked-out, cancelled)
-  const isPostCheckIn = isCheckedIn || isCheckedOut || isCancelled;
+  const isNoShow = statusNorm === 'NO-SHOW';
+  // Post check-in: lock source, check-in date, special requests (applies to checked-in, checked-out, cancelled, no-show)
+  const isPostCheckIn = isCheckedIn || isCheckedOut || isCancelled || isNoShow;
   // Post check-out: additionally lock check-out date and all stay details
   const isTerminal = isCheckedOut || isCancelled;
 
@@ -377,6 +378,7 @@ export default function EditBookingModal({ isOpen, booking, onClose, onSave, isS
                     value={formState.checkIn}
                     onChange={(val) => handleDateChange('checkIn', val)}
                     placeholder="Select check-in"
+                    minDate={new Date().toISOString().split('T')[0]}
                     className="w-full"
                   />
                 )}

@@ -11,7 +11,7 @@ export const kpis = [
   {
     id: 2,
     title: 'Revenue Today',
-    value: '$24,680',
+    value: '\u20B920,48,000',
     change: '+12.8%',
     trend: 'up',
     icon: 'dollar-sign',

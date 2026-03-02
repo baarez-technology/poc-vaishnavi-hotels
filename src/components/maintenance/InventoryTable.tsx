@@ -113,7 +113,7 @@ export default function InventoryTable({
           <div className="flex items-center gap-1.5 sm:gap-2 text-neutral-500 mb-1">
             <span className="text-[10px] sm:text-xs font-medium">Total Value</span>
           </div>
-          <p className="text-lg sm:text-2xl font-bold text-neutral-900">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p className="text-lg sm:text-2xl font-bold text-neutral-900">₹{totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
       </div>
 
@@ -276,7 +276,7 @@ export default function InventoryTable({
 
                     {/* Unit Cost */}
                     <td className="px-4 py-3 text-right">
-                      <span className="text-sm text-neutral-900">${item.unitCost.toFixed(2)}</span>
+                      <span className="text-sm text-neutral-900">₹{item.unitCost.toFixed(2)}</span>
                     </td>
 
                     {/* Location */}

@@ -27,14 +27,14 @@ export const sampleBookings = [
     children: 0,
     status: 'CONFIRMED',
     source: 'Direct',
-    amount: 1200,
-    amountPaid: 600,
-    balance: 600,
+    amount: 100000,
+    amountPaid: 50000,
+    balance: 50000,
     specialRequests: 'Late check-out requested, champagne on arrival',
     createdAt: formatDate(-7),
     createdBy: 'Front Desk',
     payments: [
-      { id: 'PAY-001', date: formatDate(-7), amount: 600, method: 'Credit Card', status: 'completed' }
+      { id: 'PAY-001', date: formatDate(-7), amount: 50000, method: 'Credit Card', status: 'completed' }
     ],
     activityLog: [
       { date: formatDate(-7), action: 'Booking created', user: 'Front Desk' },
@@ -57,9 +57,9 @@ export const sampleBookings = [
     children: 0,
     status: 'PENDING',
     source: 'Booking.com',
-    amount: 360,
+    amount: 30000,
     amountPaid: 0,
-    balance: 360,
+    balance: 30000,
     specialRequests: 'Early check-in if possible',
     createdAt: formatDate(-3),
     createdBy: 'Channel Manager',
@@ -84,14 +84,14 @@ export const sampleBookings = [
     children: 1,
     status: 'CHECKED-IN',
     source: 'Direct',
-    amount: 750,
-    amountPaid: 750,
+    amount: 62500,
+    amountPaid: 62500,
     balance: 0,
     specialRequests: 'Crib in room, ground floor preferred',
     createdAt: formatDate(-10),
     createdBy: 'Reservations',
     payments: [
-      { id: 'PAY-002', date: formatDate(-10), amount: 750, method: 'Bank Transfer', status: 'completed' }
+      { id: 'PAY-002', date: formatDate(-10), amount: 62500, method: 'Bank Transfer', status: 'completed' }
     ],
     activityLog: [
       { date: formatDate(-10), action: 'Booking created', user: 'Reservations' },
@@ -114,14 +114,14 @@ export const sampleBookings = [
     children: 0,
     status: 'CONFIRMED',
     source: 'Expedia',
-    amount: 360,
-    amountPaid: 360,
+    amount: 30000,
+    amountPaid: 30000,
     balance: 0,
     specialRequests: 'None',
     createdAt: formatDate(-5),
     createdBy: 'Channel Manager',
     payments: [
-      { id: 'PAY-003', date: formatDate(-5), amount: 360, method: 'Credit Card', status: 'completed' }
+      { id: 'PAY-003', date: formatDate(-5), amount: 30000, method: 'Credit Card', status: 'completed' }
     ],
     activityLog: [
       { date: formatDate(-5), action: 'Booking imported from Expedia', user: 'System' }
@@ -143,9 +143,9 @@ export const sampleBookings = [
     children: 0,
     status: 'PENDING',
     source: 'Hotels.com',
-    amount: 180,
+    amount: 15000,
     amountPaid: 0,
-    balance: 180,
+    balance: 15000,
     specialRequests: 'King bed preferred',
     createdAt: formatDate(-1),
     createdBy: 'Channel Manager',
@@ -170,15 +170,15 @@ export const sampleBookings = [
     children: 0,
     status: 'CHECKED-OUT',
     source: 'Direct',
-    amount: 800,
-    amountPaid: 800,
+    amount: 66500,
+    amountPaid: 66500,
     balance: 0,
     specialRequests: 'Airport transfer arranged',
     createdAt: formatDate(-14),
     createdBy: 'Reservations',
     payments: [
-      { id: 'PAY-004', date: formatDate(-14), amount: 400, method: 'Credit Card', status: 'completed' },
-      { id: 'PAY-005', date: formatDate(0), amount: 400, method: 'Credit Card', status: 'completed' }
+      { id: 'PAY-004', date: formatDate(-14), amount: 33000, method: 'Credit Card', status: 'completed' },
+      { id: 'PAY-005', date: formatDate(0), amount: 33500, method: 'Credit Card', status: 'completed' }
     ],
     activityLog: [
       { date: formatDate(-14), action: 'Booking created', user: 'Reservations' },
@@ -202,14 +202,14 @@ export const sampleBookings = [
     children: 2,
     status: 'CONFIRMED',
     source: 'Direct',
-    amount: 675,
-    amountPaid: 337.50,
-    balance: 337.50,
+    amount: 56000,
+    amountPaid: 28000,
+    balance: 28000,
     specialRequests: 'Connecting rooms if available',
     createdAt: formatDate(-8),
     createdBy: 'Front Desk',
     payments: [
-      { id: 'PAY-006', date: formatDate(-8), amount: 337.50, method: 'Credit Card', status: 'completed' }
+      { id: 'PAY-006', date: formatDate(-8), amount: 28000, method: 'Credit Card', status: 'completed' }
     ],
     activityLog: [
       { date: formatDate(-8), action: 'Booking created', user: 'Front Desk' }
@@ -231,9 +231,9 @@ export const sampleBookings = [
     children: 0,
     status: 'CONFIRMED',
     source: 'Corporate Portal',
-    amount: 108,
+    amount: 9000,
     amountPaid: 0,
-    balance: 108,
+    balance: 9000,
     specialRequests: 'None',
     createdAt: formatDate(-2),
     createdBy: 'Corporate Booking',
@@ -258,14 +258,14 @@ export const sampleBookings = [
     children: 0,
     status: 'PENDING',
     source: 'Direct',
-    amount: 1600,
-    amountPaid: 800,
-    balance: 800,
+    amount: 133000,
+    amountPaid: 66500,
+    balance: 66500,
     specialRequests: 'Anniversary celebration - special decoration',
     createdAt: formatDate(-4),
     createdBy: 'Reservations',
     payments: [
-      { id: 'PAY-007', date: formatDate(-4), amount: 800, method: 'Credit Card', status: 'completed' }
+      { id: 'PAY-007', date: formatDate(-4), amount: 66500, method: 'Credit Card', status: 'completed' }
     ],
     activityLog: [
       { date: formatDate(-4), action: 'Booking created', user: 'Reservations' },
@@ -288,14 +288,14 @@ export const sampleBookings = [
     children: 0,
     status: 'CANCELLED',
     source: 'Booking.com',
-    amount: 324,
-    amountPaid: 324,
-    balance: -324,
+    amount: 27000,
+    amountPaid: 27000,
+    balance: -27000,
     specialRequests: 'None',
     createdAt: formatDate(-10),
     createdBy: 'Channel Manager',
     payments: [
-      { id: 'PAY-008', date: formatDate(-10), amount: 324, method: 'Credit Card', status: 'refunded' }
+      { id: 'PAY-008', date: formatDate(-10), amount: 27000, method: 'Credit Card', status: 'refunded' }
     ],
     activityLog: [
       { date: formatDate(-10), action: 'Booking imported from Booking.com', user: 'System' },
@@ -319,14 +319,14 @@ export const sampleBookings = [
     children: 0,
     status: 'CONFIRMED',
     source: 'Direct',
-    amount: 1200,
-    amountPaid: 1200,
+    amount: 100000,
+    amountPaid: 100000,
     balance: 0,
     specialRequests: 'Hypoallergenic pillows, non-smoking room',
     createdAt: formatDate(-12),
     createdBy: 'Reservations',
     payments: [
-      { id: 'PAY-009', date: formatDate(-12), amount: 1200, method: 'Bank Transfer', status: 'completed' }
+      { id: 'PAY-009', date: formatDate(-12), amount: 100000, method: 'Bank Transfer', status: 'completed' }
     ],
     activityLog: [
       { date: formatDate(-12), action: 'Booking created', user: 'Reservations' }
@@ -348,9 +348,9 @@ export const sampleBookings = [
     children: 0,
     status: 'PENDING',
     source: 'Expedia',
-    amount: 675,
+    amount: 56000,
     amountPaid: 0,
-    balance: 675,
+    balance: 56000,
     specialRequests: 'High floor preferred',
     createdAt: formatDate(-2),
     createdBy: 'Channel Manager',
@@ -375,14 +375,14 @@ export const sampleBookings = [
     children: 0,
     status: 'CHECKED-IN',
     source: 'Hotels.com',
-    amount: 216,
-    amountPaid: 216,
+    amount: 18000,
+    amountPaid: 18000,
     balance: 0,
     specialRequests: 'Extra towels',
     createdAt: formatDate(-7),
     createdBy: 'Channel Manager',
     payments: [
-      { id: 'PAY-010', date: formatDate(-7), amount: 216, method: 'Credit Card', status: 'completed' }
+      { id: 'PAY-010', date: formatDate(-7), amount: 18000, method: 'Credit Card', status: 'completed' }
     ],
     activityLog: [
       { date: formatDate(-7), action: 'Booking imported from Hotels.com', user: 'System' },
@@ -405,14 +405,14 @@ export const sampleBookings = [
     children: 0,
     status: 'CONFIRMED',
     source: 'Direct',
-    amount: 486,
-    amountPaid: 243,
-    balance: 243,
+    amount: 40500,
+    amountPaid: 20000,
+    balance: 20500,
     specialRequests: 'None',
     createdAt: formatDate(-6),
     createdBy: 'Front Desk',
     payments: [
-      { id: 'PAY-011', date: formatDate(-6), amount: 243, method: 'Credit Card', status: 'completed' }
+      { id: 'PAY-011', date: formatDate(-6), amount: 20000, method: 'Credit Card', status: 'completed' }
     ],
     activityLog: [
       { date: formatDate(-6), action: 'Booking created', user: 'Front Desk' }
@@ -434,14 +434,14 @@ export const sampleBookings = [
     children: 0,
     status: 'CONFIRMED',
     source: 'Direct',
-    amount: 500,
-    amountPaid: 500,
+    amount: 41500,
+    amountPaid: 41500,
     balance: 0,
     specialRequests: 'Room with a view',
     createdAt: formatDate(-9),
     createdBy: 'Reservations',
     payments: [
-      { id: 'PAY-012', date: formatDate(-9), amount: 500, method: 'Credit Card', status: 'completed' }
+      { id: 'PAY-012', date: formatDate(-9), amount: 41500, method: 'Credit Card', status: 'completed' }
     ],
     activityLog: [
       { date: formatDate(-9), action: 'Booking created', user: 'Reservations' }
@@ -463,9 +463,9 @@ export const sampleBookings = [
     children: 0,
     status: 'PENDING',
     source: 'Booking.com',
-    amount: 216,
+    amount: 18000,
     amountPaid: 0,
-    balance: 216,
+    balance: 18000,
     specialRequests: 'Extra pillows',
     createdAt: formatDate(-1),
     createdBy: 'Channel Manager',
@@ -490,14 +490,14 @@ export const sampleBookings = [
     children: 1,
     status: 'CONFIRMED',
     source: 'Direct',
-    amount: 2250,
-    amountPaid: 1125,
-    balance: 1125,
+    amount: 187000,
+    amountPaid: 93500,
+    balance: 93500,
     specialRequests: 'Dinosaur documentaries on TV if possible',
     createdAt: formatDate(-15),
     createdBy: 'Reservations',
     payments: [
-      { id: 'PAY-013', date: formatDate(-15), amount: 1125, method: 'Credit Card', status: 'completed' }
+      { id: 'PAY-013', date: formatDate(-15), amount: 93500, method: 'Credit Card', status: 'completed' }
     ],
     activityLog: [
       { date: formatDate(-15), action: 'Booking created', user: 'Reservations' },
@@ -520,14 +520,14 @@ export const sampleBookings = [
     children: 0,
     status: 'PENDING',
     source: 'Direct',
-    amount: 1200,
-    amountPaid: 600,
-    balance: 600,
+    amount: 100000,
+    amountPaid: 50000,
+    balance: 50000,
     specialRequests: 'Spa treatment booking upon arrival',
     createdAt: formatDate(-3),
     createdBy: 'Reservations',
     payments: [
-      { id: 'PAY-014', date: formatDate(-3), amount: 600, method: 'Credit Card', status: 'completed' }
+      { id: 'PAY-014', date: formatDate(-3), amount: 50000, method: 'Credit Card', status: 'completed' }
     ],
     activityLog: [
       { date: formatDate(-3), action: 'Booking created', user: 'Reservations' }
@@ -549,9 +549,9 @@ export const sampleBookings = [
     children: 0,
     status: 'CHECKED-IN',
     source: 'Corporate Portal',
-    amount: 324,
+    amount: 27000,
     amountPaid: 0,
-    balance: 324,
+    balance: 27000,
     specialRequests: 'Quiet room away from elevator',
     createdAt: formatDate(-4),
     createdBy: 'Corporate Booking',
@@ -577,14 +577,14 @@ export const sampleBookings = [
     children: 1,
     status: 'CONFIRMED',
     source: 'Direct',
-    amount: 900,
-    amountPaid: 450,
-    balance: 450,
+    amount: 75000,
+    amountPaid: 37500,
+    balance: 37500,
     specialRequests: 'Baby cot required',
     createdAt: formatDate(-11),
     createdBy: 'Reservations',
     payments: [
-      { id: 'PAY-015', date: formatDate(-11), amount: 450, method: 'Credit Card', status: 'completed' }
+      { id: 'PAY-015', date: formatDate(-11), amount: 37500, method: 'Credit Card', status: 'completed' }
     ],
     activityLog: [
       { date: formatDate(-11), action: 'Booking created', user: 'Reservations' }

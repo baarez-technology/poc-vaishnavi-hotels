@@ -14,6 +14,7 @@ const CHARGE_CATEGORIES = [
   { value: 'restaurant', label: 'Restaurant' },
   { value: 'phone', label: 'Phone' },
   { value: 'laundry', label: 'Laundry' },
+  { value: 'newspaper', label: 'Newspaper' },
   { value: 'late_checkout', label: 'Late Checkout' },
   { value: 'damage', label: 'Damage' },
   { value: 'misc', label: 'Miscellaneous' },
@@ -111,7 +112,7 @@ export default function PostChargeDialog({ onSubmit, onClose }: PostChargeDialog
           {/* Total */}
           <div className="bg-neutral-50 rounded-lg px-4 py-3 flex items-center justify-between">
             <span className="text-[12px] font-medium text-neutral-500">Total Amount</span>
-            <span className="text-lg font-bold text-neutral-900">${total.toFixed(2)}</span>
+            <span className="text-lg font-bold text-neutral-900">₹{total.toFixed(2)}</span>
           </div>
 
           {/* Notes */}

@@ -153,7 +153,7 @@ function SelectDropdown({ value, onChange, options, placeholder = 'Select...', c
 
 // Icons for action types
 const actionIcons = {
-  rate_update: () => <span className="text-xs">$</span>,
+  rate_update: () => <span className="text-xs">₹</span>,
   availability_update: () => <Calendar className="w-3.5 h-3.5" />,
   restriction_update: () => <span className="text-xs">⊘</span>,
   promotion_sync: () => <span className="text-xs">🎁</span>,

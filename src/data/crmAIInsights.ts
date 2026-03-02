@@ -13,7 +13,7 @@ export const crmAIInsights = [
       'Offer bonus points for next booking',
       'Highlight VIP tier benefits'
     ],
-    estimatedRevenue: '+$47,500',
+    estimatedRevenue: '+\u20B939,42,500',
     confidence: 87
   },
   {
@@ -21,7 +21,7 @@ export const crmAIInsights = [
     type: 'alert',
     priority: 'high',
     title: 'Churn Risk Detected',
-    message: '34 previously active guests have not booked in 6+ months. Average LTV of this group is $3,200. Implement win-back campaign immediately to prevent permanent churn.',
+    message: '34 previously active guests have not booked in 6+ months. Average LTV of this group is \u20B92,65,600. Implement win-back campaign immediately to prevent permanent churn.',
     metric: '34 guests at risk',
     impact: 'High',
     actionItems: [
@@ -29,7 +29,7 @@ export const crmAIInsights = [
       'Offer special comeback discount (15-20%)',
       'Survey reasons for absence'
     ],
-    estimatedLoss: '-$108,800',
+    estimatedLoss: '-\u20B990,30,400',
     confidence: 92
   },
   {
@@ -37,7 +37,7 @@ export const crmAIInsights = [
     type: 'recommendation',
     priority: 'medium',
     title: 'Corporate Account Expansion',
-    message: 'Corporate segment shows strongest growth (+15.2%) and highest average LTV ($5,200). TechCorp and DataSystems are your top corporate clients. Target 5 similar companies for new partnerships.',
+    message: 'Corporate segment shows strongest growth (+15.2%) and highest average LTV (\u20B94,32,000). TechCorp and DataSystems are your top corporate clients. Target 5 similar companies for new partnerships.',
     metric: '+15.2% growth',
     impact: 'Medium',
     actionItems: [
@@ -45,7 +45,7 @@ export const crmAIInsights = [
       'Reach out to similar tech companies',
       'Offer volume-based discounts'
     ],
-    estimatedRevenue: '+$65,000/year',
+    estimatedRevenue: '+\u20B953,95,000/year',
     confidence: 78
   },
   {
@@ -53,7 +53,7 @@ export const crmAIInsights = [
     type: 'insight',
     priority: 'medium',
     title: 'Booking Pattern Analysis',
-    message: 'Guests who book directly through your website have 38% higher LTV ($4,200 vs $3,050) compared to OTA bookings. Increase direct booking incentives to shift channel mix.',
+    message: 'Guests who book directly through your website have 38% higher LTV (\u20B93,48,600 vs \u20B92,53,150) compared to OTA bookings. Increase direct booking incentives to shift channel mix.',
     metric: '38% higher LTV',
     impact: 'Medium',
     actionItems: [
@@ -61,7 +61,7 @@ export const crmAIInsights = [
       'Increase loyalty points for direct bookings',
       'Launch "Book Direct" campaign'
     ],
-    estimatedRevenue: '+$89,000/year',
+    estimatedRevenue: '+\u20B973,87,000/year',
     confidence: 94
   },
   {
@@ -77,7 +77,7 @@ export const crmAIInsights = [
       'Offer celebration package discount',
       'Include complimentary amenity'
     ],
-    estimatedRevenue: '+$18,500',
+    estimatedRevenue: '+\u20B915,35,500',
     confidence: 82
   },
   {
@@ -93,7 +93,7 @@ export const crmAIInsights = [
       'Launch early-bird campaigns in November',
       'Adjust marketing spend seasonally'
     ],
-    estimatedRevenue: '+$34,000',
+    estimatedRevenue: '+\u20B928,22,000',
     confidence: 71
   },
   {
@@ -109,7 +109,7 @@ export const crmAIInsights = [
       'Send welcome package to new members',
       'Highlight tier upgrade paths'
     ],
-    estimatedRevenue: '+$125,000/year',
+    estimatedRevenue: '+\u20B91,03,75,000/year',
     confidence: 85
   },
   {
@@ -136,9 +136,9 @@ export const insightsSummary = {
   mediumPriority: 4,
   lowPriority: 1,
 
-  totalEstimatedRevenue: 379500,
-  totalEstimatedLoss: 108800,
-  netOpportunity: 270700,
+  totalEstimatedRevenue: 31499000,
+  totalEstimatedLoss: 9030000,
+  netOpportunity: 22468000,
 
   avgConfidence: 85,
   actionItemsTotal: 24

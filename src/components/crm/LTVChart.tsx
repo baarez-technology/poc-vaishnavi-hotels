@@ -46,7 +46,7 @@ export default function LTVChart({ data }) {
           <YAxis
             stroke="#9CA3AF"
             style={{ fontSize: '12px' }}
-            tickFormatter={(value) => `$${value}`}
+            tickFormatter={(value) => `₹${value}`}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend

@@ -10,7 +10,7 @@ import { generateBookingPDF } from '@/utils/pdf/generateBookingPDF';
 export function ConfirmationStep() {
   const navigate = useNavigate();
   const { bookingData, calculateTotal } = useBooking();
-  const { subtotal, tax, serviceFee, total, nights } = calculateTotal();
+  const { subtotal, tax, serviceFee, total, nights, taxRate, cgst, sgst, cgstRate, sgstRate } = calculateTotal();
   const [downloading, setDownloading] = useState(false);
 
   // Check if this was a modification
@@ -41,6 +41,11 @@ export function ConfirmationStep() {
         serviceFee,
         total,
         nights,
+        taxRate,
+        cgst,
+        sgst,
+        cgstRate,
+        sgstRate,
       });
       toast.success('PDF downloaded successfully!');
     } catch (error) {
@@ -255,21 +260,26 @@ export function ConfirmationStep() {
               <div className="flex justify-between items-center p-3 bg-neutral-50 rounded-lg">
                 <div>
                   <span className="font-semibold text-neutral-900 text-sm">Room Rate</span>
-                  <p className="text-xs text-neutral-600">${bookingData.room.price} × {nights} {nights === 1 ? 'night' : 'nights'}</p>
+                  <p className="text-xs text-neutral-600">₹{bookingData.room.price} × {nights} {nights === 1 ? 'night' : 'nights'}</p>
                 </div>
-                <span className="font-bold text-neutral-900">${subtotal.toFixed(2)}</span>
+                <span className="font-bold text-neutral-900">₹{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center p-3 bg-neutral-50 rounded-lg">
                 <span className="font-semibold text-neutral-900 text-sm">Service Fee</span>
-                <span className="font-bold text-neutral-900">${serviceFee.toFixed(2)}</span>
+                <span className="font-bold text-neutral-900">₹{serviceFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center p-3 bg-neutral-50 rounded-lg">
-                <span className="font-semibold text-neutral-900 text-sm">Taxes & Fees</span>
-                <span className="font-bold text-neutral-900">${tax.toFixed(2)}</span>
+                <div>
+                  <span className="font-semibold text-neutral-900 text-sm">GST ({taxRate}%)</span>
+                  <p className="text-xs text-neutral-500 mt-0.5">
+                    CGST {cgstRate}%: ₹{cgst.toFixed(2)} + SGST {sgstRate}%: ₹{sgst.toFixed(2)}
+                  </p>
+                </div>
+                <span className="font-bold text-neutral-900">₹{tax.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center p-4 bg-green-500 text-white rounded-lg mt-2">
                 <span className="font-bold">Total Paid</span>
-                <span className="font-bold text-xl">${total.toFixed(2)}</span>
+                <span className="font-bold text-xl">₹{total.toFixed(2)}</span>
               </div>
             </div>
           </div>

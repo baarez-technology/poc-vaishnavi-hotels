@@ -480,7 +480,7 @@ export default function CRMAI() {
                     {statsLoading ? (
                       <span className="inline-block w-12 sm:w-16 h-5 sm:h-6 bg-neutral-200 rounded animate-pulse" />
                     ) : (
-                      sidebarStats?.avg_ltv ? `$${sidebarStats.avg_ltv.toLocaleString()}` : '-'
+                      sidebarStats?.avg_ltv ? `₹${sidebarStats.avg_ltv.toLocaleString()}` : '-'
                     )}
                   </p>
                 </div>

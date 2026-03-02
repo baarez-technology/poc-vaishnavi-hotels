@@ -62,8 +62,10 @@ export default function EditSegmentModal({ isOpen, onClose, onSave, onDelete, se
     };
   }, [isOpen, onClose]);
 
+  // Reset form data when modal opens OR when segment changes (by ID, not reference)
+  // This prevents stale data from a previously edited segment appearing when editing a different one
   useEffect(() => {
-    if (isOpen && segment) {
+    if (segment) {
       setFormData({
         name: segment.name || '',
         description: segment.description || '',
@@ -84,7 +86,7 @@ export default function EditSegmentModal({ isOpen, onClose, onSave, onDelete, se
       setTagInput('');
       setShowDeleteConfirm(false);
     }
-  }, [isOpen, segment]);
+  }, [isOpen, segment?.id]);
 
   const previewGuests = useMemo(() => {
     const cleanFilters = {};
@@ -309,7 +311,7 @@ export default function EditSegmentModal({ isOpen, onClose, onSave, onDelete, se
                 {/* Min Spend */}
                 <div>
                   <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-widest mb-2">
-                    Minimum Spend ($)
+                    Minimum Spend (₹)
                   </label>
                   <input
                     type="number"
@@ -324,7 +326,7 @@ export default function EditSegmentModal({ isOpen, onClose, onSave, onDelete, se
                 {/* Max Spend */}
                 <div>
                   <label className="block text-[10px] font-semibold text-neutral-400 uppercase tracking-widest mb-2">
-                    Maximum Spend ($)
+                    Maximum Spend (₹)
                   </label>
                   <input
                     type="number"
@@ -445,7 +447,7 @@ export default function EditSegmentModal({ isOpen, onClose, onSave, onDelete, se
                   <p className="text-[10px] sm:text-[11px] text-neutral-500">Matching</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-lg sm:text-2xl font-bold text-sage-700">${previewStats.avgRevenue.toLocaleString()}</p>
+                  <p className="text-lg sm:text-2xl font-bold text-sage-700">₹{previewStats.avgRevenue.toLocaleString()}</p>
                   <p className="text-[10px] sm:text-[11px] text-neutral-500">Avg Rev</p>
                 </div>
                 <div className="text-center">

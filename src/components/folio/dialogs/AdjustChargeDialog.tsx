@@ -40,7 +40,7 @@ export default function AdjustChargeDialog({ item, onSubmit, onClose }: AdjustCh
         <div className="px-5 py-4 space-y-4">
           <div className="bg-neutral-50 rounded-lg px-3 py-2 text-[12px]">
             <p className="text-neutral-500">Original: <span className="font-semibold text-neutral-900">{item.description}</span></p>
-            <p className="text-neutral-500">Current amount: <span className="font-semibold text-neutral-900">${item.amount.toFixed(2)}</span></p>
+            <p className="text-neutral-500">Current amount: <span className="font-semibold text-neutral-900">₹{item.amount.toFixed(2)}</span></p>
           </div>
 
           <div>

@@ -19,9 +19,9 @@ export const conditionTypes = [
 export const actionTypes = [
   { id: 'increase_percent', label: 'Increase Rate By', unit: '%', type: 'number' },
   { id: 'decrease_percent', label: 'Decrease Rate By', unit: '%', type: 'number' },
-  { id: 'set_rate', label: 'Set Rate To', unit: '$', type: 'number' },
-  { id: 'set_min_rate', label: 'Set Minimum Rate', unit: '$', type: 'number' },
-  { id: 'set_max_rate', label: 'Set Maximum Rate', unit: '$', type: 'number' },
+  { id: 'set_rate', label: 'Set Rate To', unit: '₹', type: 'number' },
+  { id: 'set_min_rate', label: 'Set Minimum Rate', unit: '₹', type: 'number' },
+  { id: 'set_max_rate', label: 'Set Maximum Rate', unit: '₹', type: 'number' },
   { id: 'apply_min_stay', label: 'Apply Min Stay', unit: 'nights', type: 'number' },
   { id: 'apply_cta', label: 'Close to Arrival', unit: '', type: 'boolean' },
   { id: 'apply_ctd', label: 'Close to Departure', unit: '', type: 'boolean' },

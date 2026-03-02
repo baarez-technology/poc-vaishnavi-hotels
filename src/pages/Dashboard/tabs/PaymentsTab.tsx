@@ -142,6 +142,15 @@ export function PaymentsTab() {
       toast.error('Please enter expiry date');
       return;
     }
+    // Validate expiry is not in the past
+    const expMonth = parseInt(newCard.expiryMonth, 10);
+    const expYear = parseInt(newCard.expiryYear, 10);
+    const now = new Date();
+    const fullExpYear = expYear < 100 ? 2000 + expYear : expYear;
+    if (fullExpYear < now.getFullYear() || (fullExpYear === now.getFullYear() && expMonth < now.getMonth() + 1)) {
+      toast.error('Card is expired. Please enter a valid expiry date.');
+      return;
+    }
     if (!newCard.cvv || newCard.cvv.length < 3) {
       toast.error('Please enter CVV');
       return;

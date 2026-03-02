@@ -184,11 +184,11 @@ const RuleCard = ({
       case 'decrease_percent':
         return `-${Number.isNaN(num) ? value : num}%`;
       case 'set_rate':
-        return `$${Number.isNaN(num) ? value : num}`;
+        return `₹${Number.isNaN(num) ? value : num}`;
       case 'set_min_rate':
-        return `Min $${Number.isNaN(num) ? value : num}`;
+        return `Min ₹${Number.isNaN(num) ? value : num}`;
       case 'set_max_rate':
-        return `Max $${Number.isNaN(num) ? value : num}`;
+        return `Max ₹${Number.isNaN(num) ? value : num}`;
       case 'apply_min_stay':
         return `${Number.isNaN(num) ? value : num}N min`;
       case 'apply_cta':

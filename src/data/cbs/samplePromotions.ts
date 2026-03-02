@@ -84,7 +84,7 @@ export const samplePromotions = [
 
 export const promotionTypes = [
   { id: 'percentage', name: 'Percentage Discount', icon: '%' },
-  { id: 'fixed', name: 'Fixed Amount Off', icon: '$' },
+  { id: 'fixed', name: 'Fixed Amount Off', icon: '₹' },
   { id: 'free_night', name: 'Free Night', icon: 'night' },
   { id: 'upgrade', name: 'Room Upgrade', icon: 'up' },
   { id: 'addon', name: 'Free Add-on', icon: 'gift' }

@@ -332,7 +332,7 @@ export default function Revenue() {
                   Projected Revenue (30d)
                 </p>
                 <p className="text-2xl font-bold text-neutral-900">
-                  ${(forecastSummary.totalRevenue / 1000).toFixed(0)}K
+                  ₹{(forecastSummary.totalRevenue / 1000).toFixed(0)}K
                 </p>
                 <p className="text-xs text-neutral-400 mt-1">Next 30 days</p>
               </div>
@@ -345,7 +345,7 @@ export default function Revenue() {
                 </div>
                 <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1">Forecast ADR</p>
                 <p className="text-2xl font-bold text-neutral-900">
-                  ${forecastSummary.avgADR}
+                  ₹{forecastSummary.avgADR}
                 </p>
                 <p className="text-xs text-neutral-400 mt-1">Average daily rate</p>
               </div>
@@ -417,21 +417,21 @@ export default function Revenue() {
                 <div className="p-5 bg-sage-50 rounded-[10px] border border-sage-200">
                   <p className="text-[10px] text-sage-600 font-semibold uppercase tracking-widest mb-2">Best Case</p>
                   <p className="text-2xl font-bold text-neutral-900">
-                    ${(scenarios.bestCase / 1000).toFixed(0)}K
+                    ₹{(scenarios.bestCase / 1000).toFixed(0)}K
                   </p>
                   <p className="text-[10px] text-neutral-400 font-medium mt-1">+15% optimistic</p>
                 </div>
                 <div className="p-5 bg-terra-50 rounded-[10px] border border-terra-200">
                   <p className="text-[10px] text-terra-600 font-semibold uppercase tracking-widest mb-2">Base Case</p>
                   <p className="text-2xl font-bold text-neutral-900">
-                    ${(scenarios.baseCase / 1000).toFixed(0)}K
+                    ₹{(scenarios.baseCase / 1000).toFixed(0)}K
                   </p>
                   <p className="text-[10px] text-neutral-400 font-medium mt-1">Expected outcome</p>
                 </div>
                 <div className="p-5 bg-amber-50 rounded-[10px] border border-amber-200">
                   <p className="text-[10px] text-amber-700 font-semibold uppercase tracking-widest mb-2">Worst Case</p>
                   <p className="text-2xl font-bold text-neutral-900">
-                    ${(scenarios.worstCase / 1000).toFixed(0)}K
+                    ₹{(scenarios.worstCase / 1000).toFixed(0)}K
                   </p>
                   <p className="text-[10px] text-neutral-400 font-medium mt-1">-12% conservative</p>
                 </div>
@@ -470,10 +470,10 @@ export default function Revenue() {
                         <span className="font-semibold text-neutral-900">{segment.segment}</span>
                       </TableCell>
                       <TableCell align="right">
-                        <span className="text-neutral-700">${segment.currentMonth.toLocaleString()}</span>
+                        <span className="text-neutral-700">₹{segment.currentMonth.toLocaleString()}</span>
                       </TableCell>
                       <TableCell align="right">
-                        <span className="text-neutral-500">${segment.lastMonth.toLocaleString()}</span>
+                        <span className="text-neutral-500">₹{segment.lastMonth.toLocaleString()}</span>
                       </TableCell>
                       <TableCell align="right">
                         <Badge variant={segment.growth >= 0 ? 'success' : 'danger'} size="sm">
@@ -481,7 +481,7 @@ export default function Revenue() {
                         </Badge>
                       </TableCell>
                       <TableCell align="right">
-                        <span className="font-semibold text-terra-600">${segment.forecast.toLocaleString()}</span>
+                        <span className="font-semibold text-terra-600">₹{segment.forecast.toLocaleString()}</span>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -824,13 +824,13 @@ export default function Revenue() {
                           <div>
                             <p className="text-[10px] text-neutral-500 font-medium uppercase tracking-widest mb-1">Current Price</p>
                             <p className="text-lg font-bold text-neutral-900">
-                              ${suggestion.currentPrice}
+                              ₹{suggestion.currentPrice}
                             </p>
                           </div>
                           <div>
                             <p className="text-[10px] text-neutral-500 font-medium uppercase tracking-widest mb-1">Suggested Price</p>
                             <p className="text-lg font-bold text-terra-600">
-                              ${suggestion.suggestedPrice}
+                              ₹{suggestion.suggestedPrice}
                             </p>
                           </div>
                           <div>

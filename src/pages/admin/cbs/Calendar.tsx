@@ -28,8 +28,9 @@ export default function CBSCalendar() {
   const navigate = useNavigate();
   const { availability: cbsAvailability, updateAvailability, getCalendarData, bookings, refreshBookings } = useCBS();
   const cmsAvailability = useCMSAvailability();
-  const { success } = useToast();
+  const { success, error: showError } = useToast();
   const calendarRef = useRef(null);
+  const calendarSectionRef = useRef<HTMLElement>(null);
 
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
@@ -39,6 +40,7 @@ export default function CBSCalendar() {
     variant: 'primary'
   });
 
+  const [isExporting, setIsExporting] = useState(false);
   const [isInsightsExpanded, setIsInsightsExpanded] = useState(false);
   const [isMinStayModalOpen, setIsMinStayModalOpen] = useState(false);
   const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
@@ -126,6 +128,88 @@ export default function CBSCalendar() {
     refetchData: refreshBookings,
   });
 
+  // Helper: Convert local date to YYYY-MM-DD string (avoids UTC timezone shift from toISOString)
+  const toLocalDateStr = (d: Date) => {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  // Helper: Get room type ID by name
+  const getRoomTypeId = (name: string): number | null => {
+    const rt = cmsAvailability.roomTypes?.find(r => r.name === name);
+    return rt?.id ?? null;
+  };
+
+  // Helper: Generate date strings between start and end (inclusive, timezone-safe)
+  const generateDateRange = (startDate: string, endDate: string): string[] => {
+    const dates: string[] = [];
+    const current = new Date(startDate + 'T12:00:00');
+    const end = new Date(endDate + 'T12:00:00');
+    while (current <= end) {
+      dates.push(toLocalDateStr(current));
+      current.setDate(current.getDate() + 1);
+    }
+    return dates;
+  };
+
+  // Export availability data as CSV
+  const handleExport = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      const sortedDates = Object.keys(availability).sort();
+      if (sortedDates.length === 0 || roomTypes.length === 0) {
+        showError('No availability data to export');
+        return;
+      }
+
+      // Build CSV header
+      const headers = ['Date', 'Day', 'Room Type', 'Available', 'Total Inventory', 'Sold', 'Rate ($)', 'Min Stay', 'Stop Sell', 'CTA', 'CTD'];
+      const rows: string[] = [headers.join(',')];
+
+      // Build CSV rows
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      for (const date of sortedDates) {
+        const dayName = dayNames[new Date(date + 'T12:00:00').getDay()];
+        for (const rt of roomTypes) {
+          const cell = availability[date]?.[rt];
+          if (!cell) continue;
+          rows.push([
+            date,
+            dayName,
+            `"${rt}"`,
+            cell.available,
+            cell.totalInventory,
+            cell.sold || 0,
+            cell.rate || 0,
+            cell.minStay || 1,
+            cell.stopSell ? 'Yes' : 'No',
+            cell.cta ? 'Yes' : 'No',
+            cell.ctd ? 'Yes' : 'No',
+          ].join(','));
+        }
+      }
+
+      // Download
+      const csv = rows.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `availability-export-${toLocalDateStr(new Date())}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      success(`Exported ${rows.length - 1} records for ${roomTypes.length} room types`);
+    } catch (err) {
+      console.error('Export failed:', err);
+      showError('Export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleUpdateAvailability = async (date, roomType, updates) => {
     try {
       // Transform updates back to CMS format
@@ -145,172 +229,179 @@ export default function CBSCalendar() {
     }
   };
 
-  // Handler for applying min stay restrictions from modal
+  // Handler for applying min stay restrictions from modal — BATCH (single API call)
   const handleApplyMinStay = async ({ startDate, endDate, roomConfigs }) => {
-    // Generate all dates in the range
-    const datesToUpdate: string[] = [];
-    let current = new Date(startDate);
-    const end = new Date(endDate);
-    while (current <= end) {
-      datesToUpdate.push(current.toISOString().split('T')[0]);
-      current.setDate(current.getDate() + 1);
+    const updates: any[] = [];
+    for (const { roomType, minStay } of roomConfigs) {
+      const rtId = getRoomTypeId(roomType);
+      if (!rtId) continue;
+      updates.push({
+        room_type_id: rtId,
+        start_date: startDate,
+        end_date: endDate,
+        min_stay: minStay,
+      });
     }
-
-    // Apply min stay for each room type across all dates
     try {
-      for (const { roomType, minStay } of roomConfigs) {
-        for (const date of datesToUpdate) {
-          await cmsAvailability.updateAvailability(date, roomType, {
-            restrictions: { minStay }
-          });
-        }
-      }
-      success(`Minimum stay updated for ${roomConfigs.length} room types across ${datesToUpdate.length} days`);
+      await cmsAvailability.batchUpdate(updates);
+      const dayCount = generateDateRange(startDate, endDate).length;
+      success(`Minimum stay updated for ${roomConfigs.length} room types across ${dayCount} days`);
     } catch (error) {
       console.error('Error applying min stay:', error);
     }
     setIsMinStayModalOpen(false);
   };
 
-  // Helper: Get weekend dates for next 30 days
+  // Helper: Get weekend dates for next 30 days (uses local dates to avoid UTC shift)
   const getWeekendDates = () => {
     const weekendDates: string[] = [];
     const today = new Date();
+    today.setHours(12, 0, 0, 0);
     for (let i = 0; i < 30; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() + i);
-      const dayOfWeek = date.getDay();
-      if (dayOfWeek === 0 || dayOfWeek === 6) { // Sunday = 0, Saturday = 6
-        weekendDates.push(date.toISOString().split('T')[0]);
+      if (date.getDay() === 0 || date.getDay() === 6) {
+        weekendDates.push(toLocalDateStr(date));
       }
     }
     return weekendDates;
   };
 
-  // Handler: Close Weekends to Arrival (CTA)
+  // Handler: Close Weekends to Arrival (CTA) — BATCH
   const handleCloseWeekends = async () => {
     const weekendDates = getWeekendDates();
-
-    try {
-      for (const roomType of roomTypes) {
-        for (const date of weekendDates) {
-          await cmsAvailability.updateAvailability(date, roomType, {
-            restrictions: { CTA: true } // Closed to Arrival
-          });
-        }
+    const updates: any[] = [];
+    for (const rtName of roomTypes) {
+      const rtId = getRoomTypeId(rtName);
+      if (!rtId) continue;
+      for (const date of weekendDates) {
+        updates.push({
+          room_type_id: rtId,
+          start_date: date,
+          end_date: date,
+          closed_to_arrival: true,
+        });
       }
+    }
+    try {
+      await cmsAvailability.batchUpdate(updates);
       success(`Closed ${weekendDates.length} weekend days to arrival for all room types`);
     } catch (error) {
       console.error('Error closing weekends:', error);
     }
   };
 
-  // Handler: Apply Weekend +15% Rate
+  // Handler: Apply Weekend +15% Rate — BATCH
   const handleWeekendPremium = async () => {
     const weekendDates = getWeekendDates();
-
-    try {
-      for (const roomType of roomTypes) {
-        for (const date of weekendDates) {
-          const currentData = availability[date]?.[roomType];
-          const currentRate = currentData?.rate || 200; // Default base rate
-          const newRate = Math.round(currentRate * 1.15); // +15%
-
-          await cmsAvailability.updateAvailability(date, roomType, {
-            baseRate: newRate
-          });
-        }
+    const updates: any[] = [];
+    for (const rtName of roomTypes) {
+      const rtId = getRoomTypeId(rtName);
+      if (!rtId) continue;
+      for (const date of weekendDates) {
+        const currentRate = availability[date]?.[rtName]?.rate || 200;
+        updates.push({
+          room_type_id: rtId,
+          start_date: date,
+          end_date: date,
+          base_rate: Math.round(currentRate * 1.15),
+        });
       }
+    }
+    try {
+      await cmsAvailability.batchUpdate(updates);
       success(`Applied 15% weekend premium to ${weekendDates.length} days for all room types`);
     } catch (error) {
       console.error('Error applying weekend premium:', error);
     }
   };
 
-  // Handler: Stop Sell (selective via modal)
+  // Handler: Stop Sell (selective via modal) — BATCH (one entry per room type using date range)
   const handleStopSell = async ({ startDate, endDate, roomTypes: selectedRoomTypes, action }: {
     startDate: string;
     endDate: string;
     roomTypes: string[];
     action: 'enable' | 'disable';
   }) => {
-    // Generate all dates in the range
-    const datesToUpdate: string[] = [];
-    let current = new Date(startDate);
-    const end = new Date(endDate);
-    while (current <= end) {
-      datesToUpdate.push(current.toISOString().split('T')[0]);
-      current.setDate(current.getDate() + 1);
+    const updates: any[] = [];
+    for (const rtName of selectedRoomTypes) {
+      const rtId = getRoomTypeId(rtName);
+      if (!rtId) continue;
+      updates.push({
+        room_type_id: rtId,
+        start_date: startDate,
+        end_date: endDate,
+        is_closed: action === 'enable',
+      });
     }
-
     try {
-      for (const roomType of selectedRoomTypes) {
-        for (const date of datesToUpdate) {
-          await cmsAvailability.updateAvailability(date, roomType, {
-            isClosed: action === 'enable'
-          });
-        }
-      }
+      await cmsAvailability.batchUpdate(updates);
+      const dayCount = generateDateRange(startDate, endDate).length;
       const verb = action === 'enable' ? 'applied' : 'removed';
-      success(`Stop sell ${verb} for ${selectedRoomTypes.length} room types across ${datesToUpdate.length} days`);
+      success(`Stop sell ${verb} for ${selectedRoomTypes.length} room types across ${dayCount} days`);
     } catch (error) {
       console.error('Error applying stop sell:', error);
     }
     setIsStopSellModalOpen(false);
   };
 
-  // Handler: Bulk Update
+  // Handler: Bulk Update — BATCH (fixes case mismatch: drawer sends cta/ctd/stopSell lowercase)
   const handleBulkUpdate = async ({ startDate, endDate, roomTypes: selectedRoomTypes, updates }) => {
-    // Generate all dates in the range
-    const datesToUpdate: string[] = [];
-    let current = new Date(startDate);
-    const end = new Date(endDate);
-    while (current <= end) {
-      datesToUpdate.push(current.toISOString().split('T')[0]);
-      current.setDate(current.getDate() + 1);
+    const datesToUpdate = generateDateRange(startDate, endDate);
+    const batchUpdates: any[] = [];
+
+    for (const rtName of selectedRoomTypes) {
+      const rtId = getRoomTypeId(rtName);
+      if (!rtId) continue;
+
+      // If rate type is relative (adjust/percent), need per-date current rate lookup
+      if (updates.rate && updates.rate.type !== 'fixed') {
+        for (const date of datesToUpdate) {
+          const currentData = availability[date]?.[rtName] || {};
+          const currentRate = currentData.rate || 200;
+          const entry: any = { room_type_id: rtId, start_date: date, end_date: date };
+
+          if (updates.rate.type === 'adjust') {
+            entry.base_rate = currentRate + updates.rate.value;
+          } else if (updates.rate.type === 'percent') {
+            entry.base_rate = Math.round(currentRate * (1 + updates.rate.value / 100));
+          }
+          // Map restriction fields (lowercase from drawer → backend field names)
+          if (updates.restrictions) {
+            if (updates.restrictions.minStay) entry.min_stay = updates.restrictions.minStay;
+            if (updates.restrictions.maxStay) entry.max_stay = updates.restrictions.maxStay;
+            if (updates.restrictions.cta) entry.closed_to_arrival = true;
+            if (updates.restrictions.ctd) entry.closed_to_departure = true;
+            if (updates.restrictions.stopSell) entry.is_closed = true;
+          }
+          batchUpdates.push(entry);
+        }
+      } else {
+        // Fixed rate or no rate — use date range (single entry per room type)
+        const entry: any = { room_type_id: rtId, start_date: startDate, end_date: endDate };
+        let hasFields = false;
+
+        if (updates.rate && updates.rate.type === 'fixed') {
+          entry.base_rate = updates.rate.value;
+          hasFields = true;
+        }
+        if (updates.restrictions) {
+          if (updates.restrictions.minStay) { entry.min_stay = updates.restrictions.minStay; hasFields = true; }
+          if (updates.restrictions.maxStay) { entry.max_stay = updates.restrictions.maxStay; hasFields = true; }
+          if (updates.restrictions.cta) { entry.closed_to_arrival = true; hasFields = true; }
+          if (updates.restrictions.ctd) { entry.closed_to_departure = true; hasFields = true; }
+          if (updates.restrictions.stopSell) { entry.is_closed = true; hasFields = true; }
+        }
+        if (hasFields) batchUpdates.push(entry);
+      }
     }
 
     try {
-      for (const roomType of selectedRoomTypes) {
-        for (const date of datesToUpdate) {
-          const currentData = availability[date]?.[roomType] || {};
-          const updatePayload: any = {};
-
-          // Handle rate updates
-          if (updates.rate) {
-            const currentRate = currentData.rate || 200;
-            if (updates.rate.type === 'fixed') {
-              updatePayload.baseRate = updates.rate.value;
-            } else if (updates.rate.type === 'adjust') {
-              updatePayload.baseRate = currentRate + updates.rate.value;
-            } else if (updates.rate.type === 'percent') {
-              updatePayload.baseRate = Math.round(currentRate * (1 + updates.rate.value / 100));
-            }
-          }
-
-          // Handle inventory updates
-          if (updates.inventory !== undefined) {
-            updatePayload.remaining = updates.inventory;
-          }
-
-          // Handle restriction updates
-          if (updates.restrictions) {
-            updatePayload.restrictions = {
-              ...updates.restrictions
-            };
-          }
-
-          if (Object.keys(updatePayload).length > 0) {
-            await cmsAvailability.updateAvailability(date, roomType, updatePayload);
-          }
-        }
-      }
-
-      const updateTypes = [];
+      await cmsAvailability.batchUpdate(batchUpdates);
+      const updateTypes: string[] = [];
       if (updates.rate) updateTypes.push('rates');
       if (updates.inventory !== undefined) updateTypes.push('inventory');
       if (updates.restrictions) updateTypes.push('restrictions');
-
       success(`Bulk update applied: ${updateTypes.join(', ')} updated for ${selectedRoomTypes.length} room types across ${datesToUpdate.length} days`);
     } catch (error) {
       console.error('Error applying bulk update:', error);
@@ -357,7 +448,9 @@ export default function CBSCalendar() {
     return { arrivals, departures, inHouseGuests, turnovers };
   }, [bookings]);
 
-  // KPI cards configuration
+  // KPI cards configuration — clickable for quick navigation
+  const scrollToCalendar = () => calendarSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
   const kpiCards = [
     {
       icon: Percent,
@@ -366,14 +459,16 @@ export default function CBSCalendar() {
       change: '+12%',
       changeType: 'positive',
       subtitle: 'vs last month',
-      accent: 'terra'
+      accent: 'terra',
+      onClick: scrollToCalendar
     },
     {
       icon: Home,
       title: 'Available Rooms',
       value: stats.totalAvailable,
       subtitle: `of ${stats.totalInventory} inventory`,
-      accent: 'ocean'
+      accent: 'ocean',
+      onClick: scrollToCalendar
     },
     {
       icon: CalendarX,
@@ -381,7 +476,8 @@ export default function CBSCalendar() {
       value: stats.soldOutDays,
       change: stats.soldOutDays > 10 ? 'High demand' : stats.soldOutDays > 5 ? 'Moderate' : 'Low',
       changeType: stats.soldOutDays > 10 ? 'negative' : 'neutral',
-      accent: 'gold'
+      accent: 'gold',
+      onClick: scrollToCalendar
     },
     {
       icon: Lock,
@@ -389,7 +485,8 @@ export default function CBSCalendar() {
       value: stats.restrictedDays,
       change: stats.restrictedDays > 20 ? 'Review needed' : 'Normal',
       changeType: stats.restrictedDays > 20 ? 'negative' : 'neutral',
-      accent: 'sage'
+      accent: 'sage',
+      onClick: () => navigate('/admin/channel-manager/restrictions')
     }
   ];
 
@@ -454,11 +551,12 @@ export default function CBSCalendar() {
           <div className="flex items-center gap-2 sm:gap-3">
             <Button
               variant="outline"
-              icon={Download}
-              onClick={() => success('Exporting...')}
-              className="text-[12px] sm:text-[13px]"
+              icon={isExporting ? RefreshCw : Download}
+              onClick={handleExport}
+              disabled={isExporting}
+              className={cn("text-[12px] sm:text-[13px]", isExporting && "opacity-60 cursor-not-allowed")}
             >
-              <span className="hidden sm:inline">Export</span>
+              <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export'}</span>
               <span className="sm:hidden sr-only">Export</span>
             </Button>
             <Button
@@ -479,7 +577,8 @@ export default function CBSCalendar() {
             return (
               <div
                 key={index}
-                className="rounded-[10px] bg-white p-4 sm:p-6"
+                onClick={kpi.onClick}
+                className="rounded-[10px] bg-white p-4 sm:p-6 cursor-pointer hover:shadow-md transition-all"
               >
                 {/* Header with Icon */}
                 <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
@@ -728,7 +827,7 @@ export default function CBSCalendar() {
         </section>
 
         {/* Calendar Grid */}
-        <section>
+        <section ref={calendarSectionRef}>
           {cmsAvailability.isLoading ? (
             <div className="rounded-[10px] bg-white p-12 flex flex-col items-center justify-center">
               <RefreshCw className="w-8 h-8 text-terra-500 animate-spin mb-4" />

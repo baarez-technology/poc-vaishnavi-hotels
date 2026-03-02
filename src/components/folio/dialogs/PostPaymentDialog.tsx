@@ -10,6 +10,9 @@ const PAYMENT_METHODS = [
   { value: 'card', label: 'Credit/Debit Card' },
   { value: 'cash', label: 'Cash' },
   { value: 'bank_transfer', label: 'Bank Transfer' },
+  { value: 'upi', label: 'UPI' },
+  { value: 'neft', label: 'NEFT' },
+  { value: 'net_banking', label: 'Net Banking' },
   { value: 'voucher', label: 'Voucher' },
   { value: 'comp', label: 'Complimentary' },
 ];
@@ -34,6 +37,7 @@ export default function PostPaymentDialog({ balance, isRefund = false, onSubmit,
   const [transactionId, setTransactionId] = useState('');
   const [cardLast4, setCardLast4] = useState('');
   const [cardBrand, setCardBrand] = useState('');
+  const [upiId, setUpiId] = useState('');
   const [reason, setReason] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -53,6 +57,7 @@ export default function PostPaymentDialog({ balance, isRefund = false, onSubmit,
           transaction_id: transactionId.trim() || undefined,
           card_last4: cardLast4.trim() || undefined,
           card_brand: cardBrand.trim() || undefined,
+          upi_id: upiId.trim() || undefined,
           notes: notes.trim() || undefined,
         });
       }
@@ -86,7 +91,7 @@ export default function PostPaymentDialog({ balance, isRefund = false, onSubmit,
               className="w-full h-9 px-3 rounded-lg text-[13px] bg-white border border-neutral-200 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none"
             />
             {!isRefund && balance > 0 && (
-              <p className="text-[11px] text-neutral-400 mt-1">Outstanding balance: ${balance.toFixed(2)}</p>
+              <p className="text-[11px] text-neutral-400 mt-1">Outstanding balance: ₹{balance.toFixed(2)}</p>
             )}
           </div>
 
@@ -166,9 +171,47 @@ export default function PostPaymentDialog({ balance, isRefund = false, onSubmit,
                   <option value="Visa">Visa</option>
                   <option value="Mastercard">Mastercard</option>
                   <option value="Amex">Amex</option>
+                  <option value="RuPay">RuPay</option>
                   <option value="Other">Other</option>
                 </select>
               </div>
+            </div>
+          )}
+
+          {/* UPI fields */}
+          {method === 'upi' && !isRefund && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[12px] font-medium text-neutral-600 mb-1.5">UPI ID</label>
+                <input
+                  value={upiId}
+                  onChange={e => setUpiId(e.target.value)}
+                  placeholder="name@upi"
+                  className="w-full h-9 px-3 rounded-lg text-[13px] bg-white border border-neutral-200 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[12px] font-medium text-neutral-600 mb-1.5">Tx Ref</label>
+                <input
+                  value={transactionId}
+                  onChange={e => setTransactionId(e.target.value)}
+                  placeholder="UPI ref number"
+                  className="w-full h-9 px-3 rounded-lg text-[13px] bg-white border border-neutral-200 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* NEFT / Net Banking fields */}
+          {(method === 'neft' || method === 'net_banking') && !isRefund && (
+            <div>
+              <label className="block text-[12px] font-medium text-neutral-600 mb-1.5">Transaction Reference</label>
+              <input
+                value={transactionId}
+                onChange={e => setTransactionId(e.target.value)}
+                placeholder={method === 'neft' ? 'NEFT reference number' : 'Net banking transaction ID'}
+                className="w-full h-9 px-3 rounded-lg text-[13px] bg-white border border-neutral-200 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none"
+              />
             </div>
           )}
 

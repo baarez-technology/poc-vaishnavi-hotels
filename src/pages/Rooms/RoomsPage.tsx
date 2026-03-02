@@ -95,7 +95,7 @@ export const RoomsPage = () => {
   }, [searchData.checkIn, searchData.checkOut, searchData.adults, searchData.children]);
 
   // Filter state
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 80000]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>('popularity');
@@ -256,7 +256,7 @@ export const RoomsPage = () => {
   };
 
   const clearFilters = () => {
-    setPriceRange([0, 1000]);
+    setPriceRange([0, 80000]);
     setSelectedCategories([]);
     setSelectedAmenities([]);
   };
@@ -411,7 +411,7 @@ export const RoomsPage = () => {
                   {/* Price Filter */}
                   <div className="mb-6 pb-6 border-b-2 border-neutral-100">
                     <label className="block text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
-                      <span className="text-primary-600">$</span>
+                      <span className="text-primary-600">₹</span>
                       Price per night
                     </label>
                     <div className="flex items-center justify-between mb-4 px-2">
@@ -429,8 +429,8 @@ export const RoomsPage = () => {
                       <input
                         type="range"
                         min="0"
-                        max="1000"
-                        step="50"
+                        max="80000"
+                        step="1000"
                         value={priceRange[0]}
                         onChange={(e) => setPriceRange([Number(e.target.value), priceRange[1]])}
                         className="w-full h-2 accent-primary-600 cursor-pointer"
@@ -438,8 +438,8 @@ export const RoomsPage = () => {
                       <input
                         type="range"
                         min="0"
-                        max="1000"
-                        step="50"
+                        max="80000"
+                        step="1000"
                         value={priceRange[1]}
                         onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
                         className="w-full h-2 accent-primary-600 cursor-pointer"

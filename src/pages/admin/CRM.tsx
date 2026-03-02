@@ -387,7 +387,7 @@ export default function CRM() {
             <p className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Avg LTV</p>
           </div>
           <div className="flex items-baseline gap-0.5">
-            <p className="text-xl sm:text-[28px] font-semibold tracking-tight text-sage-700">${kpis.avgLTV.toLocaleString()}</p>
+            <p className="text-xl sm:text-[28px] font-semibold tracking-tight text-sage-700">₹{kpis.avgLTV.toLocaleString()}</p>
           </div>
         </div>
 
@@ -446,7 +446,7 @@ export default function CRM() {
                     borderRadius: '8px',
                     fontSize: '12px'
                   }}
-                  formatter={(value) => [`$${value?.toLocaleString() ?? 0}`, 'Avg LTV']}
+                  formatter={(value) => [`₹${value?.toLocaleString() ?? 0}`, 'Avg LTV']}
                 />
                 <Line
                   type="monotone"

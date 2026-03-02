@@ -506,7 +506,7 @@ export default function CheckInDrawer({ isOpen, onClose, booking, onCheckInCompl
         {(booking.balance != null && booking.balance > 0) && (
           <p className="text-[12px] text-amber-600 mt-2 flex items-center gap-1.5">
             <AlertCircle className="w-3.5 h-3.5" />
-            Outstanding balance: ${booking.balance.toFixed(2)}
+            Outstanding balance: ₹{booking.balance.toFixed(2)}
           </p>
         )}
       </div>

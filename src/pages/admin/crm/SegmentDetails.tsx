@@ -462,7 +462,7 @@ export default function SegmentDetails({
                     border: '1px solid #E5E5E5',
                     borderRadius: '8px'
                   }}
-                  formatter={(value) => [`$${value.toLocaleString()}`, 'Avg LTV']}
+                  formatter={(value) => [`₹${value.toLocaleString()}`, 'Avg LTV']}
                 />
                 <Line
                   type="monotone"
@@ -737,6 +737,7 @@ export default function SegmentDetails({
 
       {/* Edit Modal */}
       <EditSegmentModal
+        key={segment?.id}
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
         onSave={handleUpdateSegment}

@@ -190,8 +190,8 @@ const RateCalendar = () => {
         doc.setFont('helvetica', 'normal');
         const summaryData = [
           ['Avg Occupancy:', `${avgOccupancy}%`],
-          ['Avg BAR Rate:', `$${avgRate}`],
-          ['Revenue Forecast:', `$${(totalRevenue / 1000).toFixed(1)}K`],
+          ['Avg BAR Rate:', `₹${avgRate}`],
+          ['Revenue Forecast:', `₹${(totalRevenue / 1000).toFixed(1)}K`],
           ['Days with Restrictions:', `${restrictedDays}`],
           ['AI Suggestions:', `${recommendations.length}`],
         ];
@@ -236,7 +236,7 @@ const RateCalendar = () => {
             const roomData = data.rooms?.[firstRoomTypeId];
             doc.text(dateStr, 14, yPos);
             doc.text(`${data.occupancy || 0}%`, 50, yPos);
-            doc.text(`$${roomData?.dynamicRate || 0}`, 85, yPos);
+            doc.text(`₹${roomData?.dynamicRate || 0}`, 85, yPos);
             doc.text(`${roomData?.available || 0}`, 115, yPos);
             doc.text(`${roomData?.sold || 0}`, 150, yPos);
             yPos += 5;
@@ -255,8 +255,8 @@ const RateCalendar = () => {
 
         csvData.push(['SUMMARY (Next 7 Days)']);
         csvData.push(['Avg Occupancy', `${avgOccupancy}%`]);
-        csvData.push(['Avg BAR Rate', `$${avgRate}`]);
-        csvData.push(['Revenue Forecast', `$${(totalRevenue / 1000).toFixed(1)}K`]);
+        csvData.push(['Avg BAR Rate', `₹${avgRate}`]);
+        csvData.push(['Revenue Forecast', `₹${(totalRevenue / 1000).toFixed(1)}K`]);
         csvData.push(['Days with Restrictions', restrictedDays]);
         csvData.push(['AI Suggestions', recommendations.length]);
         csvData.push([]);
@@ -278,7 +278,7 @@ const RateCalendar = () => {
             csvData.push([
               dateStr,
               `${data.occupancy || 0}%`,
-              `$${roomData?.dynamicRate || 0}`,
+              `₹${roomData?.dynamicRate || 0}`,
               roomData?.available || 0,
               roomData?.sold || 0
             ]);
@@ -399,7 +399,7 @@ const RateCalendar = () => {
       return;
     }
 
-    toast.info(`Applying ${changeType === 'amount' ? '$' + rateChange : rateChange + '%'} change to ${selectedDates.length} dates...`);
+    toast.info(`Applying ${changeType === 'amount' ? '₹' + rateChange : rateChange + '%'} change to ${selectedDates.length} dates...`);
     setIsApplyingBulk(true);
     try {
       const { updated_count, failed_count } = await bulkUpdateRates(updates);
@@ -655,7 +655,7 @@ const RateCalendar = () => {
 
           <KPICard
             title="Avg BAR Rate"
-            value={`$${avgRate}`}
+            value={`₹${avgRate}`}
             trendValue={null}
             icon={DollarSign}
             accentColor="sage"
@@ -664,7 +664,7 @@ const RateCalendar = () => {
 
           <KPICard
             title="Revenue Forecast"
-            value={`$${(totalRevenue / 1000).toFixed(1)}K`}
+            value={`₹${(totalRevenue / 1000).toFixed(1)}K`}
             trendValue={null}
             icon={TrendingUp}
             accentColor="ocean"
@@ -717,26 +717,26 @@ const RateCalendar = () => {
                       <div>
                         <p className="text-[10px] sm:text-[11px] text-neutral-500 font-medium">Your Rate</p>
                         <p className="text-lg sm:text-xl font-bold text-neutral-800">
-                          ${competitorSuggestion.currentRate}
+                          ₹{competitorSuggestion.currentRate}
                         </p>
                       </div>
                       <div className="text-xl sm:text-2xl text-neutral-300 hidden sm:block">→</div>
                       <div>
                         <p className="text-[10px] sm:text-[11px] text-neutral-500 font-medium">Suggested</p>
                         <p className="text-lg sm:text-xl font-bold text-terra-600">
-                          ${competitorSuggestion.suggestedRate}
+                          ₹{competitorSuggestion.suggestedRate}
                         </p>
                       </div>
                       <div className="sm:pl-4 sm:border-l border-neutral-200">
                         <p className="text-[10px] sm:text-[11px] text-neutral-500 font-medium">Market Avg</p>
                         <p className="text-base sm:text-lg font-semibold text-neutral-700">
-                          ${competitorSuggestion.marketAvg}
+                          ₹{competitorSuggestion.marketAvg}
                         </p>
                       </div>
                       <div className="hidden sm:block">
                         <p className="text-[11px] text-neutral-500 font-medium">Market Range</p>
                         <p className="text-[13px] font-medium text-neutral-600">
-                          ${competitorSuggestion.marketMin} - ${competitorSuggestion.marketMax}
+                          ₹{competitorSuggestion.marketMin} - ₹{competitorSuggestion.marketMax}
                         </p>
                       </div>
                     </div>
@@ -845,12 +845,12 @@ const RateCalendar = () => {
                           {room.name}
                         </span>
                         <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-0.5">
-                          Base: ${room.baseRate}
+                          Base: ₹{room.baseRate}
                         </p>
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className="text-lg sm:text-xl font-bold text-neutral-900">
-                          ${rate}
+                          ₹{rate}
                         </p>
                         {rateChange !== 0 && (
                           <p className={`text-[10px] sm:text-[11px] font-semibold ${
@@ -928,8 +928,8 @@ const RateCalendar = () => {
                           : 'text-neutral-500 hover:text-neutral-900 hover:bg-white/50'
                       }`}
                     >
-                      <span className="hidden sm:inline">Fixed Amount ($)</span>
-                      <span className="sm:hidden">Amount ($)</span>
+                      <span className="hidden sm:inline">Fixed Amount (₹)</span>
+                      <span className="sm:hidden">Amount (₹)</span>
                     </button>
                     <button
                       onClick={() => setBulkEditData({ ...bulkEditData, changeType: 'percentage' })}
@@ -952,7 +952,7 @@ const RateCalendar = () => {
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs sm:text-[13px] font-medium text-neutral-500">
-                      {bulkEditData.changeType === 'amount' ? '$' : '%'}
+                      {bulkEditData.changeType === 'amount' ? '₹' : '%'}
                     </span>
                     <input
                       type="number"

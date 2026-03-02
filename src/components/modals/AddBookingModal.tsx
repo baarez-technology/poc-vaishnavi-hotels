@@ -16,14 +16,24 @@ import { Button } from '../ui2/Button';
 import { Input, FormField, Textarea } from '../ui2/Input';
 import DatePicker from '../ui2/DatePicker';
 import { useCurrency } from '@/hooks/useCurrency';
+import { corporateService, type CorporateAccount } from '@/api/services/corporate.service';
+import { apiClient } from '@/api/client';
 
 const SOURCE_OPTIONS = [
+  { value: 'Direct', label: 'Direct (Walk-in)' },
   { value: 'Website', label: 'Website' },
-  { value: 'Dummy Channel Manager', label: 'Dummy Channel Manager' },
-  { value: 'CRS', label: 'CRS' },
-  { value: 'Walk-in', label: 'Walk-in' },
+  { value: 'Corporate Portal', label: 'Corporate Portal' },
   { value: 'Booking.com', label: 'Booking.com' },
   { value: 'Expedia', label: 'Expedia' },
+  { value: 'Dummy Channel Manager', label: 'Channel Manager' },
+  { value: 'OTA', label: 'OTA (Other)' },
+];
+
+const PAYMENT_METHOD_OPTIONS = [
+  { value: 'card', label: 'Credit/Debit Card' },
+  { value: 'pay_at_hotel', label: 'Pay at Hotel' },
+  { value: 'upi', label: 'UPI' },
+  { value: 'bank_transfer', label: 'Bank Transfer' },
 ];
 
 // Custom Select Component matching CMS pattern
@@ -79,7 +89,8 @@ function CustomSelect({ value, onChange, options, placeholder = 'Select...' }) {
 
 export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating = false }) {
   const { formatCurrency } = useCurrency();
-  const [formData, setFormData] = useState({
+
+  const initialFormData = {
     guestName: '',
     email: '',
     phone: '',
@@ -89,54 +100,88 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
     roomType: 'Minimalist Studio',
     adults: 1,
     children: 0,
+    infants: 0,
     specialRequests: '',
-    source: 'Website',
+    source: 'Direct',
     rateOverride: '',
-  });
+    isVip: false,
+    corporateAccountId: null as number | null,
+    eta: '',
+    etd: '',
+    paymentMethod: 'card',
+    ratePlan: 'BAR',
+  };
 
+  const [formData, setFormData] = useState(initialFormData);
   const [errors, setErrors] = useState({});
+  const [corporateAccounts, setCorporateAccounts] = useState<CorporateAccount[]>([]);
+  const [apiRoomTypes, setApiRoomTypes] = useState<any[]>([]);
+  const [apiRatePlans, setApiRatePlans] = useState<any[]>([]);
+
+  // Fetch corporate accounts, room types, rate plans on mount
+  useEffect(() => {
+    corporateService.listAccounts({ status: 'active' }).then((data) => {
+      setCorporateAccounts(Array.isArray(data) ? data : data?.items || []);
+    }).catch(() => {});
+
+    apiClient.get('/api/v1/room-types', { params: { pageSize: 50 } }).then((res) => {
+      const items = res.data?.items || res.data || [];
+      if (Array.isArray(items) && items.length > 0) setApiRoomTypes(items);
+    }).catch(() => {});
+
+    apiClient.get('/api/v1/rates/plans', { params: { is_active: true } }).then((res) => {
+      const plans = Array.isArray(res.data) ? res.data : res.data?.items || [];
+      if (plans.length > 0) setApiRatePlans(plans);
+    }).catch(() => {});
+  }, []);
+
+  // Compute room type options: prefer API, fallback to hardcoded
+  const roomTypeOptions = useMemo(() => {
+    if (apiRoomTypes.length > 0) {
+      return apiRoomTypes.map(rt => ({
+        value: rt.name || rt.slug,
+        label: rt.name,
+        price: rt.price || rt.originalPrice || 150,
+      }));
+    }
+    return ROOM_TYPES;
+  }, [apiRoomTypes]);
+
+  // Compute rate plan options: prefer API, fallback to hardcoded
+  const ratePlanOptions = useMemo(() => {
+    if (apiRatePlans.length > 0) {
+      return apiRatePlans.map(rp => ({
+        value: rp.name || rp.code,
+        label: rp.name || rp.code,
+      }));
+    }
+    return [
+      { value: 'BAR', label: 'BAR (Best Available)' },
+      { value: 'Corporate', label: 'Corporate' },
+      { value: 'OTA', label: 'OTA' },
+      { value: 'Long Stay', label: 'Long Stay' },
+    ];
+  }, [apiRatePlans]);
 
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
-      setFormData({
-        guestName: '',
-        email: '',
-        phone: '',
-        nationality: '',
-        checkIn: '',
-        checkOut: '',
-        roomType: 'Minimalist Studio',
-        adults: 1,
-        children: 0,
-        specialRequests: '',
-        source: 'Website',
-        rateOverride: '',
-      });
+      setFormData(initialFormData);
       setErrors({});
     }
   }, [isOpen]);
 
-  // Calculate booking details
+  // Calculate booking details — always use roomTypeOptions (API-backed) for prices
   const bookingCalc = useMemo(() => {
     const nights = calculateNights(formData.checkIn, formData.checkOut);
-    const roomTypeConfig = ROOM_TYPES.find(r => r.value === formData.roomType);
+    const roomTypeConfig = roomTypeOptions.find(r => r.value === formData.roomType);
     const baseRate = formData.rateOverride ? parseFloat(formData.rateOverride) : (roomTypeConfig?.price || 150);
-    const { subtotal, taxes, total } = calculateBookingAmount(formData.roomType, nights);
+    const subtotal = baseRate * nights;
+    const taxes = subtotal * 0.12;
+    const total = Math.round(subtotal + taxes);
 
-    // Recalculate if rate override
-    const actualSubtotal = baseRate * nights;
-    const actualTaxes = actualSubtotal * 0.12;
-    const actualTotal = actualSubtotal + actualTaxes;
-
-    return {
-      nights,
-      baseRate,
-      subtotal: formData.rateOverride ? actualSubtotal : subtotal,
-      taxes: formData.rateOverride ? actualTaxes : taxes,
-      total: formData.rateOverride ? Math.round(actualTotal) : total,
-    };
-  }, [formData.checkIn, formData.checkOut, formData.roomType, formData.rateOverride]);
+    return { nights, baseRate, subtotal, taxes, total };
+  }, [formData.checkIn, formData.checkOut, formData.roomType, formData.rateOverride, roomTypeOptions]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -194,15 +239,22 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
         nights: bookingCalc.nights,
         roomType: formData.roomType,
         room: '',
-        guests: formData.adults + formData.children,
+        guests: formData.adults + formData.children + formData.infants,
         adults: formData.adults,
         children: formData.children,
+        infants: formData.infants,
         specialRequests: formData.specialRequests.trim(),
         source: formData.source,
         amount: bookingCalc.total,
         status: 'PENDING',
         bookedOn: new Date().toISOString().split('T')[0],
-        vip: false,
+        vip: formData.isVip,
+        isVip: formData.isVip,
+        corporateAccountId: formData.corporateAccountId,
+        eta: formData.eta || undefined,
+        etd: formData.etd || undefined,
+        paymentMethod: formData.paymentMethod,
+        ratePlan: formData.ratePlan,
         upsells: [],
       };
       // Don't close here - let parent handle closing after API response
@@ -296,6 +348,80 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
                 />
               </div>
             </div>
+
+            <div className="space-y-2">
+              <label className="block text-[13px] font-medium text-neutral-700">
+                Nationality / Country
+              </label>
+              <input
+                type="text"
+                name="nationality"
+                value={formData.nationality}
+                onChange={handleChange}
+                placeholder="e.g. India, United States"
+                className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Guest Status & Corporate */}
+        <section>
+          <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">
+            Guest Status
+          </h3>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, isVip: false }))}
+                className={`flex-1 h-10 rounded-lg text-[13px] font-medium border-2 transition-all ${
+                  !formData.isVip
+                    ? 'border-terra-500 bg-terra-50 text-terra-700'
+                    : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'
+                }`}
+              >
+                Regular
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, isVip: true }))}
+                className={`flex-1 h-10 rounded-lg text-[13px] font-medium border-2 transition-all ${
+                  formData.isVip
+                    ? 'border-amber-500 bg-amber-50 text-amber-700'
+                    : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'
+                }`}
+              >
+                VIP
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-[13px] font-medium text-neutral-700">
+                Corporate Account
+              </label>
+              <CustomSelect
+                value={formData.corporateAccountId ? String(formData.corporateAccountId) : ''}
+                onChange={(value) => {
+                  const id = value ? Number(value) : null;
+                  setFormData(prev => ({
+                    ...prev,
+                    corporateAccountId: id,
+                    ...(id ? { source: 'Corporate Portal', ratePlan: 'Corporate' } : {}),
+                  }));
+                }}
+                options={[
+                  { value: '', label: 'None (Walk-in)' },
+                  ...corporateAccounts.map(c => ({ value: String(c.id), label: c.company_name })),
+                ]}
+                placeholder="Select corporate account"
+              />
+              {formData.corporateAccountId && (
+                <p className="text-[11px] text-blue-600 font-medium">
+                  Source and rate plan auto-set to Corporate
+                </p>
+              )}
+            </div>
           </div>
         </section>
 
@@ -351,7 +477,7 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <div className="space-y-2">
                 <label className="block text-[13px] font-medium text-neutral-700">
                   Adults
@@ -362,7 +488,7 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
                   value={formData.adults}
                   onChange={handleChange}
                   min="1"
-                  max="4"
+                  max="6"
                   className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
                 />
               </div>
@@ -377,7 +503,22 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
                   value={formData.children}
                   onChange={handleChange}
                   min="0"
-                  max="3"
+                  max="4"
+                  className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-[13px] font-medium text-neutral-700">
+                  Infants
+                </label>
+                <input
+                  type="number"
+                  name="infants"
+                  value={formData.infants}
+                  onChange={handleChange}
+                  min="0"
+                  max="2"
                   className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
                 />
               </div>
@@ -391,10 +532,38 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
                 </div>
               </div>
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-[13px] font-medium text-neutral-700">
+                  ETA (Expected Arrival)
+                </label>
+                <input
+                  type="time"
+                  name="eta"
+                  value={formData.eta}
+                  onChange={handleChange}
+                  className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-[13px] font-medium text-neutral-700">
+                  ETD (Expected Departure)
+                </label>
+                <input
+                  type="time"
+                  name="etd"
+                  value={formData.etd}
+                  onChange={handleChange}
+                  className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
+                />
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* Room & Source */}
+        {/* Room, Rate & Source */}
         <section>
           <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-4">
             Room & Source
@@ -408,7 +577,7 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
                 <CustomSelect
                   value={formData.roomType}
                   onChange={(value) => setFormData(prev => ({ ...prev, roomType: value }))}
-                  options={ROOM_TYPES.map(type => ({
+                  options={roomTypeOptions.map(type => ({
                     value: type.value,
                     label: `${type.label} - ${formatCurrency(type.price)}/night`
                   }))}
@@ -416,7 +585,43 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
                 />
               </div>
 
-              {/* Booking Source - Auto-set to Direct for in-hotel bookings */}
+              <div className="space-y-2">
+                <label className="block text-[13px] font-medium text-neutral-700">
+                  Rate Plan
+                </label>
+                <CustomSelect
+                  value={formData.ratePlan}
+                  onChange={(value) => setFormData(prev => ({ ...prev, ratePlan: value }))}
+                  options={ratePlanOptions}
+                  placeholder="Select rate plan"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-[13px] font-medium text-neutral-700">
+                  Booking Source
+                </label>
+                <CustomSelect
+                  value={formData.source}
+                  onChange={(value) => setFormData(prev => ({ ...prev, source: value }))}
+                  options={SOURCE_OPTIONS}
+                  placeholder="Select source"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-[13px] font-medium text-neutral-700">
+                  Payment Method
+                </label>
+                <CustomSelect
+                  value={formData.paymentMethod}
+                  onChange={(value) => setFormData(prev => ({ ...prev, paymentMethod: value }))}
+                  options={PAYMENT_METHOD_OPTIONS}
+                  placeholder="Select payment method"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -452,7 +657,7 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
                 onChange={handleChange}
                 min="0"
                 step="0.01"
-                placeholder={`Default: ${formatCurrency(ROOM_TYPES.find(r => r.value === formData.roomType)?.price || 150)}`}
+                placeholder={`Default: ${formatCurrency(roomTypeOptions.find(r => r.value === formData.roomType)?.price || 150)}`}
                 className="w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border border-neutral-200 hover:border-neutral-300 focus:border-terra-400 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-150"
               />
             </div>

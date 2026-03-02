@@ -35,6 +35,7 @@ import { Button, Card } from '@/components/ui';
 import { formatCurrency } from '@/utils/helpers/format';
 import type { Room } from '@/api/types/booking.types';
 import { useWishlist } from '@/contexts/WishlistContext';
+import { useGSTCalculator } from '@/hooks/useGSTCalculator';
 
 export const RoomDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -45,6 +46,7 @@ export const RoomDetailPage = () => {
   const reviewsRef = useRef<HTMLDivElement>(null);
   const reviewFormRef = useRef<HTMLDivElement>(null);
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const { calculateGSTPerNight } = useGSTCalculator();
   const [room, setRoom] = useState<Room | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -617,34 +619,47 @@ export const RoomDetailPage = () => {
                   </Button>
 
                   {/* Price Breakdown */}
-                  <div className="space-y-3 mb-6">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-neutral-600">Base price</span>
-                      <span className="font-semibold text-neutral-900">
-                        {formatCurrency(room.price)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-neutral-600">Service fee</span>
-                      <span className="font-semibold text-neutral-900">
-                        {formatCurrency(room.price * 0.05)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-neutral-600">Taxes (12%)</span>
-                      <span className="font-semibold text-neutral-900">
-                        {formatCurrency(room.price * 0.12)}
-                      </span>
-                    </div>
-                    <div className="pt-3 mt-3 border-t border-neutral-200">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-neutral-900">Total per night</span>
-                        <span className="text-2xl font-bold text-primary-600">
-                          {formatCurrency(room.price * 1.17)}
-                        </span>
+                  {(() => {
+                    const gst = calculateGSTPerNight(room.price);
+                    return (
+                      <div className="space-y-3 mb-6">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-neutral-600">Base price</span>
+                          <span className="font-semibold text-neutral-900">
+                            {formatCurrency(room.price)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-neutral-600">Service fee (5%)</span>
+                          <span className="font-semibold text-neutral-900">
+                            {formatCurrency(gst.serviceFee)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-neutral-600">GST ({gst.taxRate}%)</span>
+                          <span className="font-semibold text-neutral-900">
+                            {formatCurrency(gst.taxAmount)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs pl-4">
+                          <span className="text-neutral-500">CGST ({gst.cgstRate}%)</span>
+                          <span className="text-neutral-500">{formatCurrency(gst.cgst)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs pl-4">
+                          <span className="text-neutral-500">SGST ({gst.sgstRate}%)</span>
+                          <span className="text-neutral-500">{formatCurrency(gst.sgst)}</span>
+                        </div>
+                        <div className="pt-3 mt-3 border-t border-neutral-200">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-neutral-900">Total per night</span>
+                            <span className="text-2xl font-bold text-primary-600">
+                              {formatCurrency(gst.total)}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   {/* Benefits */}
                   <div className="space-y-3 pt-6 border-t border-neutral-200">

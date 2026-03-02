@@ -11,10 +11,12 @@ import Pagination from '../../components/bookings/Pagination';
 import EditBookingModal from '../../components/bookings/EditBookingModal';
 import AssignRoomModal from '../../components/modals/AssignRoomModal';
 import CancelBookingModal from '../../components/bookings/CancelBookingModal';
-import PaymentManagementModal from '../../components/bookings/PaymentManagementModal';
 import RequestCleaningModal from '../../components/modals/RequestCleaningModal';
 import CheckInDrawer from '../../components/bookings/CheckInDrawer';
+import CheckoutDialog from '../../components/bookings/CheckoutDialog';
+import FolioDrawer from '../../components/folio/FolioDrawer';
 import CheckoutEmotionModal from '../../components/cbs/CheckoutEmotionModal';
+import GuestBillModal from '../../components/bookings/GuestBillModal';
 import { useBookings } from '../../hooks/admin/useBookings';
 import { guestsService } from '../../api/services/guests.service';
 import { useSort } from '../../hooks/useSort';
@@ -83,9 +85,11 @@ export default function Bookings() {
     checkOutGuest,
     moveRoom,
     markNoShow,
+    reinstate,
     getArrivalsToday,
     getDeparturesToday,
     fetchBookings,
+    refreshBookings,
   } = useBookings();
 
   // Tab state
@@ -111,15 +115,10 @@ export default function Bookings() {
   const [isEditBookingModalOpen, setIsEditBookingModalOpen] = useState(false);
   const [isAssignRoomModalOpen, setIsAssignRoomModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-
-  // Checkout payment flow state
-  const [pendingCheckoutBooking, setPendingCheckoutBooking] = useState<any>(null);
-  const [isCheckoutPaymentFlow, setIsCheckoutPaymentFlow] = useState(false);
 
   // Request Cleaning state
   const [cleaningBooking, setCleaningBooking] = useState<any>(null);
@@ -132,6 +131,15 @@ export default function Bookings() {
   // Toast state
   const [toast, setToast] = useState<{ message: string } | null>(null);
 
+
+  // Checkout dialog state
+  const [checkoutDialogBooking, setCheckoutDialogBooking] = useState<any>(null);
+
+  // Folio drawer state (opened from checkout dialog or manage payment)
+  const [folioDrawerBooking, setFolioDrawerBooking] = useState<any>(null);
+
+  // Guest bill modal state
+  const [billBooking, setBillBooking] = useState<any>(null);
 
   // Checkout emotion modal state
   const [checkoutBooking, setCheckoutBooking] = useState<any>(null);
@@ -187,10 +195,9 @@ export default function Bookings() {
     setCleaningBooking(booking);
   };
 
-  // Handle manage payment from action button
+  // Handle manage payment from action button — opens FolioDrawer (Opera-style folio management)
   const handleManagePaymentFromAction = (booking) => {
-    setSelectedBooking(booking);
-    setIsPaymentModalOpen(true);
+    setFolioDrawerBooking(booking);
   };
 
   // Handle check-in from action button — opens drawer
@@ -212,59 +219,27 @@ export default function Bookings() {
     return success;
   };
 
-  // Handle check-out from action button (payment-aware)
-  const handleCheckOutFromAction = async (booking) => {
+  // Handle check-out from action button — opens CheckoutDialog with folio balance gate
+  const handleCheckOutFromAction = (booking: any) => {
     if (!booking?.id) return;
+    setCheckoutDialogBooking(booking);
+  };
 
-    // Check for outstanding balance
-    const total = booking.total || booking.totalPrice || 0;
-    const paid = booking.amountPaid || 0;
-    const balance = Math.round((total - paid) * 100) / 100;
-
-    if (balance > 0) {
-      // Guest has unpaid balance — prompt admin
-      const payFirst = window.confirm(
-        `${booking.guest} has an outstanding balance of $${balance.toFixed(2)} (Total: $${total.toFixed(2)}, Paid: $${paid.toFixed(2)}).\n\nClick OK to open Payment Management and settle the balance before checkout.\nClick Cancel to force checkout without payment.`
-      );
-
-      if (payFirst) {
-        // Open payment modal in checkout flow mode
-        setPendingCheckoutBooking(booking);
-        setIsCheckoutPaymentFlow(true);
-        setSelectedBooking(booking);
-        setIsPaymentModalOpen(true);
-        return;
-      }
-
-      // Admin chose to skip payment — double-confirm force checkout
-      const forceConfirmed = window.confirm(
-        `Are you sure you want to force checkout ${booking.guest} with $${balance.toFixed(2)} unpaid?\n\nThis cannot be undone.`
-      );
-      if (!forceConfirmed) return;
-
-      const success = await checkOutGuest(booking.id, { force_checkout: true });
-      if (success) {
-        setSelectedBooking((prev) =>
-          prev && prev.id === booking.id ? { ...prev, status: 'COMPLETED' } : prev
-        );
-        triggerToast(`${booking.guest} force-checked out with outstanding balance`);
-      }
-      return;
-    }
-
-    // Payment is clear — normal checkout
-    const confirmed = window.confirm(
-      `Check out ${booking.guest} from Room ${booking.room}?`
-    );
-    if (!confirmed) return;
-
-    const success = await checkOutGuest(booking.id);
+  // Actual checkout execution (called by CheckoutDialog)
+  const executeCheckout = async (force = false): Promise<boolean> => {
+    const booking = checkoutDialogBooking;
+    if (!booking?.id) return false;
+    const success = await checkOutGuest(booking.id, force ? { force_checkout: true } : undefined);
     if (success) {
-      setSelectedBooking((prev) =>
+      setSelectedBooking((prev: any) =>
         prev && prev.id === booking.id ? { ...prev, status: 'COMPLETED' } : prev
       );
-      triggerToast(`${booking.guest} checked out successfully`);
+      triggerToast(force
+        ? `${booking.guest} force-checked out with outstanding balance`
+        : `${booking.guest} checked out successfully`
+      );
     }
+    return success;
   };
 
   // Handle cancel check-in from action button
@@ -298,6 +273,29 @@ export default function Bookings() {
         prev && prev.id === booking.id ? { ...prev, status: 'NO_SHOW' } : prev
       );
       triggerToast(`${booking.guest} marked as No Show`);
+    }
+  };
+
+  // Handle view guest bill
+  const handleViewBillFromAction = (booking) => {
+    if (!booking?.id) return;
+    setBillBooking(booking);
+  };
+
+  // Handle reinstate from action button
+  const handleReinstateFromAction = async (booking) => {
+    if (!booking?.id) return;
+    const confirmed = window.confirm(
+      `Reinstate booking for ${booking.guest}? This will restore the booking to confirmed status.`
+    );
+    if (!confirmed) return;
+
+    const success = await reinstate(booking.id);
+    if (success) {
+      setSelectedBooking((prev) =>
+        prev && prev.id === booking.id ? { ...prev, status: 'CONFIRMED' } : prev
+      );
+      triggerToast(`${booking.guest} booking reinstated`);
     }
   };
 
@@ -418,55 +416,6 @@ export default function Bookings() {
   // Close cancel modal
   const closeCancelModal = () => {
     setIsCancelModalOpen(false);
-  };
-
-  // Close payment modal
-  const closePaymentModal = () => {
-    setIsPaymentModalOpen(false);
-    // Clean up checkout flow state if modal closed without completing
-    if (isCheckoutPaymentFlow) {
-      setPendingCheckoutBooking(null);
-      setIsCheckoutPaymentFlow(false);
-    }
-  };
-
-  // Handle payment save
-  const handlePaymentSave = async (paymentData) => {
-    if (!selectedBooking) return;
-    try {
-      const result = await updateBooking(selectedBooking.id, paymentData);
-      if (result) {
-        setSelectedBooking({ ...selectedBooking, ...result });
-        triggerToast('Payment updated successfully');
-
-        // If this was part of checkout flow, auto-trigger checkout
-        if (isCheckoutPaymentFlow && pendingCheckoutBooking) {
-          const updatedPaymentStatus = (result.paymentStatus || paymentData.payment_status || '').toLowerCase();
-          setIsPaymentModalOpen(false);
-
-          if (updatedPaymentStatus === 'paid') {
-            // Payment cleared — proceed with checkout
-            const success = await checkOutGuest(pendingCheckoutBooking.id);
-            if (success) {
-              setSelectedBooking((prev) =>
-                prev && prev.id === pendingCheckoutBooking.id ? { ...prev, status: 'COMPLETED' } : prev
-              );
-              triggerToast(`${pendingCheckoutBooking.guest} checked out successfully`);
-            }
-          } else {
-            triggerToast('Payment saved but balance still outstanding. Checkout not processed.');
-          }
-
-          setPendingCheckoutBooking(null);
-          setIsCheckoutPaymentFlow(false);
-          return;
-        }
-
-        closePaymentModal();
-      }
-    } catch (error) {
-      triggerToast('Failed to update payment');
-    }
   };
 
   // Handle booking edit save
@@ -715,6 +664,8 @@ export default function Bookings() {
           onCancelCheckIn={handleCancelCheckInFromAction}
           onMarkNoShow={handleMarkNoShowFromAction}
           onRequestCleaning={handleRequestCleaningFromAction}
+          onReinstate={handleReinstateFromAction}
+          onViewBill={handleViewBillFromAction}
         />
 
         {/* Pagination */}
@@ -748,6 +699,8 @@ export default function Bookings() {
         onCheckOut={() => selectedBooking && handleCheckOutFromAction(selectedBooking)}
         onMarkNoShow={() => selectedBooking && handleMarkNoShowFromAction(selectedBooking)}
         onRequestCleaning={() => selectedBooking && handleRequestCleaningFromAction(selectedBooking)}
+        onOpenFolio={() => selectedBooking && setFolioDrawerBooking(selectedBooking)}
+        onViewBill={() => selectedBooking && setBillBooking(selectedBooking)}
       />
 
       {/* Add Booking Modal */}
@@ -786,13 +739,6 @@ export default function Bookings() {
         isCancelling={isCancelling}
       />
 
-      {/* Payment Management Modal */}
-      <PaymentManagementModal
-        booking={selectedBooking}
-        isOpen={isPaymentModalOpen}
-        onClose={closePaymentModal}
-        onSave={handlePaymentSave}
-      />
 
       {/* Request Cleaning Modal */}
       <RequestCleaningModal
@@ -818,6 +764,23 @@ export default function Bookings() {
         onCheckInComplete={handleCheckInComplete}
       />
 
+      {/* Checkout Dialog — folio balance gate */}
+      <CheckoutDialog
+        isOpen={!!checkoutDialogBooking}
+        booking={checkoutDialogBooking}
+        onClose={() => setCheckoutDialogBooking(null)}
+        onCheckout={executeCheckout}
+        onOpenFolio={(booking: any) => setFolioDrawerBooking(booking)}
+      />
+
+      {/* Folio Drawer — opened from checkout dialog or manage payment */}
+      <FolioDrawer
+        isOpen={!!folioDrawerBooking}
+        booking={folioDrawerBooking}
+        onClose={() => setFolioDrawerBooking(null)}
+        onPaymentUpdate={refreshBookings}
+      />
+
       {/* Checkout Emotion Modal */}
       <CheckoutEmotionModal
         open={!!checkoutBooking}
@@ -825,6 +788,14 @@ export default function Bookings() {
         onConfirm={handleCheckoutWithEmotion}
         guestName={checkoutBooking?.guest || checkoutBooking?.guestName || ''}
         loading={checkoutLoading}
+      />
+
+      {/* Guest Bill Modal */}
+      <GuestBillModal
+        isOpen={!!billBooking}
+        bookingId={billBooking?.id}
+        guestName={billBooking?.guest}
+        onClose={() => setBillBooking(null)}
       />
 
       {/* Toast Notification */}

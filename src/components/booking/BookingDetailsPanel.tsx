@@ -228,19 +228,19 @@ export function BookingDetailsPanel({
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-neutral-500">Base Price</span>
-                        <span className="text-neutral-900">${booking.basePrice?.toFixed(2) || '0.00'}</span>
+                        <span className="text-neutral-900">₹{booking.basePrice?.toFixed(2) || '0.00'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-neutral-500">Taxes</span>
-                        <span className="text-neutral-900">${booking.taxes?.toFixed(2) || '0.00'}</span>
+                        <span className="text-neutral-900">₹{booking.taxes?.toFixed(2) || '0.00'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-neutral-500">Service Fee</span>
-                        <span className="text-neutral-900">${booking.serviceFee?.toFixed(2) || '0.00'}</span>
+                        <span className="text-neutral-900">₹{booking.serviceFee?.toFixed(2) || '0.00'}</span>
                       </div>
                       <div className="pt-2 border-t border-neutral-200 flex justify-between font-semibold">
                         <span className="text-neutral-900">Total</span>
-                        <span className="text-neutral-900">${booking.totalPrice?.toFixed(2) || '0.00'}</span>
+                        <span className="text-neutral-900">₹{booking.totalPrice?.toFixed(2) || '0.00'}</span>
                       </div>
                     </div>
                   </div>

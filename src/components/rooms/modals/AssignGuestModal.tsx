@@ -227,6 +227,8 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign, allB
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [roomTypeMismatch, setRoomTypeMismatch] = useState<{ bookedType: string; roomType: string } | null>(null);
   const [mismatchConfirmed, setMismatchConfirmed] = useState(false);
+  const [checkedOutWarning, setCheckedOutWarning] = useState(false);
+  const [autoFilledFromBooking, setAutoFilledFromBooking] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -244,6 +246,8 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign, allB
       setReassignConfirmed(false);
       setRoomTypeMismatch(null);
       setMismatchConfirmed(false);
+      setCheckedOutWarning(false);
+      setAutoFilledFromBooking(false);
       fetchGuests();
     }
   }, [isOpen]);
@@ -256,10 +260,51 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign, allB
       setReassignConfirmed(false);
       setRoomTypeMismatch(null);
       setMismatchConfirmed(false);
+      setCheckedOutWarning(false);
       return;
     }
     checkGuestExistingAssignment();
   }, [selectedGuest, checkInDate, checkOutDate]);
+
+  // Auto-fill dates from guest's active booking
+  useEffect(() => {
+    if (!selectedGuest || !allBookings?.length) {
+      setAutoFilledFromBooking(false);
+      return;
+    }
+    const guest = availableGuests.find(g => String(g.id) === String(selectedGuest));
+    if (!guest) return;
+
+    const guestId = guest.id;
+    const guestName = `${guest.first_name} ${guest.last_name}`.toLowerCase().trim();
+    const guestEmail = (guest.email || '').toLowerCase().trim();
+
+    // Find an active booking for this guest
+    const activeBooking = allBookings.find((b: any) => {
+      const matchById = b.guestId && Number(b.guestId) === Number(guestId);
+      const bName = ((b.guestInfo?.firstName || '') + ' ' + (b.guestInfo?.lastName || '')).toLowerCase().trim();
+      const bEmail = (b.guestInfo?.email || '').toLowerCase().trim();
+      const matchByName = bName && bName === guestName;
+      const matchByEmail = guestEmail && bEmail && bEmail === guestEmail;
+      const isMatch = matchById || matchByName || matchByEmail;
+
+      const status = (b.status || '').toLowerCase().replace('-', '_');
+      const isActive = ['confirmed', 'booked', 'checked_in'].includes(status);
+      return isMatch && isActive;
+    });
+
+    if (activeBooking) {
+      const bCheckIn = activeBooking.checkIn || activeBooking.arrival_date;
+      const bCheckOut = activeBooking.checkOut || activeBooking.departure_date;
+      if (bCheckIn && bCheckOut) {
+        setCheckInDate(bCheckIn.split('T')[0]);
+        setCheckOutDate(bCheckOut.split('T')[0]);
+        setAutoFilledFromBooking(true);
+        return;
+      }
+    }
+    setAutoFilledFromBooking(false);
+  }, [selectedGuest, availableGuests, allBookings]);
 
   const checkGuestExistingAssignment = async () => {
     if (!selectedGuest) return;
@@ -359,6 +404,26 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign, allB
         }
       } else {
         setRoomTypeMismatch(null);
+      }
+
+      // Check if ALL of guest's bookings are checked_out/cancelled/no_show (no active bookings at all)
+      const allGuestBookings = bookings.filter((b: any) => {
+        const matchById = b.guestId && Number(b.guestId) === Number(guestId);
+        const bookingGuestName = ((b.guestInfo?.firstName || '') + ' ' + (b.guestInfo?.lastName || '')).toLowerCase().trim();
+        const bookingEmail = (b.guestInfo?.email || '').toLowerCase().trim();
+        const matchByName = bookingGuestName && bookingGuestName === guestName;
+        const matchByEmail = guestEmail && bookingEmail && bookingEmail === guestEmail;
+        return matchById || matchByName || matchByEmail;
+      });
+
+      if (allGuestBookings.length > 0) {
+        const hasActiveBooking = allGuestBookings.some((b: any) => {
+          const bStatus = (b.status || '').toLowerCase().replace('-', '_');
+          return !['checked_out', 'cancelled', 'no_show'].includes(bStatus);
+        });
+        setCheckedOutWarning(!hasActiveBooking);
+      } else {
+        setCheckedOutWarning(false);
       }
     } catch (error) {
       console.error('[AssignGuestModal] Error checking guest assignment:', error);
@@ -504,7 +569,7 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign, allB
         type="submit"
         variant="primary"
         form="assign-guest-form"
-        disabled={isSubmitting || (showDuplicateWarning && !reassignConfirmed) || (roomTypeMismatch && !mismatchConfirmed) || !checkInDate || !checkOutDate || nights <= 0}
+        disabled={isSubmitting || checkedOutWarning || (showDuplicateWarning && !reassignConfirmed) || (roomTypeMismatch && !mismatchConfirmed) || !checkInDate || !checkOutDate || nights <= 0}
         className="px-5 py-2 text-[13px] font-semibold"
       >
         {isSubmitting
@@ -620,6 +685,23 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign, allB
           </div>
         )}
 
+        {/* Checked-out guest warning */}
+        {checkedOutWarning && (
+          <div className="p-4 rounded-lg border bg-rose-50 border-rose-200">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-rose-600" />
+              <div className="flex-1">
+                <p className="text-[13px] font-semibold text-rose-800">
+                  Guest has already checked out
+                </p>
+                <p className="text-[12px] mt-1 text-rose-700">
+                  This guest has no active bookings. Please create a new booking from the Bookings page first.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* BUG-016: Check-in / Check-out Dates */}
         <div>
           <h4 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-900 mb-3">
@@ -637,6 +719,7 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign, allB
                 placeholder="Select check-in"
                 minDate={new Date().toISOString().split('T')[0]}
                 className="w-full"
+                disabled={autoFilledFromBooking}
               />
             </div>
             <div>
@@ -650,12 +733,16 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign, allB
                 placeholder="Select check-out"
                 minDate={checkInDate}
                 className="w-full"
+                disabled={autoFilledFromBooking}
               />
             </div>
           </div>
           {nights > 0 && (
             <p className="text-[11px] text-neutral-500 mt-2">
               {nights} night{nights !== 1 ? 's' : ''}
+              {autoFilledFromBooking && (
+                <span className="ml-2 text-sage-600 font-medium">— Dates auto-filled from booking</span>
+              )}
             </p>
           )}
           {checkInDate && checkOutDate && nights <= 0 && (

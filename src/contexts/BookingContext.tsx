@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { Room } from '@/api/types/booking.types';
+import { useGSTCalculator } from '@/hooks/useGSTCalculator';
 
 interface OriginalBookingData {
   id: string;
@@ -50,7 +51,7 @@ interface BookingContextType {
   bookingData: BookingData;
   updateBookingData: (data: Partial<BookingData>) => void;
   resetBooking: () => void;
-  calculateTotal: () => { subtotal: number; tax: number; serviceFee: number; total: number; nights: number };
+  calculateTotal: () => { subtotal: number; tax: number; serviceFee: number; total: number; nights: number; taxRate: number; cgst: number; sgst: number; cgstRate: number; sgstRate: number };
 }
 
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
@@ -90,6 +91,7 @@ const initialBookingData: BookingData = {
 
 export function BookingProvider({ children }: { children: ReactNode }) {
   const [bookingData, setBookingData] = useState<BookingData>(initialBookingData);
+  const { calculateGST } = useGSTCalculator();
 
   const updateBookingData = useCallback((data: Partial<BookingData>) => {
     setBookingData((prev) => ({ ...prev, ...data }));
@@ -101,7 +103,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
 
   const calculateTotal = useCallback(() => {
     if (!bookingData.room || !bookingData.checkIn || !bookingData.checkOut) {
-      return { subtotal: 0, tax: 0, serviceFee: 0, total: 0, nights: 0 };
+      return { subtotal: 0, tax: 0, serviceFee: 0, total: 0, nights: 0, taxRate: 0, cgst: 0, sgst: 0, cgstRate: 0, sgstRate: 0 };
     }
 
     const checkIn = new Date(bookingData.checkIn);
@@ -109,12 +111,13 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
 
     const subtotal = bookingData.room.price * nights;
-    const tax = subtotal * 0.12; // 12% tax
-    const serviceFee = subtotal * 0.05; // 5% service fee
-    const total = subtotal + tax + serviceFee;
+    const gst = calculateGST(bookingData.room.price, nights);
+    const tax = gst.taxAmount;
+    const serviceFee = gst.serviceFee;
+    const total = gst.total;
 
-    return { subtotal, tax, serviceFee, total, nights };
-  }, [bookingData.room, bookingData.checkIn, bookingData.checkOut]);
+    return { subtotal, tax, serviceFee, total, nights, taxRate: gst.taxRate, cgst: gst.cgst, sgst: gst.sgst, cgstRate: gst.cgstRate, sgstRate: gst.sgstRate };
+  }, [bookingData.room, bookingData.checkIn, bookingData.checkOut, calculateGST]);
 
   return (
     <BookingContext.Provider value={{ bookingData, updateBookingData, resetBooking, calculateTotal }}>

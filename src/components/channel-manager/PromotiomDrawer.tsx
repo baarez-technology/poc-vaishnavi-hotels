@@ -487,7 +487,7 @@ export default function PromotionDrawer({
           </h4>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-[13px]">
-              {formData.discountType === 'percentage' ? '' : '$'}
+              {formData.discountType === 'percentage' ? '' : '₹'}
             </span>
             <input
               type="number"

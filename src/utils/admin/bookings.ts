@@ -141,7 +141,7 @@ export function calculateBookingAmount(roomType, nights, taxRate = 0.12) {
 }
 
 // Format currency - prefer using useCurrency hook in components for dynamic currency
-export function formatCurrency(amount, currency = 'USD') {
+export function formatCurrency(amount, currency = 'INR') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,

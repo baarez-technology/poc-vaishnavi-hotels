@@ -476,7 +476,7 @@ export default function PromotionAnalyticsPage() {
                   tickLine={false}
                 />
                 <YAxis
-                  tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
+                  tickFormatter={(val) => `₹${(val / 1000).toFixed(0)}k`}
                   tick={{ fill: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)', fontSize: 12 }}
                   axisLine={false}
                   tickLine={false}
@@ -488,7 +488,7 @@ export default function PromotionAnalyticsPage() {
                       payload={payload}
                       label={formatDate(label)}
                       isDark={isDark}
-                      formatter={(val, name) => name === 'Incremental Revenue' ? formatCurrency(val) : `$${val}`}
+                      formatter={(val, name) => name === 'Incremental Revenue' ? formatCurrency(val) : `₹${val}`}
                     />
                   )}
                 />

@@ -163,6 +163,19 @@ const StaffRunnerDeliveries = lazyWithRetry(() => import('./pages/staff-portal/r
 const StaffPortalProfile = lazyWithRetry(() => import('./pages/staff-portal/profile/Profile'));
 const StaffNotifications = lazyWithRetry(() => import('./pages/staff-portal/notifications/Notifications'));
 const TechnicianSpecializations = lazyWithRetry(() => import('./pages/admin/TechnicianSpecializations'));
+const NightAudit = lazyWithRetry(() => import('./pages/admin/NightAudit'));
+const CorporateAccounts = lazyWithRetry(() => import('./pages/admin/CorporateAccounts'));
+const ARLedger = lazyWithRetry(() => import('./pages/admin/ARLedger'));
+const AuditLogs = lazyWithRetry(() => import('./pages/admin/AuditLogs'));
+const CashierSessions = lazyWithRetry(() => import('./pages/admin/CashierSessions'));
+const RoomMoves = lazyWithRetry(() => import('./pages/admin/RoomMoves'));
+const PosClosurePage = lazyWithRetry(() => import('./pages/admin/PosClosurePage'));
+const PaymasterAccounts = lazyWithRetry(() => import('./pages/admin/PaymasterAccounts'));
+const AuditPackPage = lazyWithRetry(() => import('./pages/admin/AuditPackPage'));
+const MultiRoomBooking = lazyWithRetry(() => import('./pages/admin/MultiRoomBooking'));
+const TransactionCodes = lazyWithRetry(() => import('./pages/admin/TransactionCodes'));
+const PreAuthHolds = lazyWithRetry(() => import('./pages/admin/PreAuthHolds'));
+const RateCheckReport = lazyWithRetry(() => import('./pages/admin/RateCheckReport'));
 const StaffTaskAcceptance = lazyWithRetry(() => import('./pages/staff/TaskAcceptance'));
 
 function App() {
@@ -369,6 +382,20 @@ function App() {
                                                     <Route path="ai/recovery" element={<RecoveryActionCenter />} />
                                                     {/* Maintenance Specializations */}
                                                     <Route path="maintenance/specializations" element={<TechnicianSpecializations />} />
+                                                    {/* Night Audit */}
+                                                    <Route path="night-audit" element={<NightAudit />} />
+                                                    <Route path="corporate-accounts" element={<CorporateAccounts />} />
+                                                    <Route path="ar-ledger" element={<ARLedger />} />
+                                                    <Route path="audit-logs" element={<AuditLogs />} />
+                                                    <Route path="cashier-sessions" element={<CashierSessions />} />
+                                                    <Route path="room-moves" element={<RoomMoves />} />
+                                                    <Route path="pos-closure" element={<PosClosurePage />} />
+                                                    <Route path="paymaster" element={<PaymasterAccounts />} />
+                                                    <Route path="audit-pack" element={<AuditPackPage />} />
+                                                    <Route path="multi-room" element={<MultiRoomBooking />} />
+                                                    <Route path="transaction-codes" element={<TransactionCodes />} />
+                                                    <Route path="preauth-holds" element={<PreAuthHolds />} />
+                                                    <Route path="rate-check" element={<RateCheckReport />} />
                                                   </Route>
                                                 </Routes>
                                               </Suspense>

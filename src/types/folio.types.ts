@@ -17,6 +17,15 @@ export interface FolioLineItem {
   original_line_item_id: number | null;
   source_folio_id: number | null;
   created_at: string;
+  // Tax breakdown fields (from Sprint 1 backend)
+  tax_amount: number | null;
+  tax_rate_pct: number | null;
+  tax_component_1_name: string | null;
+  tax_component_1_pct: number | null;
+  tax_component_1_amount: number | null;
+  tax_component_2_name: string | null;
+  tax_component_2_pct: number | null;
+  tax_component_2_amount: number | null;
 }
 
 export interface FolioPayment {
@@ -49,6 +58,9 @@ export interface Folio {
   balance: number;
   currency: string;
   status: string;
+  invoice_number: string | null;
+  is_settled: boolean;
+  print_count: number;
   created_at: string;
   closed_at: string | null;
   line_items?: FolioLineItem[];
@@ -95,6 +107,7 @@ export interface TransferChargeData {
 
 export interface SettleFolioData {
   payment_method?: string;
+  corporate_account_id?: number;
   notes?: string;
 }
 
@@ -110,12 +123,7 @@ export interface RoutingRule {
 export interface FolioStatement {
   folio: Folio;
   booking: any;
-  guest: any;
-  timeline: Array<{
-    date: string;
-    description: string;
-    type: string;
-    amount: number;
-    running_balance: number;
-  }>;
+  guest: { name: string; email?: string; phone?: string };
+  line_items: Array<FolioLineItem & { running_balance: number }>;
+  payments: FolioPayment[];
 }

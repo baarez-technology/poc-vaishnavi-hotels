@@ -22,7 +22,11 @@ export default function StatementTab({ folio, bookingId }: StatementTabProps) {
     if (!folio) return;
     setLoading(true);
     folioService.getStatement(bookingId, folio.id)
-      .then(res => setStatement(res))
+      .then(res => {
+        // Backend returns { success, statement: { folio, guest, line_items, ... } }
+        const data = res?.statement || res;
+        setStatement(data);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [folio?.id, bookingId]);
@@ -37,7 +41,8 @@ export default function StatementTab({ folio, bookingId }: StatementTabProps) {
     );
   }
 
-  const timeline = statement?.timeline || [];
+  // Backend returns line_items (with running_balance) not timeline
+  const timeline = statement?.line_items || statement?.timeline || [];
   const guestName = statement?.guest?.name || '';
 
   const handlePrint = () => {
@@ -107,7 +112,7 @@ export default function StatementTab({ folio, bookingId }: StatementTabProps) {
             <tbody>
               {timeline.map((row: any, i: number) => (
                 <tr key={i} className="border-b border-neutral-100">
-                  <td className="py-2 text-neutral-500">{new Date(row.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
+                  <td className="py-2 text-neutral-500">{new Date(row.posted_at || row.date || row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
                   <td className="py-2 text-neutral-800">{row.description}</td>
                   <td className="py-2 text-right text-neutral-700">{row.amount > 0 ? formatCurrency(row.amount) : ''}</td>
                   <td className="py-2 text-right text-emerald-600">{row.amount < 0 ? formatCurrency(Math.abs(row.amount)) : ''}</td>

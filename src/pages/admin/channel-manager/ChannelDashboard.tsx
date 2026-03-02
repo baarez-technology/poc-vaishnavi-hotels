@@ -105,7 +105,7 @@ export default function ChannelDashboard() {
     {
       icon: DollarSign,
       title: 'OTA Revenue (MTD)',
-      value: `$${stats.totalRevenue.toLocaleString()}`,
+      value: `₹${stats.totalRevenue.toLocaleString()}`,
       subtitle: `${stats.revenueGrowth} from last month`,
       accent: 'gold'
     },
@@ -418,7 +418,7 @@ export default function ChannelDashboard() {
                           <span className="text-xs sm:text-[13px] text-rose-500">—</span>
                         ) : (
                           <span className="text-xs sm:text-[13px] font-bold text-terra-600">
-                            ${(ota.stats?.revenue || 0).toLocaleString()}
+                            ₹{(ota.stats?.revenue || 0).toLocaleString()}
                           </span>
                         )}
                       </td>
@@ -489,7 +489,7 @@ export default function ChannelDashboard() {
                             </span>
                           </div>
                           <span className="text-xs sm:text-[13px] font-bold text-terra-600">
-                            ${channel.revenue.toLocaleString()}
+                            ₹{channel.revenue.toLocaleString()}
                           </span>
                         </div>
                         <div className="h-1.5 sm:h-2 rounded-full overflow-hidden bg-neutral-100">
@@ -580,7 +580,7 @@ export default function ChannelDashboard() {
           setOtaBookings([]);
         }}
         title={selectedOTA ? `${selectedOTA.name} Performance Details` : ''}
-        subtitle={`${selectedOTA?.stats?.totalBookings || 0} bookings • $${(selectedOTA?.stats?.revenue || 0).toLocaleString()} revenue`}
+        subtitle={`${selectedOTA?.stats?.totalBookings || 0} bookings • ₹${(selectedOTA?.stats?.revenue || 0).toLocaleString()} revenue`}
         maxWidth="max-w-3xl"
       >
         {loadingBookings ? (
@@ -597,7 +597,7 @@ export default function ChannelDashboard() {
               </div>
               <div className="p-4 rounded-lg bg-neutral-50">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Revenue</p>
-                <p className="text-2xl font-bold text-sage-600">${(selectedOTA?.stats?.revenue || 0).toLocaleString()}</p>
+                <p className="text-2xl font-bold text-sage-600">₹{(selectedOTA?.stats?.revenue || 0).toLocaleString()}</p>
               </div>
               <div className="p-4 rounded-lg bg-neutral-50">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Avg Rating</p>
@@ -635,7 +635,7 @@ export default function ChannelDashboard() {
                           <p className="text-[11px] text-neutral-500 font-mono">{booking.id || booking.bookingNumber}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-[13px] font-bold text-terra-600">${(booking.amount || booking.total || 0).toLocaleString()}</p>
+                          <p className="text-[13px] font-bold text-terra-600">₹{(booking.amount || booking.total || 0).toLocaleString()}</p>
                           <p className="text-[10px] text-neutral-400 mt-0.5">
                             {booking.checkIn ? new Date(booking.checkIn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'} - {booking.checkOut ? new Date(booking.checkOut).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
                           </p>

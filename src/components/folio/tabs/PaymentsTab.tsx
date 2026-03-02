@@ -12,6 +12,10 @@ const METHOD_LABELS: Record<string, string> = {
   card: 'Card',
   cash: 'Cash',
   bank_transfer: 'Bank Transfer',
+  upi: 'UPI',
+  neft: 'NEFT',
+  net_banking: 'Net Banking',
+  btc: 'Bill to Company',
   voucher: 'Voucher',
   comp: 'Complimentary',
 };

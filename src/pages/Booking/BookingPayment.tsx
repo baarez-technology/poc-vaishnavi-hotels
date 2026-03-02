@@ -508,7 +508,7 @@ const PaymentFormContent = () => {
                     isLoading={isProcessing}
                     disabled={isProcessing || !stripe}
                   >
-                    {isProcessing ? 'Processing...' : `Pay ${draft.totalPrice ? `$${draft.totalPrice.toFixed(2)}` : ''}`}
+                    {isProcessing ? 'Processing...' : `Pay ${draft.totalPrice ? `₹${draft.totalPrice.toFixed(2)}` : ''}`}
                   </Button>
                 </div>
               </form>

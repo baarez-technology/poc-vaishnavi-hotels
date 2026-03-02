@@ -24,7 +24,8 @@ function transformApiRoom(apiRoom: any): any {
     type: roomType,
     floor: apiRoom.floor || 1,
     status: mapRoomStatus(apiRoom.status),
-    cleaning: apiRoom.status === 'available' || apiRoom.status === 'clean' || apiRoom.status === 'inspected' ? 'clean' : 'dirty',
+    cleaning: apiRoom.cleaningStatus || apiRoom.cleaning_status ||
+      (apiRoom.status === 'available' || apiRoom.status === 'clean' || apiRoom.status === 'inspected' ? 'clean' : 'dirty'),
     bedType: apiRoom.bedType || apiRoom.bed_type || 'King',
     viewType: apiRoom.view || apiRoom.view_type || apiRoom.viewType || 'Standard',
     capacity: apiRoom.maxGuests || apiRoom.capacity || 2,

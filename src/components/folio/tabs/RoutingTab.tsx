@@ -9,7 +9,7 @@ import type { Folio, RoutingRule } from '@/types/folio.types';
 
 const CHARGE_CATEGORIES = [
   'room_charge', 'minibar', 'spa', 'restaurant', 'parking',
-  'phone', 'laundry', 'late_checkout', 'service', 'misc',
+  'phone', 'laundry', 'newspaper', 'late_checkout', 'service', 'damage', 'misc',
 ];
 
 interface RoutingTabProps {

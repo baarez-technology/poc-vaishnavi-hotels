@@ -30,7 +30,14 @@ export default function BookingRow({ booking, onClick }) {
   };
 
   // Normalize status to uppercase for lookup
-  const normalizedStatus = booking.status?.toUpperCase?.() || 'UNKNOWN';
+  // C-06: Show "Guaranteed" for confirmed bookings with future arrival date
+  let normalizedStatus = booking.status?.toUpperCase?.() || 'UNKNOWN';
+  if (normalizedStatus === 'CONFIRMED' && booking.checkIn) {
+    const today = new Date().toISOString().split('T')[0];
+    if (booking.checkIn > today) {
+      normalizedStatus = 'GUARANTEED';
+    }
+  }
   const status = statusConfig[normalizedStatus] || statusConfig[booking.status] || defaultStatus;
 
   // Normalize source for lookup

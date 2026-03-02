@@ -29,7 +29,7 @@ interface TooltipPayload {
   payload: ChartDataItem;
 }
 
-const CustomTooltip = ({ active, payload, label, symbol = '$' }: { active?: boolean; payload?: TooltipPayload[]; label?: string; symbol?: string }) => {
+const CustomTooltip = ({ active, payload, label, symbol = '₹' }: { active?: boolean; payload?: TooltipPayload[]; label?: string; symbol?: string }) => {
   const formatCurrencyValue = (value: number) => {
     if (value >= 1000000) {
       return `${symbol}${(value / 1000000).toFixed(1)}M`;

@@ -99,7 +99,13 @@ export function savePermissions(permissions: any): boolean {
  * General Settings
  */
 export function loadGeneralSettings(): any {
-  return loadFromStorage(STORAGE_KEYS.GENERAL_SETTINGS, {});
+  const settings = loadFromStorage(STORAGE_KEYS.GENERAL_SETTINGS, {});
+  // Migrate legacy USD default to INR
+  if (settings && settings.currency === 'USD') {
+    settings.currency = 'INR';
+    saveToStorage(STORAGE_KEYS.GENERAL_SETTINGS, settings);
+  }
+  return settings;
 }
 
 export function saveGeneralSettings(settings: any): boolean {

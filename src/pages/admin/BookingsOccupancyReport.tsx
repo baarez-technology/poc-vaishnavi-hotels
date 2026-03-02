@@ -20,12 +20,12 @@ import { reportsService, BookingsOccupancyReport as ReportData, AIInsight, Expor
 
 const formatCurrency = (value: number) => {
   if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`;
+    return `₹${(value / 1000000).toFixed(1)}M`;
   }
   if (value >= 1000) {
-    return `$${(value / 1000).toFixed(1)}K`;
+    return `₹${(value / 1000).toFixed(1)}K`;
   }
-  return `$${value.toLocaleString()}`;
+  return `₹${value.toLocaleString()}`;
 };
 
 const DATE_RANGES = [
@@ -265,14 +265,14 @@ export default function BookingsOccupancyReport() {
           </div>
           <div className="bg-white rounded-xl p-4 sm:p-5">
             <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Avg ADR</p>
-            <p className="text-xl sm:text-2xl font-semibold text-neutral-900">${summary.avg_adr.toLocaleString()}</p>
+            <p className="text-xl sm:text-2xl font-semibold text-neutral-900">₹{summary.avg_adr.toLocaleString()}</p>
             <p className={`text-[10px] sm:text-[11px] font-medium mt-1 ${comparisons.adr_change >= 0 ? 'text-sage-600' : 'text-rose-600'}`}>
               {comparisons.adr_change >= 0 ? '+' : ''}{comparisons.adr_change}% vs last period
             </p>
           </div>
           <div className="bg-white rounded-xl p-4 sm:p-5">
             <p className="text-[10px] sm:text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-1">Avg RevPAR</p>
-            <p className="text-xl sm:text-2xl font-semibold text-neutral-900">${summary.avg_revpar.toLocaleString()}</p>
+            <p className="text-xl sm:text-2xl font-semibold text-neutral-900">₹{summary.avg_revpar.toLocaleString()}</p>
             <p className={`text-[10px] sm:text-[11px] font-medium mt-1 ${comparisons.revpar_change >= 0 ? 'text-sage-600' : 'text-rose-600'}`}>
               {comparisons.revpar_change >= 0 ? '+' : ''}{comparisons.revpar_change}% vs last period
             </p>
@@ -429,7 +429,7 @@ export default function BookingsOccupancyReport() {
                     tickLine={false}
                     tick={{ fontSize: 11, fill: '#737373' }}
                     width={45}
-                    tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                    tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`}
                   />
                   <Tooltip
                     content={({ active, payload }) => {
@@ -437,8 +437,8 @@ export default function BookingsOccupancyReport() {
                         return (
                           <div className="bg-neutral-900 text-white text-[12px] px-3 py-2 rounded-lg">
                             <p className="font-medium mb-1">{payload[0].payload.date}</p>
-                            <p>ADR: ${payload[0].payload.adr?.toLocaleString()}</p>
-                            <p>RevPAR: ${payload[0].payload.revpar?.toLocaleString()}</p>
+                            <p>ADR: ₹{payload[0].payload.adr?.toLocaleString()}</p>
+                            <p>RevPAR: ₹{payload[0].payload.revpar?.toLocaleString()}</p>
                           </div>
                         );
                       }

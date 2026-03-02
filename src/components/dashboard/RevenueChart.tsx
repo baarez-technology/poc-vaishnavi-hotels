@@ -16,7 +16,7 @@ import { useCurrency } from '@/hooks/useCurrency';
  * Features: Dual bars, custom tooltip, legend, gradient fills
  */
 
-const CustomTooltip = ({ active, payload, label, symbol = '$' }) => {
+const CustomTooltip = ({ active, payload, label, symbol = '₹' }) => {
   if (!active || !payload?.length) return null;
 
   return (

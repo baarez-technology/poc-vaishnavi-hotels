@@ -89,21 +89,21 @@ export default function ChannelPerformanceTable({ channelData, summary }) {
                 </td>
                 <td className="text-right py-4 px-4">
                   <p className="font-semibold text-neutral-900">
-                    ${channel.revenue.toLocaleString()}
+                    ₹{channel.revenue.toLocaleString()}
                   </p>
                 </td>
                 <td className="text-right py-4 px-4">
                   <p className="text-neutral-700">{channel.bookings}</p>
                 </td>
                 <td className="text-right py-4 px-4">
-                  <p className="text-neutral-700">${channel.adr}</p>
+                  <p className="text-neutral-700">₹{channel.adr}</p>
                 </td>
                 <td className="text-right py-4 px-4">
                   <p className="text-neutral-700">{channel.commission}%</p>
                 </td>
                 <td className="text-right py-4 px-4">
                   <p className="font-semibold text-[#4E5840]">
-                    ${channel.netRevenue.toLocaleString()}
+                    ₹{channel.netRevenue.toLocaleString()}
                   </p>
                 </td>
                 <td className="text-center py-4 px-4">
@@ -121,7 +121,7 @@ export default function ChannelPerformanceTable({ channelData, summary }) {
             <tr className="bg-[#FAF8F6] font-semibold">
               <td className="py-4 px-4 text-neutral-900">Total</td>
               <td className="text-right py-4 px-4 text-[#A57865]">
-                ${summary.totalRevenue.toLocaleString()}
+                ₹{summary.totalRevenue.toLocaleString()}
               </td>
               <td className="text-right py-4 px-4 text-neutral-900">
                 {summary.totalBookings}
@@ -133,7 +133,7 @@ export default function ChannelPerformanceTable({ channelData, summary }) {
                 {summary.avgCommission}%
               </td>
               <td className="text-right py-4 px-4 text-[#4E5840]">
-                ${summary.totalNetRevenue.toLocaleString()}
+                ₹{summary.totalNetRevenue.toLocaleString()}
               </td>
               <td className="text-center py-4 px-4">-</td>
             </tr>
@@ -151,7 +151,7 @@ export default function ChannelPerformanceTable({ channelData, summary }) {
         <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
           <p className="text-xs text-amber-700 font-medium mb-1">Total Commission</p>
           <p className="text-lg font-bold text-amber-900">
-            ${(summary.totalRevenue - summary.totalNetRevenue).toLocaleString()}
+            ₹{(summary.totalRevenue - summary.totalNetRevenue).toLocaleString()}
           </p>
           <p className="text-xs text-amber-600 mt-1">From all channels</p>
         </div>

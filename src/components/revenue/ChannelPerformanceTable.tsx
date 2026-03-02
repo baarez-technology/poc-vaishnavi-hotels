@@ -373,21 +373,21 @@ export default function ChannelPerformanceTable() {
               </TableCell>
               <TableCell align="right">
                 <span className="font-semibold text-neutral-900">
-                  ${channel.revenue.toLocaleString()}
+                  ₹{channel.revenue.toLocaleString()}
                 </span>
               </TableCell>
               <TableCell align="right">
                 <span className="text-neutral-700">{channel.bookings}</span>
               </TableCell>
               <TableCell align="right">
-                <span className="text-neutral-700">${channel.adr.toLocaleString()}</span>
+                <span className="text-neutral-700">₹{channel.adr.toLocaleString()}</span>
               </TableCell>
               <TableCell align="right">
                 <span className="text-neutral-700">{channel.commission}%</span>
               </TableCell>
               <TableCell align="right">
                 <span className="font-semibold text-sage-600">
-                  ${channel.netRevenue.toLocaleString()}
+                  ₹{channel.netRevenue.toLocaleString()}
                 </span>
               </TableCell>
               <TableCell align="center">
@@ -407,7 +407,7 @@ export default function ChannelPerformanceTable() {
               <span className="font-semibold text-neutral-900">Total</span>
             </TableCell>
             <TableCell align="right">
-              <span className="font-semibold text-terra-600">${summary.totalRevenue.toLocaleString()}</span>
+              <span className="font-semibold text-terra-600">₹{summary.totalRevenue.toLocaleString()}</span>
             </TableCell>
             <TableCell align="right">
               <span className="font-semibold text-neutral-900">{summary.totalBookings}</span>
@@ -419,7 +419,7 @@ export default function ChannelPerformanceTable() {
               <span className="font-semibold text-neutral-900">{summary.avgCommission}%</span>
             </TableCell>
             <TableCell align="right">
-              <span className="font-semibold text-sage-600">${summary.totalNetRevenue.toLocaleString()}</span>
+              <span className="font-semibold text-sage-600">₹{summary.totalNetRevenue.toLocaleString()}</span>
             </TableCell>
             <TableCell align="center">
               <span className="text-neutral-500">-</span>
@@ -439,7 +439,7 @@ export default function ChannelPerformanceTable() {
           <div className="p-4 bg-gold-50 rounded-xl border border-gold-200">
             <p className="text-xs text-gold-700 font-medium mb-1">Total Commission</p>
             <p className="text-lg font-bold text-gold-900">
-              ${insights.totalCommission.toLocaleString()}
+              ₹{insights.totalCommission.toLocaleString()}
             </p>
             <p className="text-xs text-gold-600 mt-1">From all channels</p>
           </div>

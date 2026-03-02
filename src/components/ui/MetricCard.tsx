@@ -105,7 +105,7 @@ export default function MetricCard({
   const formatValue = (val) => {
     if (typeof val !== 'number') return val
     if (suffix === '%') return val.toFixed(1)
-    if (prefix === '$') return val.toLocaleString('en-US', { maximumFractionDigits: 0 })
+    if (prefix === '₹' || prefix === '$') return val.toLocaleString('en-US', { maximumFractionDigits: 0 })
     return val.toLocaleString('en-US', { maximumFractionDigits: 0 })
   }
 

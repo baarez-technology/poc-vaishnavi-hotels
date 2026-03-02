@@ -12,7 +12,7 @@ const generateRevenueData = () => {
     date.setDate(date.getDate() - i);
 
     // Simulate seasonal patterns with some randomness
-    const baseRevenue = 15000;
+    const baseRevenue = 1245000;
     const seasonalFactor = 1 + (Math.sin(i / 7) * 0.2); // Weekly pattern
     const randomFactor = 0.85 + (Math.random() * 0.3);
 

@@ -116,7 +116,7 @@ export default function SegmentChart({ segments: rawSegments }) {
             </div>
             <div className="text-right">
               <p className="text-sm font-semibold text-neutral-900">
-                ${segment.avgLTV ? segment.avgLTV.toLocaleString() : '0'}
+                ₹{segment.avgLTV ? segment.avgLTV.toLocaleString() : '0'}
               </p>
               <p className="text-xs text-neutral-600">Avg LTV</p>
             </div>

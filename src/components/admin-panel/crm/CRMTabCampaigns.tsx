@@ -187,7 +187,7 @@ function CampaignModal({ isOpen, onClose, onSave, campaign, mode, segments, temp
                   <p className="text-xs text-neutral-500">Recipients</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-xl font-bold text-[#4E5840]">${(selectedSegment.avgRevenue || 0).toLocaleString()}</p>
+                  <p className="text-xl font-bold text-[#4E5840]">₹{(selectedSegment.avgRevenue || 0).toLocaleString()}</p>
                   <p className="text-xs text-neutral-500">Avg LTV</p>
                 </div>
               </div>

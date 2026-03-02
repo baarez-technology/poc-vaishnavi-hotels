@@ -270,7 +270,7 @@ const CompetitorRates = () => {
             />
             <KPICard
               title="Revenue Opportunity"
-              value={`$${(competitorInsights?.potentialRevenueLoss || 0).toLocaleString()}`}
+              value={`₹${(competitorInsights?.potentialRevenueLoss || 0).toLocaleString()}`}
               icon={AlertTriangle}
               accentColor="gold"
               index={4}

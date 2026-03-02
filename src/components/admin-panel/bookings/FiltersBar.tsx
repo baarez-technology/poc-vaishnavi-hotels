@@ -24,6 +24,7 @@ export default function FiltersBar({ filters, onFilterChange, onClearFilters }) 
     { value: 'IN_HOUSE', label: 'Checked In' },
     { value: 'COMPLETED', label: 'Checked Out' },
     { value: 'CANCELLED', label: 'Cancelled' },
+    { value: 'NO-SHOW', label: 'No Show' },
   ];
 
   const sourceOptions = [

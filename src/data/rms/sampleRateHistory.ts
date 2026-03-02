@@ -2,11 +2,11 @@
 // Room types with their base rates and rate codes
 
 export const roomTypes = [
-  { id: 'STD', name: 'Standard Room', baseRate: 189, maxOccupancy: 2 },
-  { id: 'DLX', name: 'Deluxe Room', baseRate: 259, maxOccupancy: 2 },
-  { id: 'SUP', name: 'Superior Suite', baseRate: 349, maxOccupancy: 3 },
-  { id: 'EXE', name: 'Executive Suite', baseRate: 449, maxOccupancy: 4 },
-  { id: 'PRS', name: 'Presidential Suite', baseRate: 789, maxOccupancy: 6 },
+  { id: 'STD', name: 'Standard Room', baseRate: 15700, maxOccupancy: 2 },
+  { id: 'DLX', name: 'Deluxe Room', baseRate: 21500, maxOccupancy: 2 },
+  { id: 'SUP', name: 'Superior Suite', baseRate: 29000, maxOccupancy: 3 },
+  { id: 'EXE', name: 'Executive Suite', baseRate: 37500, maxOccupancy: 4 },
+  { id: 'PRS', name: 'Presidential Suite', baseRate: 65500, maxOccupancy: 6 },
 ];
 
 export const rateCodes = [

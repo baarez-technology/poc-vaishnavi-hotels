@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { MouseEvent } from 'react';
-import { Crown, Eye, Pencil, MoreHorizontal, Bed, XCircle, CalendarX, ChevronUp, ChevronDown, ChevronsUpDown, CreditCard, LogIn, LogOut, ArrowRightLeft, Undo2, UserX, SprayCan } from 'lucide-react';
+import { Crown, Eye, Pencil, MoreHorizontal, Bed, XCircle, CalendarX, ChevronUp, ChevronDown, ChevronsUpDown, CreditCard, LogIn, LogOut, ArrowRightLeft, Undo2, UserX, SprayCan, RotateCcw, Receipt } from 'lucide-react';
 import { statusConfig, sourceConfig, paymentStatusConfig } from '../../data/bookingsData';
 import { IconButton } from '../ui2/Button';
 import { StatusBadge } from '../ui2/Badge';
@@ -27,6 +27,8 @@ export default function BookingsTable({
   onCancelCheckIn,
   onMarkNoShow,
   onRequestCleaning,
+  onReinstate,
+  onViewBill,
 }: {
   activeTab?: string;
   bookings: BookingLike[];
@@ -42,6 +44,8 @@ export default function BookingsTable({
   onCancelCheckIn?: (booking: BookingLike) => void;
   onMarkNoShow?: (booking: BookingLike) => void;
   onRequestCleaning?: (booking: BookingLike) => void;
+  onReinstate?: (booking: BookingLike) => void;
+  onViewBill?: (booking: BookingLike) => void;
 }) {
   const { formatCurrency } = useCurrency();
   const { getStatus } = usePrecheckinStatus();
@@ -219,12 +223,37 @@ export default function BookingsTable({
     }
   };
 
+  const handleReinstate = (e: any, booking: BookingLike) => {
+    e.stopPropagation();
+    setOpenDropdownId(null);
+    if (onReinstate) {
+      onReinstate(booking);
+    }
+  };
+
+  const handleViewBill = (e: any, booking: BookingLike) => {
+    e.stopPropagation();
+    setOpenDropdownId(null);
+    if (onViewBill) {
+      onViewBill(booking);
+    }
+  };
+
   // Date guard helpers
   const isExpired = (booking: BookingLike) => {
     const checkOut = booking.checkOut || booking.departure_date;
     if (!checkOut) return false;
     const today = new Date().toISOString().split('T')[0];
     return checkOut <= today;
+  };
+
+  // Past-arrival bookings that haven't checked in should not allow room assignment
+  const isPastArrivalNotCheckedIn = (booking: BookingLike) => {
+    const arrivalDate = booking.checkIn || booking.arrival_date;
+    if (!arrivalDate) return false;
+    const today = new Date().toISOString().split('T')[0];
+    const status = (booking.status || '').toUpperCase().replace(/[\s_-]/g, '_');
+    return arrivalDate < today && status !== 'CHECKED_IN' && status !== 'IN_HOUSE';
   };
 
   const isNoShow = (booking: BookingLike) => {
@@ -431,7 +460,9 @@ export default function BookingsTable({
 
                   {/* Check-in Date */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-neutral-700 font-medium">{formatDate(booking.checkIn)}</span>
+                    <span className="text-sm text-neutral-700 font-medium">
+                      {booking.checkedInAt ? formatDate(new Date(booking.checkedInAt).toISOString().split('T')[0]) : formatDate(booking.checkIn)}
+                    </span>
                     {booking.checkedInAt && (
                       <div className="text-[11px] text-emerald-600 mt-0.5">
                         Checked in: {new Date(booking.checkedInAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
@@ -552,6 +583,13 @@ export default function BookingsTable({
                                 Payment
                               </button>
                               <button
+                                onClick={(e) => handleViewBill(e, booking)}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
+                              >
+                                <Receipt className="w-3.5 h-3.5 text-neutral-500" />
+                                Guest Bill
+                              </button>
+                              <button
                                 onClick={(e) => handleRequestCleaning(e, booking)}
                                 className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-sage-700 hover:bg-sage-50"
                               >
@@ -602,8 +640,8 @@ export default function BookingsTable({
                                 </button>
                               )}
 
-                              {/* Assign Room - NOT expired, pre-check-in only */}
-                              {!isCompleted(booking) && !isCancelled(booking) && !isNoShow(booking) && !isExpired(booking) && (
+                              {/* Assign Room - NOT expired, NOT past-arrival unless checked in */}
+                              {!isCompleted(booking) && !isCancelled(booking) && !isNoShow(booking) && !isExpired(booking) && !isPastArrivalNotCheckedIn(booking) && (
                                 <button
                                   onClick={(e) => handleAssignRoom(e, booking)}
                                   className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
@@ -621,6 +659,28 @@ export default function BookingsTable({
                                 >
                                   <UserX className="w-3.5 h-3.5" />
                                   Mark No Show
+                                </button>
+                              )}
+
+                              {/* Guest Bill — for completed/checked-out bookings */}
+                              {isCompleted(booking) && (
+                                <button
+                                  onClick={(e) => handleViewBill(e, booking)}
+                                  className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-neutral-700 hover:bg-neutral-50"
+                                >
+                                  <Receipt className="w-3.5 h-3.5 text-neutral-500" />
+                                  Guest Bill
+                                </button>
+                              )}
+
+                              {/* Reinstate - for no-show or cancelled bookings */}
+                              {(isNoShow(booking) || isCancelled(booking)) && (
+                                <button
+                                  onClick={(e) => handleReinstate(e, booking)}
+                                  className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-blue-700 hover:bg-blue-50"
+                                >
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                  Reinstate
                                 </button>
                               )}
 

@@ -34,7 +34,7 @@
     "category": "Distribution",
     "title": "OTA Dependency Alert",
     "description": "High OTA dependency: 52% of bookings from third parties",
-    "impact": "-$2,340",
+    "impact": "-\u20b91,94,220",
     "confidence": "94%",
     "severity": "high",
     "timestamp": "20 min ago"

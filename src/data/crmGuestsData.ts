@@ -26,7 +26,7 @@ const generateGuests = () => {
     const lastVisit = new Date(today.getTime() - lastVisitDaysAgo * 24 * 60 * 60 * 1000);
 
     // Generate spend data
-    const avgSpend = 300 + Math.floor(Math.random() * 1500); // $300-$1800 per stay
+    const avgSpend = 25000 + Math.floor(Math.random() * 125000); // ₹25,000-₹1,50,000 per stay
     const totalSpend = avgSpend * totalStays;
 
     // Source distribution
@@ -49,9 +49,9 @@ const generateGuests = () => {
                             sentimentScore < 0.7 ? (Math.random() < 0.3 ? 1 : 0) : 0;
 
     // Loyalty tier based on spend and stays
-    const tier = totalSpend > 10000 ? 'Platinum' :
-                 totalSpend > 5000 ? 'Gold' :
-                 totalSpend > 2000 ? 'Silver' :
+    const tier = totalSpend > 830000 ? 'Platinum' :
+                 totalSpend > 415000 ? 'Gold' :
+                 totalSpend > 166000 ? 'Silver' :
                  totalStays > 1 ? 'Bronze' : 'Member';
 
     // Upcoming bookings
@@ -97,11 +97,11 @@ const generateGuests = () => {
       // Loyalty
       loyaltyTier: tier,
       loyaltyPoints: Math.floor(totalSpend * 0.5),
-      loyaltyMember: totalStays > 1 || totalSpend > 500,
+      loyaltyMember: totalStays > 1 || totalSpend > 41500,
 
       // Preferences
       preferredRoom: rooms[Math.floor(Math.random() * rooms.length)],
-      tags: totalSpend > 5000 ? ['vip', 'high-value'] :
+      tags: totalSpend > 415000 ? ['vip', 'high-value'] :
             source === 'corporate' ? ['corporate', 'business'] :
             totalStays > 5 ? ['frequent', 'loyal'] : ['new'],
 
@@ -118,7 +118,7 @@ const generateGuests = () => {
       lifespanDays: firstVisitDaysAgo,
 
       // Notes
-      notes: totalSpend > 8000 ? 'VIP guest - provide premium service' :
+      notes: totalSpend > 664000 ? 'VIP guest - provide premium service' :
              complaints.length > 0 ? 'Previous complaints - extra attention needed' :
              totalStays > 10 ? 'Loyal frequent guest' : '',
 
@@ -138,7 +138,7 @@ export const guestsSummary = {
   activeGuests: crmGuests.filter(g => g.daysSinceLastVisit < 180).length,
   newGuests: crmGuests.filter(g => g.totalStays === 1).length,
   returningGuests: crmGuests.filter(g => g.totalStays > 1).length,
-  vipGuests: crmGuests.filter(g => g.totalSpend > 5000 || g.totalStays > 8).length,
+  vipGuests: crmGuests.filter(g => g.totalSpend > 415000 || g.totalStays > 8).length,
   atRiskGuests: crmGuests.filter(g => g.sentimentScore < 0.4 || g.daysSinceLastVisit > 180 || g.negativeReviews > 1).length,
   averageLTV: Math.round(crmGuests.reduce((sum, g) => sum + g.totalSpend, 0) / crmGuests.length),
   totalRevenue: crmGuests.reduce((sum, g) => sum + g.totalSpend, 0)

@@ -68,7 +68,7 @@ export function generateCompetitorRates(startDate = new Date(), ourRates = {}) {
     const dateStr = date.toISOString().split('T')[0];
 
     // Our base rate for this date (Standard room BAR)
-    const ourRate = ourRates[dateStr]?.rooms?.STD?.rates?.BAR || 189;
+    const ourRate = ourRates[dateStr]?.rooms?.STD?.rates?.BAR || 15700;
 
     const dayRates = {
       date: dateStr,
@@ -160,7 +160,7 @@ function generateRateRecommendation(gapPercent, positioning, daysOut) {
     return {
       action: 'increase',
       urgency: 'high',
-      message: `You're ${Math.abs(gapPercent)}% below market - potential revenue loss of $${Math.round(Math.abs(gapPercent) * 2)}/night`,
+      message: `You're ${Math.abs(gapPercent)}% below market - potential revenue loss of \u20B9${Math.round(Math.abs(gapPercent) * 166)}/night`,
       suggestedAdjustment: Math.round(Math.abs(gapPercent) * 0.7),
     };
   }

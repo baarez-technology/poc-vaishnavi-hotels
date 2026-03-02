@@ -126,12 +126,17 @@ export default function Promotions() {
   const handleDuplicate = async (promotion) => {
     try {
       const newPromo = {
-        ...promotion,
         name: `${promotion.name} (Copy)`,
-        usageCount: 0,
-        isActive: false,
+        description: promotion.description || '',
+        discountType: promotion.discountType,
+        discountValue: promotion.discountValue,
+        validFrom: promotion.validFrom,
+        validTo: promotion.validTo,
+        otaCodes: promotion.otaCodes || ['ALL'],
+        roomTypes: promotion.roomTypes || ['ALL'],
+        minStay: promotion.minStay || null,
+        bookingWindow: promotion.bookingWindow || null,
       };
-      delete newPromo.id;
       await createChannelPromotion(newPromo);
       toast.success('Promotion duplicated successfully');
       await refetchData();

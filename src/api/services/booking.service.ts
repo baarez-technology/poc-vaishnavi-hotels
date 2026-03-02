@@ -154,6 +154,16 @@ export const bookingService = {
     return response.data.data || response.data;
   },
 
+  // Reinstate a no-show or cancelled booking
+  reinstate: async (bookingId: string | number) => {
+    const response = await apiClient.post<ApiResponse<Booking>>(
+      `/api/v1/bookings/${bookingId}/reinstate`,
+      {}
+    );
+    clearApiCache('/bookings');
+    return response.data.data || response.data;
+  },
+
   // Download invoice PDF for a booking
   downloadInvoice: async (bookingId: string | number) => {
     const response = await apiClient.get(

@@ -93,7 +93,7 @@ export default function RateSync() {
     {
       icon: DollarSign,
       title: 'Avg Daily Rate',
-      value: `$${stats.avgRate || 185}`,
+      value: `₹${stats.avgRate || 185}`,
       accent: 'sage'
     },
     {

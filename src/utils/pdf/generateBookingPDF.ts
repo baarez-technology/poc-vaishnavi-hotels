@@ -29,6 +29,11 @@ interface BookingData {
   serviceFee: number;
   total: number;
   nights: number;
+  taxRate?: number;
+  cgst?: number;
+  sgst?: number;
+  cgstRate?: number;
+  sgstRate?: number;
 }
 
 export function generateBookingPDF(bookingData: BookingData) {
@@ -104,13 +109,17 @@ export function generateBookingPDF(bookingData: BookingData) {
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  yPos = addText(`Room Rate: $${bookingData.room.price.toFixed(2)} × ${bookingData.nights} night(s) = $${bookingData.subtotal.toFixed(2)}`, margin, yPos, 10) + 3;
-  yPos = addText(`Service Fee: $${bookingData.serviceFee.toFixed(2)}`, margin, yPos, 10) + 3;
-  yPos = addText(`Taxes & Fees: $${bookingData.tax.toFixed(2)}`, margin, yPos, 10) + 3;
-  
+  const gstLabel = bookingData.taxRate ? `GST (${bookingData.taxRate}%)` : 'GST';
+  yPos = addText(`Room Rate: ₹${bookingData.room.price.toFixed(2)} × ${bookingData.nights} night(s) = ₹${bookingData.subtotal.toFixed(2)}`, margin, yPos, 10) + 3;
+  yPos = addText(`Service Fee (5%): ₹${bookingData.serviceFee.toFixed(2)}`, margin, yPos, 10) + 3;
+  yPos = addText(`${gstLabel}: ₹${bookingData.tax.toFixed(2)}`, margin, yPos, 10) + 3;
+  if (bookingData.cgst !== undefined && bookingData.sgst !== undefined) {
+    yPos = addText(`    CGST (${bookingData.cgstRate}%): ₹${bookingData.cgst.toFixed(2)}  |  SGST (${bookingData.sgstRate}%): ₹${bookingData.sgst.toFixed(2)}`, margin, yPos, 9, '#666666') + 3;
+  }
+
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  yPos = addText(`Total Paid: $${bookingData.total.toFixed(2)}`, margin, yPos, 12) + 5;
+  yPos = addText(`Total Paid: ₹${bookingData.total.toFixed(2)}`, margin, yPos, 12) + 5;
 
   // Payment Method
   doc.setFontSize(10);

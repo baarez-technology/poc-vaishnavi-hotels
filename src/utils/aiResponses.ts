@@ -141,7 +141,7 @@ function generateVIPGuestsResponse(result) {
 
   const guests = result.data;
   const guestList = guests.slice(0, 10).map((g, i) =>
-    `${i + 1}. ${g.name} - LTV: $${g.totalSpend?.toLocaleString() || 0} (${g.totalStays || 0} stays)`
+    `${i + 1}. ${g.name} - LTV: ₹${g.totalSpend?.toLocaleString() || 0} (${g.totalStays || 0} stays)`
   ).join('\n');
 
   return `Here are your top VIP guests (${guests.length} total):\n\n${guestList}\n\n${guests.length > 10 ? `...and ${guests.length - 10} more. ` : ''}Would you like details on any specific guest?`;
@@ -166,7 +166,7 @@ function generateRevenueResponse(result) {
   }
 
   const { revenue, occupancy, period } = result.data;
-  return `${period || 'Today'}'s revenue: $${revenue?.toLocaleString() || '0'} with ${occupancy || '0'}% occupancy.\n\nYour top revenue source is direct bookings. Would you like a detailed breakdown?`;
+  return `${period || 'Today'}'s revenue: ₹${revenue?.toLocaleString() || '0'} with ${occupancy || '0'}% occupancy.\n\nYour top revenue source is direct bookings. Would you like a detailed breakdown?`;
 }
 
 function generateOccupancyResponse(result) {
@@ -217,7 +217,7 @@ function generateCRMSummaryResponse(result) {
 
   const { totalGuests, vipGuests, atRiskGuests, newGuests, avgLTV } = result.data;
 
-  return `**CRM Overview:**\n\n👥 Total Guests: ${totalGuests}\n💎 VIP Guests: ${vipGuests}\n⚠️ At-Risk: ${atRiskGuests}\n🆕 New This Month: ${newGuests}\n💰 Avg LTV: $${avgLTV?.toLocaleString() || '0'}\n\n${atRiskGuests > 20 ? '⚠️ Consider launching a win-back campaign.' : 'Guest retention looks strong!'}`;
+  return `**CRM Overview:**\n\n👥 Total Guests: ${totalGuests}\n💎 VIP Guests: ${vipGuests}\n⚠️ At-Risk: ${atRiskGuests}\n🆕 New This Month: ${newGuests}\n💰 Avg LTV: ₹${avgLTV?.toLocaleString() || '0'}\n\n${atRiskGuests > 20 ? '⚠️ Consider launching a win-back campaign.' : 'Guest retention looks strong!'}`;
 }
 
 function generateReviewsSummaryResponse(result) {

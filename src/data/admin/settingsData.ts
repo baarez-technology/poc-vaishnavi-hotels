@@ -8,7 +8,7 @@ export const generalSettings = {
   hotelName: "Glimmora International Pvt Limited",
   logo: "/logo.png",
   timezone: "Asia/Kolkata",
-  currency: "USD",
+  currency: "INR",
   primaryContact: {
     name: "Glimmora Support",
     email: "info@glimmora.ai",
@@ -406,7 +406,7 @@ export const billingData = {
   currentPlan: {
     name: "Pro",
     price: 49,
-    currency: "USD",
+    currency: "INR",
     billingCycle: "month",
     roomsLimit: 100,
     features: [

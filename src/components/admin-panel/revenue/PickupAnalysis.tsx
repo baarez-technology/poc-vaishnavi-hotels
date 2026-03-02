@@ -93,7 +93,7 @@ export default function PickupAnalysis({ pickupData, onTheBooks, paceIndicators 
               <div className="flex justify-between">
                 <span className="text-[#A57865]">Revenue:</span>
                 <span className="font-semibold text-neutral-900">
-                  ${(onTheBooks.next7Days.revenue / 1000).toFixed(1)}K
+                  ₹{(onTheBooks.next7Days.revenue / 1000).toFixed(1)}K
                 </span>
               </div>
               <div className="flex justify-between">
@@ -105,7 +105,7 @@ export default function PickupAnalysis({ pickupData, onTheBooks, paceIndicators 
               <div className="flex justify-between">
                 <span className="text-[#A57865]">ADR:</span>
                 <span className="font-semibold text-neutral-900">
-                  ${onTheBooks.next7Days.adr}
+                  ₹{onTheBooks.next7Days.adr}
                 </span>
               </div>
             </div>
@@ -123,7 +123,7 @@ export default function PickupAnalysis({ pickupData, onTheBooks, paceIndicators 
               <div className="flex justify-between">
                 <span className="text-[#5C9BA4]">Revenue:</span>
                 <span className="font-semibold text-aurora-900">
-                  ${(onTheBooks.next14Days.revenue / 1000).toFixed(1)}K
+                  ₹{(onTheBooks.next14Days.revenue / 1000).toFixed(1)}K
                 </span>
               </div>
               <div className="flex justify-between">
@@ -135,7 +135,7 @@ export default function PickupAnalysis({ pickupData, onTheBooks, paceIndicators 
               <div className="flex justify-between">
                 <span className="text-[#5C9BA4]">ADR:</span>
                 <span className="font-semibold text-aurora-900">
-                  ${onTheBooks.next14Days.adr}
+                  ₹{onTheBooks.next14Days.adr}
                 </span>
               </div>
             </div>
@@ -153,7 +153,7 @@ export default function PickupAnalysis({ pickupData, onTheBooks, paceIndicators 
               <div className="flex justify-between">
                 <span className="text-[#CDB261]">Revenue:</span>
                 <span className="font-semibold text-sunset-900">
-                  ${(onTheBooks.next30Days.revenue / 1000).toFixed(1)}K
+                  ₹{(onTheBooks.next30Days.revenue / 1000).toFixed(1)}K
                 </span>
               </div>
               <div className="flex justify-between">
@@ -165,7 +165,7 @@ export default function PickupAnalysis({ pickupData, onTheBooks, paceIndicators 
               <div className="flex justify-between">
                 <span className="text-[#CDB261]">ADR:</span>
                 <span className="font-semibold text-sunset-900">
-                  ${onTheBooks.next30Days.adr}
+                  ₹{onTheBooks.next30Days.adr}
                 </span>
               </div>
             </div>

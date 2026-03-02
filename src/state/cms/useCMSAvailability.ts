@@ -401,6 +401,20 @@ export default function useCMSAvailability() {
     }
   }, [fetchAvailabilityData, roomTypes]);
 
+  // Batch update multiple availability records in a single API call (no per-item refetch)
+  const batchUpdate = useCallback(async (updates: BulkAvailabilityUpdate[]) => {
+    if (updates.length === 0) return;
+    try {
+      await bulkUpdateAvailability(updates);
+      console.log(`[useCMSAvailability] Batch updated ${updates.length} records`);
+      await fetchAvailabilityData();
+    } catch (err) {
+      console.error('Error in batch update:', err);
+      await fetchAvailabilityData();
+      throw err;
+    }
+  }, [fetchAvailabilityData]);
+
   // Close a room type for a specific date
   const closeRoomType = useCallback(async (date: string, roomType: string) => {
     await updateAvailability(date, roomType, { isClosed: true, remaining: 0 });
@@ -508,6 +522,7 @@ export default function useCMSAvailability() {
     resetAvailability,
     getRoomTypeConfig,
     refetch: fetchAvailabilityData,
+    batchUpdate,
     // Room blocks
     addRoomBlock,
     editRoomBlock,

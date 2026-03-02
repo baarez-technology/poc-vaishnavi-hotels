@@ -202,7 +202,7 @@ export default function RoomDrawer({ room, isOpen, onClose, onUpdateStatus, onAs
                 </div>
                 <div className="flex-1 flex items-center justify-between">
                   <span className="text-xs font-medium text-neutral-600">Price</span>
-                  <span className="text-sm font-bold text-[#4E5840]">${room.price}/night</span>
+                  <span className="text-sm font-bold text-[#4E5840]">₹{room.price}/night</span>
                 </div>
               </div>
             </div>

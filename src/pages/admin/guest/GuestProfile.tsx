@@ -900,7 +900,7 @@ export default function GuestProfile() {
                   <BarChart data={spendingByYear}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" />
                     <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
+                    <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `₹${v}`} />
                     <Tooltip
                       formatter={(value) => formatCurrency(value)}
                       contentStyle={{

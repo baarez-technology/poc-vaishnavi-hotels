@@ -12,7 +12,7 @@ export const roomTypes = [
     totalRooms: 15,
     baseOccupancy: 2,
     maxOccupancy: 3,
-    baseRate: 12000, // in cents ($120)
+    baseRate: 1000000, // in paisa (₹10,000)
     amenities: ['WiFi', 'TV', 'AC', 'Mini Bar']
   },
   {
@@ -22,7 +22,7 @@ export const roomTypes = [
     totalRooms: 10,
     baseOccupancy: 2,
     maxOccupancy: 4,
-    baseRate: 18000, // $180
+    baseRate: 1500000, // ₹15,000
     amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Ocean View', 'Balcony']
   },
   {
@@ -32,7 +32,7 @@ export const roomTypes = [
     totalRooms: 5,
     baseOccupancy: 2,
     maxOccupancy: 4,
-    baseRate: 35000, // $350
+    baseRate: 2900000, // ₹29,000
     amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Ocean View', 'Balcony', 'Living Room', 'Jacuzzi']
   }
 ];
@@ -117,10 +117,10 @@ export const samplePromotions = [
   {
     id: 'weekend50',
     code: 'WEEKEND50',
-    title: 'Weekend Flat $50 Off',
-    description: '$50 off for weekend stays',
+    title: 'Weekend Flat \u20B94,000 Off',
+    description: '\u20B94,000 off for weekend stays',
     discountType: 'fixed',
-    discountValue: 5000, // $50 in cents
+    discountValue: 400000, // \u20B94,000 in paisa
     validFrom: formatDate(0),
     validTo: formatDate(60),
     eligibleRoomTypes: ['standard', 'deluxe'],
@@ -486,31 +486,31 @@ export const aiRateSuggestions = [
     id: 'ai-001',
     date: formatDate(7),
     roomTypeId: 'deluxe',
-    currentRate: 18000,
-    suggestedRate: 21000,
+    currentRate: 1500000,
+    suggestedRate: 1750000,
     reason: 'High demand detected - only 2 rooms remaining',
     confidence: 0.85,
-    potentialRevenue: 6000
+    potentialRevenue: 500000
   },
   {
     id: 'ai-002',
     date: formatDate(14),
     roomTypeId: 'suite',
-    currentRate: 35000,
-    suggestedRate: 42000,
+    currentRate: 2900000,
+    suggestedRate: 3500000,
     reason: 'Local event driving demand - 95% occupancy projected',
     confidence: 0.92,
-    potentialRevenue: 35000
+    potentialRevenue: 2900000
   },
   {
     id: 'ai-003',
     date: formatDate(21),
     roomTypeId: 'standard',
-    currentRate: 12000,
-    suggestedRate: 10800,
+    currentRate: 1000000,
+    suggestedRate: 900000,
     reason: 'Low occupancy forecast - consider 10% discount to drive bookings',
     confidence: 0.78,
-    potentialRevenue: -3600
+    potentialRevenue: -300000
   }
 ];
 

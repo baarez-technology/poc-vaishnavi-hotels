@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 
 export function BookingSummary() {
   const { bookingData, calculateTotal } = useBooking();
-  const { subtotal, tax, serviceFee, total, nights } = calculateTotal();
+  const { subtotal, tax, serviceFee, total, nights, taxRate, cgst, sgst, cgstRate, sgstRate } = calculateTotal();
 
   if (!bookingData.room) return null;
 
@@ -135,20 +135,25 @@ export function BookingSummary() {
                 <div>
                   <p className="text-sm font-semibold text-neutral-700">Room Rate</p>
                   <p className="text-xs text-neutral-500 font-medium mt-0.5">
-                    ${bookingData.room.price} × {nights} {nights === 1 ? 'night' : 'nights'}
+                    ₹{bookingData.room.price} × {nights} {nights === 1 ? 'night' : 'nights'}
                   </p>
                 </div>
-                <span className="font-bold text-neutral-900 text-lg">${subtotal.toFixed(2)}</span>
+                <span className="font-bold text-neutral-900 text-lg">₹{subtotal.toFixed(2)}</span>
               </div>
 
               <div className="flex justify-between items-center p-3.5 bg-neutral-50 rounded-lg border border-neutral-200">
                 <p className="text-sm font-semibold text-neutral-700">Service Fee</p>
-                <span className="font-bold text-neutral-900 text-base">${serviceFee.toFixed(2)}</span>
+                <span className="font-bold text-neutral-900 text-base">₹{serviceFee.toFixed(2)}</span>
               </div>
 
               <div className="flex justify-between items-center p-3.5 bg-neutral-50 rounded-lg border border-neutral-200">
-                <p className="text-sm font-semibold text-neutral-700">Taxes & Fees</p>
-                <span className="font-bold text-neutral-900 text-base">${tax.toFixed(2)}</span>
+                <div>
+                  <p className="text-sm font-semibold text-neutral-700">GST ({taxRate}%)</p>
+                  <p className="text-xs text-neutral-500 mt-0.5">
+                    CGST {cgstRate}%: ₹{cgst.toFixed(2)} + SGST {sgstRate}%: ₹{sgst.toFixed(2)}
+                  </p>
+                </div>
+                <span className="font-bold text-neutral-900 text-base">₹{tax.toFixed(2)}</span>
               </div>
             </div>
 
@@ -158,11 +163,11 @@ export function BookingSummary() {
                 <div className="flex justify-between items-center mb-3">
                   <div>
                     <p className="text-xs font-bold text-primary-100 uppercase tracking-wider mb-1">Total Amount</p>
-                    <p className="font-bold text-white text-3xl">${total.toFixed(2)}</p>
+                    <p className="font-bold text-white text-3xl">₹{total.toFixed(2)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs font-semibold text-primary-100 mb-1">Per night</p>
-                    <p className="text-lg font-bold text-white">${(total / nights).toFixed(2)}</p>
+                    <p className="text-lg font-bold text-white">₹{(total / nights).toFixed(2)}</p>
                   </div>
                 </div>
                 <div className="pt-3 border-t border-primary-500/30">

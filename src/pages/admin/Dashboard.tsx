@@ -804,7 +804,7 @@ export default function Dashboard() {
       type: 'info',
       category: 'Revenue',
       title: 'Pricing Opportunity',
-      message: `ADR optimization opportunity detected - current ADR: $${adr.toFixed(0)}`,
+      message: `ADR optimization opportunity detected - current ADR: ₹${adr.toFixed(0)}`,
       timeAgo: '15 min ago',
       confidence: 78,
     },
@@ -995,7 +995,7 @@ export default function Dashboard() {
             <LuxuryKPICard
               label={revenueLabel}
               value={displayRevenue}
-              prefix="$"
+              prefix="₹"
               change={`${(dashboardData?.trends.revenue_mtd || dashboardData?.trends.adr || 0) >= 0 ? '+' : ''}${(dashboardData?.trends.revenue_mtd || dashboardData?.trends.adr || 0).toFixed(1)}%`}
               changeType={(dashboardData?.trends.revenue_mtd || dashboardData?.trends.adr || 0) >= 0 ? "positive" : "negative"}
               icon={DollarSign}
@@ -1099,7 +1099,7 @@ export default function Dashboard() {
                     axisLine={false}
                     tickLine={false}
                     tick={{ fontSize: 11, fill: '#57534E', fontWeight: 600, fontFamily: 'Inter, sans-serif' }}
-                    tickFormatter={v => `$${(v / 1000).toFixed(0)}k`}
+                    tickFormatter={v => `₹${(v / 1000).toFixed(0)}k`}
                     width={45}
                     domain={[0, 'auto']}
                   />

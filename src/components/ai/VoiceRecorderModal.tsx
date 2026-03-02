@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Mic, Trash2 } from 'lucide-react';
 
 /**
@@ -9,13 +9,17 @@ export default function VoiceRecorderModal({ isOpen, onClose, onTranscriptReady 
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [duration, setDuration] = useState(0);
+  const [isSending, setIsSending] = useState(false); // Guard against double-clicks
+  const recordingKeyRef = useRef(0); // Key to track distinct recording sessions
 
   // Start recording when modal opens
   useEffect(() => {
     if (isOpen) {
-      setIsRecording(true);
       setTranscript('');
       setDuration(0);
+      setIsSending(false);
+      recordingKeyRef.current += 1;
+      setIsRecording(true);
     } else {
       setIsRecording(false);
       setDuration(0);
@@ -36,9 +40,12 @@ export default function VoiceRecorderModal({ isOpen, onClose, onTranscriptReady 
   // Simulated voice recognition (in production, use Web Speech API)
   useEffect(() => {
     if (isRecording) {
+      const currentKey = recordingKeyRef.current;
       // Simulate transcription after 2-4 seconds
       const delay = 2000 + Math.random() * 2000;
       const timer = setTimeout(() => {
+        // Only set transcript if this recording session is still active
+        if (recordingKeyRef.current !== currentKey) return;
         const sampleTranscripts = [
           "Show me today's revenue breakdown",
           "What's our current occupancy rate?",
@@ -56,12 +63,20 @@ export default function VoiceRecorderModal({ isOpen, onClose, onTranscriptReady 
     }
   }, [isRecording]);
 
-  // Handle done (send transcript)
+  // Handle done (send transcript) — guarded against double-clicks
   const handleDone = () => {
-    if (transcript) {
-      onTranscriptReady(transcript);
-    }
+    if (isSending || !transcript) return;
+    setIsSending(true);
+    onTranscriptReady(transcript);
     onClose();
+  };
+
+  // Start a new recording
+  const startRecording = () => {
+    setTranscript('');
+    setDuration(0);
+    recordingKeyRef.current += 1;
+    setIsRecording(true);
   };
 
   // Delete transcript without closing modal
@@ -117,19 +132,22 @@ export default function VoiceRecorderModal({ isOpen, onClose, onTranscriptReady 
                   </>
                 )}
 
-                {/* Microphone icon */}
-                <div className={`relative w-20 h-20 rounded-full flex items-center justify-center ${
-                  isRecording
-                    ? 'bg-gradient-to-br from-rose-500 to-rose-600 shadow-xl'
-                    : 'bg-gradient-to-br from-neutral-400 to-neutral-500'
-                }`}>
+                {/* Microphone icon — clickable to start/stop recording */}
+                <button
+                  onClick={isRecording ? () => setIsRecording(false) : startRecording}
+                  className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-all ${
+                    isRecording
+                      ? 'bg-gradient-to-br from-rose-500 to-rose-600 shadow-xl hover:from-rose-600 hover:to-rose-700'
+                      : 'bg-gradient-to-br from-neutral-400 to-neutral-500 hover:from-terra-500 hover:to-terra-600'
+                  }`}
+                >
                   <Mic className="w-10 h-10 text-white" />
-                </div>
+                </button>
               </div>
 
               {/* Status text */}
               <p className="mt-4 text-sm font-medium text-neutral-700">
-                {isRecording ? 'Listening...' : 'Ready to listen'}
+                {isRecording ? 'Listening... Click to stop' : transcript ? 'Transcription complete' : 'Click to start recording'}
               </p>
 
               {/* Duration */}
@@ -177,14 +195,22 @@ export default function VoiceRecorderModal({ isOpen, onClose, onTranscriptReady 
             >
               Cancel
             </button>
-            {transcript && (
-              <button
-                onClick={handleDelete}
-                className="px-4 py-2.5 bg-white border border-rose-300 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors flex items-center gap-1.5"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Delete
-              </button>
+            {transcript && !isRecording && (
+              <>
+                <button
+                  onClick={handleDelete}
+                  className="px-4 py-2.5 bg-white border border-rose-300 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete
+                </button>
+                <button
+                  onClick={startRecording}
+                  className="px-4 py-2.5 bg-white border border-neutral-300 rounded-xl text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+                >
+                  Re-record
+                </button>
+              </>
             )}
             <button
               onClick={handleDone}

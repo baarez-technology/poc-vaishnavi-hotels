@@ -119,6 +119,14 @@ export const apiClient = axios.create({
   withCredentials: false, // Using Bearer tokens, not cookies
 });
 
+// Helper to extract data from wrapped API responses
+// Handles { data: { data: ... } } or { data: ... } patterns from axios responses
+export const extractData = (res: any) => {
+  const d = res?.data;
+  if (d && typeof d === 'object' && 'data' in d) return d.data;
+  return d;
+};
+
 // Helper to clear cache for specific patterns (useful after mutations)
 export const clearApiCache = (urlPattern?: string) => {
   if (!urlPattern) {

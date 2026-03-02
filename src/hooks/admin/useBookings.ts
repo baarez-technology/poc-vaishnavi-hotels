@@ -46,6 +46,12 @@ export interface AdminBooking {
   paymentNotes?: string;
   eta?: string;
   etd?: string;
+  // Sprint 6 fields
+  vipLevel?: number | null;
+  guestProfileNumber?: string | null;
+  accompanyingGuests?: any[] | null;
+  arrivalDate?: string;
+  departureDate?: string;
 }
 
 // Transform API booking to admin format
@@ -202,10 +208,18 @@ function transformBooking(apiBooking: any): AdminBooking {
     paymentNotes: apiBooking.paymentNotes || apiBooking.payment_notes || '',
     doNotMove: apiBooking.doNotMove || apiBooking.do_not_move || false,
     dnmSetBy: apiBooking.dnmSetBy || apiBooking.dnm_set_by || null,
+    dnmSetByName: apiBooking.dnmSetByName || apiBooking.dnm_set_by_name || null,
+    dnmSetAt: apiBooking.dnmSetAt || apiBooking.dnm_set_at || null,
     checkedInAt: apiBooking.checkedInAt || apiBooking.checked_in_at || null,
     checkedOutAt: apiBooking.checkedOutAt || apiBooking.checked_out_at || null,
-    eta: apiBooking.eta || apiBooking.arrival_time || '',
-    etd: apiBooking.etd || apiBooking.departure_time || '',
+    eta: apiBooking.expectedArrivalTime || apiBooking.eta || apiBooking.arrival_time || '',
+    etd: apiBooking.expectedDepartureTime || apiBooking.etd || apiBooking.departure_time || '',
+    // Sprint 6
+    vipLevel: apiBooking.vipLevel || apiBooking.vip_level || null,
+    guestProfileNumber: apiBooking.guestProfileNumber || apiBooking.guest_profile_number || null,
+    accompanyingGuests: apiBooking.accompanyingGuests || apiBooking.accompanying_guests || null,
+    arrivalDate: apiBooking.arrivalDate || apiBooking.arrival_date || apiBooking.checkIn || '',
+    departureDate: apiBooking.departureDate || apiBooking.departure_date || apiBooking.checkOut || '',
   };
 }
 
@@ -351,7 +365,7 @@ export function useBookings() {
         guests: {
           adults: bookingData.adults || 1,
           children: bookingData.children || 0,
-          infants: 0,
+          infants: bookingData.infants || 0,
         },
         guestInfo: {
           firstName: firstName,
@@ -361,19 +375,39 @@ export function useBookings() {
           country: bookingData.nationality || bookingData.country || 'Unknown',
           specialRequests: bookingData.specialRequests || '',
         },
+        paymentMethod: bookingData.paymentMethod || 'card',
       };
 
       // Optional arrival/departure times (ETA/ETD) for operational planning
       if (bookingData.eta) {
-        apiData.eta = bookingData.eta;
+        apiData.expectedArrivalTime = bookingData.eta;
       }
       if (bookingData.etd) {
-        apiData.etd = bookingData.etd;
+        apiData.expectedDepartureTime = bookingData.etd;
+      }
+      // Sprint 6: accompanying guests
+      if (bookingData.accompanyingGuests) {
+        apiData.accompanyingGuests = bookingData.accompanyingGuests;
       }
 
       // Include booking source if provided
       if (bookingData.source) {
         apiData.source = bookingData.source;
+      }
+
+      // Corporate account linkage
+      if (bookingData.corporateAccountId) {
+        apiData.corporateAccountId = bookingData.corporateAccountId;
+      }
+
+      // VIP flag
+      if (bookingData.isVip || bookingData.vip) {
+        apiData.vipStatus = true;
+      }
+
+      // Rate plan name (for backend rate lookup)
+      if (bookingData.ratePlan) {
+        apiData.ratePlan = bookingData.ratePlan;
       }
 
       const result = await bookingService.createBooking(apiData);
@@ -477,8 +511,10 @@ export function useBookings() {
       if (updates.amountPaid !== undefined) apiUpdates.amountPaid = updates.amountPaid;
       if (updates.paymentNotes !== undefined) apiUpdates.paymentNotes = updates.paymentNotes;
 
-      if (updates.eta !== undefined) apiUpdates.eta = updates.eta;
-      if (updates.etd !== undefined) apiUpdates.etd = updates.etd;
+      if (updates.eta !== undefined) apiUpdates.expectedArrivalTime = updates.eta;
+      if (updates.etd !== undefined) apiUpdates.expectedDepartureTime = updates.etd;
+      if ((updates as any).vipLevel !== undefined) apiUpdates.vipLevel = (updates as any).vipLevel;
+      if ((updates as any).accompanyingGuests !== undefined) apiUpdates.accompanyingGuests = (updates as any).accompanyingGuests;
 
       const result = await bookingService.updateBooking(bookingId, apiUpdates);
       const updatedBooking = transformBooking(result);
@@ -722,6 +758,23 @@ export function useBookings() {
     }
   }, []);
 
+  const reinstate = useCallback(async (bookingId: string) => {
+    try {
+      await bookingService.reinstate(bookingId);
+
+      setBookings(prev => prev.map(b =>
+        b.id === bookingId ? { ...b, status: 'CONFIRMED' } : b
+      ));
+
+      toast.success('Booking reinstated');
+      return true;
+    } catch (err: any) {
+      console.error('Error reinstating booking:', err);
+      toast.error(extractErrorMessage(err, 'Failed to reinstate booking'));
+      return false;
+    }
+  }, []);
+
   /**
    * Refresh bookings data
    */
@@ -776,6 +829,7 @@ export function useBookings() {
     cancelCheckIn,
     moveRoom,
     markNoShow,
+    reinstate,
     // Helpers
     getArrivalsToday,
     getDeparturesToday,

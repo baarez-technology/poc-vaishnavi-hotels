@@ -245,7 +245,7 @@ export function calculateEngagementRate(campaigns) {
 }
 
 // Generate CRM insights
-export function generateCRMInsights(guests, segments, campaigns, tiers, currency = 'USD') {
+export function generateCRMInsights(guests, segments, campaigns, tiers, currency = 'INR') {
   const insights = [];
 
   // LTV insight
@@ -481,7 +481,7 @@ export function formatDate(dateStr) {
 }
 
 // Format currency - pass currency code from useCurrency() hook in components
-export function formatCurrency(amount, currency = 'USD') {
+export function formatCurrency(amount, currency = 'INR') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,

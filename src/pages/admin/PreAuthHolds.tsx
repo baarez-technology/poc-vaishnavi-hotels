@@ -1,11 +1,10 @@
 /**
  * PreAuthHolds — Admin page for managing pre-authorization / card holds.
+ * Glimmora Design System v5.0
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  Shield, Plus, Ban, CreditCard,
-} from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Shield, Plus, Ban, CreditCard, MoreHorizontal } from 'lucide-react';
 import { preauthService, type AuthorizationHold } from '@/api/services/preauth.service';
 import { useToast } from '@/contexts/ToastContext';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -13,69 +12,37 @@ import {
   Modal, ModalHeader, ModalTitle, ModalDescription, ModalContent, ModalFooter,
   ConfirmModal,
 } from '@/components/ui2/Modal';
+import { Drawer } from '@/components/ui2/Drawer';
 import { Button } from '@/components/ui2/Button';
 import { Badge } from '@/components/ui2/Badge';
 import { SearchBar } from '@/components/ui2/SearchBar';
+import { SimpleDropdown } from '@/components/ui/Select';
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
-  TableActions, TableEmpty, TableSkeleton, Pagination,
+  TableEmpty, TableSkeleton, Pagination,
 } from '@/components/ui2/Table';
 
-/* ── FilterSelect (matches Bookings pattern) ─────────────────────────────── */
-function FilterSelect({ value, onChange, options, placeholder }: {
-  value: string; onChange: (v: string) => void;
-  options: { value: string; label: string }[]; placeholder: string;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectedOption = options.find(opt => opt.value === value);
-  const displayLabel = !value || value === 'all' ? placeholder : selectedOption?.label;
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`h-9 px-2.5 sm:px-3.5 rounded-lg text-xs sm:text-[13px] bg-white border transition-all duration-150 flex items-center gap-1.5 sm:gap-2 focus:outline-none w-full sm:min-w-[140px] ${
-          isOpen
-            ? 'border-terra-400 ring-2 ring-terra-500/10'
-            : value && value !== 'all'
-              ? 'border-terra-300 bg-terra-50'
-              : 'border-neutral-200 hover:border-neutral-300'
-        }`}
-      >
-        <span className={value && value !== 'all' ? 'text-terra-700 font-medium' : 'text-neutral-500'}>
-          {displayLabel}
-        </span>
-        <svg className={`w-4 h-4 ml-auto transition-transform ${isOpen ? 'rotate-180' : ''} ${value && value !== 'all' ? 'text-terra-500' : 'text-neutral-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute z-50 w-full mt-1 bg-white rounded-lg border border-neutral-200 shadow-lg overflow-hidden min-w-[160px]">
-            {options.map(option => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => { onChange(option.value); setIsOpen(false); }}
-                className={`w-full px-3.5 py-2.5 text-[13px] text-left hover:bg-neutral-50 transition-colors flex items-center justify-between ${
-                  value === option.value ? 'bg-terra-50 text-terra-700' : 'text-neutral-700'
-                }`}
-              >
-                {option.label}
-                {value === option.value && (
-                  <svg className="w-4 h-4 text-terra-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
+/* ── Module-level style constants ─────────────────────────────────────────── */
+const inputBase = 'w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border transition-all duration-200 ease-out focus:outline-none';
+const inputCls = `${inputBase} border-neutral-200/80 hover:border-terra-300/60 focus:border-terra-400/60 focus:ring-2 focus:ring-terra-500/10 placeholder:text-neutral-400 text-neutral-900`;
+const textareaCls = 'w-full px-3.5 py-2.5 rounded-lg text-[13px] bg-white border border-neutral-200/80 hover:border-terra-300/60 focus:border-terra-400/60 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-200 ease-out placeholder:text-neutral-400 text-neutral-900 resize-none';
+const labelCls = 'block text-[13px] font-medium text-neutral-700 mb-1';
+
+const CARD_BRAND_OPTIONS = [
+  { value: '', label: 'Select brand' },
+  { value: 'visa', label: 'Visa' },
+  { value: 'mastercard', label: 'Mastercard' },
+  { value: 'amex', label: 'Amex' },
+  { value: 'rupay', label: 'RuPay' },
+];
+
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'All Statuses' },
+  { value: 'authorized', label: 'Authorized' },
+  { value: 'captured', label: 'Captured' },
+  { value: 'released', label: 'Released' },
+  { value: 'expired', label: 'Expired' },
+];
 
 /* ── Status variant helper ───────────────────────────────────────────────── */
 function holdStatusVariant(status: string): 'info' | 'success' | 'neutral' | 'danger' {
@@ -88,8 +55,51 @@ function holdStatusVariant(status: string): 'info' | 'success' | 'neutral' | 'da
   }
 }
 
-/* ── Create Hold Modal ───────────────────────────────────────────────────── */
-function CreateHoldModal({ isOpen, onClose, onSave }: {
+/* ── Hold Row Menu ───────────────────────────────────────────────────────── */
+function HoldMenu({ onCapture, onRelease }: { onCapture: () => void; onRelease: () => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div className="relative flex justify-end" ref={ref}>
+      <button
+        className="w-7 h-7 rounded-md flex items-center justify-center text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-colors"
+        onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
+      >
+        <MoreHorizontal className="w-4 h-4" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 z-50 w-40 bg-white rounded-xl border border-neutral-200 shadow-lg overflow-hidden">
+          <button
+            className="w-full px-3.5 py-2.5 text-[13px] text-left flex items-center gap-2.5 hover:bg-neutral-50 text-neutral-700 transition-colors"
+            onClick={() => { onCapture(); setOpen(false); }}
+          >
+            <CreditCard className="w-3.5 h-3.5 text-neutral-400" /> Capture
+          </button>
+          <div className="h-px bg-neutral-100 mx-2" />
+          <button
+            className="w-full px-3.5 py-2.5 text-[13px] text-left flex items-center gap-2.5 hover:bg-rose-50 text-rose-600 transition-colors"
+            onClick={() => { onRelease(); setOpen(false); }}
+          >
+            <Ban className="w-3.5 h-3.5" /> Release
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Create Hold Drawer ──────────────────────────────────────────────────── */
+function CreateHoldDrawer({ isOpen, onClose, onSave }: {
   isOpen: boolean; onClose: () => void;
   onSave: (data: { booking_id: number; hold_amount?: number; card_last4?: string; card_brand?: string; notes?: string }) => Promise<void>;
 }) {
@@ -101,11 +111,7 @@ function CreateHoldModal({ isOpen, onClose, onSave }: {
     if (isOpen) setForm({ booking_id: '', hold_amount: '', card_last4: '', card_brand: '', notes: '' });
   }, [isOpen]);
 
-  const inputCls = 'w-full px-4 py-2.5 text-sm bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400';
-  const labelCls = 'block text-[12px] font-semibold text-neutral-600 mb-1.5';
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async () => {
     if (!form.booking_id) return;
     setSaving(true);
     try {
@@ -124,61 +130,100 @@ function CreateHoldModal({ isOpen, onClose, onSave }: {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
-      <form onSubmit={handleSubmit}>
-        <ModalHeader>
-          <ModalTitle>New Pre-Authorization Hold</ModalTitle>
-          <ModalDescription>Create a card hold for a booking reservation</ModalDescription>
-        </ModalHeader>
-        <ModalContent>
-          <div className="space-y-4">
+    <Drawer
+      isOpen={isOpen}
+      onClose={onClose}
+      title="New Pre-Authorization Hold"
+      subtitle="Create a card hold for a booking reservation"
+      maxWidth="max-w-md"
+      footer={
+        <div className="flex gap-3 w-full">
+          <Button variant="ghost" className="flex-1" onClick={onClose}>Cancel</Button>
+          <Button
+            variant="primary"
+            className="flex-1"
+            onClick={handleSave}
+            disabled={saving || !form.booking_id}
+            loading={saving}
+          >
+            Create Hold
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-6">
+
+        {/* ── Booking ── */}
+        <div>
+          <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest mb-3.5">Booking</p>
+          <div className="space-y-3.5">
             <div>
-              <label className={labelCls}>Booking ID *</label>
-              <input className={inputCls} type="number" value={form.booking_id}
+              <label className={labelCls}>Booking ID <span className="text-rose-400">*</span></label>
+              <input
+                type="number"
+                className={inputCls}
+                value={form.booking_id}
                 onChange={e => setForm(f => ({ ...f, booking_id: e.target.value }))}
-                placeholder="e.g. 42" required />
+                placeholder="e.g. 42"
+              />
             </div>
             <div>
-              <label className={labelCls}>Hold Amount (leave blank for auto-calc)</label>
-              <input className={inputCls} type="number" step="0.01" value={form.hold_amount}
+              <label className={labelCls}>
+                Hold Amount{' '}
+                <span className="text-neutral-400 font-normal">(leave blank for auto-calc)</span>
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                className={inputCls}
+                value={form.hold_amount}
                 onChange={e => setForm(f => ({ ...f, hold_amount: e.target.value }))}
-                placeholder="Auto-calculated from config" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>Card Last 4</label>
-                <input className={inputCls} maxLength={4} value={form.card_last4}
-                  onChange={e => setForm(f => ({ ...f, card_last4: e.target.value }))}
-                  placeholder="1234" />
-              </div>
-              <div>
-                <label className={labelCls}>Card Brand</label>
-                <select className={inputCls} value={form.card_brand}
-                  onChange={e => setForm(f => ({ ...f, card_brand: e.target.value }))}>
-                  <option value="">Select</option>
-                  <option value="visa">Visa</option>
-                  <option value="mastercard">Mastercard</option>
-                  <option value="amex">Amex</option>
-                  <option value="rupay">RuPay</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className={labelCls}>Notes</label>
-              <input className={inputCls} value={form.notes}
-                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                placeholder="Optional notes" />
+                placeholder="Auto-calculated from config"
+              />
             </div>
           </div>
-        </ModalContent>
-        <ModalFooter>
-          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" disabled={saving} loading={saving}>
-            {saving ? 'Creating...' : 'Create Hold'}
-          </Button>
-        </ModalFooter>
-      </form>
-    </Modal>
+        </div>
+
+        {/* ── Card Details ── */}
+        <div className="border-t border-neutral-100 pt-5">
+          <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest mb-3.5">Card Details</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>Last 4 Digits</label>
+              <input
+                className={inputCls}
+                maxLength={4}
+                value={form.card_last4}
+                onChange={e => setForm(f => ({ ...f, card_last4: e.target.value }))}
+                placeholder="1234"
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Card Brand</label>
+              <SimpleDropdown
+                options={CARD_BRAND_OPTIONS}
+                value={form.card_brand}
+                onChange={v => setForm(f => ({ ...f, card_brand: v }))}
+                triggerClassName="w-full h-9 py-0 text-[13px]"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Notes ── */}
+        <div className="border-t border-neutral-100 pt-5">
+          <p className="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest mb-3.5">Notes</p>
+          <textarea
+            className={textareaCls}
+            rows={3}
+            value={form.notes}
+            onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+            placeholder="Optional notes about this hold..."
+          />
+        </div>
+
+      </div>
+    </Drawer>
   );
 }
 
@@ -197,9 +242,6 @@ function CaptureModal({ isOpen, hold, onClose, onCapture }: {
     if (hold) { setAmount(String(hold.hold_amount)); setNotes(''); }
   }, [hold]);
 
-  const inputCls = 'w-full px-4 py-2.5 text-sm bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400';
-  const labelCls = 'block text-[12px] font-semibold text-neutral-600 mb-1.5';
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!hold) return;
@@ -216,31 +258,42 @@ function CaptureModal({ isOpen, hold, onClose, onCapture }: {
   if (!hold) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="sm">
+    <Modal open={isOpen} onClose={onClose} size="sm">
       <form onSubmit={handleSubmit}>
         <ModalHeader>
           <ModalTitle>Capture Hold</ModalTitle>
           <ModalDescription>
-            Auth: {hold.authorization_code} | Max: {formatSimple(hold.hold_amount)}
+            Auth: {hold.authorization_code} · Max: {formatSimple(hold.hold_amount)}
           </ModalDescription>
         </ModalHeader>
         <ModalContent>
           <div className="space-y-4">
             <div>
               <label className={labelCls}>Capture Amount</label>
-              <input className={inputCls} type="number" step="0.01" value={amount}
-                onChange={e => setAmount(e.target.value)} max={hold.hold_amount} />
+              <input
+                type="number"
+                step="0.01"
+                className={inputCls}
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                max={hold.hold_amount}
+              />
             </div>
             <div>
               <label className={labelCls}>Notes</label>
-              <input className={inputCls} value={notes} onChange={e => setNotes(e.target.value)} />
+              <input
+                className={inputCls}
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                placeholder="Optional notes..."
+              />
             </div>
           </div>
         </ModalContent>
         <ModalFooter>
           <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="success" disabled={saving} loading={saving}>
-            {saving ? 'Capturing...' : 'Capture'}
+          <Button type="submit" variant="primary" disabled={saving} loading={saving}>
+            Capture
           </Button>
         </ModalFooter>
       </form>
@@ -314,25 +367,19 @@ export default function PreAuthHolds() {
     fetchHolds();
   };
 
-  const fmtDate = (d: string | null) => d ? new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
-
-  const statusOptions = [
-    { value: 'all', label: 'All Statuses' },
-    { value: 'authorized', label: 'Authorized' },
-    { value: 'captured', label: 'Captured' },
-    { value: 'released', label: 'Released' },
-    { value: 'expired', label: 'Expired' },
-  ];
+  const fmtDate = (d: string | null) =>
+    d ? new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
       <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">Pre-Authorization Holds</h1>
             <p className="text-[12px] sm:text-[13px] text-neutral-500 mt-1">
-              {filtered.length} hold{filtered.length !== 1 ? 's' : ''} total
+              {filtered.length} hold{filtered.length !== 1 ? 's' : ''}
             </p>
           </div>
           <Button variant="primary" icon={Plus} onClick={() => setCreateOpen(true)}>
@@ -341,26 +388,28 @@ export default function PreAuthHolds() {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-[10px] overflow-hidden">
+        <div className="bg-white rounded-[10px] border border-neutral-100 overflow-hidden">
+
           {/* Filter bar */}
-          <div className="px-4 sm:px-6 py-3 sm:py-4 bg-neutral-50/30 border-b border-neutral-100">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <div className="sm:flex-1 sm:max-w-md w-full">
+          <div className="px-4 sm:px-6 py-3 border-b border-neutral-100">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 max-w-xs">
                 <SearchBar
                   value={search}
                   onChange={v => { setSearch(v); setPage(1); }}
                   onClear={() => setSearch('')}
-                  placeholder="Search by booking ID, auth code, card..."
-                  size="sm"
+                  placeholder="Search by booking, auth code, card..."
+                  size="md"
                 />
               </div>
-              <div className="hidden sm:block sm:flex-1" />
-              <FilterSelect
-                value={statusFilter}
-                onChange={v => { setStatusFilter(v); setPage(1); }}
-                options={statusOptions}
-                placeholder="Status"
-              />
+              <div className="ml-auto">
+                <SimpleDropdown
+                  options={STATUS_OPTIONS}
+                  value={statusFilter}
+                  onChange={v => { setStatusFilter(v); setPage(1); }}
+                  triggerClassName="h-9 py-0 text-[13px] min-w-[140px]"
+                />
+              </div>
             </div>
           </div>
 
@@ -376,7 +425,7 @@ export default function PreAuthHolds() {
                   <TableHead>Status</TableHead>
                   <TableHead>Authorized</TableHead>
                   <TableHead>Expires</TableHead>
-                  <TableHead className="w-[1%]" />
+                  <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -391,37 +440,25 @@ export default function PreAuthHolds() {
                   />
                 ) : paged.map(h => (
                   <TableRow key={h.id}>
-                    <TableCell className="font-mono font-bold text-neutral-900">#{h.booking_id}</TableCell>
-                    <TableCell className="font-mono text-neutral-600">{h.authorization_code || '—'}</TableCell>
-                    <TableCell className="font-semibold text-neutral-900">{h.hold_amount != null ? formatSimple(h.hold_amount) : '—'}</TableCell>
+                    <TableCell className="font-mono font-medium text-neutral-900">#{h.booking_id}</TableCell>
+                    <TableCell className="font-mono text-[12px] text-neutral-500">{h.authorization_code || '—'}</TableCell>
+                    <TableCell className="font-semibold tabular-nums text-neutral-900">
+                      {h.hold_amount != null ? formatSimple(h.hold_amount) : '—'}
+                    </TableCell>
                     <TableCell className="text-neutral-600">
                       {h.card_brand && h.card_last4 ? `${h.card_brand} ••${h.card_last4}` : '—'}
                     </TableCell>
                     <TableCell>
                       <Badge variant={holdStatusVariant(h.status)}>{h.status}</Badge>
                     </TableCell>
-                    <TableCell className="text-neutral-500">{fmtDate(h.authorized_at)}</TableCell>
-                    <TableCell className="text-neutral-500">{fmtDate(h.expires_at)}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-neutral-500 whitespace-nowrap">{fmtDate(h.authorized_at)}</TableCell>
+                    <TableCell className="text-neutral-500 whitespace-nowrap">{fmtDate(h.expires_at)}</TableCell>
+                    <TableCell className="w-10">
                       {h.status === 'authorized' && (
-                        <TableActions>
-                          <Button
-                            variant="outline-success"
-                            size="xs"
-                            onClick={() => setCaptureHold(h)}
-                          >
-                            <CreditCard size={12} className="mr-1" />
-                            Capture
-                          </Button>
-                          <Button
-                            variant="outline-danger"
-                            size="xs"
-                            onClick={() => setReleaseTarget(h)}
-                          >
-                            <Ban size={12} className="mr-1" />
-                            Release
-                          </Button>
-                        </TableActions>
+                        <HoldMenu
+                          onCapture={() => setCaptureHold(h)}
+                          onRelease={() => setReleaseTarget(h)}
+                        />
                       )}
                     </TableCell>
                   </TableRow>
@@ -432,7 +469,7 @@ export default function PreAuthHolds() {
 
           {/* Pagination */}
           {!loading && totalPages > 0 && (
-            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 bg-neutral-50/30">
+            <div className="px-4 sm:px-6 py-3 border-t border-neutral-100 bg-neutral-50/30">
               <Pagination
                 currentPage={page}
                 totalPages={totalPages}
@@ -444,12 +481,17 @@ export default function PreAuthHolds() {
           )}
         </div>
 
-        {/* Modals */}
-        <CreateHoldModal isOpen={createOpen} onClose={() => setCreateOpen(false)} onSave={handleCreate} />
-        <CaptureModal isOpen={!!captureHold} hold={captureHold} onClose={() => setCaptureHold(null)} onCapture={handleCapture} />
+        <CreateHoldDrawer isOpen={createOpen} onClose={() => setCreateOpen(false)} onSave={handleCreate} />
+
+        <CaptureModal
+          isOpen={!!captureHold}
+          hold={captureHold}
+          onClose={() => setCaptureHold(null)}
+          onCapture={handleCapture}
+        />
 
         <ConfirmModal
-          isOpen={!!releaseTarget}
+          open={!!releaseTarget}
           onClose={() => setReleaseTarget(null)}
           onConfirm={handleRelease}
           variant="danger"
@@ -458,8 +500,10 @@ export default function PreAuthHolds() {
             ? `Release hold ${releaseTarget.authorization_code} (${formatSimple(releaseTarget.hold_amount)})?`
             : ''
           }
-          confirmLabel="Release"
+          confirmText="Release"
+          cancelText="Cancel"
         />
+
       </div>
     </div>
   );

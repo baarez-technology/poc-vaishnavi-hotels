@@ -3,10 +3,10 @@
  * Structured table with KPI cards, date & status filters, variance detection.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Banknote, Plus, AlertTriangle, CheckCircle2, DollarSign,
-  Loader2, ArrowUpRight, ArrowDownRight, Lock,
+  Loader2, ArrowUpRight, ArrowDownRight, Lock, MoreHorizontal,
 } from 'lucide-react';
 import { cashierSessionService, type CashierSession } from '@/api/services/cashier-session.service';
 import { useToast } from '@/contexts/ToastContext';
@@ -20,15 +20,17 @@ import { Button } from '@/components/ui2/Button';
 import { Badge } from '@/components/ui2/Badge';
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
-  TableActions, TableEmpty, TableSkeleton, Pagination,
+  TableEmpty, TableSkeleton, Pagination,
 } from '@/components/ui2/Table';
 import { SimpleDropdown } from '@/components/ui/Select';
 import DatePicker from '@/components/ui2/DatePicker';
 import { SearchBar } from '@/components/ui2/SearchBar';
 
 /* ── Shared styling ────────────────────────────────────────────────────────── */
-const inputCls = 'w-full px-4 py-2.5 text-sm bg-[#FAF8F6] border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400';
-const labelCls = 'block text-[12px] font-semibold text-neutral-600 mb-1.5';
+const inputBase = 'w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border transition-all duration-200 ease-out focus:outline-none';
+const inputCls = `${inputBase} border-neutral-200/80 hover:border-terra-300/60 focus:border-terra-400/60 focus:ring-2 focus:ring-terra-500/10 placeholder:text-neutral-400 text-neutral-900`;
+const textareaCls = 'w-full px-3.5 py-2.5 rounded-lg text-[13px] bg-white border border-neutral-200/80 hover:border-terra-300/60 focus:border-terra-400/60 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-200 ease-out placeholder:text-neutral-400 text-neutral-900 resize-none';
+const labelCls = 'block text-[13px] font-medium text-neutral-700 mb-1';
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 function sessionStatusVariant(status: string): 'success' | 'neutral' | 'danger' {
@@ -48,6 +50,55 @@ function formatDate(dateStr: string) {
   if (!dateStr) return '—';
   const d = new Date(dateStr + 'T00:00:00');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/* ── Session Row Menu ────────────────────────────────────────────────────── */
+function SessionMenu({ s, onRecord, onClose }: {
+  s: { status: string };
+  onRecord: () => void;
+  onClose: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  if (s.status !== 'open') return null;
+
+  return (
+    <div className="relative flex justify-end" ref={ref}>
+      <button
+        className="w-7 h-7 rounded-md flex items-center justify-center text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-colors"
+        onClick={e => { e.stopPropagation(); setOpen(v => !v); }}
+      >
+        <MoreHorizontal className="w-4 h-4" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 z-50 w-44 bg-white rounded-xl border border-neutral-200 shadow-lg overflow-hidden">
+          <button
+            className="w-full px-3.5 py-2.5 text-[13px] text-left flex items-center gap-2.5 hover:bg-neutral-50 text-neutral-700 transition-colors"
+            onClick={() => { onRecord(); setOpen(false); }}
+          >
+            <Banknote className="w-3.5 h-3.5 text-neutral-400" /> Record Cash
+          </button>
+          <div className="h-px bg-neutral-100 mx-2" />
+          <button
+            className="w-full px-3.5 py-2.5 text-[13px] text-left flex items-center gap-2.5 hover:bg-rose-50 text-rose-600 transition-colors"
+            onClick={() => { onClose(); setOpen(false); }}
+          >
+            <Lock className="w-3.5 h-3.5" /> Close Session
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ── Main Page ───────────────────────────────────────────────────────────── */
@@ -293,6 +344,7 @@ export default function CashierSessions() {
                     onChange={v => { setStatusFilter(v); setPage(1); }}
                     options={statusOptions}
                     placeholder="Status"
+                    triggerClassName="h-9 py-0 text-[13px]"
                   />
                 </div>
               </div>
@@ -324,7 +376,7 @@ export default function CashierSessions() {
                   <TableHead>Expected</TableHead>
                   <TableHead>Closing</TableHead>
                   <TableHead>Variance</TableHead>
-                  <TableHead className="w-[1%]" />
+                  <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -341,7 +393,9 @@ export default function CashierSessions() {
                   <TableRow key={s.id}>
                     <TableCell className="font-mono text-neutral-500 text-[12px]">#{s.id}</TableCell>
                     <TableCell className="text-neutral-700">{s.staff_id}</TableCell>
-                    <TableCell className="text-neutral-600">{formatDate(s.session_date)}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <p className="text-[13px] text-neutral-900 font-medium">{formatDate(s.session_date)}</p>
+                    </TableCell>
                     <TableCell>
                       <Badge variant={sessionStatusVariant(s.status)} dot>{formatStatus(s.status)}</Badge>
                     </TableCell>
@@ -357,27 +411,12 @@ export default function CashierSessions() {
                         </span>
                       ) : <span className="text-neutral-300">—</span>}
                     </TableCell>
-                    <TableCell>
-                      {s.status === 'open' && (
-                        <TableActions>
-                          <Button
-                            variant="outline"
-                            size="xs"
-                            icon={Banknote}
-                            onClick={() => { setRecordAmount(0); setRecordSession(s); }}
-                          >
-                            Record
-                          </Button>
-                          <Button
-                            variant="outline-danger"
-                            size="xs"
-                            icon={Lock}
-                            onClick={() => { setClosingBalance(0); setCloseNotes(''); setCloseSession(s); }}
-                          >
-                            Close
-                          </Button>
-                        </TableActions>
-                      )}
+                    <TableCell className="w-10">
+                      <SessionMenu
+                        s={s}
+                        onRecord={() => { setRecordAmount(0); setRecordSession(s); }}
+                        onClose={() => { setClosingBalance(0); setCloseNotes(''); setCloseSession(s); }}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -404,7 +443,7 @@ export default function CashierSessions() {
           <div className="fixed inset-0 z-50">
             {/* Dim overlay — no blur */}
             <div
-              className="fixed inset-0 bg-neutral-900/40 animate-fadeIn"
+              className="fixed inset-0 bg-black/30 animate-fadeIn"
               onClick={() => setDrawerOpen(false)}
             />
 
@@ -412,7 +451,10 @@ export default function CashierSessions() {
             <div className="fixed top-0 right-0 bottom-0 w-full sm:w-96 bg-white border-l border-neutral-200 shadow-xl flex flex-col animate-slideInRight z-[51]">
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
-                <h2 className="text-lg font-semibold text-neutral-900">Open Cashier Session</h2>
+                <div>
+                <h2 className="text-base font-semibold text-neutral-900">Open Cashier Session</h2>
+                <p className="text-[11px] text-neutral-400 font-medium mt-0.5">Start a new session with an opening balance</p>
+              </div>
                 <button
                   onClick={() => setDrawerOpen(false)}
                   className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-colors"
@@ -446,7 +488,7 @@ export default function CashierSessions() {
                     <textarea
                       value={openNotes}
                       onChange={e => setOpenNotes(e.target.value)}
-                      className={`${inputCls} min-h-[100px] resize-none`}
+                      className={`${textareaCls} min-h-[100px]`}
                       placeholder="Optional notes about this session..."
                     />
                   </div>
@@ -514,13 +556,13 @@ export default function CashierSessions() {
               <div className="space-y-4">
                 {closeSession && (
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-[#FAF8F6] rounded-xl p-3 text-center">
-                      <p className="text-[11px] text-neutral-500">Opening</p>
-                      <p className="text-[14px] font-bold text-neutral-900">{formatSimple(closeSession.opening_balance)}</p>
+                    <div className="bg-neutral-50 rounded-lg p-3 text-center">
+                      <p className="text-[11px] text-neutral-500 font-medium">Opening</p>
+                      <p className="text-[14px] font-semibold text-neutral-900 mt-0.5">{formatSimple(closeSession.opening_balance)}</p>
                     </div>
-                    <div className="bg-[#FAF8F6] rounded-xl p-3 text-center">
-                      <p className="text-[11px] text-neutral-500">Expected</p>
-                      <p className="text-[14px] font-bold text-neutral-900">{formatSimple(expectedBalance)}</p>
+                    <div className="bg-neutral-50 rounded-lg p-3 text-center">
+                      <p className="text-[11px] text-neutral-500 font-medium">Expected</p>
+                      <p className="text-[14px] font-semibold text-neutral-900 mt-0.5">{formatSimple(expectedBalance)}</p>
                     </div>
                   </div>
                 )}
@@ -549,7 +591,7 @@ export default function CashierSessions() {
                   <textarea
                     value={closeNotes}
                     onChange={e => setCloseNotes(e.target.value)}
-                    className={`${inputCls} min-h-[60px] resize-none`}
+                    className={`${textareaCls} min-h-[60px]`}
                     placeholder="Optional notes..."
                   />
                 </div>

@@ -6,7 +6,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  Receipt, DollarSign, CreditCard, FileText, RefreshCw,
+  Receipt, DollarSign, FileText, RefreshCw,
+  Loader2, AlertTriangle, Building2,
 } from 'lucide-react';
 import { arService, type ARAccount, type ARPosting, type AgingBucket } from '@/api/services/ar.service';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -14,8 +15,12 @@ import { useToast } from '@/contexts/ToastContext';
 
 // UI2 Components
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalContent, ModalFooter } from '@/components/ui2/Modal';
-import { Button, IconButton } from '@/components/ui2/Button';
+import { Button } from '@/components/ui2/Button';
 import { Badge } from '@/components/ui2/Badge';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableEmpty, TableSkeleton,
+} from '@/components/ui2/Table';
+import { SimpleDropdown } from '@/components/ui/Select';
 
 // ── Posting badge mapping ───────────────────────────────────────────────────
 const POSTING_VARIANT: Record<string, 'danger' | 'success' | 'info' | 'warning'> = {
@@ -28,9 +33,24 @@ const POSTING_LABEL: Record<string, string> = {
   charge: 'Charge', payment: 'Payment', credit_note: 'Credit Note', adjustment: 'Adjustment',
 };
 
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function formatDate(dateStr: string | null) {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 // ── Input styles ────────────────────────────────────────────────────────────
-const inputCls = 'w-full px-4 py-2.5 bg-white border border-neutral-200 rounded-xl text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-terra-500/10 focus:border-terra-400 hover:border-neutral-300 transition-all duration-150';
-const labelCls = 'block text-[12px] font-semibold text-neutral-600 mb-1.5';
+const inputBase = 'w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border transition-all duration-200 ease-out focus:outline-none';
+const inputCls = `${inputBase} border-neutral-200/80 hover:border-terra-300/60 focus:border-terra-400/60 focus:ring-2 focus:ring-terra-500/10 placeholder:text-neutral-400 text-neutral-900`;
+const labelCls = 'block text-[13px] font-medium text-neutral-700 mb-1';
+
+// ── Payment method options ───────────────────────────────────────────────────
+const PAYMENT_OPTIONS = [
+  { value: 'bank_transfer', label: 'Bank Transfer' },
+  { value: 'cheque', label: 'Cheque' },
+  { value: 'cash', label: 'Cash' },
+  { value: 'card', label: 'Card' },
+];
 
 // ── Payment Modal ───────────────────────────────────────────────────────────
 function PaymentModal({ isOpen, onClose, accountId, onSuccess, mode }: {
@@ -85,12 +105,12 @@ function PaymentModal({ isOpen, onClose, accountId, onSuccess, mode }: {
             {mode === 'payment' && (
               <div>
                 <label className={labelCls}>Payment Method</label>
-                <select className={inputCls} value={method} onChange={e => setMethod(e.target.value)}>
-                  <option value="bank_transfer">Bank Transfer</option>
-                  <option value="cheque">Cheque</option>
-                  <option value="cash">Cash</option>
-                  <option value="card">Card</option>
-                </select>
+                <SimpleDropdown
+                  value={method}
+                  onChange={setMethod}
+                  options={PAYMENT_OPTIONS}
+                  triggerClassName="h-9 py-0 text-[13px]"
+                />
               </div>
             )}
             {mode === 'credit_note' && (
@@ -106,8 +126,8 @@ function PaymentModal({ isOpen, onClose, accountId, onSuccess, mode }: {
           </div>
         </ModalContent>
         <ModalFooter>
-          <Button variant="ghost" type="button" onClick={onClose} className="px-5 py-2 text-[13px] font-semibold">Cancel</Button>
-          <Button variant="primary" type="submit" loading={saving} className="px-5 py-2 text-[13px] font-semibold">
+          <Button variant="ghost" type="button" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" type="submit" loading={saving}>
             {mode === 'payment' ? 'Record Payment' : 'Issue Credit'}
           </Button>
         </ModalFooter>
@@ -177,61 +197,104 @@ export default function ARLedger() {
 
   const refresh = () => { fetchAccounts(); fetchLedger(); fetchAging(); };
 
+  // Initial full-page loading
+  if (loading && accounts.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F9F7F7' }}>
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-7 h-7 animate-spin text-terra-500" />
+          <p className="text-[13px] text-neutral-500 animate-pulse">Loading AR ledger...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F9F7F7' }}>
       <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
-        {/* Header */}
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        {/* ─── Header ─────────────────────────────────────────────────────── */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">AR Ledger</h1>
-            <p className="text-[12px] sm:text-[13px] text-neutral-500 mt-1">{accounts.length} accounts receivable</p>
+            <p className="text-[12px] sm:text-[13px] text-neutral-500 mt-1">
+              Track accounts receivable, postings and payment collections
+            </p>
           </div>
-          <IconButton icon={RefreshCw} label="Refresh" variant="outline" size="md" onClick={refresh} />
+          <Button variant="outline" icon={RefreshCw} onClick={refresh} className="w-full sm:w-auto">
+            Refresh
+          </Button>
         </header>
 
-        {/* Aging Report Summary */}
+        {/* ─── Aging Report Summary ────────────────────────────────────────── */}
         {aging && aging.totals && aging.totals.total > 0 && (
-          <div className="bg-white rounded-[10px] border border-neutral-100 p-5">
-            <h2 className="text-[13px] font-semibold text-neutral-700 mb-3">AR Aging Summary</h2>
-            <div className="grid grid-cols-6 gap-3">
+          <div className="bg-white rounded-[10px] border border-neutral-100 p-4 sm:p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1.5 h-1.5 rounded-full bg-terra-500" />
+              <h2 className="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest">AR Aging Summary</h2>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
               {[
-                { label: 'Current', value: aging.totals.current, color: 'text-emerald-600' },
-                { label: '1–30 days', value: aging.totals.days_30, color: 'text-blue-600' },
-                { label: '31–60 days', value: aging.totals.days_60, color: 'text-amber-600' },
-                { label: '61–90 days', value: aging.totals.days_90, color: 'text-orange-600' },
-                { label: '90+ days', value: aging.totals.days_90_plus, color: 'text-red-600' },
-                { label: 'Total', value: aging.totals.total, color: 'text-neutral-900 font-bold' },
+                { label: 'Current', value: aging.totals.current, color: 'text-sage-600', bg: 'bg-sage-50' },
+                { label: '1–30 days', value: aging.totals.days_30, color: 'text-ocean-600', bg: 'bg-ocean-50' },
+                { label: '31–60 days', value: aging.totals.days_60, color: 'text-gold-600', bg: 'bg-gold-50' },
+                { label: '61–90 days', value: aging.totals.days_90, color: 'text-terra-600', bg: 'bg-terra-50' },
+                { label: '90+ days', value: aging.totals.days_90_plus, color: 'text-rose-600', bg: 'bg-rose-50' },
+                { label: 'Total', value: aging.totals.total, color: 'text-neutral-900', bg: 'bg-neutral-100' },
               ].map(b => (
-                <div key={b.label} className="text-center">
-                  <p className="text-[11px] text-neutral-500 mb-0.5">{b.label}</p>
-                  <p className={`text-[14px] font-semibold ${b.color}`}>{formatCurrency(b.value)}</p>
+                <div key={b.label} className={`${b.bg} rounded-lg p-3 text-center`}>
+                  <p className="text-[11px] font-medium text-neutral-500 mb-0.5">{b.label}</p>
+                  <p className={`text-[13px] font-semibold ${b.color}`}>{formatCurrency(b.value)}</p>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        <div className="grid grid-cols-12 gap-5">
-          {/* Left: Account List */}
-          <div className="col-span-4">
-            <div className="bg-white rounded-[10px] border border-neutral-100 overflow-hidden">
-              <div className="px-4 py-3 border-b border-neutral-100 bg-neutral-50/30">
-                <h3 className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">AR Accounts</h3>
+        {/* ─── Two-Panel Layout ────────────────────────────────────────────── */}
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-5">
+
+          {/* Left: Account List — stretches to match right panel */}
+          <div className="w-full lg:w-[270px] lg:flex-shrink-0">
+            <div className="bg-white rounded-[10px] border border-neutral-100 h-full flex flex-col overflow-hidden">
+              <div className="px-4 py-3 border-b border-neutral-100 bg-neutral-50/30 flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest">AR Accounts</h3>
+                  {accounts.length > 0 && (
+                    <span className="text-[11px] font-medium text-neutral-400">{accounts.length}</span>
+                  )}
+                </div>
               </div>
               {loading ? (
-                <div className="px-4 py-8 text-center text-[13px] text-neutral-400">Loading...</div>
+                <div className="flex-1 flex items-center justify-center py-12">
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin text-terra-500" />
+                    <p className="text-[12px] text-neutral-400">Loading accounts...</p>
+                  </div>
+                </div>
               ) : accounts.length === 0 ? (
-                <div className="px-4 py-8 text-center text-[13px] text-neutral-400">No AR accounts</div>
+                <div className="flex-1 flex flex-col items-center justify-center gap-3 py-8">
+                  <div className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-neutral-400" />
+                  </div>
+                  <p className="text-[13px] text-neutral-400">No AR accounts found</p>
+                </div>
               ) : (
-                <div className="divide-y divide-neutral-100 max-h-[500px] overflow-y-auto">
+                <div className="flex-1 divide-y divide-neutral-100 overflow-y-auto">
                   {accounts.map(a => (
-                    <button key={a.id} onClick={() => setSelectedId(a.id)}
-                      className={`w-full px-4 py-3 text-left transition-colors ${selectedId === a.id ? 'bg-terra-50 border-l-2 border-terra-600' : 'hover:bg-neutral-50 border-l-2 border-transparent'}`}>
-                      <p className="text-[13px] font-medium text-neutral-900">{a.account_name}</p>
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-[11px] text-neutral-500">{a.account_number}</span>
-                        <span className={`text-[12px] font-semibold ${a.current_balance > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                    <button
+                      key={a.id}
+                      onClick={() => setSelectedId(a.id)}
+                      className={`w-full px-4 py-3.5 text-left transition-colors border-l-2 ${
+                        selectedId === a.id
+                          ? 'bg-terra-50/60 border-l-terra-500'
+                          : 'hover:bg-neutral-50 border-l-transparent'
+                      }`}
+                    >
+                      <p className="text-[13px] font-medium text-neutral-900 leading-tight">{a.account_name}</p>
+                      <div className="flex items-center justify-between mt-1.5">
+                        <span className="text-[11px] text-neutral-400 font-mono tracking-wide">{a.account_number}</span>
+                        <span className={`text-[12px] font-semibold tabular-nums ${a.current_balance > 0 ? 'text-gold-600' : 'text-sage-600'}`}>
                           {formatCurrency(a.current_balance)}
                         </span>
                       </div>
@@ -243,23 +306,27 @@ export default function ARLedger() {
           </div>
 
           {/* Right: Ledger View */}
-          <div className="col-span-8">
+          <div className="flex-1 min-w-0">
             {!selectedId ? (
-              <div className="bg-white rounded-[10px] border border-neutral-100 flex items-center justify-center py-20">
+              <div className="bg-white rounded-[10px] border border-neutral-100 flex flex-col items-center justify-center py-20 gap-3">
+                <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center">
+                  <Receipt className="w-6 h-6 text-neutral-400" />
+                </div>
                 <p className="text-[13px] text-neutral-400">Select an AR account to view its ledger</p>
               </div>
             ) : (
               <div className="space-y-4">
+
                 {/* Account Summary */}
                 {selectedAccount && (
-                  <div className="bg-white rounded-[10px] border border-neutral-100 p-5">
-                    <div className="flex items-center justify-between mb-4">
+                  <div className="bg-white rounded-[10px] border border-neutral-100 p-4 sm:p-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                       <div>
                         <h2 className="text-[15px] font-semibold text-neutral-900">{selectedAccount.account_name}</h2>
-                        <p className="text-[12px] text-neutral-500">{selectedAccount.account_number}</p>
+                        <p className="text-[12px] text-neutral-500 mt-0.5">{selectedAccount.account_number}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="outline-success" size="sm" icon={DollarSign} onClick={() => setPaymentModal(true)}>
+                        <Button variant="outline" size="sm" icon={DollarSign} onClick={() => setPaymentModal(true)}>
                           Record Payment
                         </Button>
                         <Button variant="outline" size="sm" icon={FileText} onClick={() => setCreditModal(true)}>
@@ -267,24 +334,24 @@ export default function ARLedger() {
                         </Button>
                       </div>
                     </div>
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       <div className="bg-neutral-50 rounded-lg p-3">
-                        <p className="text-[11px] text-neutral-500">Balance</p>
-                        <p className={`text-[16px] font-bold ${selectedAccount.current_balance > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                        <p className="text-[11px] text-neutral-500 font-medium mb-0.5">Balance</p>
+                        <p className={`text-[15px] font-semibold ${selectedAccount.current_balance > 0 ? 'text-gold-600' : 'text-sage-600'}`}>
                           {formatCurrency(selectedAccount.current_balance)}
                         </p>
                       </div>
                       <div className="bg-neutral-50 rounded-lg p-3">
-                        <p className="text-[11px] text-neutral-500">Credit Limit</p>
-                        <p className="text-[16px] font-bold text-neutral-900">{formatCurrency(selectedAccount.credit_limit)}</p>
+                        <p className="text-[11px] text-neutral-500 font-medium mb-0.5">Credit Limit</p>
+                        <p className="text-[15px] font-semibold text-neutral-900">{formatCurrency(selectedAccount.credit_limit)}</p>
                       </div>
                       <div className="bg-neutral-50 rounded-lg p-3">
-                        <p className="text-[11px] text-neutral-500">Available</p>
-                        <p className="text-[16px] font-bold text-emerald-600">{formatCurrency(selectedAccount.available_credit)}</p>
+                        <p className="text-[11px] text-neutral-500 font-medium mb-0.5">Available</p>
+                        <p className="text-[15px] font-semibold text-sage-600">{formatCurrency(selectedAccount.available_credit)}</p>
                       </div>
                       <div className="bg-neutral-50 rounded-lg p-3">
-                        <p className="text-[11px] text-neutral-500">Terms</p>
-                        <p className="text-[16px] font-bold text-neutral-900">{selectedAccount.payment_terms_days}d</p>
+                        <p className="text-[11px] text-neutral-500 font-medium mb-0.5">Terms</p>
+                        <p className="text-[15px] font-semibold text-neutral-900">{selectedAccount.payment_terms_days}d</p>
                       </div>
                     </div>
                   </div>
@@ -292,61 +359,82 @@ export default function ARLedger() {
 
                 {/* Ledger Table */}
                 <div className="bg-white rounded-[10px] border border-neutral-100 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-neutral-100 bg-neutral-50/30 flex items-center justify-between">
-                    <h3 className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Ledger Postings</h3>
-                    <span className="text-[11px] text-neutral-400">{postings.length} entries</span>
+                  <div className="px-4 sm:px-6 py-3 border-b border-neutral-100 bg-neutral-50/30 flex items-center justify-between">
+                    <h3 className="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest">Ledger Postings</h3>
+                    {postings.length > 0 && (
+                      <span className="text-[11px] text-neutral-400 font-medium">{postings.length} entries</span>
+                    )}
                   </div>
-                  {ledgerLoading ? (
-                    <div className="px-4 py-12 text-center text-[13px] text-neutral-400">Loading ledger...</div>
-                  ) : postings.length === 0 ? (
-                    <div className="px-4 py-12 text-center text-[13px] text-neutral-400">No postings yet</div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-neutral-100 bg-neutral-50/30">
-                            {['Date', 'Type', 'Description', 'Booking', 'Debit', 'Credit', 'Balance', 'Status'].map(h => (
-                              <th key={h} className="px-3 py-2.5 text-left text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-neutral-100">
-                          {postings.map(p => {
-                            const isDebit = p.amount > 0;
-                            return (
-                              <tr key={p.id} className="hover:bg-neutral-50/50">
-                                <td className="px-3 py-2.5 text-[12px] text-neutral-600 whitespace-nowrap">
-                                  {p.posted_at ? new Date(p.posted_at).toLocaleDateString() : '—'}
-                                </td>
-                                <td className="px-3 py-2.5">
-                                  <Badge variant={POSTING_VARIANT[p.posting_type] || 'neutral'} size="sm">
-                                    {POSTING_LABEL[p.posting_type] || p.posting_type}
-                                  </Badge>
-                                </td>
-                                <td className="px-3 py-2.5 text-[12px] text-neutral-700 max-w-[200px] truncate">{p.description}</td>
-                                <td className="px-3 py-2.5 text-[12px] text-neutral-500">{p.booking_id ? `#${p.booking_id}` : '—'}</td>
-                                <td className="px-3 py-2.5 text-[12px] font-medium text-red-600">
-                                  {isDebit ? formatCurrency(p.amount) : ''}
-                                </td>
-                                <td className="px-3 py-2.5 text-[12px] font-medium text-emerald-600">
-                                  {!isDebit ? formatCurrency(Math.abs(p.amount)) : ''}
-                                </td>
-                                <td className="px-3 py-2.5 text-[12px] font-semibold text-neutral-800">
-                                  {formatCurrency(p.balance_after)}
-                                </td>
-                                <td className="px-3 py-2.5">
-                                  <Badge variant={p.status === 'paid' ? 'success' : p.status === 'overdue' ? 'danger' : 'warning'} size="xs">
-                                    {p.status}
-                                  </Badge>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead>Booking</TableHead>
+                          <TableHead align="right">Debit</TableHead>
+                          <TableHead align="right">Credit</TableHead>
+                          <TableHead align="right">Balance</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {ledgerLoading ? (
+                          <TableSkeleton columns={8} rows={5} />
+                        ) : postings.length === 0 ? (
+                          <TableEmpty
+                            colSpan={8}
+                            icon={Receipt}
+                            title="No postings yet"
+                            description="Postings will appear here once transactions are recorded"
+                          />
+                        ) : postings.map(p => {
+                          const isDebit = p.amount > 0;
+                          return (
+                            <TableRow key={p.id}>
+                              <TableCell className="text-neutral-600 whitespace-nowrap">
+                                {formatDate(p.posted_at)}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={POSTING_VARIANT[p.posting_type] || 'neutral'}>
+                                  {POSTING_LABEL[p.posting_type] || p.posting_type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="min-w-[140px]">
+                                <span className="block max-w-[220px] truncate text-neutral-700 text-[13px]" title={p.description}>
+                                  {p.description}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-neutral-500 whitespace-nowrap font-mono text-[12px]">
+                                {p.booking_id ? `#${p.booking_id}` : <span className="text-neutral-300">—</span>}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap tabular-nums text-right font-medium text-rose-600">
+                                {isDebit ? formatCurrency(p.amount) : <span className="text-neutral-300">—</span>}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap tabular-nums text-right font-medium text-sage-600">
+                                {!isDebit ? formatCurrency(Math.abs(p.amount)) : <span className="text-neutral-300">—</span>}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap tabular-nums text-right font-semibold text-neutral-800">
+                                {formatCurrency(p.balance_after)}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={p.status === 'paid' ? 'success' : p.status === 'overdue' ? 'danger' : 'warning'}
+                                  dot
+                                >
+                                  {p.status}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
+
               </div>
             )}
           </div>

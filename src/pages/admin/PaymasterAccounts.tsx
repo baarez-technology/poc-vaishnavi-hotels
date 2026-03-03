@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  Wallet, Plus, ArrowRight, Trash2, Search,
+  Wallet, Plus, ArrowRight, Trash2, Loader2, Eye,
 } from 'lucide-react';
 import {
   paymasterService, type PaymasterAccount, type PaymasterPosting,
@@ -16,68 +16,23 @@ import {
   Modal, ModalHeader, ModalTitle, ModalDescription, ModalContent, ModalFooter,
 } from '@/components/ui2/Modal';
 import { Drawer } from '@/components/ui2/Drawer';
-import { Button } from '@/components/ui2/Button';
+import { Button, IconButton } from '@/components/ui2/Button';
 import { Badge } from '@/components/ui2/Badge';
 import { SearchBar } from '@/components/ui2/SearchBar';
+import { SimpleDropdown } from '@/components/ui/Select';
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
-  TableEmpty, TableSkeleton, Pagination,
+  TableActions, TableEmpty, TableSkeleton, Pagination,
 } from '@/components/ui2/Table';
 
-/* ── FilterSelect (matches Bookings pattern) ─────────────────────────────── */
-function FilterSelect({ value, onChange, options, placeholder }: {
-  value: string; onChange: (v: string) => void;
-  options: { value: string; label: string }[]; placeholder: string;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const selectedOption = options.find(opt => opt.value === value);
-  const displayLabel = !value || value === 'all' ? placeholder : selectedOption?.label;
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`h-9 px-2.5 sm:px-3.5 rounded-lg text-xs sm:text-[13px] bg-white border transition-all duration-150 flex items-center gap-1.5 sm:gap-2 focus:outline-none w-full sm:min-w-[140px] ${
-          isOpen
-            ? 'border-terra-400 ring-2 ring-terra-500/10'
-            : value && value !== 'all'
-              ? 'border-terra-300 bg-terra-50'
-              : 'border-neutral-200 hover:border-neutral-300'
-        }`}
-      >
-        <span className={value && value !== 'all' ? 'text-terra-700 font-medium' : 'text-neutral-500'}>
-          {displayLabel}
-        </span>
-        <svg className={`w-4 h-4 ml-auto transition-transform ${isOpen ? 'rotate-180' : ''} ${value && value !== 'all' ? 'text-terra-500' : 'text-neutral-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute z-50 w-full mt-1 bg-white rounded-lg border border-neutral-200 shadow-lg overflow-hidden min-w-[160px]">
-            {options.map(option => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => { onChange(option.value); setIsOpen(false); }}
-                className={`w-full px-3.5 py-2.5 text-[13px] text-left hover:bg-neutral-50 transition-colors flex items-center justify-between ${
-                  value === option.value ? 'bg-terra-50 text-terra-700' : 'text-neutral-700'
-                }`}
-              >
-                {option.label}
-                {value === option.value && (
-                  <svg className="w-4 h-4 text-terra-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
+/* ── Module-level style constants ────────────────────────────────────────── */
+const inputBase = 'w-full h-9 px-3.5 rounded-lg text-[13px] bg-white border transition-all duration-200 ease-out focus:outline-none';
+const inputCls = `${inputBase} border-neutral-200/80 hover:border-terra-300/60 focus:border-terra-400/60 focus:ring-2 focus:ring-terra-500/10 placeholder:text-neutral-400 text-neutral-900`;
+const textareaCls = 'w-full px-3.5 py-2.5 rounded-lg text-[13px] bg-white border border-neutral-200/80 hover:border-terra-300/60 focus:border-terra-400/60 focus:ring-2 focus:ring-terra-500/10 focus:outline-none transition-all duration-200 ease-out placeholder:text-neutral-400 text-neutral-900 resize-none';
+const labelCls = 'block text-[13px] font-medium text-neutral-700 mb-1';
+
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 /* ── Status variant helper ───────────────────────────────────────────────── */
@@ -85,8 +40,8 @@ function statusVariant(status: string): 'success' | 'neutral' {
   return status === 'active' ? 'success' : 'neutral';
 }
 
-/* ── Create Modal ────────────────────────────────────────────────────────── */
-function CreateModal({ isOpen, onClose, onSave }: {
+/* ── Create Drawer ───────────────────────────────────────────────────────── */
+function CreateDrawer({ isOpen, onClose, onSave }: {
   isOpen: boolean; onClose: () => void;
   onSave: (data: { account_name?: string; account_code?: string; notes?: string }) => Promise<void>;
 }) {
@@ -94,11 +49,7 @@ function CreateModal({ isOpen, onClose, onSave }: {
   const [saving, setSaving] = useState(false);
   const { error } = useToast();
 
-  const inputCls = 'w-full px-4 py-2.5 text-sm bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400';
-  const labelCls = 'block text-[12px] font-semibold text-neutral-600 mb-1.5';
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async () => {
     setSaving(true);
     try {
       await onSave({
@@ -115,41 +66,52 @@ function CreateModal({ isOpen, onClose, onSave }: {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
-      <form onSubmit={handleSubmit}>
-        <ModalHeader>
-          <ModalTitle>New Paymaster Account</ModalTitle>
-          <ModalDescription>Create a holding account for disputed charges</ModalDescription>
-        </ModalHeader>
-        <ModalContent>
-          <div className="space-y-4">
-            <div>
-              <label className={labelCls}>Account Name</label>
-              <input className={inputCls} value={form.account_name}
-                onChange={e => setForm(f => ({ ...f, account_name: e.target.value }))}
-                placeholder="e.g. Disputed Charges Pool" />
-            </div>
-            <div>
-              <label className={labelCls}>Account Code</label>
-              <input className={inputCls} value={form.account_code}
-                onChange={e => setForm(f => ({ ...f, account_code: e.target.value }))}
-                placeholder="Optional code" />
-            </div>
-            <div>
-              <label className={labelCls}>Notes</label>
-              <textarea className={`${inputCls} min-h-[60px]`} value={form.notes}
-                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
-            </div>
-          </div>
-        </ModalContent>
-        <ModalFooter>
-          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" disabled={saving} loading={saving}>
+    <Drawer
+      isOpen={isOpen}
+      onClose={onClose}
+      title="New Paymaster Account"
+      subtitle="Create a holding account for disputed charges"
+      maxWidth="max-w-md"
+      footer={
+        <div className="flex gap-3 w-full">
+          <Button variant="ghost" className="flex-1" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" className="flex-1" onClick={handleSave} disabled={saving} loading={saving}>
             {saving ? 'Creating...' : 'Create Account'}
           </Button>
-        </ModalFooter>
-      </form>
-    </Modal>
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <label className={labelCls}>Account Name</label>
+          <input
+            className={inputCls}
+            value={form.account_name}
+            onChange={e => setForm(f => ({ ...f, account_name: e.target.value }))}
+            placeholder="e.g. Disputed Charges Pool"
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Account Code</label>
+          <input
+            className={inputCls}
+            value={form.account_code}
+            onChange={e => setForm(f => ({ ...f, account_code: e.target.value }))}
+            placeholder="Optional code"
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Notes</label>
+          <textarea
+            className={textareaCls}
+            rows={4}
+            value={form.notes}
+            onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+            placeholder="Optional notes..."
+          />
+        </div>
+      </div>
+    </Drawer>
   );
 }
 
@@ -172,9 +134,6 @@ function TransferModal({ isOpen, onClose, postings, onSave }: {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  const inputCls = 'w-full px-4 py-2.5 text-sm bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400';
-  const labelCls = 'block text-[12px] font-semibold text-neutral-600 mb-1.5';
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!bookingId || selectedIds.length === 0) return;
@@ -192,7 +151,7 @@ function TransferModal({ isOpen, onClose, postings, onSave }: {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal open={isOpen} onClose={onClose} size="lg">
       <form onSubmit={handleSubmit}>
         <ModalHeader>
           <ModalTitle>Transfer to Booking</ModalTitle>
@@ -203,33 +162,45 @@ function TransferModal({ isOpen, onClose, postings, onSave }: {
             <div>
               <label className={labelCls}>Target Booking ID *</label>
               <input type="number" value={bookingId} onChange={e => setBookingId(e.target.value)}
-                className={inputCls} required />
+                className={inputCls} placeholder="Enter booking ID" required />
             </div>
             <div>
               <label className={labelCls}>Select Postings to Transfer</label>
               {chargePostings.length === 0 ? (
-                <p className="text-[12px] text-neutral-400 mt-1">No charge postings available</p>
+                <div className="mt-1 flex items-center justify-center py-6 bg-neutral-50 rounded-lg border border-neutral-100">
+                  <p className="text-[13px] text-neutral-400">No charge postings available</p>
+                </div>
               ) : (
-                <div className="space-y-2 max-h-[200px] overflow-y-auto mt-1">
+                <div className="space-y-1.5 max-h-[200px] overflow-y-auto mt-1 pr-0.5">
                   {chargePostings.map(p => (
-                    <label key={p.id} className="flex items-center gap-3 px-3 py-2.5 bg-neutral-50 rounded-xl cursor-pointer hover:bg-neutral-100 transition-colors">
+                    <label
+                      key={p.id}
+                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg cursor-pointer border transition-all duration-150 ${
+                        selectedIds.includes(p.id)
+                          ? 'bg-terra-50 border-terra-200'
+                          : 'bg-neutral-50 border-transparent hover:bg-neutral-100 hover:border-neutral-200'
+                      }`}
+                    >
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(p.id)}
                         onChange={() => togglePosting(p.id)}
                         className="w-4 h-4 rounded border-neutral-300 text-terra-600 focus:ring-terra-500"
                       />
-                      <span className="text-[12px] text-neutral-700 flex-1">{p.description}</span>
-                      <span className="text-[12px] font-medium text-neutral-900">{formatSimple(p.amount)}</span>
+                      <span className="text-[13px] text-neutral-700 flex-1 truncate">{p.description}</span>
+                      <span className="text-[13px] font-semibold text-neutral-900 tabular-nums flex-shrink-0">{formatSimple(p.amount)}</span>
                     </label>
                   ))}
                 </div>
+              )}
+              {selectedIds.length > 0 && (
+                <p className="text-[11px] text-terra-600 mt-1.5 font-medium">{selectedIds.length} posting{selectedIds.length > 1 ? 's' : ''} selected</p>
               )}
             </div>
             <div>
               <label className={labelCls}>Notes</label>
               <textarea value={notes} onChange={e => setNotes(e.target.value)}
-                className={`${inputCls} min-h-[50px]`} />
+                className={textareaCls} rows={2} placeholder="Optional transfer notes..." />
             </div>
           </div>
         </ModalContent>
@@ -254,9 +225,6 @@ function WriteOffModal({ isOpen, onClose, onSave }: {
   const [saving, setSaving] = useState(false);
   const { error } = useToast();
 
-  const inputCls = 'w-full px-4 py-2.5 text-sm bg-white border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-terra-500/30 focus:border-terra-400';
-  const labelCls = 'block text-[12px] font-semibold text-neutral-600 mb-1.5';
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || !reason) return;
@@ -273,7 +241,7 @@ function WriteOffModal({ isOpen, onClose, onSave }: {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <Modal open={isOpen} onClose={onClose} size="md">
       <form onSubmit={handleSubmit}>
         <ModalHeader>
           <ModalTitle>Write Off</ModalTitle>
@@ -284,12 +252,14 @@ function WriteOffModal({ isOpen, onClose, onSave }: {
             <div>
               <label className={labelCls}>Amount *</label>
               <input type="number" min={0} step={0.01} value={amount}
-                onChange={e => setAmount(e.target.value)} className={inputCls} required />
+                onChange={e => setAmount(e.target.value)} className={inputCls}
+                placeholder="0.00" required />
             </div>
             <div>
               <label className={labelCls}>Reason *</label>
               <textarea value={reason} onChange={e => setReason(e.target.value)}
-                className={`${inputCls} min-h-[60px]`} required />
+                className={textareaCls} rows={3}
+                placeholder="Reason for write-off..." required />
             </div>
           </div>
         </ModalContent>
@@ -346,12 +316,10 @@ function DetailDrawer({ account, onClose, onRefresh }: {
         footer={
           account.status === 'active' ? (
             <div className="flex gap-3 w-full">
-              <Button variant="outline" className="flex-1" onClick={() => setTransferOpen(true)}>
-                <ArrowRight size={15} className="mr-2" />
+              <Button variant="outline" className="flex-1" icon={ArrowRight} onClick={() => setTransferOpen(true)}>
                 Transfer to Booking
               </Button>
-              <Button variant="danger" className="flex-1" onClick={() => setWriteOffOpen(true)}>
-                <Trash2 size={15} className="mr-2" />
+              <Button variant="danger" className="flex-1" icon={Trash2} onClick={() => setWriteOffOpen(true)}>
                 Write Off
               </Button>
             </div>
@@ -361,24 +329,26 @@ function DetailDrawer({ account, onClose, onRefresh }: {
         <div className="space-y-5">
           {/* Summary */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-neutral-50 rounded-xl p-3 text-center">
-              <p className="text-[11px] text-neutral-500">Total Charges</p>
-              <p className="text-[14px] font-bold text-neutral-900">{formatSimple(account.total_charges)}</p>
+            <div className="bg-neutral-50 rounded-lg p-3 text-center">
+              <p className="text-[11px] text-neutral-500 mb-0.5">Total Charges</p>
+              <p className="text-[14px] font-bold text-neutral-900 tabular-nums">{formatSimple(account.total_charges)}</p>
             </div>
-            <div className="bg-neutral-50 rounded-xl p-3 text-center">
-              <p className="text-[11px] text-neutral-500">Transferred</p>
-              <p className="text-[14px] font-bold text-neutral-900">{formatSimple(account.total_transferred)}</p>
+            <div className="bg-neutral-50 rounded-lg p-3 text-center">
+              <p className="text-[11px] text-neutral-500 mb-0.5">Transferred</p>
+              <p className="text-[14px] font-bold text-neutral-900 tabular-nums">{formatSimple(account.total_transferred)}</p>
             </div>
-            <div className="bg-neutral-50 rounded-xl p-3 text-center">
-              <p className="text-[11px] text-neutral-500">Balance</p>
-              <p className={`text-[14px] font-bold ${account.current_balance > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+            <div className="bg-neutral-50 rounded-lg p-3 text-center">
+              <p className="text-[11px] text-neutral-500 mb-0.5">Balance</p>
+              <p className={`text-[14px] font-bold tabular-nums ${account.current_balance > 0 ? 'text-gold-600' : 'text-sage-600'}`}>
                 {formatSimple(account.current_balance)}
               </p>
             </div>
           </div>
 
           {account.notes && (
-            <div className="text-[12px] text-neutral-600 bg-neutral-50 rounded-xl p-3">{account.notes}</div>
+            <div className="text-[13px] text-neutral-600 bg-neutral-50 rounded-lg px-3.5 py-3 border border-neutral-100">
+              {account.notes}
+            </div>
           )}
 
           {/* Postings */}
@@ -388,24 +358,26 @@ function DetailDrawer({ account, onClose, onRefresh }: {
               <span className="text-[11px] text-neutral-400">{Array.isArray(postings) ? postings.length : 0} items</span>
             </div>
             {loadingPostings ? (
-              <div className="flex justify-center py-6">
-                <div className="w-5 h-5 border-2 border-neutral-200 border-t-terra-500 rounded-full animate-spin" />
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-terra-400" />
               </div>
             ) : !Array.isArray(postings) || postings.length === 0 ? (
-              <p className="text-[13px] text-neutral-400 text-center py-6">No postings yet</p>
+              <div className="flex flex-col items-center justify-center py-8 bg-neutral-50 rounded-lg border border-neutral-100">
+                <p className="text-[13px] text-neutral-400">No postings yet</p>
+              </div>
             ) : (
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              <div className="space-y-1.5 max-h-[300px] overflow-y-auto pr-0.5">
                 {postings.map((p: PaymasterPosting) => (
-                  <div key={p.id} className="flex items-center justify-between px-3 py-2.5 bg-neutral-50 rounded-xl">
-                    <div>
-                      <p className="text-[12px] font-medium text-neutral-800">{p.description}</p>
-                      <p className="text-[10px] text-neutral-400">
-                        {p.posting_type} — {new Date(p.posted_at).toLocaleDateString()}
-                        {p.source_booking_id ? ` — Booking #${p.source_booking_id}` : ''}
+                  <div key={p.id} className="flex items-center justify-between px-3.5 py-2.5 bg-neutral-50 rounded-lg border border-neutral-100">
+                    <div className="flex-1 min-w-0 mr-3">
+                      <p className="text-[13px] font-medium text-neutral-800 truncate">{p.description}</p>
+                      <p className="text-[11px] text-neutral-400 mt-0.5">
+                        {p.posting_type} · {formatDate(p.posted_at)}
+                        {p.source_booking_id ? ` · Booking #${p.source_booking_id}` : ''}
                       </p>
                     </div>
-                    <span className={`text-[12px] font-medium ${
-                      p.posting_type === 'charge_in' ? 'text-red-600' : 'text-emerald-600'
+                    <span className={`text-[13px] font-semibold tabular-nums flex-shrink-0 ${
+                      p.posting_type === 'charge_in' ? 'text-rose-600' : 'text-sage-600'
                     }`}>
                       {p.posting_type === 'charge_in' ? '+' : '-'}{formatSimple(p.amount)}
                     </span>
@@ -513,26 +485,27 @@ export default function PaymasterAccounts() {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-[10px] overflow-hidden">
+        <div className="bg-white rounded-[10px] border border-neutral-100 overflow-hidden">
           {/* Filter bar */}
-          <div className="px-4 sm:px-6 py-3 sm:py-4 bg-neutral-50/30 border-b border-neutral-100">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <div className="sm:flex-1 sm:max-w-md w-full">
+          <div className="px-4 sm:px-6 py-3 border-b border-neutral-100">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 max-w-xs">
                 <SearchBar
                   value={search}
                   onChange={setSearch}
                   onClear={() => setSearch('')}
                   placeholder="Search accounts..."
-                  size="sm"
+                  size="md"
                 />
               </div>
-              <div className="hidden sm:block sm:flex-1" />
-              <FilterSelect
-                value={statusFilter}
-                onChange={v => { setStatusFilter(v); setPage(1); }}
-                options={statusOptions}
-                placeholder="Status"
-              />
+              <div className="ml-auto">
+                <SimpleDropdown
+                  options={statusOptions}
+                  value={statusFilter}
+                  onChange={v => { setStatusFilter(v); setPage(1); }}
+                  triggerClassName="h-9 py-0 text-[13px] min-w-[130px]"
+                />
+              </div>
             </div>
           </div>
 
@@ -548,37 +521,43 @@ export default function PaymasterAccounts() {
                   <TableHead>Balance</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableSkeleton columns={7} rows={5} />
+                  <TableSkeleton columns={8} rows={5} />
                 ) : paged.length === 0 ? (
                   <TableEmpty
-                    colSpan={7}
+                    colSpan={8}
                     icon={Wallet}
                     title="No paymaster accounts found"
                     description={search ? 'Try adjusting your search or filters' : 'Create a new account to get started'}
                   />
                 ) : paged.map(acct => (
-                  <TableRow
-                    key={acct.id}
-                    className="cursor-pointer"
-                    onClick={() => setSelectedAccount(acct)}
-                  >
+                  <TableRow key={acct.id}>
                     <TableCell className="font-mono text-neutral-600">{acct.account_code || `#${acct.id}`}</TableCell>
                     <TableCell className="font-medium text-neutral-900">{acct.account_name || '—'}</TableCell>
-                    <TableCell>{formatSimple(acct.total_charges)}</TableCell>
-                    <TableCell>{formatSimple(acct.total_transferred)}</TableCell>
+                    <TableCell className="tabular-nums">{formatSimple(acct.total_charges)}</TableCell>
+                    <TableCell className="tabular-nums">{formatSimple(acct.total_transferred)}</TableCell>
                     <TableCell>
-                      <span className={`font-medium ${acct.current_balance > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                      <span className={`font-medium tabular-nums ${acct.current_balance > 0 ? 'text-gold-600' : 'text-sage-600'}`}>
                         {formatSimple(acct.current_balance)}
                       </span>
                     </TableCell>
                     <TableCell>
                       <Badge variant={statusVariant(acct.status)}>{acct.status}</Badge>
                     </TableCell>
-                    <TableCell className="text-neutral-500">{new Date(acct.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-neutral-500">{formatDate(acct.created_at)}</TableCell>
+                    <TableActions sticky>
+                      <IconButton
+                        icon={Eye}
+                        label="View"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedAccount(acct)}
+                      />
+                    </TableActions>
                   </TableRow>
                 ))}
               </TableBody>
@@ -587,7 +566,7 @@ export default function PaymasterAccounts() {
 
           {/* Pagination */}
           {!loading && totalPages > 0 && (
-            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-neutral-100 bg-neutral-50/30">
+            <div className="px-4 sm:px-6 py-3 border-t border-neutral-100 bg-neutral-50/30">
               <Pagination
                 currentPage={page}
                 totalPages={totalPages}
@@ -599,7 +578,7 @@ export default function PaymasterAccounts() {
           )}
         </div>
 
-        <CreateModal isOpen={createOpen} onClose={() => setCreateOpen(false)} onSave={handleCreate} />
+        <CreateDrawer isOpen={createOpen} onClose={() => setCreateOpen(false)} onSave={handleCreate} />
 
         {selectedAccount && (
           <DetailDrawer

@@ -54,6 +54,7 @@ import {
   DollarSign,
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAdmin } from '../../contexts/AdminContext';
 import { reviewsData, reviewsSummary } from '../../data/reviewsData';
 import { formatCurrency } from '../../utils/dashboardUtils';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -761,6 +762,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const { symbol, formatCurrency: formatCurrencyDynamic } = useCurrency();
+  const { openNotificationDrawer } = useAdmin();
 
   // Live time
   useEffect(() => {
@@ -1260,21 +1262,21 @@ export default function Dashboard() {
                   label="Check-in Guest"
                   sublabel="Process arrival"
                   color="#4E5840"
-                  onClick={() => navigate('/admin/guests')}
+                  onClick={() => navigate('/admin/bookings', { state: { tab: 'arrivals' } })}
                 />
                 <QuickAction
                   icon={LogOut}
                   label="Check-out"
                   sublabel="Process departure"
                   color="#5C9BA4"
-                  onClick={() => navigate('/admin/guests')}
+                  onClick={() => navigate('/admin/bookings', { state: { tab: 'departures' } })}
                 />
                 <QuickAction
                   icon={Calendar}
                   label="Room Service"
                   sublabel="New request"
                   color="#CDB261"
-                  onClick={() => navigate('/admin/maintenance')}
+                  // onClick={() => navigate('/admin/maintenance')}
                 />
                 <QuickAction
                   icon={Sparkles}
@@ -1295,7 +1297,7 @@ export default function Dashboard() {
                   label="Notifications"
                   sublabel="View alerts"
                   color="#CDB261"
-                  onClick={() => {}}
+                  onClick={openNotificationDrawer}
                 />
               </div>
             </LuxurySectionCard>
@@ -1419,7 +1421,7 @@ export default function Dashboard() {
             <LuxurySectionCard
               title="Upcoming Arrivals"
               subtitle="Today's check-ins"
-              action={() => navigate('/admin/cms/bookings')}
+              action={() => navigate('/admin/bookings')}
               actionLabel="View All"
               className="h-full"
             >
@@ -1430,7 +1432,8 @@ export default function Dashboard() {
                   return (
                     <div
                       key={arrival.id}
-                      className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-neutral-50/50 hover:bg-neutral-50 transition-colors"
+                      onClick={() => navigate('/admin/bookings', { state: { bookingId: arrival.id } })}
+                      className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-neutral-50/50 hover:bg-neutral-100 transition-colors cursor-pointer"
                     >
                       <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
                         <Clock className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-neutral-500" />

@@ -92,8 +92,11 @@ export default function Bookings() {
     refreshBookings,
   } = useBookings();
 
-  // Tab state
-  const [activeTab, setActiveTab] = useState('all');
+  // Tab state — initialise from navigation state if provided (e.g. "arrivals" from Check-in Guest quick action)
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const state = location.state as { tab?: string } | null;
+    return state?.tab || 'all';
+  });
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');

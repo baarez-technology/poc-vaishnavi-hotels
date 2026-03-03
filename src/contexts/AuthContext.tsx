@@ -119,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const runnerRoles = ['runner', 'bellhop', 'valet'];
       const frontDeskRoles = ['front_desk', 'frontdesk', 'receptionist', 'concierge', 'night_auditor', 'front_office_manager', 'duty_manager'];
       const managementRoles = ['admin', 'manager', 'supervisor', 'general_manager', 'reservation_manager', 'revenue_manager', 'accounts_manager'];
-      const housekeepingMgmtRoles = ['housekeeping_manager'];
+      const housekeepingMgmtRoles = ['housekeeping_manager', 'housekeeping'];
 
       if (role === 'admin' || response.user.isSuperuser || managementRoles.includes(role)) {
         navigate('/admin');

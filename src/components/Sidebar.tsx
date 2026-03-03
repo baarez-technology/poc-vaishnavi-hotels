@@ -55,7 +55,18 @@ import { useSettingsContext } from '../contexts/SettingsContext';
 import { useAuth } from '../hooks';
 import { getModuleForRoute, canViewModule, DEFAULT_PERMISSIONS, resolveRolePermissions } from '../config/rolePermissions';
 import type { PermissionMap, StaffRole } from '../config/rolePermissions';
-import { POC_MODE, POC_HIDDEN_SIDEBAR_SECTIONS, POC_HIDDEN_ROUTES } from '../config/pocConfig';
+import { POC_MODE, POC_HIDDEN_SIDEBAR_SECTIONS, POC_ALLOWED_ROUTE_PREFIXES } from '../config/pocConfig';
+
+// Must match ROLE_ALIAS_MAP in ProtectedRoute.tsx
+const ROLE_ALIAS_MAP: Record<string, StaffRole> = {
+  manager:       'general_manager',
+  supervisor:    'duty_manager',
+  front_desk:    'receptionist',
+  frontdesk:     'receptionist',
+  concierge:     'receptionist',
+  night_auditor: 'duty_manager',
+  housekeeping:  'housekeeping_manager',
+};
 import GlimmoraLogo from '../assets/G white logo.png';
 
 /**
@@ -194,8 +205,10 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly,
     if (!user) return undefined;
     if (user.permissions) return user.permissions as PermissionMap;
     if (user.isSuperuser) return DEFAULT_PERMISSIONS.admin;
-    if (user.role && user.role in DEFAULT_PERMISSIONS) {
-      return resolveRolePermissions(user.role as StaffRole);
+    const role = user.role?.toLowerCase() || '';
+    const canonical = (ROLE_ALIAS_MAP[role] ?? role) as StaffRole;
+    if (canonical && canonical in DEFAULT_PERMISSIONS) {
+      return resolveRolePermissions(canonical);
     }
     return DEFAULT_PERMISSIONS.admin;
   }, [user]);
@@ -254,14 +267,18 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly,
       .filter(cat => cat.items.length > 0);
   }, [userPermissions]);
 
-  // TEMP: POC filter — hides restricted sections/routes (remove when POC ends)
+  // TEMP: POC filter — only show routes in the allowed list (remove when POC ends)
   const pocFilteredCategories = useMemo(() => {
     if (!POC_MODE) return permissionFilteredCategories;
     return permissionFilteredCategories
       .filter(cat => !POC_HIDDEN_SIDEBAR_SECTIONS.has(cat.id))
       .map(cat => ({
         ...cat,
-        items: cat.items.filter(item => !POC_HIDDEN_ROUTES.has(item.to)),
+        items: cat.items.filter(item =>
+          POC_ALLOWED_ROUTE_PREFIXES.some(prefix =>
+            item.to === prefix || item.to.startsWith(prefix + '/')
+          )
+        ),
       }))
       .filter(cat => cat.items.length > 0);
   }, [permissionFilteredCategories]);

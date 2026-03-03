@@ -4,8 +4,10 @@
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { ArrowRightLeft, Plus, Play, XCircle } from 'lucide-react';
+import { ArrowRightLeft, Plus, Play, XCircle, Search } from 'lucide-react';
 import { roomMovesService, type RoomMove } from '@/api/services/room-moves.service';
+import { bookingService } from '@/api/services/booking.service';
+import { roomsService } from '@/api/services/rooms.service';
 import { useToast } from '@/contexts/ToastContext';
 
 // UI2 Components
@@ -109,6 +111,106 @@ function FilterSelect({ value, onChange, options, placeholder }: {
   );
 }
 
+// ── RoomSelect dropdown ──────────────────────────────────────────────────────
+function RoomSelect({ value, onChange, rooms, placeholder, loading }: {
+  value: string; onChange: (val: string) => void;
+  rooms: any[]; placeholder: string; loading?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  const selected = rooms.find(r => String(r.id) === value);
+  const filtered = rooms.filter(r => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      (r.number || r.roomNumber || '').toLowerCase().includes(q) ||
+      (r.room_type || r.type || '').toLowerCase().includes(q)
+    );
+  });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setIsOpen(false);
+        setSearch('');
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [isOpen]);
+
+  const getRoomLabel = (r: any) => {
+    const num = r.number || r.roomNumber || `Room ${r.id}`;
+    const type = r.room_type || r.type || '';
+    return type ? `${num} — ${type}` : num;
+  };
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => { if (!loading) setIsOpen(!isOpen); }}
+        className={`${inputCls} flex items-center justify-between text-left ${loading ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+      >
+        <span className={selected ? 'text-neutral-900' : 'text-neutral-400'}>
+          {loading ? 'Loading rooms…' : selected ? getRoomLabel(selected) : placeholder}
+        </span>
+        <svg className={`w-4 h-4 text-neutral-400 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => { setIsOpen(false); setSearch(''); }} />
+          <div className="absolute left-0 right-0 z-50 mt-1 bg-white rounded-xl border border-neutral-200 shadow-lg overflow-hidden">
+            {/* Search input */}
+            <div className="p-2 border-b border-neutral-100">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
+                <input
+                  autoFocus
+                  type="text"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Search room number or type…"
+                  className="w-full pl-8 pr-3 py-1.5 text-[13px] bg-neutral-50 border border-neutral-200 rounded-lg focus:outline-none focus:border-terra-400"
+                />
+              </div>
+            </div>
+            {/* Options */}
+            <div className="max-h-52 overflow-y-auto">
+              {filtered.length === 0 ? (
+                <p className="px-3.5 py-3 text-[13px] text-neutral-400 text-center">No available rooms found</p>
+              ) : filtered.map(r => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => { onChange(String(r.id)); setIsOpen(false); setSearch(''); }}
+                  className={`w-full px-3.5 py-2.5 text-[13px] text-left hover:bg-neutral-50 transition-colors flex items-center justify-between ${
+                    String(r.id) === value ? 'bg-terra-50 text-terra-700' : 'text-neutral-700'
+                  }`}
+                >
+                  <span className="font-medium">{r.number || r.roomNumber || `Room ${r.id}`}</span>
+                  <span className="text-[11px] text-neutral-500 ml-2">{r.room_type || r.type || ''}</span>
+                  {String(r.id) === value && (
+                    <svg className="w-4 h-4 text-terra-500 ml-auto flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Create Drawer ───────────────────────────────────────────────────────────
 function CreateDrawer({ isOpen, onClose, onSave }: {
   isOpen: boolean; onClose: () => void;
@@ -116,14 +218,59 @@ function CreateDrawer({ isOpen, onClose, onSave }: {
 }) {
   const [form, setForm] = useState({ booking_id: '', to_room_id: '', scheduled_date: '', move_reason: '', notes: '' });
   const [saving, setSaving] = useState(false);
+  const [bookingInfo, setBookingInfo] = useState<any>(null);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingError, setBookingError] = useState('');
+  const [availableRooms, setAvailableRooms] = useState<any[]>([]);
+  const [roomsLoading, setRoomsLoading] = useState(false);
   const { error: showError } = useToast();
 
-  const resetForm = () => setForm({ booking_id: '', to_room_id: '', scheduled_date: '', move_reason: '', notes: '' });
+  // Fetch available rooms when drawer opens
+  useEffect(() => {
+    if (!isOpen) return;
+    setRoomsLoading(true);
+    roomsService.getRooms()
+      .then(rooms => {
+        // Keep only rooms that are not occupied / blocked
+        const available = (rooms as any[]).filter(r => {
+          const s = (r.status || '').toLowerCase();
+          return !['occupied', 'maintenance', 'out_of_order', 'out_of_service'].includes(s);
+        });
+        setAvailableRooms(available);
+      })
+      .catch(() => setAvailableRooms([]))
+      .finally(() => setRoomsLoading(false));
+  }, [isOpen]);
+
+  const resetForm = () => {
+    setForm({ booking_id: '', to_room_id: '', scheduled_date: '', move_reason: '', notes: '' });
+    setBookingInfo(null);
+    setBookingError('');
+  };
 
   const handleClose = () => {
     resetForm();
     onClose();
   };
+
+  // Look up booking details by ID
+  const lookupBooking = useCallback(async () => {
+    if (!form.booking_id.trim()) return;
+    setBookingLoading(true);
+    setBookingError('');
+    setBookingInfo(null);
+    try {
+      const data = await bookingService.getBookingById(form.booking_id);
+      if (data) {
+        setBookingInfo(data);
+      } else {
+        setBookingError('Booking not found');
+      }
+    } catch (err: any) {
+      setBookingError(err?.response?.data?.detail || 'Booking not found');
+    }
+    setBookingLoading(false);
+  }, [form.booking_id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,6 +290,42 @@ function CreateDrawer({ isOpen, onClose, onSave }: {
     }
     setSaving(false);
   };
+
+  // Helpers to extract fields from various backend response shapes
+  const getGuestName = (b: any) => {
+    if (b?.guest_name) return b.guest_name;
+    if (b?.guestInfo) return `${b.guestInfo.firstName || ''} ${b.guestInfo.lastName || ''}`.trim();
+    if (b?.guest) {
+      if (typeof b.guest === 'string') return b.guest;
+      return `${b.guest.first_name || ''} ${b.guest.last_name || ''}`.trim();
+    }
+    return '—';
+  };
+
+  const getCurrentRoom = (b: any) => {
+    if (b?.room?.number) return b.room.number;
+    if (b?.room_number) return b.room_number;
+    if (b?.room && typeof b.room === 'string') return b.room;
+    return '—';
+  };
+
+  const getCurrentRoomId = (b: any) => {
+    if (b?.room?.id != null) return b.room.id;
+    if (b?.room_id != null) return b.room_id;
+    if (b?.roomId != null) return b.roomId;
+    return null;
+  };
+
+  const getDate = (b: any, ...keys: string[]) => {
+    for (const k of keys) {
+      if (b?.[k]) return b[k];
+    }
+    return '—';
+  };
+
+  const currentRoomId = bookingInfo ? getCurrentRoomId(bookingInfo) : null;
+  // Exclude current room from the destination dropdown
+  const filteredRooms = availableRooms.filter(r => String(r.id) !== String(currentRoomId));
 
   return (
     <Drawer
@@ -169,28 +352,81 @@ function CreateDrawer({ isOpen, onClose, onSave }: {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Booking ID with lookup */}
         <div>
           <label className={labelCls}>Booking ID *</label>
-          <input
-            type="number"
-            className={inputCls}
-            value={form.booking_id}
-            onChange={e => setForm(f => ({ ...f, booking_id: e.target.value }))}
-            placeholder="Enter booking ID"
-            required
-          />
+          <div className="flex gap-2">
+            <input
+              type="number"
+              className={`${inputCls} flex-1`}
+              value={form.booking_id}
+              onChange={e => {
+                setForm(f => ({ ...f, booking_id: e.target.value }));
+                setBookingInfo(null);
+                setBookingError('');
+              }}
+              onBlur={lookupBooking}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); lookupBooking(); } }}
+              placeholder="Enter booking ID"
+              required
+            />
+            <button
+              type="button"
+              onClick={lookupBooking}
+              disabled={!form.booking_id || bookingLoading}
+              className="px-3.5 py-2.5 bg-terra-500 text-white rounded-xl text-[13px] font-medium hover:bg-terra-600 active:bg-terra-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+            >
+              {bookingLoading ? 'Looking…' : 'Lookup'}
+            </button>
+          </div>
+
+          {/* Error */}
+          {bookingError && (
+            <p className="mt-1.5 text-[12px] text-red-500">{bookingError}</p>
+          )}
+
+          {/* Booking info card */}
+          {bookingInfo && (
+            <div className="mt-2.5 p-3.5 bg-terra-50 border border-terra-100 rounded-xl">
+              <p className="text-[11px] font-semibold text-terra-600 uppercase tracking-wide mb-2">Current Assignment</p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                <div>
+                  <p className="text-[11px] text-neutral-500">Guest</p>
+                  <p className="text-[13px] font-medium text-neutral-800">{getGuestName(bookingInfo)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-neutral-500">Current Room</p>
+                  <p className="text-[13px] font-medium text-neutral-800">{getCurrentRoom(bookingInfo)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-neutral-500">Check-in</p>
+                  <p className="text-[13px] text-neutral-700">{getDate(bookingInfo, 'check_in', 'arrival_date', 'checkIn')}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-neutral-500">Check-out</p>
+                  <p className="text-[13px] text-neutral-700">{getDate(bookingInfo, 'check_out', 'departure_date', 'checkOut')}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* Move To Room — searchable dropdown of available rooms */}
         <div>
-          <label className={labelCls}>To Room ID *</label>
-          <input
-            type="number"
-            className={inputCls}
+          <label className={labelCls}>Move To Room *</label>
+          <RoomSelect
             value={form.to_room_id}
-            onChange={e => setForm(f => ({ ...f, to_room_id: e.target.value }))}
-            placeholder="Enter destination room ID"
-            required
+            onChange={val => setForm(f => ({ ...f, to_room_id: val }))}
+            rooms={filteredRooms}
+            placeholder="Select available room"
+            loading={roomsLoading}
           />
+          {!roomsLoading && filteredRooms.length === 0 && (
+            <p className="mt-1.5 text-[12px] text-neutral-400">No available rooms found</p>
+          )}
         </div>
+
+        {/* Move Date */}
         <div>
           <label className={labelCls}>Move Date *</label>
           <DatePicker
@@ -200,6 +436,8 @@ function CreateDrawer({ isOpen, onClose, onSave }: {
             className="w-full"
           />
         </div>
+
+        {/* Reason */}
         <div>
           <label className={labelCls}>Reason</label>
           <input
@@ -209,6 +447,8 @@ function CreateDrawer({ isOpen, onClose, onSave }: {
             placeholder="e.g. Guest request, maintenance"
           />
         </div>
+
+        {/* Notes */}
         <div>
           <label className={labelCls}>Notes</label>
           <textarea

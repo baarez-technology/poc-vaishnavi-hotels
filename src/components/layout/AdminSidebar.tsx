@@ -6,14 +6,48 @@ import { adminNavCategories } from '../navigation/adminNav';
 import GlimmoraLogo from '../../Assets/G white logo.svg';
 import { Input } from '../ui2/Input';
 import { IconButton } from '../ui2/IconButton';
+import { useAuth } from '@/hooks/useAuth';
+import {
+  DEFAULT_PERMISSIONS,
+  canViewModule,
+  resolveRolePermissions,
+  getModuleForRoute,
+} from '@/config/rolePermissions';
+import type { PermissionMap, StaffRole } from '@/config/rolePermissions';
+import { POC_MODE, POC_HIDDEN_SIDEBAR_SECTIONS, POC_ALLOWED_ROUTE_PREFIXES } from '@/config/pocConfig';
+
+// Must match ROLE_ALIAS_MAP in ProtectedRoute.tsx
+const ROLE_ALIAS_MAP: Record<string, StaffRole> = {
+  manager:       'general_manager',
+  supervisor:    'duty_manager',
+  front_desk:    'receptionist',
+  frontdesk:     'receptionist',
+  concierge:     'receptionist',
+  night_auditor: 'duty_manager',
+  housekeeping:  'housekeeping_manager',
+};
 
 export function AdminSidebar({ collapsed, onToggleCollapsed, mobileOpen, onCloseMobile }) {
   const location = useLocation();
+  const { user } = useAuth();
   const [expanded, setExpanded] = useState({});
   const [q, setQ] = useState('');
   const [focused, setFocused] = useState(false);
   const activeCategoryRef = useRef(null);
   const navContainerRef = useRef(null);
+
+  // Resolve permissions for the current user (same logic as ProtectedRoute)
+  const userPermissions = useMemo<PermissionMap | null>(() => {
+    if (!user) return null;
+    if (user.permissions) return user.permissions as PermissionMap;
+    if (user.isSuperuser) return DEFAULT_PERMISSIONS.admin;
+    const role = user.role?.toLowerCase() || '';
+    const canonical = (ROLE_ALIAS_MAP[role] ?? role) as StaffRole;
+    if (canonical && canonical in DEFAULT_PERMISSIONS) {
+      return resolveRolePermissions(canonical);
+    }
+    return null;
+  }, [user]);
 
   // Find the active category based on current path
   const activeCategory = useMemo(() => {
@@ -51,15 +85,49 @@ export function AdminSidebar({ collapsed, onToggleCollapsed, mobileOpen, onClose
   }, [mobileOpen, activeCategory, scrollToActiveCategory]);
 
   const categories = useMemo(() => {
-    if (!q.trim()) return adminNavCategories;
-    const qq = q.toLowerCase();
-    return adminNavCategories
+    let cats = adminNavCategories;
+
+    // 1. POC mode: hide entire sections listed in POC_HIDDEN_SIDEBAR_SECTIONS
+    if (POC_MODE) {
+      cats = cats.filter((cat) => !POC_HIDDEN_SIDEBAR_SECTIONS.has(cat.id));
+    }
+
+    // 2. Filter items: POC hidden routes + RBAC permission check
+    cats = cats
       .map((cat) => ({
         ...cat,
-        items: cat.items.filter((item) => item.name.toLowerCase().includes(qq) || cat.name.toLowerCase().includes(qq)),
+        items: cat.items.filter((item) => {
+          // POC: only show items whose route is in the allowed prefixes allowlist
+          if (POC_MODE) {
+            const allowed = POC_ALLOWED_ROUTE_PREFIXES.some((prefix) =>
+              item.to === prefix || item.to.startsWith(prefix + '/')
+            );
+            if (!allowed) return false;
+          }
+          // RBAC: skip check if no permissions resolved (superuser bypass)
+          if (!userPermissions) return true;
+          const mod = getModuleForRoute(item.to);
+          if (mod && !canViewModule(userPermissions, mod)) return false;
+          return true;
+        }),
       }))
       .filter((cat) => cat.items.length > 0);
-  }, [q]);
+
+    // 3. Apply search query
+    if (q.trim()) {
+      const qq = q.toLowerCase();
+      cats = cats
+        .map((cat) => ({
+          ...cat,
+          items: cat.items.filter(
+            (item) => item.name.toLowerCase().includes(qq) || cat.name.toLowerCase().includes(qq)
+          ),
+        }))
+        .filter((cat) => cat.items.length > 0);
+    }
+
+    return cats;
+  }, [userPermissions, q]);
 
   const aside = (
     <aside

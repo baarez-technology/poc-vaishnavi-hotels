@@ -16,6 +16,7 @@ import { cn } from '../lib/utils';
 import { NotificationsDrawer } from './notifications/NotificationsDrawer';
 import { useAuth } from '@/hooks/useAuth';
 import { notificationsService } from '@/api/services/notifications.service';
+import { useAdminSafe } from '@/contexts/AdminContext';
 
 /**
  * Glimmora Design System v4.0 - Header
@@ -23,10 +24,48 @@ import { notificationsService } from '@/api/services/notifications.service';
  * "Warm Enterprise" aesthetic - clean borders, no shadows
  */
 
+// Map raw backend role → readable display label
+const ROLE_LABEL_MAP: Record<string, string> = {
+  admin:                'Admin',
+  manager:              'Manager',
+  front_desk:           'Front Desk',
+  frontdesk:            'Front Desk',
+  housekeeping:         'Housekeeping',
+  supervisor:           'Supervisor',
+  general_manager:      'General Manager',
+  front_office_manager: 'Front Office Manager',
+  duty_manager:         'Duty Manager',
+  receptionist:         'Receptionist',
+  reservation_manager:  'Reservation Manager',
+  housekeeping_manager: 'Housekeeping Manager',
+  housekeeper:          'Housekeeper',
+  revenue_manager:      'Revenue Manager',
+  accounts_manager:     'Accounts Manager',
+};
+
+function getRoleLabel(role?: string, isSuperuser?: boolean): string {
+  if (isSuperuser) return 'Admin';
+  if (!role) return 'Staff';
+  return ROLE_LABEL_MAP[role.toLowerCase()] || role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function getInitials(fullName?: string, email?: string): string {
+  if (fullName?.trim()) {
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  if (email) return email[0].toUpperCase();
+  return 'U';
+}
+
 const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed, onMobileMenuToggle }) => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const adminContext = useAdminSafe();
+  const isNotificationsOpen = adminContext?.isNotificationDrawerOpen ?? false;
+  const setIsNotificationsOpen = adminContext?.openNotificationDrawer ?? (() => {});
+  const closeNotifications = adminContext?.closeNotificationDrawer ?? (() => {});
   const { theme, toggleTheme, isDark } = useTheme();
   const location = useLocation();
   const profileMenuRef = useRef(null);
@@ -371,33 +410,30 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed, onMobile
                     : 'bg-neutral-100')
                 )}
               >
+                {/* Avatar — initials based */}
                 <div className={cn(
-                  'w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl overflow-hidden ring-2 ring-offset-1 sm:ring-offset-2 transition-all',
+                  'w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 ring-2 ring-offset-1 sm:ring-offset-2 transition-all font-semibold text-sm',
                   isDark
-                    ? 'ring-neutral-700 ring-offset-neutral-950'
-                    : 'ring-neutral-200 ring-offset-white',
+                    ? 'bg-terra-500/20 text-terra-300 ring-neutral-700 ring-offset-neutral-950'
+                    : 'bg-terra-100 text-terra-700 ring-neutral-200 ring-offset-white',
                   isProfileMenuOpen && (isDark
                     ? 'ring-terra-500/50'
                     : 'ring-terra-300')
                 )}>
-                  <img
-                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
+                  {getInitials(user?.fullName, user?.email)}
                 </div>
                 <div className="hidden md:block text-left">
                   <p className={cn(
                     'text-sm font-semibold leading-tight',
                     isDark ? 'text-neutral-100' : 'text-neutral-900'
                   )}>
-                    Sarah
+                    {user?.fullName?.split(' ')[0] || user?.email?.split('@')[0] || 'User'}
                   </p>
                   <p className={cn(
                     'text-xs leading-tight',
                     isDark ? 'text-neutral-500' : 'text-neutral-500'
                   )}>
-                    Admin
+                    {getRoleLabel(user?.role, user?.isSuperuser)}
                   </p>
                 </div>
               </button>
@@ -416,30 +452,27 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed, onMobile
                     isDark ? 'border-neutral-800' : 'border-neutral-100'
                   )}>
                     <div className="flex items-center gap-4">
+                      {/* Large avatar — initials based */}
                       <div className={cn(
-                        'w-14 h-14 rounded-2xl overflow-hidden ring-2 ring-offset-2',
+                        'w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ring-2 ring-offset-2 text-xl font-bold',
                         isDark
-                          ? 'ring-neutral-700 ring-offset-neutral-900'
-                          : 'ring-neutral-200 ring-offset-white'
+                          ? 'bg-terra-500/20 text-terra-300 ring-neutral-700 ring-offset-neutral-900'
+                          : 'bg-terra-100 text-terra-700 ring-neutral-200 ring-offset-white'
                       )}>
-                        <img
-                          src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                        />
+                        {getInitials(user?.fullName, user?.email)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className={cn(
                           'text-base font-semibold truncate',
                           isDark ? 'text-neutral-100' : 'text-neutral-900'
                         )}>
-                          Sarah Johnson
+                          {user?.fullName || user?.email?.split('@')[0] || 'User'}
                         </p>
                         <p className={cn(
                           'text-sm truncate',
                           isDark ? 'text-neutral-500' : 'text-neutral-500'
                         )}>
-                          sarah@glimmora.com
+                          {user?.email || ''}
                         </p>
                         <span className={cn(
                           'inline-flex items-center mt-2 px-2.5 py-1 text-xs font-medium rounded-lg',
@@ -447,7 +480,7 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed, onMobile
                             ? 'bg-terra-500/15 text-terra-400'
                             : 'bg-terra-50 text-terra-600'
                         )}>
-                          Administrator
+                          {getRoleLabel(user?.role, user?.isSuperuser)}
                         </span>
                       </div>
                     </div>
@@ -498,7 +531,7 @@ const Header = ({ onAIPanelToggle, onSidebarToggle, isSidebarCollapsed, onMobile
       {/* Notifications Drawer */}
       <NotificationsDrawer
         isOpen={isNotificationsOpen}
-        onClose={() => setIsNotificationsOpen(false)}
+        onClose={closeNotifications}
         onUnreadCountChange={handleUnreadCountChange}
       />
     </header>

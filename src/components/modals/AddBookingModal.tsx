@@ -18,6 +18,7 @@ import DatePicker from '../ui2/DatePicker';
 import { useCurrency } from '@/hooks/useCurrency';
 import { corporateService, type CorporateAccount } from '@/api/services/corporate.service';
 import { apiClient } from '@/api/client';
+import { roomTypesService } from '@/api/services/roomTypes.service';
 
 const SOURCE_OPTIONS = [
   { value: 'Direct', label: 'Direct (Walk-in)' },
@@ -124,9 +125,12 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
       setCorporateAccounts(Array.isArray(data) ? data : data?.items || []);
     }).catch(() => {});
 
-    apiClient.get('/api/v1/room-types', { params: { pageSize: 50 } }).then((res) => {
-      const items = res.data?.items || res.data || [];
-      if (Array.isArray(items) && items.length > 0) setApiRoomTypes(items);
+    roomTypesService.getRoomTypes().then((items) => {
+      if (Array.isArray(items) && items.length > 0) {
+        setApiRoomTypes(items);
+        // Auto-select the first room type from the API
+        setFormData(prev => ({ ...prev, roomType: items[0].name }));
+      }
     }).catch(() => {});
 
     apiClient.get('/api/v1/rates/plans', { params: { is_active: true } }).then((res) => {
@@ -139,9 +143,9 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
   const roomTypeOptions = useMemo(() => {
     if (apiRoomTypes.length > 0) {
       return apiRoomTypes.map(rt => ({
-        value: rt.name || rt.slug,
+        value: rt.name,
         label: rt.name,
-        price: rt.price || rt.originalPrice || 150,
+        price: rt.price ?? rt.originalPrice ?? 150,
       }));
     }
     return ROOM_TYPES;
@@ -163,10 +167,11 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
     ];
   }, [apiRatePlans]);
 
-  // Reset form when modal opens
+  // Reset form when modal opens, defaulting roomType to first available API room type
   useEffect(() => {
     if (isOpen) {
-      setFormData(initialFormData);
+      const defaultRoomType = apiRoomTypes.length > 0 ? apiRoomTypes[0].name : initialFormData.roomType;
+      setFormData({ ...initialFormData, roomType: defaultRoomType });
       setErrors({});
     }
   }, [isOpen]);
@@ -175,7 +180,9 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
   const bookingCalc = useMemo(() => {
     const nights = calculateNights(formData.checkIn, formData.checkOut);
     const roomTypeConfig = roomTypeOptions.find(r => r.value === formData.roomType);
-    const baseRate = formData.rateOverride ? parseFloat(formData.rateOverride) : (roomTypeConfig?.price || 150);
+    const defaultRate = roomTypeConfig?.price || 150;
+    const parsed = formData.rateOverride !== '' ? parseFloat(formData.rateOverride) : NaN;
+    const baseRate = !isNaN(parsed) && parsed > 0 ? parsed : defaultRate;
     const subtotal = baseRate * nights;
     const taxes = subtotal * 0.12;
     const total = Math.round(subtotal + taxes);
@@ -576,7 +583,7 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
                 </label>
                 <CustomSelect
                   value={formData.roomType}
-                  onChange={(value) => setFormData(prev => ({ ...prev, roomType: value }))}
+                  onChange={(value) => setFormData(prev => ({ ...prev, roomType: value, rateOverride: '' }))}
                   options={roomTypeOptions.map(type => ({
                     value: type.value,
                     label: `${type.label} - ${formatCurrency(type.price)}/night`
@@ -655,6 +662,12 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
                 name="rateOverride"
                 value={formData.rateOverride}
                 onChange={handleChange}
+                onFocus={() => {
+                  if (!formData.rateOverride) {
+                    const defaultRate = roomTypeOptions.find(r => r.value === formData.roomType)?.price || 150;
+                    setFormData(prev => ({ ...prev, rateOverride: String(defaultRate) }));
+                  }
+                }}
                 min="0"
                 step="0.01"
                 placeholder={`Default: ${formatCurrency(roomTypeOptions.find(r => r.value === formData.roomType)?.price || 150)}`}

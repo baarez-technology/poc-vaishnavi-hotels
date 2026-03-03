@@ -215,6 +215,11 @@ export function AdminProvider({ children }) {
     return () => clearInterval(interval);
   }, [fetchBookings]);
 
+  // Notification Drawer UI state
+  const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
+  const openNotificationDrawer = () => setIsNotificationDrawerOpen(true);
+  const closeNotificationDrawer = () => setIsNotificationDrawerOpen(false);
+
   // Actions
   const toggleSidebar = () => setSidebarCollapsed(prev => !prev);
 
@@ -345,6 +350,11 @@ export function AdminProvider({ children }) {
     housekeeping,
     crm,
     roles,
+
+    // Notification Drawer
+    isNotificationDrawerOpen,
+    openNotificationDrawer,
+    closeNotificationDrawer,
 
     // Actions
     toggleSidebar,

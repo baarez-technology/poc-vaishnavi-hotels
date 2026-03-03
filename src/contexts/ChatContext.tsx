@@ -281,7 +281,7 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
     const welcomeMessage: Message = {
       id: `welcome_${Date.now()}`,
       type: 'assistant',
-      content: `Hello ${guestName}! Welcome to Glimmora Hotel & Suites. I'm your virtual assistant and I'm here to help with:\n\n• Housekeeping requests\n• Maintenance issues\n• Room service orders\n• Hotel information & FAQs\n• And much more!\n\nHow can I assist you today?`,
+      content: `Hello ${guestName}! Welcome to Vaishnavi Group of Hotels. I'm your virtual assistant and I'm here to help with:\n\n• Housekeeping requests\n• Maintenance issues\n• Room service orders\n• Hotel information & FAQs\n• And much more!\n\nHow can I assist you today?`,
       timestamp: new Date(),
       quickActions: [
         { label: 'Housekeeping', action: 'housekeeping' },

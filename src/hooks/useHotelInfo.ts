@@ -8,10 +8,10 @@ import { useMemo } from 'react';
 import { useSettingsContext } from '../contexts/SettingsContext';
 
 const defaultAddress = {
-  street: '503 Orchid Sadashivpuram, Moriwali Pada',
-  city: 'Ambernath, Kalyan, Thane',
-  state: 'Maharashtra',
-  zip: '421501',
+  street: 'Mahatma Gandhi Rd, Nallagutta, Rani Gunj, Secunderabad',
+  city: 'Hyderabad',
+  state: 'Telangana',
+  zip: '500003',
   country: 'India',
 };
 
@@ -26,12 +26,12 @@ export function useHotelInfo() {
   const { generalSettings } = useSettingsContext() as any;
 
   return useMemo(() => ({
-    name: generalSettings?.hotelName || 'Glimmora International Pvt Limited',
+    name: generalSettings?.hotelName || 'Vaishnavi Group of Hotels',
     tagline: generalSettings?.tagline || 'Grounded in Luxury',
     address: generalSettings?.address || defaultAddress,
-    phone: generalSettings?.contactPhone || '+971 501371105',
-    phone2: generalSettings?.contactPhone2 || '+91-6300275340',
-    email: generalSettings?.contactEmail || 'info@glimmora.ai',
+    phone: generalSettings?.contactPhone || '+91-9640688885',
+    phone2: generalSettings?.contactPhone2 || '',
+    email: generalSettings?.contactEmail || 'hotelvaishnaviclassic@gmail.com',
     website: generalSettings?.website || '',
     logo: generalSettings?.branding?.logo || null,
     socialMedia: generalSettings?.socialMedia || defaultSocial,

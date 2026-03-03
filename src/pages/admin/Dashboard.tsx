@@ -448,7 +448,7 @@ function HousekeepingChart({ summary }) {
             </PieChart>
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-lg sm:text-2xl font-semibold text-neutral-900 tracking-tight">
+            <span className="text-base sm:text-xl font-semibold text-neutral-900 tracking-tight">
               {cleanPercentage}%
             </span>
             <span className="text-[8px] sm:text-[9px] font-semibold uppercase tracking-widest text-neutral-400 mt-0.5">
@@ -475,7 +475,7 @@ function HousekeepingChart({ summary }) {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 mt-2 border-t border-neutral-100">
         <div className="text-center">
-          <p className="text-lg sm:text-2xl font-semibold text-neutral-900 mb-0.5">
+          <p className="text-base sm:text-xl font-semibold text-neutral-900 mb-0.5">
             {summary.avgCleaningTime > 0 ? summary.avgCleaningTime : '--'}<span className="text-xs sm:text-sm text-neutral-400 font-medium ml-0.5">{summary.avgCleaningTime > 0 ? 'm' : ''}</span>
           </p>
           <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
@@ -483,7 +483,7 @@ function HousekeepingChart({ summary }) {
           </p>
         </div>
         <div className="text-center">
-          <p className="text-lg sm:text-2xl font-semibold text-neutral-900 mb-0.5">
+          <p className="text-base sm:text-xl font-semibold text-neutral-900 mb-0.5">
             {summary.staffOnShift}
           </p>
           <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
@@ -498,6 +498,28 @@ function HousekeepingChart({ summary }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // CHANNEL DISTRIBUTION - Elegant donut chart
 // ═══════════════════════════════════════════════════════════════════════════════
+
+function normalizeChannelName(name: string): string {
+  const map: Record<string, string> = {
+    'direct': 'Direct',
+    'booking.com': 'Booking.com',
+    'bookingcom': 'Booking.com',
+    'booking_com': 'Booking.com',
+    'booking.Com': 'Booking.com',
+    'Booking.Com': 'Booking.com',
+    'expedia': 'Expedia',
+    'airbnb': 'Airbnb',
+    'walk-in': 'Walk-in',
+    'walkin': 'Walk-in',
+    'walk_in': 'Walk-in',
+    'ota': 'OTA',
+    'corporate': 'Corporate',
+    'online': 'Online',
+    'tripadvisor': 'TripAdvisor',
+    'trip_advisor': 'TripAdvisor',
+  };
+  return map[name.toLowerCase()] ?? map[name] ?? name;
+}
 
 function ChannelDistribution({ data }) {
   const COLORS = ['#A57865', '#BFA793', '#8B6450', '#D4C4B4', '#B49A82'];
@@ -529,11 +551,11 @@ function ChannelDistribution({ data }) {
             </PieChart>
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-lg sm:text-2xl font-semibold text-neutral-900 tracking-tight">
+            <span className="text-base sm:text-xl font-semibold text-neutral-900 tracking-tight">
               {topChannel.value}%
             </span>
             <span className="text-[8px] sm:text-[9px] font-semibold uppercase tracking-widest text-neutral-400 mt-0.5">
-              {topChannel.name}
+              {normalizeChannelName(topChannel.name)}
             </span>
           </div>
         </div>
@@ -549,7 +571,7 @@ function ChannelDistribution({ data }) {
                 className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0"
                 style={{ backgroundColor: COLORS[i] }}
               />
-              <span className="text-xs sm:text-[13px] font-medium text-neutral-600 flex-1">{channel.name}</span>
+              <span className="text-xs sm:text-[13px] font-medium text-neutral-600 flex-1">{normalizeChannelName(channel.name)}</span>
               <span className="text-xs sm:text-[13px] font-semibold text-neutral-900">{channel.value}%</span>
             </div>
           ))}
@@ -559,7 +581,7 @@ function ChannelDistribution({ data }) {
       {/* Stats — mirrors Housekeeping bottom row */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 mt-2 border-t border-neutral-100">
         <div className="text-center">
-          <p className="text-lg sm:text-2xl font-semibold text-neutral-900 mb-0.5">
+          <p className="text-base sm:text-xl font-semibold text-neutral-900 mb-0.5">
             {data.length}
           </p>
           <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
@@ -567,7 +589,7 @@ function ChannelDistribution({ data }) {
           </p>
         </div>
         <div className="text-center">
-          <p className="text-lg sm:text-2xl font-semibold text-neutral-900 mb-0.5">
+          <p className="text-base sm:text-xl font-semibold text-neutral-900 mb-0.5">
             {topChannel.value}<span className="text-xs sm:text-sm text-neutral-400 font-medium ml-0.5">%</span>
           </p>
           <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-neutral-400">

@@ -19,6 +19,7 @@ import {
 } from 'recharts';
 import { reportsService, RevenueSnapshotReport as RevenueSnapshotReportType, AIInsight, ExportFormat } from '../../api/services/reports.service';
 import { useCurrency } from '@/hooks/useCurrency';
+import { useToast } from '@/contexts/ToastContext';
 
 const formatCurrencyAbbr = (value: number, sym: string) => {
   if (value >= 1000000) {
@@ -108,13 +109,17 @@ export default function RevenueSnapshotReport() {
     fetchReport();
   };
 
+  const { success, error: showError } = useToast();
+
   const handleExport = useCallback(async (format: ExportFormat) => {
     try {
       setIsExporting(true);
       setExportDropdownOpen(false);
       await reportsService.getRevenueSnapshotReport(dateRange, format);
+      success(`Report exported as ${format.toUpperCase()}`);
     } catch (err) {
       console.error('Export failed:', err);
+      showError('Export failed. Please try again.');
     } finally {
       setIsExporting(false);
     }

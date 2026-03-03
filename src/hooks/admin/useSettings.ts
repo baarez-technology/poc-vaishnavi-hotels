@@ -7,22 +7,22 @@ import { useState, useEffect, useCallback } from 'react';
 import { loadGeneralSettings, saveGeneralSettings, loadBilling, saveBilling } from '@/utils/admin/settingsStorage';
 
 const defaultGeneralSettings = {
-  hotelName: 'Glimmora International Pvt Limited',
+  hotelName: 'Vaishnavi Group of Hotels',
   tagline: 'Grounded in Luxury',
   currency: 'INR',
   timezone: 'Asia/Kolkata',
   dateFormat: 'DD/MM/YYYY',
   timeFormat: '12h',
   language: 'en',
-  contactEmail: 'info@glimmora.ai',
-  contactPhone: '+971 501371105',
-  contactPhone2: '+91-6300275340',
+  contactEmail: 'hotelvaishnaviclassic@gmail.com',
+  contactPhone: '+91-9640688885',
+  contactPhone2: '',
   website: 'https://glimmora.ai',
   address: {
-    street: '503 Orchid Sadashivpuram, Moriwali Pada',
-    city: 'Ambernath, Kalyan, Thane',
-    state: 'Maharashtra',
-    zip: '421501',
+    street: 'Mahatma Gandhi Rd, Nallagutta, Rani Gunj, Secunderabad',
+    city: 'Hyderabad',
+    state: 'Telangana',
+    zip: '500003',
     country: 'India'
   },
   branding: {

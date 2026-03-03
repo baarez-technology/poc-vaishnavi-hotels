@@ -5,8 +5,8 @@ const STORAGE_KEY = 'glimmora_settings';
 // Default settings structure
 export const defaultSettings = {
   hotelInfo: {
-    name: 'Glimmora Grand Hotel',
-    address: '123 Luxury Lane, Mumbai, Maharashtra 400001',
+    name: 'Vaishnavi Group of Hotels',
+    address: 'Hyderabad, Telangana, India',
     timezone: 'Asia/Kolkata',
     currency: 'INR',
     defaultRoomType: 'deluxe',

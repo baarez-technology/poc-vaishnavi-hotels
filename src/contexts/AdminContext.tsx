@@ -42,9 +42,9 @@ export function AdminProvider({ children }) {
 
   // Hotel Info
   const [hotelInfo] = useState({
-    name: 'Glimmora Resort & Spa',
+    name: 'Vaishnavi Group of Hotels',
     totalRooms: 120,
-    location: 'Bali, Indonesia',
+    location: 'Hyderabad, India',
     rating: 4.8,
   });
 

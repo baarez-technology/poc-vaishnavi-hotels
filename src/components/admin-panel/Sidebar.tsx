@@ -67,7 +67,7 @@ const navCategories = [
 
 const Sidebar = () => {
   const { generalSettings } = useSettingsContext();
-  const hotelName = generalSettings?.hotelName || 'Glimmora';
+  const hotelName = generalSettings?.hotelName || 'Vaishnavi Group of Hotels';
   const customLogo = generalSettings?.branding?.logo;
   const { user } = useAuth();
 

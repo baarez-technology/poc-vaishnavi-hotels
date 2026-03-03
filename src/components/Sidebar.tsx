@@ -55,6 +55,7 @@ import { useSettingsContext } from '../contexts/SettingsContext';
 import { useAuth } from '../hooks';
 import { getModuleForRoute, canViewModule, DEFAULT_PERMISSIONS, resolveRolePermissions } from '../config/rolePermissions';
 import type { PermissionMap, StaffRole } from '../config/rolePermissions';
+import { POC_MODE, POC_HIDDEN_SIDEBAR_SECTIONS, POC_HIDDEN_ROUTES } from '../config/pocConfig';
 import GlimmoraLogo from '../assets/G white logo.png';
 
 /**
@@ -185,7 +186,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly,
   const navContainerRef = useRef(null);
 
   // Get hotel name from settings, with fallback
-  const hotelName = generalSettings?.hotelName || 'Glimmora';
+  const hotelName = generalSettings?.hotelName || 'Vaishnavi Group of Hotels';
   const customLogo = generalSettings?.branding?.logo;
 
   // RBAC: resolve user permissions (checks Settings customizations via localStorage)
@@ -253,15 +254,27 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly,
       .filter(cat => cat.items.length > 0);
   }, [userPermissions]);
 
+  // TEMP: POC filter — hides restricted sections/routes (remove when POC ends)
+  const pocFilteredCategories = useMemo(() => {
+    if (!POC_MODE) return permissionFilteredCategories;
+    return permissionFilteredCategories
+      .filter(cat => !POC_HIDDEN_SIDEBAR_SECTIONS.has(cat.id))
+      .map(cat => ({
+        ...cat,
+        items: cat.items.filter(item => !POC_HIDDEN_ROUTES.has(item.to)),
+      }))
+      .filter(cat => cat.items.length > 0);
+  }, [permissionFilteredCategories]);
+
   const filteredCategories = searchQuery
-    ? permissionFilteredCategories.map(cat => ({
+    ? pocFilteredCategories.map(cat => ({
         ...cat,
         items: cat.items.filter(item =>
           item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           cat.name.toLowerCase().includes(searchQuery.toLowerCase())
         )
       })).filter(cat => cat.items.length > 0)
-    : permissionFilteredCategories;
+    : pocFilteredCategories;
 
   // Mobile Mode - Full Sidebar (Brand + Navigation)
   if (isMobileMode) {

@@ -91,7 +91,7 @@ export function AdvancedSettingsProvider({ children }: { children: ReactNode }) 
 
   // Branding Settings
   const [brandingSettings, setBrandingSettings] = useState<BrandingSettings>({
-    hotelName: 'Glimmora Hotel & Suites',
+    hotelName: 'Vaishnavi Group of Hotels',
     logo: '/logo.png',
     favicon: '/favicon.ico',
     primaryColor: '#0052CC',

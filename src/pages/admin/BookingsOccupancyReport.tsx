@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, Download, RefreshCw, ChevronDown, Sparkles, AlertCircle, TrendingUp, Lightbulb, Target } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/contexts/ToastContext';
 import {
   LineChart,
   Line,
@@ -114,13 +115,17 @@ export default function BookingsOccupancyReport() {
     await fetchReport();
   };
 
+  const { success, error: showError } = useToast();
+
   const handleExport = async (format: ExportFormat) => {
     try {
       setIsExporting(true);
       setExportDropdownOpen(false);
       await reportsService.getBookingsOccupancyReport(dateRange, format);
+      success(`Report exported as ${format.toUpperCase()}`);
     } catch (err) {
       console.error('Failed to export report:', err);
+      showError('Export failed. Please try again.');
     } finally {
       setIsExporting(false);
     }

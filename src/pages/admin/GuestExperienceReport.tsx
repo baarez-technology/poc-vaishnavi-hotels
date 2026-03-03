@@ -16,6 +16,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { reportsService, GuestExperienceReport as GuestExperienceReportType, AIInsight, ExportFormat } from '../../api/services/reports.service';
+import { useToast } from '@/contexts/ToastContext';
 
 const SENTIMENT_COLORS: Record<string, string> = {
   Positive: '#4E5840',
@@ -102,13 +103,17 @@ export default function GuestExperienceReport() {
     fetchReport();
   };
 
+  const { success, error: showError } = useToast();
+
   const handleExport = useCallback(async (format: ExportFormat) => {
     try {
       setIsExporting(true);
       setExportDropdownOpen(false);
       await reportsService.getGuestExperienceReport(dateRange, format);
+      success(`Report exported as ${format.toUpperCase()}`);
     } catch (err) {
       console.error('Export failed:', err);
+      showError('Export failed. Please try again.');
     } finally {
       setIsExporting(false);
     }

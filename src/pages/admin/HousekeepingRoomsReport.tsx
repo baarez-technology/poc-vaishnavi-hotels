@@ -14,6 +14,7 @@ import {
   Tooltip
 } from 'recharts';
 import { reportsService, HousekeepingRoomsReport as HousekeepingRoomsReportType, AIInsight, ExportFormat } from '../../api/services/reports.service';
+import { useToast } from '@/contexts/ToastContext';
 
 const STATUS_COLORS: Record<string, string> = {
   clean: '#4E5840',
@@ -86,13 +87,17 @@ export default function HousekeepingRoomsReport() {
     fetchReport();
   };
 
+  const { success, error: showError } = useToast();
+
   const handleExport = useCallback(async (format: ExportFormat) => {
     try {
       setIsExporting(true);
       setExportDropdownOpen(false);
       await reportsService.getHousekeepingRoomsReport(format);
+      success(`Report exported as ${format.toUpperCase()}`);
     } catch (err) {
       console.error('Export failed:', err);
+      showError('Export failed. Please try again.');
     } finally {
       setIsExporting(false);
     }

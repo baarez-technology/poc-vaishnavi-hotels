@@ -7,22 +7,22 @@ import { useState, useEffect, useCallback } from 'react';
 import { loadGeneralSettings, saveGeneralSettings, loadBilling, saveBilling } from '../utils/settingsStorage';
 
 const defaultGeneralSettings = {
-  hotelName: 'Glimmora International Pvt Limited',
+  hotelName: 'Vaishnavi Group of Hotels',
   tagline: 'Grounded in Luxury',
   currency: 'INR',
   timezone: 'Asia/Kolkata',
   dateFormat: 'DD/MM/YYYY',
   timeFormat: '12h',
   language: 'en',
-  contactEmail: 'info@glimmora.ai',
-  contactPhone: '+971 501371105',
-  contactPhone2: '+91-6300275340',
+  contactEmail: 'hotelvaishnaviclassic@gmail.com',
+  contactPhone: '+91-9640688885',
+  contactPhone2: '',
   website: 'https://glimmora.ai',
   address: {
-    street: '503 Orchid Sadashivpuram, Moriwali Pada',
-    city: 'Ambernath, Kalyan, Thane',
-    state: 'Maharashtra',
-    zip: '421501',
+    street: 'Mahatma Gandhi Rd, Nallagutta, Rani Gunj, Secunderabad',
+    city: 'Hyderabad',
+    state: 'Telangana',
+    zip: '500003',
     country: 'India'
   },
   branding: {
@@ -84,6 +84,26 @@ export function useSettings() {
     const storedBilling = loadBilling();
 
     if (storedGeneral && Object.keys(storedGeneral).length > 0) {
+      // TEMP: POC migration — overwrite any legacy Glimmora values with POC hotel details
+      const LEGACY_NAMES = new Set([
+        'Glimmora International Pvt Limited',
+        'Glimmora Grand Hotel',
+        'Glimmora Resort & Spa',
+        'Glimmora Hotel & Suites',
+        'Glimmora',
+      ]);
+      const LEGACY_EMAILS = new Set(['info@glimmora.ai', 'info@glimmora.com', 'noreply@glimmora.com']);
+      const LEGACY_PHONES = new Set(['+971 501371105', '+91-6300275340', '+91 22 1234 5678']);
+      if (storedGeneral.hotelName && LEGACY_NAMES.has(storedGeneral.hotelName)) {
+        storedGeneral.hotelName = defaultGeneralSettings.hotelName;
+      }
+      if (storedGeneral.contactEmail && LEGACY_EMAILS.has(storedGeneral.contactEmail)) {
+        storedGeneral.contactEmail = defaultGeneralSettings.contactEmail;
+      }
+      if (storedGeneral.contactPhone && LEGACY_PHONES.has(storedGeneral.contactPhone)) {
+        storedGeneral.contactPhone = defaultGeneralSettings.contactPhone;
+        storedGeneral.contactPhone2 = defaultGeneralSettings.contactPhone2;
+      }
       setGeneralSettings({
         ...defaultGeneralSettings,
         ...storedGeneral,

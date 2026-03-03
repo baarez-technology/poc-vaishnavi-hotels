@@ -5,7 +5,7 @@
 
 // General Settings
 export const generalSettings = {
-  hotelName: "Glimmora International Pvt Limited",
+  hotelName: "Vaishnavi Group of Hotels",
   logo: "/logo.png",
   timezone: "Asia/Kolkata",
   currency: "INR",

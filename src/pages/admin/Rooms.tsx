@@ -5,6 +5,7 @@ import { useDrawer } from '../../hooks/useDrawer';
 import { useModal } from '../../hooks/useModal';
 import { useToast } from '../../contexts/ToastContext';
 import { Download, Plus, Grid3X3, Calendar } from 'lucide-react';
+import { POC_MODE } from '../../config/pocConfig';
 import RoomsTabs from '../../components/rooms/RoomsTabs';
 import RoomsSearch from '../../components/rooms/RoomsSearch';
 import RoomsFilters from '../../components/rooms/RoomsFilters';
@@ -53,8 +54,11 @@ export default function Rooms() {
     deleteRoom
   } = useRooms();
 
+  // TEMP: POC room limit (50 rooms) – backend restriction required
+  const pocRooms = POC_MODE ? rooms.slice(0, 50) : rooms;
+
   // Pagination
-  const pagination = usePagination(rooms, 12);
+  const pagination = usePagination(pocRooms, 12);
 
   // Drawer for room details
   const drawer = useDrawer();
@@ -358,10 +362,6 @@ export default function Rooms() {
             <Button variant="outline" icon={Download} onClick={handleExportRooms} className="hidden sm:flex">
               Export
             </Button>
-            <Button variant="primary" icon={Plus} onClick={handleAddRoom}>
-              <span className="hidden sm:inline">Add Room</span>
-              <span className="sm:hidden">Add</span>
-            </Button>
           </div>
         </header>
 
@@ -418,7 +418,7 @@ export default function Rooms() {
         ) : (
           /* Calendar View */
           <RoomCalendar
-            rooms={rooms}
+            rooms={pocRooms}
             bookings={calendarBookings}
             isLoading={isLoadingRooms}
             onRoomClick={handleRoomClick}

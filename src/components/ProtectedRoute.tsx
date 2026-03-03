@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { getAccessToken } from '@/api/client';
 import { DEFAULT_PERMISSIONS, getModuleForRoute, canViewModule, resolveRolePermissions } from '@/config/rolePermissions';
 import type { PermissionMap, StaffRole } from '@/config/rolePermissions';
+import { POC_MODE, POC_ALLOWED_ROUTE_PREFIXES } from '@/config/pocConfig';
 
 // Roles that access admin panel (all 10 RBAC roles)
 const ADMIN_PANEL_ROLES = new Set<string>(Object.keys(DEFAULT_PERMISSIONS));
@@ -74,6 +75,17 @@ export function ProtectedRoute({ children, allowedRoles, requireAdmin }: Protect
       }
       // Guest or unknown role → redirect to home
       return <Navigate to="/" replace />;
+    }
+
+    // TEMP: POC route guard — blocks access to restricted routes (remove when POC ends)
+    if (POC_MODE) {
+      const isPocAllowed =
+        location.pathname === '/admin' ||
+        location.pathname === '/admin/' ||
+        POC_ALLOWED_ROUTE_PREFIXES.some(prefix => location.pathname.startsWith(prefix));
+      if (!isPocAllowed) {
+        return <Navigate to="/admin/access-denied" replace />;
+      }
     }
 
     // RBAC: check module-level permission for the specific admin route

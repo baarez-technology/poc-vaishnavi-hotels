@@ -5,15 +5,15 @@ const STORAGE_KEY = 'glimmora_settings';
 // Default settings structure
 export const defaultSettings = {
   hotelInfo: {
-    name: 'Glimmora Grand Hotel',
-    address: '123 Luxury Lane, Mumbai, Maharashtra 400001',
+    name: 'Vaishnavi Group of Hotels',
+    address: 'Mahatma Gandhi Rd, Nallagutta, Rani Gunj, Secunderabad, Hyderabad, Telangana 500003',
     timezone: 'Asia/Kolkata',
     currency: 'INR',
     defaultRoomType: 'deluxe',
     checkInTime: '14:00',
     checkOutTime: '11:00',
-    email: 'info@glimmora.com',
-    phone: '+91 22 1234 5678',
+    email: 'hotelvaishnaviclassic@gmail.com',
+    phone: '+91-9640688885',
     logo: null
   },
   roomTypes: [

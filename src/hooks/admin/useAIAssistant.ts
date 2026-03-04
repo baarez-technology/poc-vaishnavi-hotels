@@ -83,7 +83,7 @@ export function useAIAssistant() {
     return context;
   }, [location.pathname]);
 
-  // Add user message to conversation
+  // Add user message to conversation and call backend AI
   const addUserMessage = useCallback(async (text: string) => {
     if (!text || text.trim().length === 0) return;
 
@@ -94,147 +94,116 @@ export function useAIAssistant() {
       timestamp: new Date().toISOString()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    // Build the full conversation history BEFORE the async state update
+    // This avoids all stale closure issues with messages state
+    setMessages(prev => {
+      const updatedMessages = [...prev, userMessage];
 
-    // Capture the current pending action BEFORE clearing it
-    // This allows the backend to know what action we're potentially confirming
-    const currentPendingAction = pendingAction;
+      // Fire off the AI response with the correct history
+      if (useBackendAI) {
+        const sessionContext = getSessionContext();
+        const previousMessages = updatedMessages.slice(-5).map(m => ({
+          role: m.type === 'user' ? 'user' as const : 'assistant' as const,
+          content: m.text
+        }));
 
-    // Clear pending action state (backend will tell us if there's a new one)
+        console.log('[AI Chat] Sending previousMessages:', previousMessages);
+
+        adminAIService.chat({
+          message: text.trim(),
+          session_id: sessionId,
+          context: {
+            ...sessionContext,
+            previousMessages,
+            pendingAction: pendingAction ? {
+              action_id: pendingAction.action_id,
+              action_type: pendingAction.action_type,
+              description: pendingAction.description,
+              params: pendingAction.params
+            } : undefined
+          }
+        }).then(response => {
+          const aiMessage: AIMessage = {
+            id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            type: 'ai',
+            text: response.message,
+            intent: response.intent,
+            confidence: response.confidence,
+            timestamp: new Date().toISOString(),
+            queryResults: response.query_results || undefined,
+            queryMetadata: response.query_metadata || undefined,
+            pendingAction: response.pending_action || undefined,
+            actionResult: response.action_result || undefined,
+            suggestions: response.suggestions || undefined
+          };
+
+          setMessages(prev2 => [...prev2, aiMessage]);
+          setIsTyping(false);
+
+          if (response.intent !== 'error') {
+            if (response.query_results) setQueryResults(response.query_results);
+            if (response.pending_action) setPendingAction(response.pending_action);
+            if (response.suggestions) setSuggestions(response.suggestions);
+          }
+
+          if (aiAgent.isVoiceResponseEnabled()) {
+            aiAgent.speakResponse(response.message);
+          }
+        }).catch(error => {
+          console.error('Error generating backend AI response:', error);
+          const errorMessage: AIMessage = {
+            id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            type: 'ai',
+            text: `I'm having trouble connecting to the AI service. Please check:\n\n1. Backend server is running on port 8000\n2. You are logged in as an admin user\n3. Your session hasn't expired\n\nTry refreshing the page or logging in again.`,
+            intent: 'error',
+            confidence: 0,
+            timestamp: new Date().toISOString()
+          };
+          setMessages(prev2 => [...prev2, errorMessage]);
+          setIsTyping(false);
+        });
+      } else {
+        const timeout = setTimeout(async () => {
+          try {
+            const result = await aiAgent.processMessage(text.trim());
+            const aiMessage: AIMessage = {
+              id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              type: 'ai',
+              text: result.response,
+              data: result.data || null,
+              intent: result.intent,
+              confidence: result.confidence,
+              timestamp: new Date().toISOString()
+            };
+            setMessages(prev2 => [...prev2, aiMessage]);
+            setIsTyping(false);
+            if (aiAgent.isVoiceResponseEnabled()) {
+              aiAgent.speakResponse(result.response);
+            }
+          } catch (error) {
+            console.error('Error generating AI response:', error);
+            setMessages(prev2 => [...prev2, {
+              id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              type: 'ai',
+              text: "I encountered an error processing your request. Please try again.",
+              timestamp: new Date().toISOString()
+            }]);
+            setIsTyping(false);
+          }
+        }, 800 + Math.random() * 400);
+        typingTimeoutRef.current = timeout;
+      }
+
+      return updatedMessages;
+    });
+
+    // Clear pending action state
     setPendingAction(null);
-
-    // Trigger AI response
     setIsTyping(true);
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-
-    // Use backend AI or local AI based on toggle
-    if (useBackendAI) {
-      await generateBackendAIResponse(text.trim(), currentPendingAction);
-    } else {
-      typingTimeoutRef.current = setTimeout(async () => {
-        await generateAIResponse(text.trim());
-      }, 800 + Math.random() * 400);
-    }
-  }, [useBackendAI, pendingAction]);
-
-  // Generate AI response using Backend Admin AI
-  const generateBackendAIResponse = useCallback(async (userText: string, currentPendingAction?: PendingAction | null) => {
-    try {
-      // Build enriched context with page/selection info for multi-agent auto-fill
-      const sessionContext = getSessionContext();
-
-      const response = await adminAIService.chat({
-        message: userText,
-        session_id: sessionId,
-        context: {
-          ...sessionContext,
-          previousMessages: messages.slice(-5).map(m => ({
-            role: m.type === 'user' ? 'user' : 'assistant',
-            content: m.text
-          })),
-          // Include pending action so backend can handle confirmations
-          pendingAction: currentPendingAction ? {
-            action_id: currentPendingAction.action_id,
-            action_type: currentPendingAction.action_type,
-            description: currentPendingAction.description,
-            params: currentPendingAction.params
-          } : undefined
-        }
-      });
-
-      // Create AI message with extended properties (always show backend response)
-      const aiMessage: AIMessage = {
-        id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        type: 'ai',
-        text: response.message,
-        intent: response.intent,
-        confidence: response.confidence,
-        timestamp: new Date().toISOString(),
-        queryResults: response.query_results || undefined,
-        queryMetadata: response.query_metadata || undefined,
-        pendingAction: response.pending_action || undefined,
-        actionResult: response.action_result || undefined,
-        suggestions: response.suggestions || undefined
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
-      setIsTyping(false);
-
-      // Update state based on response (only for non-error responses)
-      if (response.intent !== 'error') {
-        if (response.query_results) {
-          setQueryResults(response.query_results);
-        }
-        if (response.pending_action) {
-          setPendingAction(response.pending_action);
-        }
-        if (response.suggestions) {
-          setSuggestions(response.suggestions);
-        }
-      }
-
-      // Optionally speak response if voice is enabled
-      if (aiAgent.isVoiceResponseEnabled()) {
-        aiAgent.speakResponse(response.message);
-      }
-    } catch (error) {
-      console.error('Error generating backend AI response:', error);
-
-      // Show proper error message instead of falling back to mock data
-      const errorMessage: AIMessage = {
-        id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        type: 'ai',
-        text: `I'm having trouble connecting to the AI service. Please check:\n\n1. Backend server is running on port 8000\n2. You are logged in as an admin user\n3. Your session hasn't expired\n\nTry refreshing the page or logging in again.`,
-        intent: 'error',
-        confidence: 0,
-        timestamp: new Date().toISOString()
-      };
-
-      setMessages(prev => [...prev, errorMessage]);
-      setIsTyping(false);
-    }
-  }, [sessionId, messages, aiAgent, getSessionContext]);
-
-  // Generate AI response using local AI Agent (fallback)
-  const generateAIResponse = useCallback(async (userText: string) => {
-    try {
-      // Process message with AI Agent
-      const result = await aiAgent.processMessage(userText);
-
-      // Create AI message
-      const aiMessage: AIMessage = {
-        id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        type: 'ai',
-        text: result.response,
-        data: result.data || null,
-        intent: result.intent,
-        confidence: result.confidence,
-        timestamp: new Date().toISOString()
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
-      setIsTyping(false);
-
-      // Optionally speak response if voice is enabled
-      if (aiAgent.isVoiceResponseEnabled()) {
-        aiAgent.speakResponse(result.response);
-      }
-    } catch (error) {
-      console.error('Error generating AI response:', error);
-
-      const errorMessage: AIMessage = {
-        id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        type: 'ai',
-        text: "I encountered an error processing your request. Please try again.",
-        timestamp: new Date().toISOString()
-      };
-
-      setMessages(prev => [...prev, errorMessage]);
-      setIsTyping(false);
-    }
-  }, [aiAgent]);
+  }, [useBackendAI, pendingAction, sessionId, getSessionContext, aiAgent]);
 
   // Confirm and execute a pending action
   const confirmAction = useCallback(async () => {
@@ -473,4 +442,3 @@ export function useAIAssistant() {
     voiceSupported: aiAgent.voice.isSupported
   };
 }
-

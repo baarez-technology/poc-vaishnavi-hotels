@@ -3,55 +3,30 @@
  * Validation logic for user management
  */
 
-/**
- * Validate email format
- * @param {string} email - Email to validate
- * @returns {boolean} - True if valid email format
- */
-export function isValidEmail(email) {
+export function isValidEmail(email: any) {
   if (!email) return false;
-
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email.trim());
 }
 
-/**
- * Check if email is unique in users array
- * @param {string} email - Email to check
- * @param {object[]} users - Array of existing users
- * @param {string} excludeUserId - User ID to exclude from check (for updates)
- * @returns {boolean} - True if email is unique
- */
-export function isEmailUnique(email, users, excludeUserId = null) {
+export function isEmailUnique(email: any, users: any[], excludeUserId: any = null) {
   if (!email) return false;
-
   const normalizedEmail = email.trim().toLowerCase();
-
   return !users.some(user => {
-    // Skip the user being updated
     if (excludeUserId && user.id === excludeUserId) return false;
-
     return user.email.toLowerCase() === normalizedEmail;
   });
 }
 
-/**
- * Validate user data for creation
- * @param {object} userData - User data to validate
- * @param {object[]} existingUsers - Array of existing users
- * @returns {object} - { valid: boolean, errors: object }
- */
-export function validateUserCreate(userData, existingUsers = []) {
-  const errors = {};
+export function validateUserCreate(userData: any, existingUsers: any[] = []) {
+  const errors: Record<string, string> = {};
 
-  // Name validation
   if (!userData.name || userData.name.trim().length === 0) {
     errors.name = 'Name is required';
   } else if (userData.name.trim().length < 2) {
     errors.name = 'Name must be at least 2 characters';
   }
 
-  // Email validation
   if (!userData.email || userData.email.trim().length === 0) {
     errors.email = 'Email is required';
   } else if (!isValidEmail(userData.email)) {
@@ -60,7 +35,6 @@ export function validateUserCreate(userData, existingUsers = []) {
     errors.email = 'Email already exists';
   }
 
-  // Role validation
   if (!userData.role || userData.role.trim().length === 0) {
     errors.role = 'Role is required';
   }
@@ -71,24 +45,15 @@ export function validateUserCreate(userData, existingUsers = []) {
   };
 }
 
-/**
- * Validate user data for update
- * @param {object} userData - User data to validate
- * @param {object[]} existingUsers - Array of existing users
- * @param {string} userId - ID of user being updated
- * @returns {object} - { valid: boolean, errors: object }
- */
-export function validateUserUpdate(userData, existingUsers = [], userId = null) {
-  const errors = {};
+export function validateUserUpdate(userData: any, existingUsers: any[] = [], userId: any = null) {
+  const errors: Record<string, string> = {};
 
-  // Name validation
   if (!userData.name || userData.name.trim().length === 0) {
     errors.name = 'Name is required';
   } else if (userData.name.trim().length < 2) {
     errors.name = 'Name must be at least 2 characters';
   }
 
-  // Email validation
   if (!userData.email || userData.email.trim().length === 0) {
     errors.email = 'Email is required';
   } else if (!isValidEmail(userData.email)) {
@@ -97,7 +62,6 @@ export function validateUserUpdate(userData, existingUsers = [], userId = null) 
     errors.email = 'Email already exists';
   }
 
-  // Role validation
   if (!userData.role || userData.role.trim().length === 0) {
     errors.role = 'Role is required';
   }
@@ -108,12 +72,7 @@ export function validateUserUpdate(userData, existingUsers = [], userId = null) 
   };
 }
 
-/**
- * Sanitize user input
- * @param {object} userData - Raw user data
- * @returns {object} - Sanitized user data
- */
-export function sanitizeUserData(userData) {
+export function sanitizeUserData(userData: any) {
   return {
     name: userData.name?.trim() || '',
     email: userData.email?.trim().toLowerCase() || '',
@@ -122,139 +81,86 @@ export function sanitizeUserData(userData) {
   };
 }
 
-/**
- * Validate name format
- * @param {string} name - Name to validate
- * @returns {object} - { valid: boolean, error: string|null }
- */
-export function validateName(name) {
+export function validateName(name: any) {
   if (!name || name.trim().length === 0) {
     return { valid: false, error: 'Name is required' };
   }
-
   if (name.trim().length < 2) {
     return { valid: false, error: 'Name must be at least 2 characters' };
   }
-
   if (name.trim().length > 100) {
     return { valid: false, error: 'Name must be less than 100 characters' };
   }
-
   return { valid: true, error: null };
 }
 
-/**
- * Validate email in real-time
- * @param {string} email - Email to validate
- * @returns {object} - { valid: boolean, error: string|null }
- */
-export function validateEmail(email) {
+export function validateEmail(email: any) {
   if (!email || email.trim().length === 0) {
     return { valid: false, error: 'Email is required' };
   }
-
   if (!isValidEmail(email)) {
     return { valid: false, error: 'Invalid email format' };
   }
-
   return { valid: true, error: null };
 }
 
-/**
- * Validate role selection
- * @param {string} role - Role to validate
- * @param {string[]} availableRoles - Array of valid role IDs
- * @returns {object} - { valid: boolean, error: string|null }
- */
-export function validateRole(role, availableRoles = []) {
+export function validateRole(role: any, availableRoles: any[] = []) {
   if (!role || role.trim().length === 0) {
     return { valid: false, error: 'Role is required' };
   }
-
   if (availableRoles.length > 0 && !availableRoles.includes(role)) {
     return { valid: false, error: 'Invalid role selected' };
   }
-
   return { valid: true, error: null };
 }
 
-/**
- * Check if user can be deleted
- * @param {string} userId - User ID to check
- * @param {object[]} users - Array of all users
- * @returns {object} - { canDelete: boolean, reason: string|null }
- */
-export function canDeleteUser(userId, users) {
+export function canDeleteUser(userId: any, users: any[]) {
   const user = users.find(u => u.id === userId);
-
   if (!user) {
     return { canDelete: false, reason: 'User not found' };
   }
-
-  // Don't allow deleting the only owner
   if (user.role === 'owner') {
     const ownerCount = users.filter(u => u.role === 'owner' && u.active).length;
     if (ownerCount <= 1) {
       return { canDelete: false, reason: 'Cannot delete the only active owner' };
     }
   }
-
   return { canDelete: true, reason: null };
 }
 
-/**
- * Check if user can be disabled
- * @param {string} userId - User ID to check
- * @param {object[]} users - Array of all users
- * @returns {object} - { canDisable: boolean, reason: string|null }
- */
-export function canDisableUser(userId, users) {
+export function canDisableUser(userId: any, users: any[]) {
   const user = users.find(u => u.id === userId);
-
   if (!user) {
     return { canDisable: false, reason: 'User not found' };
   }
-
   if (!user.active) {
     return { canDisable: false, reason: 'User is already disabled' };
   }
-
-  // Don't allow disabling the only active owner
   if (user.role === 'owner') {
     const activeOwnerCount = users.filter(u => u.role === 'owner' && u.active).length;
     if (activeOwnerCount <= 1) {
       return { canDisable: false, reason: 'Cannot disable the only active owner' };
     }
   }
-
   return { canDisable: true, reason: null };
 }
 
-/**
- * Validate password (for password reset feature)
- * @param {string} password - Password to validate
- * @returns {object} - { valid: boolean, errors: string[] }
- */
-export function validatePassword(password) {
-  const errors = [];
+export function validatePassword(password: any) {
+  const errors: string[] = [];
 
   if (!password || password.length === 0) {
     errors.push('Password is required');
     return { valid: false, errors };
   }
-
   if (password.length < 8) {
     errors.push('Password must be at least 8 characters');
   }
-
   if (!/[A-Z]/.test(password)) {
     errors.push('Password must contain at least one uppercase letter');
   }
-
   if (!/[a-z]/.test(password)) {
     errors.push('Password must contain at least one lowercase letter');
   }
-
   if (!/[0-9]/.test(password)) {
     errors.push('Password must contain at least one number');
   }
@@ -265,29 +171,15 @@ export function validatePassword(password) {
   };
 }
 
-/**
- * Generate validation summary
- * @param {object} errors - Errors object from validation
- * @returns {string} - Human-readable error message
- */
-export function getValidationSummary(errors) {
+export function getValidationSummary(errors: any) {
   const errorMessages = Object.values(errors).filter(Boolean);
-
   if (errorMessages.length === 0) return '';
   if (errorMessages.length === 1) return errorMessages[0];
-
   return `${errorMessages.length} validation errors: ${errorMessages.join(', ')}`;
 }
 
-/**
- * Check if email domain is allowed (optional feature)
- * @param {string} email - Email to check
- * @param {string[]} allowedDomains - Array of allowed domains
- * @returns {boolean} - True if domain is allowed
- */
-export function isEmailDomainAllowed(email, allowedDomains = []) {
+export function isEmailDomainAllowed(email: any, allowedDomains: any[] = []) {
   if (!email || allowedDomains.length === 0) return true;
-
   const domain = email.split('@')[1]?.toLowerCase();
   return allowedDomains.includes(domain);
 }

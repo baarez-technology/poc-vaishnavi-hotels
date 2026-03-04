@@ -108,34 +108,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       toast.success('Welcome back!');
 
-      // Redirect based on user role
+      // Route by role: operational staff → staff portal, everyone else → admin
       const role = response.user.role?.toLowerCase();
-      // Define role groups for proper routing
-      const maintenanceRoles = ['maintenance', 'technician', 'electrician', 'plumber', 'hvac_technician'];
-      const housekeepingRoles = ['housekeeping', 'housekeeper', 'room_attendant', 'laundry_attendant'];
+      const housekeepingStaffRoles = ['housekeeping', 'housekeeper', 'room_attendant', 'laundry_attendant'];
+      const maintenanceStaffRoles = ['maintenance', 'technician', 'electrician', 'plumber', 'hvac_technician'];
       const runnerRoles = ['runner', 'bellhop', 'valet'];
-      const frontDeskRoles = ['front_desk', 'frontdesk', 'receptionist', 'concierge', 'night_auditor', 'front_office_manager', 'duty_manager'];
-      const managementRoles = ['admin', 'manager', 'supervisor', 'general_manager', 'reservation_manager', 'revenue_manager', 'accounts_manager'];
-      const housekeepingMgmtRoles = ['housekeeping_manager'];
 
-      if (role === 'admin' || response.user.isSuperuser || managementRoles.includes(role)) {
-        navigate('/admin');
-      } else if (frontDeskRoles.includes(role)) {
-        navigate('/admin');
-      } else if (housekeepingMgmtRoles.includes(role)) {
-        navigate('/admin');
-      } else if (housekeepingRoles.includes(role)) {
+      if (housekeepingStaffRoles.includes(role)) {
         navigate('/staff/housekeeping');
-      } else if (maintenanceRoles.includes(role)) {
+      } else if (maintenanceStaffRoles.includes(role)) {
         navigate('/staff/maintenance');
       } else if (runnerRoles.includes(role)) {
         navigate('/staff/runner');
-      } else if (role === 'finance') {
-        navigate('/dashboard/finance');
-      } else if (role === 'operations') {
-        navigate('/dashboard/operations');
       } else {
-        navigate('/dashboard');
+        navigate('/admin');
       }
     } catch (error: any) {
       setIsLoading(false);

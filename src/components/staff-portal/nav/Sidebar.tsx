@@ -237,9 +237,9 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
 
         {/* Navigation */}
         <nav className={`flex-1 overflow-y-auto custom-scrollbar ${
-          isCollapsed ? 'px-2' : 'px-3'
-        } pb-4`}>
-          <div className="space-y-6">
+          isCollapsed ? 'px-2' : 'px-4'
+        } pt-6 pb-4`}>
+          <div className="space-y-8">
             {navigationCategories.map((category) => {
               const isExpanded = expandedSections[category.id] !== false;
               const hasActiveItem = category.items.some(
@@ -254,7 +254,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                   {!isCollapsed && !isSingleItem && (
                     <button
                       onClick={() => toggleSection(category.id)}
-                      className="w-full flex items-center justify-between px-3 py-2 mb-0.5 rounded-lg group hover:bg-neutral-50 transition-colors"
+                      className="w-full flex items-center justify-between px-3 py-2 mb-2 rounded-lg group hover:bg-neutral-50 transition-colors"
                     >
                       <div className="flex items-center gap-2">
                         <CategoryIcon className={`w-4 h-4 ${
@@ -324,7 +324,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                     ) : !isSingleItem ? (
                       /* Multi-item categories - tree structure */
                       <div className="relative ml-[22px] pl-4 border-l border-neutral-200">
-                        <ul className="space-y-0.5">
+                        <ul className="space-y-1.5">
                           {category.items.map((item) => {
                             const isItemActive = location.pathname === item.to || location.pathname.startsWith(item.to + '/');
                             return (
@@ -338,7 +338,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                                   to={item.to}
                                   end={item.end}
                                   className={({ isActive }) =>
-                                    `relative flex items-center justify-between gap-2 px-3 py-2 rounded-lg transition-all duration-150 ${
+                                    `relative flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg transition-all duration-150 ${
                                       isActive
                                         ? 'bg-[var(--brand-primary-45)] text-[var(--brand-primary)]'
                                         : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800'
@@ -450,8 +450,8 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-4">
-        <div className="space-y-6">
+      <nav className="flex-1 overflow-y-auto custom-scrollbar px-4 pt-6 pb-4">
+        <div className="space-y-8">
           {navigationCategories.map((category) => {
             const isExpanded = expandedSections[category.id] !== false;
             const hasActiveItem = category.items.some(
@@ -466,7 +466,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                 {!isSingleItem && (
                   <button
                     onClick={() => toggleSection(category.id)}
-                    className="w-full flex items-center justify-between px-3 py-2 mb-0.5 rounded-lg group hover:bg-neutral-50 transition-colors"
+                    className="w-full flex items-center justify-between px-3 py-2 mb-2 rounded-lg group hover:bg-neutral-50 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <CategoryIcon className={`w-4 h-4 ${
@@ -491,7 +491,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                   {!isSingleItem ? (
                     /* Multi-item categories - tree structure */
                     <div className="relative ml-[22px] pl-4 border-l border-neutral-200">
-                      <ul className="space-y-0.5">
+                      <ul className="space-y-1.5">
                         {category.items.map((item) => {
                           const isItemActive = location.pathname === item.to || location.pathname.startsWith(item.to + '/');
                           return (
@@ -504,7 +504,7 @@ const Sidebar = ({ isCollapsed, onToggle, renderBrandOnly, renderNavigationOnly 
                                 end={item.end}
                                 onClick={onToggle}
                                 className={({ isActive }) =>
-                                  `relative flex items-center justify-between gap-2 px-3 py-2 rounded-lg transition-all duration-150 ${
+                                  `relative flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg transition-all duration-150 ${
                                     isActive
                                       ? 'bg-[var(--brand-primary-45)] text-[var(--brand-primary)]'
                                       : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800'

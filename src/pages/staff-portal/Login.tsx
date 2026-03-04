@@ -146,33 +146,6 @@ const Login = () => {
             </button>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 pt-6 border-t border-neutral-200">
-            <p className="text-xs text-neutral-500 text-center mb-3">Demo Credentials</p>
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-[10px] border border-green-200">
-                <div>
-                  <span className="text-green-600 font-medium">Housekeeping</span>
-                  <p className="text-neutral-600 mt-0.5">maria@glimmora.local</p>
-                </div>
-                <span className="text-neutral-500">123456</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-primary/5 rounded-[10px] border border-primary/20">
-                <div>
-                  <span className="text-primary font-medium">Maintenance</span>
-                  <p className="text-neutral-600 mt-0.5">john@glimmora.local</p>
-                </div>
-                <span className="text-neutral-500">123456</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-teal-50 rounded-[10px] border border-teal-200">
-                <div>
-                  <span className="text-teal-600 font-medium">Runner</span>
-                  <p className="text-neutral-600 mt-0.5">alex@glimmora.local</p>
-                </div>
-                <span className="text-neutral-500">123456</span>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Footer */}

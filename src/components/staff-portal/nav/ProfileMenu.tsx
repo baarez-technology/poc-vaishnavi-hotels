@@ -92,7 +92,7 @@ export default function ProfileMenu({ collapsed = false }: ProfileMenuProps) {
   const handleLogout = () => {
     setIsOpen(false);
     logout();
-    navigate('/staff/login', { replace: true });
+    navigate('/login', { replace: true });
   };
 
   if (!displayData) return null;

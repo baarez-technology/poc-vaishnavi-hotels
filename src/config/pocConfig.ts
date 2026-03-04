@@ -18,12 +18,7 @@ export const POC_HIDDEN_SIDEBAR_SECTIONS = new Set([
 ]);
 
 // Specific route paths to hide within otherwise-visible sidebar sections
-// (Hides Staff, Housekeeping, Maintenance from the Operations section)
-export const POC_HIDDEN_ROUTES = new Set([
-  '/admin/staff',
-  '/admin/housekeeping',
-  '/admin/maintenance',
-]);
+export const POC_HIDDEN_ROUTES = new Set<string>([]);
 
 // Route prefixes that are accessible during POC.
 // Any pathname that starts with one of these is allowed through.
@@ -33,6 +28,9 @@ export const POC_ALLOWED_ROUTE_PREFIXES = [
   '/admin/guests',
   '/admin/rooms',
   '/admin/room-moves',
+  '/admin/staff',
+  '/admin/housekeeping',
+  '/admin/maintenance',
   '/admin/cms',
   '/admin/reports',
   '/admin/rate-check',

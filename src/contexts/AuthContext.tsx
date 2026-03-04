@@ -110,16 +110,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Redirect based on user role
       const role = response.user.role?.toLowerCase();
-      const currentPath = window.location.pathname;
-      const fromStaffLogin = currentPath.includes('/staff/login');
-
       // Define role groups for proper routing
       const maintenanceRoles = ['maintenance', 'technician', 'electrician', 'plumber', 'hvac_technician'];
       const housekeepingRoles = ['housekeeping', 'housekeeper', 'room_attendant', 'laundry_attendant'];
       const runnerRoles = ['runner', 'bellhop', 'valet'];
       const frontDeskRoles = ['front_desk', 'frontdesk', 'receptionist', 'concierge', 'night_auditor', 'front_office_manager', 'duty_manager'];
       const managementRoles = ['admin', 'manager', 'supervisor', 'general_manager', 'reservation_manager', 'revenue_manager', 'accounts_manager'];
-      const housekeepingMgmtRoles = ['housekeeping_manager', 'housekeeping'];
+      const housekeepingMgmtRoles = ['housekeeping_manager'];
 
       if (role === 'admin' || response.user.isSuperuser || managementRoles.includes(role)) {
         navigate('/admin');
@@ -128,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (housekeepingMgmtRoles.includes(role)) {
         navigate('/admin');
       } else if (housekeepingRoles.includes(role)) {
-        navigate(fromStaffLogin ? '/staff/housekeeping' : '/dashboard/housekeeping');
+        navigate('/staff/housekeeping');
       } else if (maintenanceRoles.includes(role)) {
         navigate('/staff/maintenance');
       } else if (runnerRoles.includes(role)) {

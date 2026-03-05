@@ -8,7 +8,8 @@ import {
   Loader2,
   Sparkles,
   Search,
-  ChevronDown
+  ChevronDown,
+  Eye
 } from 'lucide-react';
 import PageHeader from '../../../layouts/staff-portal/PageHeader';
 import { StatCard } from '../../../components/staff-portal/ui/Card';
@@ -440,13 +441,13 @@ const HousekeepingRooms = () => {
                         <Button
                           size="sm"
                           variant="outline-neutral"
-                          icon={ChevronRight}
+                          icon={Eye}
                           onClick={(e) => {
                             e.stopPropagation();
                             navigate(`/staff/housekeeping/rooms/${room.id}`);
                           }}
                         >
-                          Details
+                          View
                         </Button>
                       </div>
                     </div>

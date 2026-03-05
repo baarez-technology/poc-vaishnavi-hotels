@@ -4,7 +4,7 @@
  * Following Glimmora Design System v5.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 import { SelectDropdown } from '../ui2/Input';
@@ -34,18 +34,6 @@ interface BulkUpdateDrawerProps {
     };
   }) => void;
 }
-
-// Room type options for multi-select
-const ALL_ROOM_TYPES = [
-  'Minimalist Studio',
-  'Coastal Retreat',
-  'Urban Oasis',
-  'Sunset Vista',
-  'Pacific Suite',
-  'Wellness Suite',
-  'Family Sanctuary',
-  'Oceanfront Penthouse'
-];
 
 // Rate adjustment type options
 const rateAdjustmentOptions = [
@@ -83,7 +71,14 @@ export function BulkUpdateDrawer({
   // Form state
   const [startDate, setStartDate] = useState(formatDate(today));
   const [endDate, setEndDate] = useState(formatDate(defaultEndDate));
-  const [selectedRoomTypes, setSelectedRoomTypes] = useState<string[]>(ALL_ROOM_TYPES);
+  const [selectedRoomTypes, setSelectedRoomTypes] = useState<string[]>([]);
+
+  // Re-sync selected room types when drawer opens or roomTypes prop changes
+  useEffect(() => {
+    if (isOpen && roomTypes.length > 0) {
+      setSelectedRoomTypes([...roomTypes]);
+    }
+  }, [isOpen, roomTypes]);
 
   // Update toggles
   const [updateRate, setUpdateRate] = useState(false);
@@ -125,7 +120,7 @@ export function BulkUpdateDrawer({
   // Select/deselect all room types
   const handleSelectAllRoomTypes = () => {
     setSelectedRoomTypes(
-      selectedRoomTypes.length === ALL_ROOM_TYPES.length ? [] : [...ALL_ROOM_TYPES]
+      selectedRoomTypes.length === roomTypes.length ? [] : [...roomTypes]
     );
   };
 
@@ -260,11 +255,11 @@ export function BulkUpdateDrawer({
               onClick={handleSelectAllRoomTypes}
               className="text-[11px] font-medium text-terra-600 hover:text-terra-700"
             >
-              {selectedRoomTypes.length === ALL_ROOM_TYPES.length ? 'Deselect All' : 'Select All'}
+              {selectedRoomTypes.length === roomTypes.length ? 'Deselect All' : 'Select All'}
             </button>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            {ALL_ROOM_TYPES.map((roomType) => {
+            {roomTypes.map((roomType) => {
               const isSelected = selectedRoomTypes.includes(roomType);
               return (
                 <button
@@ -292,7 +287,7 @@ export function BulkUpdateDrawer({
             })}
           </div>
           <p className="text-[11px] text-neutral-400 mt-2">
-            {selectedRoomTypes.length} of {ALL_ROOM_TYPES.length} room types selected
+            {selectedRoomTypes.length} of {roomTypes.length} room types selected
           </p>
         </div>
 

@@ -147,7 +147,16 @@ export const getAvailabilityGrid = async (
   }
 
   const response = await apiClient.get('/api/v1/availability/grid', { params });
-  return response.data;
+  // Handle potential response wrapping: interceptor may return raw data or { success: true, data: ... }
+  const raw = response.data;
+  if (raw && typeof raw === 'object' && 'room_types' in raw) {
+    return raw;
+  }
+  // Unwrap if nested in data
+  if (raw && raw.data && typeof raw.data === 'object' && 'room_types' in raw.data) {
+    return raw.data;
+  }
+  return raw;
 };
 
 /**

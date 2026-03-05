@@ -4,7 +4,7 @@
  * Following Glimmora Design System v5.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 import { SelectDropdown } from '../ui2/Input';
@@ -54,17 +54,24 @@ export function MinStayConfigModal({
   const [applyAllValue, setApplyAllValue] = useState('2');
 
   // Initialize room configs with current min stay values
-  const [roomConfigs, setRoomConfigs] = useState<RoomTypeConfig[]>(() => {
-    const todayStr = formatDate(today);
-    return roomTypes.map(name => {
-      const currentMinStay = availability[todayStr]?.[name]?.restrictions?.minStay || 1;
-      return {
-        name,
-        currentMinStay,
-        newMinStay: 2 // Default to 2 nights
-      };
-    });
-  });
+  const [roomConfigs, setRoomConfigs] = useState<RoomTypeConfig[]>([]);
+
+  // Re-sync room configs when drawer opens or roomTypes change
+  useEffect(() => {
+    if (isOpen && roomTypes.length > 0) {
+      const todayStr = formatDate(today);
+      setRoomConfigs(roomTypes.map(name => {
+        const currentMinStay = availability[todayStr]?.[name]?.minStay
+          || availability[todayStr]?.[name]?.restrictions?.minStay
+          || 1;
+        return {
+          name,
+          currentMinStay,
+          newMinStay: currentMinStay // Default to current value
+        };
+      }));
+    }
+  }, [isOpen, roomTypes]);
 
   // Calculate days in range
   const daysInRange = useMemo(() => {

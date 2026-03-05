@@ -138,7 +138,7 @@ export default function Housekeeping() {
   useEffect(() => {
     const fetchAvailability = async () => {
       try {
-        const res = await api.get('/housekeeping/staff/availability-status');
+        const res = await api.get('/api/v1/housekeeping/staff/availability-status');
         setStaffAvailability({
           totalStaff: res.data.total_staff || 0,
           availableCount: res.data.available_count || 0,
@@ -588,7 +588,7 @@ export default function Housekeeping() {
         onForceAssign={async (staffId, reason, requireAcceptance) => {
           try {
             if (taskForForceAssign) {
-              await api.post(`/housekeeping/tasks/${taskForForceAssign.id}/force-assign`, {
+              await api.post(`/api/v1/housekeeping/tasks/${taskForForceAssign.id}/force-assign`, {
                 staff_id: staffId,
                 reason: reason,
                 require_acceptance: requireAcceptance

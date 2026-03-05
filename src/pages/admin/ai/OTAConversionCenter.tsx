@@ -78,30 +78,30 @@ interface OfferTemplate {
 // API Service
 const otaConversionService = {
   async getStats(): Promise<OTAConversionStats> {
-    const response = await api.get('/api/v1/ota-conversion/stats');
+    const response = await api.get('/api/v1/crm-ai/ota-conversion/stats');
     return response.data.data;
   },
 
   async getOTAGuests(status?: string, search?: string): Promise<OTAGuest[]> {
-    const response = await api.get('/api/v1/ota-conversion/guests', {
+    const response = await api.get('/api/v1/crm-ai/ota-conversion/guests', {
       params: { status, search }
     });
     return response.data.data;
   },
 
   async identifyOTAGuests(): Promise<{ identified: number }> {
-    const response = await api.post('/api/v1/ota-conversion/identify');
+    const response = await api.post('/api/v1/crm-ai/ota-conversion/identify');
     return response.data.data;
   },
 
   async sendOffer(guestId: number, offerId: string): Promise<void> {
-    await api.post(`/api/v1/ota-conversion/guests/${guestId}/send-offer`, {
+    await api.post(`/api/v1/crm-ai/ota-conversion/guests/${guestId}/send-offer`, {
       offer_id: offerId
     });
   },
 
   async getConversionFunnel(): Promise<ConversionFunnelData> {
-    const response = await api.get('/api/v1/ota-conversion/funnel');
+    const response = await api.get('/api/v1/crm-ai/ota-conversion/funnel');
     return response.data.data;
   }
 };

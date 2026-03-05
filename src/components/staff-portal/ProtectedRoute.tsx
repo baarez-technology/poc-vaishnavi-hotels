@@ -25,7 +25,7 @@ export default function ProtectedRoute({ children, allowedRoles = [] }: Protecte
 
   // If not authenticated, redirect to login
   if (!isAuthenticated || !user) {
-    return <Navigate to="/staff/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // If allowedRoles is specified, check if user's role is allowed
@@ -58,7 +58,7 @@ export default function ProtectedRoute({ children, allowedRoles = [] }: Protecte
       general_manager: '/admin',
       admin: '/admin'
     };
-    const correctPath = rolePaths[user.role] || '/staff/login';
+    const correctPath = rolePaths[user.role] || '/login';
     return <Navigate to={correctPath} replace />;
   }
 

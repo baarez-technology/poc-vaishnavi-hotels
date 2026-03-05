@@ -228,21 +228,13 @@ export default function Bookings() {
     setCheckoutDialogBooking(booking);
   };
 
-  // Actual checkout execution (called by CheckoutDialog)
+  // Called by CheckoutDialog when folio check passes — don't checkout yet, show feedback first
   const executeCheckout = async (force = false): Promise<boolean> => {
     const booking = checkoutDialogBooking;
     if (!booking?.id) return false;
-    const success = await checkOutGuest(booking.id, force ? { force_checkout: true } : undefined);
-    if (success) {
-      setSelectedBooking((prev: any) =>
-        prev && prev.id === booking.id ? { ...prev, status: 'COMPLETED' } : prev
-      );
-      triggerToast(force
-        ? `${booking.guest} force-checked out with outstanding balance`
-        : `${booking.guest} checked out successfully`
-      );
-    }
-    return success;
+    // Don't perform checkout here — open the feedback/emotion modal instead
+    setCheckoutBooking({ ...booking, _force: force });
+    return true; // return true so CheckoutDialog closes itself
   };
 
   // Handle cancel check-in from action button
@@ -346,7 +338,7 @@ export default function Bookings() {
     triggerToast('Status updated successfully');
   };
 
-  // Handle checkout with emotion from modal
+  // Handle checkout with emotion from modal — performs the actual checkout
   const handleCheckoutWithEmotion = useCallback(async (emotion?: string, _notes?: string) => {
     if (!checkoutBooking) return;
 
@@ -361,20 +353,41 @@ export default function Bookings() {
         }
       }
 
-      // Perform the actual checkout
-      updateStatus(checkoutBooking.id, 'CHECKED-OUT');
-      setSelectedBooking((prev: any) => {
-        if (prev && prev.id === checkoutBooking.id) {
-          return { ...prev, status: 'CHECKED-OUT' };
+      const force = checkoutBooking._force;
+
+      // If came from CheckoutDialog flow, do the actual API checkout
+      if (force !== undefined) {
+        const success = await checkOutGuest(checkoutBooking.id, force ? { force_checkout: true } : undefined);
+        if (success) {
+          setSelectedBooking((prev: any) => {
+            if (prev && prev.id === checkoutBooking.id) {
+              return { ...prev, status: 'CHECKED-OUT' };
+            }
+            return prev;
+          });
+          triggerToast(force
+            ? `${checkoutBooking.guest} force-checked out with outstanding balance`
+            : 'Guest checked out successfully'
+          );
+        } else {
+          triggerToast('Checkout failed. Please try again.');
         }
-        return prev;
-      });
-      triggerToast('Guest checked out successfully');
+      } else {
+        // From status dropdown — just update status
+        updateStatus(checkoutBooking.id, 'CHECKED-OUT');
+        setSelectedBooking((prev: any) => {
+          if (prev && prev.id === checkoutBooking.id) {
+            return { ...prev, status: 'CHECKED-OUT' };
+          }
+          return prev;
+        });
+        triggerToast('Guest checked out successfully');
+      }
     } finally {
       setCheckoutLoading(false);
       setCheckoutBooking(null);
     }
-  }, [checkoutBooking, updateStatus]);
+  }, [checkoutBooking, updateStatus, checkOutGuest]);
 
   // Toast helper
   const triggerToast = (message) => {

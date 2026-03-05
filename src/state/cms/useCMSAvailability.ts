@@ -154,29 +154,36 @@ export default function useCMSAvailability() {
         return;
       }
 
+      // Handle potential response wrapping: backend may return data directly or wrapped in { data: ... } or { success: true, data: ... }
+      let resolvedData = gridData;
+      if (resolvedData && typeof resolvedData === 'object' && !resolvedData.room_types && resolvedData.data) {
+        resolvedData = resolvedData.data;
+      }
+
       console.log('[useCMSAvailability] API Response:', {
-        room_types_count: gridData.room_types?.length || 0,
-        availability_count: gridData.availability?.length || 0,
-        room_types: gridData.room_types,
+        room_types_count: resolvedData.room_types?.length || 0,
+        availability_count: resolvedData.availability?.length || 0,
+        room_types: resolvedData.room_types,
       });
 
       if (!isMounted.current) return;
 
-      // Check if we got valid data from the API
-      if (gridData.room_types && gridData.room_types.length > 0 && gridData.availability && gridData.availability.length > 0) {
+      // Check if we got room types from the API
+      if (resolvedData.room_types && resolvedData.room_types.length > 0) {
+        const availabilityArr = resolvedData.availability || [];
         const { data, config } = transformBackendData(
-          gridData.availability,
-          gridData.room_types
+          availabilityArr,
+          resolvedData.room_types
         );
 
         setAvailabilityData(data);
         setRoomTypeConfig(config);
-        setRoomTypes(gridData.room_types);
+        setRoomTypes(resolvedData.room_types);
         setError(null);
         console.log('[useCMSAvailability] Successfully loaded data from database API');
       } else {
-        // API returned empty data - this is an error, not a fallback situation
-        console.error('[useCMSAvailability] API returned empty data - check database connection');
+        // API returned no room types
+        console.error('[useCMSAvailability] API returned no room types - check database connection');
         setError('No room types found in database. Please check if the database is seeded correctly.');
         setAvailabilityData({});
         setRoomTypeConfig({});

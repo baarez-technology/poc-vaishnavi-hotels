@@ -448,8 +448,10 @@ const AvailabilityCalendar = forwardRef(({
 
                   {/* Room type cells */}
                   {roomTypes.map(roomType => {
-                    const cellData = availability[dateInfo.date]?.[roomType];
-                    if (!cellData) return null;
+                    const cellData = availability[dateInfo.date]?.[roomType] || {
+                      available: 0, totalInventory: 0, rate: 0, minStay: 1,
+                      stopSell: false, cta: false, ctd: false, sold: 0, notes: ''
+                    };
 
                     const availColor = getAvailabilityColor(cellData.available, cellData.totalInventory);
                     const hasRestrictions = cellData.stopSell || cellData.cta || cellData.ctd;

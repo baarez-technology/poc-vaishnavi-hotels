@@ -84,14 +84,14 @@ export default function TechnicianSpecializations() {
   const fetchTechnicians = async () => {
     setIsLoading(true);
     try {
-      const res = await api.get('/maintenance/technicians/availability-status');
+      const res = await api.get('/api/v1/maintenance/technicians/availability-status');
       const allTechs = [...(res.data.available_technicians || []), ...(res.data.busy_technicians || [])];
 
       // Get full details for each technician
       const techDetails = await Promise.all(
         allTechs.map(async (t: any) => {
           try {
-            const detailRes = await api.get(`/staff/${t.id}`);
+            const detailRes = await api.get(`/api/v1/staff/${t.id}`);
             return {
               id: t.id,
               name: t.name,
@@ -137,7 +137,7 @@ export default function TechnicianSpecializations() {
 
   const handleEditSave = async (techId: number) => {
     try {
-      await api.put(`/maintenance/technicians/${techId}/specialization`, {
+      await api.put(`/api/v1/maintenance/technicians/${techId}/specialization`, {
         specialty: editForm.specialty,
         secondary_specialties: editForm.secondary
       });

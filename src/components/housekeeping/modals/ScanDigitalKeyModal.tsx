@@ -105,7 +105,7 @@ export function ScanDigitalKeyModal({ open, onClose, roomNumber }: ScanDigitalKe
     setScanResult(null);
 
     try {
-      const response = await api.post('/housekeeping/digital-key/scan', {
+      const response = await api.post('/api/v1/housekeeping/digital-key/scan', {
         qr_data: qrData,
         expected_room_number: expectedRoom || null,
       });

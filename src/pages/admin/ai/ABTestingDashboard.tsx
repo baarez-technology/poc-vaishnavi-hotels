@@ -84,43 +84,43 @@ interface ABTestCreateData {
 // API Service for A/B Testing
 const abTestingService = {
   async getStats(): Promise<ABTestStats> {
-    const response = await api.get('/api/v1/ab-testing/stats');
+    const response = await api.get('/api/v1/crm-ai/ab-tests/stats');
     return response.data.data;
   },
 
   async getTests(status?: string): Promise<ABTest[]> {
-    const response = await api.get('/api/v1/ab-testing/tests', {
+    const response = await api.get('/api/v1/crm-ai/ab-tests', {
       params: { status }
     });
     return response.data.data;
   },
 
   async getTest(testId: number): Promise<ABTest> {
-    const response = await api.get(`/api/v1/ab-testing/tests/${testId}`);
+    const response = await api.get(`/api/v1/crm-ai/ab-tests/${testId}`);
     return response.data.data;
   },
 
   async createTest(data: ABTestCreateData): Promise<ABTest> {
-    const response = await api.post('/api/v1/ab-testing/tests', data);
+    const response = await api.post('/api/v1/crm-ai/ab-tests', data);
     return response.data.data;
   },
 
   async startTest(testId: number): Promise<ABTest> {
-    const response = await api.post(`/api/v1/ab-testing/tests/${testId}/start`);
+    const response = await api.post(`/api/v1/crm-ai/ab-tests/${testId}/start`);
     return response.data.data;
   },
 
   async stopTest(testId: number): Promise<ABTest> {
-    const response = await api.post(`/api/v1/ab-testing/tests/${testId}/stop`);
+    const response = await api.post(`/api/v1/crm-ai/ab-tests/${testId}/stop`);
     return response.data.data;
   },
 
   async deployWinner(testId: number): Promise<void> {
-    await api.post(`/api/v1/ab-testing/tests/${testId}/deploy-winner`);
+    await api.post(`/api/v1/crm-ai/ab-tests/${testId}/deploy-winner`);
   },
 
   async deleteTest(testId: number): Promise<void> {
-    await api.delete(`/api/v1/ab-testing/tests/${testId}`);
+    await api.delete(`/api/v1/crm-ai/ab-tests/${testId}`);
   }
 };
 

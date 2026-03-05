@@ -793,7 +793,7 @@ export function StaffPortalProvider({ children }: StaffPortalProviderProps) {
 
       dispatch({
         type: actionTypes.SET_MAINTENANCE_DATA,
-        payload: { tasks: transformedTasks, equipmentIssues: transformedIssues }
+        payload: { tasks: transformedTasks, workOrders: transformedTasks, equipmentIssues: transformedIssues }
       });
     } catch (error) {
       console.error('Failed to fetch maintenance data:', error);
@@ -807,7 +807,7 @@ export function StaffPortalProvider({ children }: StaffPortalProviderProps) {
     try {
       const { housekeepingService } = await import('../../api/services/housekeeping.service');
       const [rooms, tasks] = await Promise.all([
-        housekeepingService.getRooms(),
+        housekeepingService.getMyRooms(),
         housekeepingService.getMyTasks()
       ]);
 
@@ -974,6 +974,23 @@ export function StaffPortalProvider({ children }: StaffPortalProviderProps) {
     }
   }, [isAuthenticated]);
 
+  // Role matching helpers — support all role variants for each department
+  const isHousekeepingRole = (role?: string) => {
+    if (!role) return false;
+    const r = role.toLowerCase();
+    return ['housekeeping', 'housekeeper', 'room_attendant', 'laundry_attendant', 'admin', 'superuser', 'manager', 'supervisor'].includes(r);
+  };
+  const isMaintenanceRole = (role?: string) => {
+    if (!role) return false;
+    const r = role.toLowerCase();
+    return ['maintenance', 'technician', 'electrician', 'plumber', 'hvac_technician', 'admin', 'superuser', 'manager', 'supervisor'].includes(r);
+  };
+  const isRunnerRole = (role?: string) => {
+    if (!role) return false;
+    const r = role.toLowerCase();
+    return ['runner', 'bellhop', 'valet', 'admin', 'superuser', 'manager', 'supervisor'].includes(r);
+  };
+
   // Sync portal data with authenticated user
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -997,14 +1014,14 @@ export function StaffPortalProvider({ children }: StaffPortalProviderProps) {
       fetchNotifications();
       fetchStaffProfile();
 
-      // Fetch role-specific data from backend
-      if (user.role === 'maintenance' || user.role === 'admin' || user.role === 'superuser') {
+      // Fetch role-specific data from backend (supports all role variants)
+      if (isMaintenanceRole(user.role)) {
         fetchMaintenanceData();
       }
-      if (user.role === 'housekeeping' || user.role === 'admin' || user.role === 'superuser') {
+      if (isHousekeepingRole(user.role)) {
         fetchHousekeepingData();
       }
-      if (user.role === 'runner' || user.role === 'admin' || user.role === 'superuser') {
+      if (isRunnerRole(user.role)) {
         fetchRunnerData();
       }
 
@@ -1012,13 +1029,13 @@ export function StaffPortalProvider({ children }: StaffPortalProviderProps) {
       notificationPollingRef.current = setInterval(() => {
         fetchNotifications();
         // Also refresh role-specific data periodically
-        if (user.role === 'maintenance' || user.role === 'admin' || user.role === 'superuser') {
+        if (isMaintenanceRole(user.role)) {
           fetchMaintenanceData();
         }
-        if (user.role === 'housekeeping' || user.role === 'admin' || user.role === 'superuser') {
+        if (isHousekeepingRole(user.role)) {
           fetchHousekeepingData();
         }
-        if (user.role === 'runner' || user.role === 'admin' || user.role === 'superuser') {
+        if (isRunnerRole(user.role)) {
           fetchRunnerData();
         }
       }, 30000);

@@ -179,7 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('glimmora_remember');
     localStorage.removeItem('glimmora_access_token'); // Ensure token is cleared
     toast.success('Logged out successfully');
-    navigate('/');
+    navigate('/login', { replace: true });
   };
 
   const updateUser = (data: Partial<User>) => {

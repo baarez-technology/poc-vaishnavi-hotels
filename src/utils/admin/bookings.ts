@@ -126,17 +126,23 @@ export function calculateNights(checkIn, checkOut) {
   return diff;
 }
 
-// Calculate booking amount
-export function calculateBookingAmount(roomType, nights, taxRate = 0.12) {
+// Calculate booking amount using GST slab-based tax
+// Room rate ≤7,500/night = 12% GST, >7,500/night = 18% GST
+export function calculateBookingAmount(roomType, nights, taxRate?: number) {
   const roomTypeConfig = ROOM_TYPES.find(r => r.value === roomType);
   const baseRate = roomTypeConfig?.price || 150;
   const subtotal = baseRate * nights;
-  const taxes = subtotal * taxRate;
+  // Use GST slab rate if not explicitly overridden
+  const effectiveTaxRate = taxRate ?? (baseRate > 7500 ? 0.18 : 0.12);
+  const taxes = subtotal * effectiveTaxRate;
+  const serviceFee = subtotal * 0.05;
   return {
     baseRate,
     subtotal,
     taxes,
-    total: Math.round(subtotal + taxes),
+    serviceFee,
+    taxRate: effectiveTaxRate * 100,
+    total: Math.round(subtotal + taxes + serviceFee),
   };
 }
 

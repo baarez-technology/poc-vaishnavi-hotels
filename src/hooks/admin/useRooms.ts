@@ -369,6 +369,26 @@ export function useRooms() {
           const guestName = (guest.name || '').toLowerCase().trim();
           const guestEmail = (guest.email || '').toLowerCase().trim();
 
+          // Checked-out guest guard: reject if guest has ONLY checked_out/cancelled/no_show bookings
+          const allGuestBookings = bookings.filter((b: any) => {
+            const matchById = b.guestId && guestId && Number(b.guestId) === Number(guestId);
+            const bName = ((b.guestInfo?.firstName || '') + ' ' + (b.guestInfo?.lastName || '')).toLowerCase().trim();
+            const bEmail = (b.guestInfo?.email || '').toLowerCase().trim();
+            return matchById || (guestName && bName === guestName) || (guestEmail && bEmail && bEmail === guestEmail);
+          });
+
+          if (allGuestBookings.length > 0) {
+            const hasActive = allGuestBookings.some((b: any) => {
+              const s = (b.status || '').toLowerCase().replace('-', '_');
+              return !['checked_out', 'cancelled', 'no_show'].includes(s);
+            });
+            if (!hasActive) {
+              throw new Error(
+                'This guest has already checked out and has no active bookings. Please create a new booking from the Bookings page first.'
+              );
+            }
+          }
+
           const roomConflict = bookings.find((b: any) => {
             const bRoomId = b.room?.id || b.roomId;
             const bRoomNum = b.room?.number;
@@ -471,7 +491,7 @@ export function useRooms() {
             }
           }
         } catch (bookingErr: any) {
-          if (bookingErr.message?.includes('Double booking') || bookingErr.message?.includes('not available')) {
+          if (bookingErr.message?.includes('Double booking') || bookingErr.message?.includes('not available') || bookingErr.message?.includes('checked out')) {
             throw bookingErr;
           }
           console.error('[useRooms] Failed to persist room-booking link:', bookingErr);

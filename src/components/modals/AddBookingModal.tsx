@@ -11,6 +11,7 @@ import {
   calculateBookingAmount,
   generateBookingId,
 } from '../../utils/bookings';
+import { useGSTCalculator } from '@/hooks/useGSTCalculator';
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 import { Input, FormField, Textarea } from '../ui2/Input';
@@ -90,6 +91,7 @@ function CustomSelect({ value, onChange, options, placeholder = 'Select...' }) {
 
 export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating = false }) {
   const { formatCurrency } = useCurrency();
+  const { calculateGST } = useGSTCalculator();
 
   const initialFormData = {
     guestName: '',
@@ -177,6 +179,7 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
   }, [isOpen]);
 
   // Calculate booking details — always use roomTypeOptions (API-backed) for prices
+  // Uses GST slab-based tax calculation (12% for ≤₹7,500/night, 18% for >₹7,500/night)
   const bookingCalc = useMemo(() => {
     const nights = calculateNights(formData.checkIn, formData.checkOut);
     const roomTypeConfig = roomTypeOptions.find(r => r.value === formData.roomType);
@@ -184,11 +187,14 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
     const parsed = formData.rateOverride !== '' ? parseFloat(formData.rateOverride) : NaN;
     const baseRate = !isNaN(parsed) && parsed > 0 ? parsed : defaultRate;
     const subtotal = baseRate * nights;
-    const taxes = subtotal * 0.12;
-    const total = Math.round(subtotal + taxes);
+    const gst = calculateGST(baseRate, nights);
+    const taxes = gst.taxAmount;
+    const serviceFee = gst.serviceFee;
+    const total = Math.round(subtotal + taxes + serviceFee);
+    const taxRate = gst.taxRate;
 
-    return { nights, baseRate, subtotal, taxes, total };
-  }, [formData.checkIn, formData.checkOut, formData.roomType, formData.rateOverride, roomTypeOptions]);
+    return { nights, baseRate, subtotal, taxes, serviceFee, total, taxRate };
+  }, [formData.checkIn, formData.checkOut, formData.roomType, formData.rateOverride, roomTypeOptions, calculateGST]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -685,8 +691,12 @@ export default function AddBookingModal({ isOpen, onClose, onSubmit, isCreating 
                     <span className="text-neutral-700">{formatCurrency(bookingCalc.subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-[13px]">
-                    <span className="text-neutral-600">Taxes (12%)</span>
+                    <span className="text-neutral-600">GST ({bookingCalc.taxRate}%)</span>
                     <span className="text-neutral-700">{formatCurrency(bookingCalc.taxes)}</span>
+                  </div>
+                  <div className="flex justify-between text-[13px]">
+                    <span className="text-neutral-600">Service Fee (5%)</span>
+                    <span className="text-neutral-700">{formatCurrency(bookingCalc.serviceFee)}</span>
                   </div>
                   <div className="flex justify-between pt-2 border-t border-terra-200">
                     <span className="font-semibold text-neutral-900 text-[13px]">Total</span>

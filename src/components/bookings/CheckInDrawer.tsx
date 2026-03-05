@@ -15,6 +15,7 @@ import {
 import { Drawer } from '../ui2/Drawer';
 import { Button } from '../ui2/Button';
 import { precheckinService, type PreCheckInResponse } from '@/api/services/precheckin.service';
+import { roomsService } from '@/api/services/rooms.service';
 import { PreCheckInDetails } from '../shared/PreCheckInDetails';
 import type { CheckInData } from '@/api/services/booking.service';
 import { cn } from '@/lib/utils';
@@ -108,6 +109,7 @@ export default function CheckInDrawer({ isOpen, onClose, booking, onCheckInCompl
   const guestName = booking?.guest || booking?.guestName || 'Guest';
   const roomNumber = booking?.room || booking?.roomNumber || 'Unassigned';
   const roomType = booking?.roomType || booking?.room_type || 'Standard';
+  const isRoomUnassigned = !roomNumber || roomNumber === 'Unassigned' || roomNumber === 'Not assigned';
 
   const [step, setStep] = useState(1);
   const [idType, setIdType] = useState('aadhaar');
@@ -122,6 +124,11 @@ export default function CheckInDrawer({ isOpen, onClose, booking, onCheckInCompl
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
+
+  // Room assignment during check-in (when no room pre-assigned)
+  const [availableRooms, setAvailableRooms] = useState<any[]>([]);
+  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
+  const [roomsLoading, setRoomsLoading] = useState(false);
 
   // Pre-checkin data
   const [precheckinData, setPrecheckinData] = useState<PreCheckInResponse | null>(null);
@@ -143,6 +150,29 @@ export default function CheckInDrawer({ isOpen, onClose, booking, onCheckInCompl
       setNotes('');
       setSubmitting(false);
       setCompleted(false);
+      setAvailableRooms([]);
+      setSelectedRoomId(null);
+
+      // Fetch available rooms if no room assigned
+      const bookingRoom = booking?.room || booking?.roomNumber;
+      const needsRoom = !bookingRoom || bookingRoom === 'Unassigned' || bookingRoom === 'Not assigned';
+      if (needsRoom) {
+        setRoomsLoading(true);
+        const searchParams: any = {};
+        if (booking?.checkIn) searchParams.checkIn = booking.checkIn;
+        if (booking?.checkOut) searchParams.checkOut = booking.checkOut;
+        roomsService.getRooms(searchParams)
+          .then((rooms) => {
+            // Filter to available/clean rooms, prefer matching room type
+            const filtered = rooms.filter((r: any) => {
+              const status = (r.status || '').toLowerCase();
+              return ['available', 'clean', 'inspected'].includes(status);
+            });
+            setAvailableRooms(filtered);
+          })
+          .catch(() => setAvailableRooms([]))
+          .finally(() => setRoomsLoading(false));
+      }
 
       // Fetch pre-checkin data
       setPrecheckinLoading(true);
@@ -228,6 +258,7 @@ export default function CheckInDrawer({ isOpen, onClose, booking, onCheckInCompl
         id_number: idNumber || undefined,
         id_verified: verification?.verified ?? (skippedVerification ? undefined : false),
         id_verification_confidence: verification?.confidence,
+        room_id: selectedRoomId || undefined,
       };
       const success = await onCheckInComplete(booking.id, data);
       if (success) {
@@ -236,7 +267,7 @@ export default function CheckInDrawer({ isOpen, onClose, booking, onCheckInCompl
     } finally {
       setSubmitting(false);
     }
-  }, [booking?.id, notes, idType, idNumber, verification, skippedVerification, onCheckInComplete]);
+  }, [booking?.id, notes, idType, idNumber, verification, skippedVerification, onCheckInComplete, selectedRoomId]);
 
   // ── Has pre-verified ID? ────────────────────────────────────────────
 
@@ -454,6 +485,12 @@ export default function CheckInDrawer({ isOpen, onClose, booking, onCheckInCompl
     </div>
   );
 
+  // Derive the effective room display for review step
+  const selectedRoomObj = availableRooms.find((r: any) => r.id === selectedRoomId);
+  const effectiveRoomNumber = selectedRoomObj
+    ? (selectedRoomObj.number || selectedRoomObj.roomNumber)
+    : roomNumber;
+
   const renderStep2 = () => (
     <div className="space-y-5">
       {/* Room Assignment */}
@@ -462,20 +499,112 @@ export default function CheckInDrawer({ isOpen, onClose, booking, onCheckInCompl
           <Bed className="w-4 h-4 text-terra-500" />
           <span className="text-[13px] font-semibold text-neutral-800">Room Assignment</span>
         </div>
-        <div className="grid grid-cols-3 gap-3 text-[12px]">
+
+        {isRoomUnassigned ? (
+          /* Room selection UI when no room is pre-assigned */
           <div>
-            <span className="text-neutral-400 block text-[10px] uppercase tracking-wider font-semibold">Room</span>
-            <span className="text-neutral-800 font-semibold text-[14px]">{roomNumber}</span>
+            <div className="flex items-center gap-1.5 mb-3 p-2.5 rounded-lg bg-amber-50 border border-amber-200">
+              <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span className="text-[12px] text-amber-700 font-medium">
+                No room assigned. Please select a room to proceed with check-in.
+              </span>
+            </div>
+
+            {roomsLoading ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="w-5 h-5 animate-spin text-terra-500" />
+                <span className="ml-2 text-[12px] text-neutral-500">Loading available rooms...</span>
+              </div>
+            ) : availableRooms.length === 0 ? (
+              <p className="text-[12px] text-neutral-500 py-4 text-center">No available rooms found for these dates.</p>
+            ) : (
+              <div className="space-y-1.5 max-h-[220px] overflow-y-auto">
+                {availableRooms
+                  .sort((a: any, b: any) => {
+                    // Prefer matching room type first
+                    const aType = (a.room_type?.name || a.type || '').toLowerCase();
+                    const bType = (b.room_type?.name || b.type || '').toLowerCase();
+                    const target = roomType.toLowerCase();
+                    const aMatch = aType.includes(target) || target.includes(aType);
+                    const bMatch = bType.includes(target) || target.includes(bType);
+                    if (aMatch && !bMatch) return -1;
+                    if (!aMatch && bMatch) return 1;
+                    const aNum = a.number || a.roomNumber || '';
+                    const bNum = b.number || b.roomNumber || '';
+                    return String(aNum).localeCompare(String(bNum));
+                  })
+                  .map((room: any) => {
+                    const rNum = room.number || room.roomNumber || '—';
+                    const rType = room.room_type?.name || room.type || 'Standard';
+                    const rStatus = (room.status || '').toLowerCase();
+                    const isSelected = selectedRoomId === room.id;
+                    const isTypeMatch = rType.toLowerCase().includes(roomType.toLowerCase()) || roomType.toLowerCase().includes(rType.toLowerCase());
+                    return (
+                      <button
+                        key={room.id}
+                        onClick={() => setSelectedRoomId(room.id)}
+                        className={cn(
+                          'w-full flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-all',
+                          isSelected
+                            ? 'border-terra-500 bg-terra-50'
+                            : 'border-neutral-200 hover:border-neutral-300 bg-white',
+                        )}
+                      >
+                        <div className={cn(
+                          'w-10 h-10 rounded-lg flex items-center justify-center font-bold text-[14px]',
+                          isSelected ? 'bg-terra-500 text-white' : 'bg-neutral-100 text-neutral-600',
+                        )}>
+                          {rNum}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-medium text-neutral-900 flex items-center gap-2">
+                            {rType}
+                            {isTypeMatch && (
+                              <span className="text-[10px] text-emerald-600 font-medium">Match</span>
+                            )}
+                          </p>
+                          <p className="text-[11px] text-neutral-500 capitalize">{rStatus}</p>
+                        </div>
+                        {isSelected && (
+                          <div className="w-5 h-5 rounded-full bg-terra-500 flex items-center justify-center">
+                            <Check className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+              </div>
+            )}
+
+            {/* Show booked type info */}
+            <div className="mt-3 grid grid-cols-2 gap-3 text-[12px]">
+              <div>
+                <span className="text-neutral-400 block text-[10px] uppercase tracking-wider font-semibold">Booked Type</span>
+                <span className="text-neutral-700 font-medium">{roomType}</span>
+              </div>
+              <div>
+                <span className="text-neutral-400 block text-[10px] uppercase tracking-wider font-semibold">Nights</span>
+                <span className="text-neutral-700 font-medium">{booking.nights || '—'}</span>
+              </div>
+            </div>
           </div>
-          <div>
-            <span className="text-neutral-400 block text-[10px] uppercase tracking-wider font-semibold">Type</span>
-            <span className="text-neutral-700 font-medium">{roomType}</span>
+        ) : (
+          /* Normal display when room is already assigned */
+          <div className="grid grid-cols-3 gap-3 text-[12px]">
+            <div>
+              <span className="text-neutral-400 block text-[10px] uppercase tracking-wider font-semibold">Room</span>
+              <span className="text-neutral-800 font-semibold text-[14px]">{roomNumber}</span>
+            </div>
+            <div>
+              <span className="text-neutral-400 block text-[10px] uppercase tracking-wider font-semibold">Type</span>
+              <span className="text-neutral-700 font-medium">{roomType}</span>
+            </div>
+            <div>
+              <span className="text-neutral-400 block text-[10px] uppercase tracking-wider font-semibold">Nights</span>
+              <span className="text-neutral-700 font-medium">{booking.nights || '—'}</span>
+            </div>
           </div>
-          <div>
-            <span className="text-neutral-400 block text-[10px] uppercase tracking-wider font-semibold">Nights</span>
-            <span className="text-neutral-700 font-medium">{booking.nights || '—'}</span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Pre-checkin preferences */}
@@ -537,7 +666,7 @@ export default function CheckInDrawer({ isOpen, onClose, booking, onCheckInCompl
           </div>
           <h3 className="text-[16px] font-semibold text-neutral-900 mb-1">Check-In Complete</h3>
           <p className="text-[13px] text-neutral-500">
-            {guestName} has been checked in to Room {roomNumber}.
+            {guestName} has been checked in to Room {effectiveRoomNumber}.
           </p>
           <Button
             onClick={onClose}
@@ -559,7 +688,7 @@ export default function CheckInDrawer({ isOpen, onClose, booking, onCheckInCompl
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-500">Room</span>
-                <span className="font-medium text-neutral-800">{roomNumber}</span>
+                <span className="font-medium text-neutral-800">{effectiveRoomNumber}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-500">Dates</span>
@@ -615,10 +744,20 @@ export default function CheckInDrawer({ isOpen, onClose, booking, onCheckInCompl
             </div>
           )}
 
+          {/* Warning if no room selected */}
+          {isRoomUnassigned && !selectedRoomId && (
+            <div className="flex items-center gap-1.5 p-2.5 rounded-lg bg-amber-50 border border-amber-200">
+              <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span className="text-[12px] text-amber-700">
+                Please go back and select a room before completing check-in.
+              </span>
+            </div>
+          )}
+
           {/* Complete button */}
           <Button
             onClick={handleComplete}
-            disabled={submitting}
+            disabled={submitting || (isRoomUnassigned && !selectedRoomId)}
             className="w-full bg-terra-500 hover:bg-terra-600 text-white py-2.5"
           >
             {submitting ? (

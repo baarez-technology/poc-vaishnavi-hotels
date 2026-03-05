@@ -184,11 +184,10 @@ export default function AssignRoomModal({ isOpen, onClose, onAssign, booking, is
         price: selectedRoom.price,
       });
 
-      // Auto-enable DNM for checked-in bookings, or toggle if user changed it
-      const shouldEnableDnm = isRoomMove ? true : dnmEnabled;
-      if (booking?.id && shouldEnableDnm !== (booking?.doNotMove || false)) {
+      // Only toggle DNM if the user explicitly changed the checkbox
+      if (booking?.id && dnmEnabled !== (booking?.doNotMove || false)) {
         try {
-          await bookingService.toggleDNM(booking.id, shouldEnableDnm);
+          await bookingService.toggleDNM(booking.id, dnmEnabled);
         } catch (err) {
           console.error('[AssignRoomModal] DNM toggle failed:', err);
         }

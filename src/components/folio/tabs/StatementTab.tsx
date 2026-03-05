@@ -110,15 +110,26 @@ export default function StatementTab({ folio, bookingId }: StatementTabProps) {
               </tr>
             </thead>
             <tbody>
-              {timeline.map((row: any, i: number) => (
-                <tr key={i} className="border-b border-neutral-100">
-                  <td className="py-2 text-neutral-500">{new Date(row.posted_at || row.date || row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
-                  <td className="py-2 text-neutral-800">{row.description}</td>
-                  <td className="py-2 text-right text-neutral-700">{row.amount > 0 ? formatCurrency(row.amount) : ''}</td>
-                  <td className="py-2 text-right text-emerald-600">{row.amount < 0 ? formatCurrency(Math.abs(row.amount)) : ''}</td>
-                  <td className="py-2 text-right font-medium text-neutral-900">{formatCurrency(row.running_balance)}</td>
-                </tr>
-              ))}
+              {timeline.map((row: any, i: number) => {
+                const displayAmount = row.amount_with_tax ?? row.amount;
+                const hasTax = row.amount > 0 && row.tax_amount && row.tax_amount > 0;
+                return (
+                  <tr key={i} className="border-b border-neutral-100">
+                    <td className="py-2 text-neutral-500">{new Date(row.posted_at || row.date || row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
+                    <td className="py-2 text-neutral-800">
+                      {row.description}
+                      {hasTax && (
+                        <span className="block text-[10px] text-neutral-400 mt-0.5">
+                          Base: {formatCurrency(row.amount)} + GST {row.tax_rate_pct || ''}%: {formatCurrency(row.tax_amount)}
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2 text-right text-neutral-700">{displayAmount > 0 ? formatCurrency(displayAmount) : ''}</td>
+                    <td className="py-2 text-right text-emerald-600">{displayAmount < 0 ? formatCurrency(Math.abs(displayAmount)) : ''}</td>
+                    <td className="py-2 text-right font-medium text-neutral-900">{formatCurrency(row.running_balance)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

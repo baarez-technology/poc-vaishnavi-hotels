@@ -461,11 +461,11 @@ export default function BookingsTable({
                   {/* Check-in Date */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm text-neutral-700 font-medium">
-                      {booking.checkedInAt ? formatDate(new Date(booking.checkedInAt).toISOString().split('T')[0]) : formatDate(booking.checkIn)}
+                      {formatDate(booking.checkIn)}
                     </span>
                     {booking.checkedInAt && (
                       <div className="text-[11px] text-emerald-600 mt-0.5">
-                        Checked in: {new Date(booking.checkedInAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                        Checked in: {new Date(booking.checkedInAt + (booking.checkedInAt.endsWith('Z') ? '' : 'Z')).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                       </div>
                     )}
                   </td>

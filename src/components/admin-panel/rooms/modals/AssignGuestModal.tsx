@@ -1,21 +1,33 @@
 import { useState, useEffect } from 'react';
-import { X, UserPlus, Loader2 } from 'lucide-react';
+import { X, UserPlus, Loader2, AlertTriangle, Calendar } from 'lucide-react';
 import { guestsService, Guest } from '@/api/services/guests.service';
+import { bookingService } from '@/api/services/booking.service';
 import { Button } from '../../../ui2/Button';
 
-export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
+export default function AssignGuestModal({ room, isOpen, onClose, onAssign, allBookings = [] }) {
   const [selectedGuest, setSelectedGuest] = useState('');
   const [guests, setGuests] = useState<Guest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checkedOutWarning, setCheckedOutWarning] = useState(false);
+  const [checkInDate, setCheckInDate] = useState('');
+  const [checkOutDate, setCheckOutDate] = useState('');
+  const [autoFilledFromBooking, setAutoFilledFromBooking] = useState(false);
 
   // Fetch guests from API when modal opens
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      setSelectedGuest(''); // Reset selection when opening
+      setSelectedGuest('');
+      setCheckedOutWarning(false);
+      setAutoFilledFromBooking(false);
+      const today = new Date().toISOString().split('T')[0];
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      setCheckInDate(room?._prefilledCheckIn || today);
+      setCheckOutDate(tomorrow.toISOString().split('T')[0]);
 
-      // Fetch guests
       const fetchGuests = async () => {
         setIsLoading(true);
         setError(null);
@@ -38,9 +50,77 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
     };
   }, [isOpen]);
 
+  // Check if selected guest has only checked-out/cancelled bookings (no active ones)
+  // Also auto-fill dates from active booking
+  useEffect(() => {
+    if (!selectedGuest) {
+      setCheckedOutWarning(false);
+      setAutoFilledFromBooking(false);
+      return;
+    }
+
+    const guest = guests.find(g => String(g.id) === selectedGuest);
+    if (!guest) return;
+
+    const checkGuest = async () => {
+      try {
+        const response = await bookingService.getBookings(1, 100);
+        const bookings = response.items || (Array.isArray(response) ? response : []);
+
+        const guestId = guest.id;
+        const guestName = `${guest.first_name} ${guest.last_name}`.toLowerCase().trim();
+        const guestEmail = (guest.email || '').toLowerCase().trim();
+
+        const allGuestBookings = bookings.filter((b: any) => {
+          const matchById = b.guestId && Number(b.guestId) === Number(guestId);
+          const bName = ((b.guestInfo?.firstName || '') + ' ' + (b.guestInfo?.lastName || '')).toLowerCase().trim();
+          const bEmail = (b.guestInfo?.email || '').toLowerCase().trim();
+          return matchById || (guestName && bName === guestName) || (guestEmail && bEmail && bEmail === guestEmail);
+        });
+
+        if (allGuestBookings.length > 0) {
+          const hasActive = allGuestBookings.some((b: any) => {
+            const s = (b.status || '').toLowerCase().replace('-', '_');
+            return !['checked_out', 'cancelled', 'no_show'].includes(s);
+          });
+          setCheckedOutWarning(!hasActive);
+
+          // Auto-fill dates from active booking
+          if (hasActive) {
+            const activeBooking = allGuestBookings.find((b: any) => {
+              const s = (b.status || '').toLowerCase().replace('-', '_');
+              return ['confirmed', 'booked', 'checked_in'].includes(s);
+            });
+            if (activeBooking) {
+              const bCheckIn = activeBooking.checkIn || activeBooking.arrival_date;
+              const bCheckOut = activeBooking.checkOut || activeBooking.departure_date;
+              if (bCheckIn && bCheckOut) {
+                setCheckInDate(bCheckIn.split('T')[0]);
+                setCheckOutDate(bCheckOut.split('T')[0]);
+                setAutoFilledFromBooking(true);
+                return;
+              }
+            }
+          }
+        } else {
+          setCheckedOutWarning(false);
+        }
+        setAutoFilledFromBooking(false);
+      } catch (err) {
+        console.error('[AssignGuestModal] Error checking guest bookings:', err);
+      }
+    };
+
+    checkGuest();
+  }, [selectedGuest, guests]);
+
   if (!isOpen || !room) return null;
 
-  const handleSubmit = (e) => {
+  const nights = checkInDate && checkOutDate
+    ? Math.max(0, Math.floor((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!selectedGuest) {
@@ -48,12 +128,33 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
       return;
     }
 
+    if (checkedOutWarning) return;
+
+    if (!checkInDate || !checkOutDate || nights <= 0) {
+      alert('Please select valid check-in and check-out dates');
+      return;
+    }
+
     const guest = guests.find(g => String(g.id) === selectedGuest);
     if (guest) {
-      const guestName = `${guest.first_name} ${guest.last_name}`;
-      onAssign(room.id, { id: guest.id, name: guestName });
-      onClose();
-      setSelectedGuest('');
+      setIsSubmitting(true);
+      try {
+        const guestName = `${guest.first_name} ${guest.last_name}`;
+        await onAssign(room.id, {
+          id: guest.id,
+          name: guestName,
+          email: guest.email,
+          phone: guest.phone,
+          checkIn: checkInDate,
+          checkOut: checkOutDate,
+        });
+        onClose();
+        setSelectedGuest('');
+      } catch (err) {
+        // Error handled by parent
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -118,6 +219,62 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
             )}
           </div>
 
+          {/* Checked-out guest warning */}
+          {checkedOutWarning && (
+            <div className="p-4 bg-red-50 rounded-xl border border-red-200">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-red-600" />
+                <div>
+                  <p className="text-sm font-semibold text-red-800">Guest has already checked out</p>
+                  <p className="text-xs mt-1 text-red-700">
+                    This guest has no active bookings. Please create a new booking from the Bookings page first.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Stay Dates */}
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-3">
+              <Calendar className="w-3.5 h-3.5 inline mr-1" />
+              Stay Dates *
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1">Check-in</label>
+                <input
+                  type="date"
+                  value={checkInDate}
+                  onChange={(e) => { setCheckInDate(e.target.value); setAutoFilledFromBooking(false); }}
+                  min={new Date().toISOString().split('T')[0]}
+                  disabled={autoFilledFromBooking}
+                  className="w-full px-3 py-2 bg-[#FAF8F6] border border-neutral-200 rounded-lg text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] disabled:opacity-60"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1">Check-out</label>
+                <input
+                  type="date"
+                  value={checkOutDate}
+                  onChange={(e) => { setCheckOutDate(e.target.value); setAutoFilledFromBooking(false); }}
+                  min={checkInDate}
+                  disabled={autoFilledFromBooking}
+                  className="w-full px-3 py-2 bg-[#FAF8F6] border border-neutral-200 rounded-lg text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#A57865] focus:border-[#A57865] disabled:opacity-60"
+                />
+              </div>
+            </div>
+            {nights > 0 && (
+              <p className="text-xs text-neutral-500 mt-2">
+                {nights} night{nights !== 1 ? 's' : ''}
+                {autoFilledFromBooking && <span className="ml-2 text-green-600 font-medium">— Dates from booking</span>}
+              </p>
+            )}
+            {checkInDate && checkOutDate && nights <= 0 && (
+              <p className="text-xs text-red-500 mt-2">Check-out date must be after check-in date</p>
+            )}
+          </div>
+
           {/* Room Info */}
           <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
             <p className="text-xs font-medium text-blue-900 mb-2">Room Details</p>
@@ -153,8 +310,13 @@ export default function AssignGuestModal({ room, isOpen, onClose, onAssign }) {
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleSubmit} icon={UserPlus}>
-            Assign Guest
+          <Button
+            variant="primary"
+            onClick={handleSubmit}
+            icon={UserPlus}
+            disabled={isSubmitting || checkedOutWarning || nights <= 0}
+          >
+            {isSubmitting ? 'Assigning...' : 'Assign Guest'}
           </Button>
         </div>
       </div>

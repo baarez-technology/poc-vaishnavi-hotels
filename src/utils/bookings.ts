@@ -156,11 +156,14 @@ export function calculateBookingAmount(roomType, nights, taxRate?: number) {
   const effectiveTaxRate = taxRate ?? getRoomGSTRate(baseRate);
   const subtotal = baseRate * nights;
   const taxes = subtotal * effectiveTaxRate;
+  const serviceFee = subtotal * 0.05;
   return {
     baseRate,
     subtotal,
     taxes,
-    total: Math.round(subtotal + taxes),
+    serviceFee,
+    taxRate: effectiveTaxRate * 100,
+    total: Math.round(subtotal + taxes + serviceFee),
   };
 }
 

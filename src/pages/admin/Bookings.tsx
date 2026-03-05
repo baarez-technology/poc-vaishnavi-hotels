@@ -457,7 +457,8 @@ export default function Bookings() {
     if (!selectedBooking || !room) return;
     setIsAssigning(true);
 
-    const isCheckedIn = selectedBooking.status === 'IN_HOUSE' || selectedBooking.status === 'CHECKED-IN';
+    const normalizedStatus = (selectedBooking.status || '').toUpperCase().replace(/[\s_]/g, '-');
+    const isCheckedIn = normalizedStatus === 'IN-HOUSE' || normalizedStatus === 'CHECKED-IN';
 
     try {
       if (isCheckedIn) {

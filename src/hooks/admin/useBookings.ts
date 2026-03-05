@@ -68,7 +68,9 @@ function transformBooking(apiBooking: any): AdminBooking {
   if (apiBooking.room) {
     if (typeof apiBooking.room === 'object' && apiBooking.room !== null) {
       // Room is an object with properties like {id, name, number, slug, ...}
-      roomNumber = apiBooking.room.number || apiBooking.room.name || 'Unassigned';
+      // Only use actual room number — never fall back to room name (which is the room type name)
+      // When only room type is selected without a specific room, number is null
+      roomNumber = apiBooking.room.number || 'Unassigned';
       roomId = roomId || apiBooking.room.id;
       // BUG-008 FIX: Extract room TYPE (not room name which includes number).
       // Prefer slug-based name, then strip room number from name as fallback.

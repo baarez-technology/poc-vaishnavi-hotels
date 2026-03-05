@@ -302,7 +302,7 @@ export default function AIMessage({
                     <div className="text-center">
                       <div className="text-xs text-neutral-500 mb-1">Revenue</div>
                       <div className="text-lg font-bold text-[#A57865]">
-                        ${message.data.value?.toLocaleString()}
+                        ₹{message.data.value?.toLocaleString('en-IN')}
                       </div>
                     </div>
                     <div className="text-center">

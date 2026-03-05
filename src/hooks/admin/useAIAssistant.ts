@@ -48,6 +48,7 @@ export function useAIAssistant() {
   // Refs
   const conversationEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const isProcessingRef = useRef(false); // Guard against duplicate API calls
 
   /**
    * Extract enriched session context from the current page URL.
@@ -83,9 +84,20 @@ export function useAIAssistant() {
     return context;
   }, [location.pathname]);
 
+  // Use a ref to always have latest messages without re-creating the callback
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+
+  const pendingActionRef = useRef(pendingAction);
+  pendingActionRef.current = pendingAction;
+
   // Add user message to conversation and call backend AI
   const addUserMessage = useCallback(async (text: string) => {
     if (!text || text.trim().length === 0) return;
+
+    // Prevent duplicate concurrent API calls
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
 
     const userMessage: AIMessage = {
       id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -94,116 +106,116 @@ export function useAIAssistant() {
       timestamp: new Date().toISOString()
     };
 
-    // Build the full conversation history BEFORE the async state update
-    // This avoids all stale closure issues with messages state
-    setMessages(prev => {
-      const updatedMessages = [...prev, userMessage];
-
-      // Fire off the AI response with the correct history
-      if (useBackendAI) {
-        const sessionContext = getSessionContext();
-        const previousMessages = updatedMessages.slice(-5).map(m => ({
-          role: m.type === 'user' ? 'user' as const : 'assistant' as const,
-          content: m.text
-        }));
-
-        console.log('[AI Chat] Sending previousMessages:', previousMessages);
-
-        adminAIService.chat({
-          message: text.trim(),
-          session_id: sessionId,
-          context: {
-            ...sessionContext,
-            previousMessages,
-            pendingAction: pendingAction ? {
-              action_id: pendingAction.action_id,
-              action_type: pendingAction.action_type,
-              description: pendingAction.description,
-              params: pendingAction.params
-            } : undefined
-          }
-        }).then(response => {
-          const aiMessage: AIMessage = {
-            id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            type: 'ai',
-            text: response.message,
-            intent: response.intent,
-            confidence: response.confidence,
-            timestamp: new Date().toISOString(),
-            queryResults: response.query_results || undefined,
-            queryMetadata: response.query_metadata || undefined,
-            pendingAction: response.pending_action || undefined,
-            actionResult: response.action_result || undefined,
-            suggestions: response.suggestions || undefined
-          };
-
-          setMessages(prev2 => [...prev2, aiMessage]);
-          setIsTyping(false);
-
-          if (response.intent !== 'error') {
-            if (response.query_results) setQueryResults(response.query_results);
-            if (response.pending_action) setPendingAction(response.pending_action);
-            if (response.suggestions) setSuggestions(response.suggestions);
-          }
-
-          if (aiAgent.isVoiceResponseEnabled()) {
-            aiAgent.speakResponse(response.message);
-          }
-        }).catch(error => {
-          console.error('Error generating backend AI response:', error);
-          const errorMessage: AIMessage = {
-            id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            type: 'ai',
-            text: `I'm having trouble connecting to the AI service. Please check:\n\n1. Backend server is running on port 8000\n2. You are logged in as an admin user\n3. Your session hasn't expired\n\nTry refreshing the page or logging in again.`,
-            intent: 'error',
-            confidence: 0,
-            timestamp: new Date().toISOString()
-          };
-          setMessages(prev2 => [...prev2, errorMessage]);
-          setIsTyping(false);
-        });
-      } else {
-        const timeout = setTimeout(async () => {
-          try {
-            const result = await aiAgent.processMessage(text.trim());
-            const aiMessage: AIMessage = {
-              id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              type: 'ai',
-              text: result.response,
-              data: result.data || null,
-              intent: result.intent,
-              confidence: result.confidence,
-              timestamp: new Date().toISOString()
-            };
-            setMessages(prev2 => [...prev2, aiMessage]);
-            setIsTyping(false);
-            if (aiAgent.isVoiceResponseEnabled()) {
-              aiAgent.speakResponse(result.response);
-            }
-          } catch (error) {
-            console.error('Error generating AI response:', error);
-            setMessages(prev2 => [...prev2, {
-              id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              type: 'ai',
-              text: "I encountered an error processing your request. Please try again.",
-              timestamp: new Date().toISOString()
-            }]);
-            setIsTyping(false);
-          }
-        }, 800 + Math.random() * 400);
-        typingTimeoutRef.current = timeout;
-      }
-
-      return updatedMessages;
-    });
-
-    // Clear pending action state
+    // Add the user message to state first
+    setMessages(prev => [...prev, userMessage]);
     setPendingAction(null);
     setIsTyping(true);
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-  }, [useBackendAI, pendingAction, sessionId, getSessionContext, aiAgent]);
+
+    // Build conversation history from ref (avoids stale closures)
+    const currentMessages = [...messagesRef.current, userMessage];
+    const previousMessages = currentMessages.slice(-5).map(m => ({
+      role: m.type === 'user' ? 'user' as const : 'assistant' as const,
+      content: m.text
+    }));
+
+    if (useBackendAI) {
+      const sessionContext = getSessionContext();
+      const currentPendingAction = pendingActionRef.current;
+
+      try {
+        const response = await adminAIService.chat({
+          message: text.trim(),
+          session_id: sessionId,
+          context: {
+            ...sessionContext,
+            previousMessages,
+            pendingAction: currentPendingAction ? {
+              action_id: currentPendingAction.action_id,
+              action_type: currentPendingAction.action_type,
+              description: currentPendingAction.description,
+              params: currentPendingAction.params
+            } : undefined
+          }
+        });
+
+        const aiMessage: AIMessage = {
+          id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          type: 'ai',
+          text: response.message,
+          intent: response.intent,
+          confidence: response.confidence,
+          timestamp: new Date().toISOString(),
+          queryResults: response.query_results || undefined,
+          queryMetadata: response.query_metadata || undefined,
+          pendingAction: response.pending_action || undefined,
+          actionResult: response.action_result || undefined,
+          suggestions: response.suggestions || undefined
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+        setIsTyping(false);
+
+        if (response.intent !== 'error') {
+          if (response.query_results) setQueryResults(response.query_results);
+          if (response.pending_action) setPendingAction(response.pending_action);
+          if (response.suggestions) setSuggestions(response.suggestions);
+        }
+
+        if (aiAgent.isVoiceResponseEnabled()) {
+          aiAgent.speakResponse(response.message);
+        }
+      } catch (error) {
+        console.error('Error generating backend AI response:', error);
+        const errorMessage: AIMessage = {
+          id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          type: 'ai',
+          text: `I'm having trouble connecting to the AI service. Please check:\n\n1. Backend server is running on port 8000\n2. You are logged in as an admin user\n3. Your session hasn't expired\n\nTry refreshing the page or logging in again.`,
+          intent: 'error',
+          confidence: 0,
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, errorMessage]);
+        setIsTyping(false);
+      } finally {
+        isProcessingRef.current = false;
+      }
+    } else {
+      const timeout = setTimeout(async () => {
+        try {
+          const result = await aiAgent.processMessage(text.trim());
+          const aiMessage: AIMessage = {
+            id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            type: 'ai',
+            text: result.response,
+            data: result.data || null,
+            intent: result.intent,
+            confidence: result.confidence,
+            timestamp: new Date().toISOString()
+          };
+          setMessages(prev => [...prev, aiMessage]);
+          setIsTyping(false);
+          if (aiAgent.isVoiceResponseEnabled()) {
+            aiAgent.speakResponse(result.response);
+          }
+        } catch (error) {
+          console.error('Error generating AI response:', error);
+          setMessages(prev => [...prev, {
+            id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            type: 'ai',
+            text: "I encountered an error processing your request. Please try again.",
+            timestamp: new Date().toISOString()
+          }]);
+          setIsTyping(false);
+        } finally {
+          isProcessingRef.current = false;
+        }
+      }, 800 + Math.random() * 400);
+      typingTimeoutRef.current = timeout;
+    }
+  }, [useBackendAI, sessionId, getSessionContext, aiAgent]);
 
   // Confirm and execute a pending action
   const confirmAction = useCallback(async () => {
